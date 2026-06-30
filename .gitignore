@@ -1,0 +1,45 @@
+# =========================
+# 1. FRONTEND (Next.js / Node.js)
+# =========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# 2. BACKEND (Spring Boot / Maven / Java)
+# =========================
+backend/target/
+*.jar
+*.war
+*.ear
+*.log
+
+# =========================
+# 3. SECURITY AND PASSWORDS
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.secret.properties
+
+# =========================
+# 4. IDE
+# =========================
+.idea/
+*.iml
+*.iws
+out/
+
+# =========================
+# 5. OS
+# =========================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
