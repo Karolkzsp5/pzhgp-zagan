@@ -11,4 +11,5 @@ public interface BreederRepository extends JpaRepository<Breeder, Long> {
 
     Optional<Breeder> findByEmail(String email);
     boolean existsByEmail(String email);
+    boolean existsByPhoneNumber(String phoneNumber);
 }
