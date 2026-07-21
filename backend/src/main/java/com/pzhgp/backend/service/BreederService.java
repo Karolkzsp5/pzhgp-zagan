@@ -1,6 +1,8 @@
 package com.pzhgp.backend.service;
 
+import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
+import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.repository.BreederRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ public class BreederService {
 
     private final BreederRepository breederRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public void registerNewBreeder(RegistrationRequest request) {
 
@@ -45,5 +48,23 @@ public class BreederService {
         newBreeder.setPasswordHash(hashedPassword);
 
         breederRepository.save(newBreeder);
+    }
+
+    public String login(LoginRequest request) {
+        Breeder breeder = breederRepository.findByEmail(request.email())
+                .orElseThrow(() -> new IllegalArgumentException("Nieprawidłowy adres e-mail lub hasło."));
+
+        if (!passwordEncoder.matches(request.password(), breeder.getPasswordHash())) {
+            throw new IllegalArgumentException("Nieprawidłowy adres e-mail lub hasło.");
+        }
+
+        if (breeder.getStatus() == AccountStatus.PENDING) {
+            throw new IllegalStateException("Twoje konto oczekuje jeszcze na akceptację administratora.");
+        }
+        if (breeder.getStatus() == AccountStatus.BLOCKED || breeder.getStatus() == AccountStatus.REJECTED) {
+            throw new IllegalStateException("Twoje konto zostało zablokowane lub odrzucone.");
+        }
+
+        return jwtService.generateToken(breeder);
     }
 }
