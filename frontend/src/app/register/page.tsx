@@ -172,16 +172,6 @@ export default function RegisterPage() {
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Rejestracja Hodowcy PZHGP Żagań</h1>
 
-                {message.text && (
-                    <div className={`p-4 mb-6 rounded ${
-                        message.type === 'success' ? 'bg-green-100 text-green-700' :
-                            message.type === 'error' ? 'bg-red-100 text-red-700' :
-                                'bg-blue-100 text-blue-700'
-                    }`}>
-                        {message.text}
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
 
@@ -249,9 +239,9 @@ export default function RegisterPage() {
                                     className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white">
                                 <option value={0}>Wybierz</option>
                                 <option value={1}>Żagań</option>
-                                <option value={4}>Wymiarki</option>
-                                <option value={2}>Chotków</option>
-                                <option value={3}>Kożuchów</option>
+                                <option value={2}>Wymiarki</option>
+                                <option value={3}>Chotków</option>
+                                <option value={4}>Kożuchów</option>
                             </select>
                         </div>
 
@@ -285,9 +275,32 @@ export default function RegisterPage() {
 
                     </div>
 
-                    <button type="submit"
-                            className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200">
-                        Zarejestruj się
+                    {message.text && (
+                        <div className={`p-4 my-4 rounded ${
+                            message.type === 'success' ? 'bg-green-100 text-green-700' :
+                                message.type === 'error' ? 'bg-red-100 text-red-700' :
+                                    'bg-blue-100 text-blue-700'
+                        }`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={message.type === 'info'}
+                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed disabled:hover:bg-blue-400 flex justify-center items-center"
+                    >
+                        {message.type === 'info' ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Wysyłanie...
+                            </>
+                        ) : (
+                            'Zarejestruj się'
+                        )}
                     </button>
                 </form>
             </div>

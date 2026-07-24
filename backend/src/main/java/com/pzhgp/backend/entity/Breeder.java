@@ -24,8 +24,20 @@ public class Breeder {
     @Column(nullable = false, length = 64)
     private String surname;
 
+    @Column(nullable = false, unique = true, length = 320)
+    private String email;
+
+    @Column(name = "phone_number", nullable = false, length = 9)
+    private String phoneNumber;
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Column(name = "section_id", nullable = false)
+    private Integer sectionId;
+
+    @Column(nullable = false, length = 20)
+    private String role; // BREEDER, MODERATOR, ADMINISTRATOR
 
     @Column(name = "postal_code", length = 6)
     private String postalCode;
@@ -39,27 +51,15 @@ public class Breeder {
     @Column(name = "house_number", length = 10)
     private String houseNumber;
 
-    @Column(nullable = false, unique = true, length = 320)
-    private String email;
-
-    @Column(name = "phone_number", nullable = false, length = 9)
-    private String phoneNumber;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AccountStatus status;
 
-    @Column(nullable = false, length = 20)
-    private String role; // BREEDER, MODERATOR, ADMINISTRATOR
-
-    @Column(name = "section_id", nullable = false)
-    private Integer sectionId;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @PrePersist
     protected void onCreate() {
