@@ -1,0 +1,135 @@
+"use client";
+
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+interface LoginFormData {
+    email: string;
+    password: string;
+}
+
+interface MessageState {
+    text: string;
+    type: 'success' | 'error' | 'info' | '';
+}
+
+export default function LoginPage() {
+    const router = useRouter();
+
+    const [formData, setFormData] = useState<LoginFormData>({
+        email: '',
+        password: ''
+    });
+
+    const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setMessage({ text: 'Logowanie...', type: 'info' });
+
+        try {
+            const response = await fetch('http://localhost:8080/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.text();
+
+            if (response.ok) {
+                setMessage({ text: 'Zalogowano pomyślnie! Przekierowywanie...', type: 'success' });
+
+                localStorage.setItem('jwt_token', data);
+
+                setTimeout(() => {
+                    router.push('/');
+                }, 1500);
+
+            } else {
+                setMessage({ text: data, type: 'error' });
+            }
+        } catch (error) {
+            setMessage({ text: 'Błąd połączenia z serwerem. Upewnij się, że backend jest uruchomiony.', type: 'error' });
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+                <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie PZHGP Żagań</h1>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Adres E-mail</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Hasło</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    {message.text && (
+                        <div className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
+                            message.type === 'success' ? 'bg-green-100 text-green-700' :
+                                message.type === 'error' ? 'bg-red-100 text-red-700' :
+                                    'bg-blue-100 text-blue-700'
+                        }`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={message.type === 'info'}
+                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed disabled:hover:bg-blue-400 flex justify-center items-center"
+                    >
+                        {message.type === 'info' ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Logowanie...
+                            </>
+                        ) : (
+                            'Zaloguj się'
+                        )}
+                    </button>
+                </form>
+
+                <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4">
+                    Nie masz jeszcze konta?{' '}
+                    <Link href="/register" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
+                        Zarejestruj się tutaj
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}

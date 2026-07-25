@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from 'react';
+import Link from "next/link";
 
 interface RegistrationFormData {
     name: string;
@@ -202,7 +203,7 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
                             <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
-                                   maxLength={11}
+                                   maxLength={9}
                                    placeholder={focusedField === 'phoneNumber' ? "np. 123 456 789" : ""}
                                    onFocus={() => setFocusedField('phoneNumber')}
                                    onBlur={() => setFocusedField(null)}
@@ -303,6 +304,13 @@ export default function RegisterPage() {
                         )}
                     </button>
                 </form>
+
+                <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4">
+                    Masz już konto?{' '}
+                    <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
+                        Zaloguj się tutaj
+                    </Link>
+                </div>
             </div>
         </div>
     );
