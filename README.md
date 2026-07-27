@@ -97,7 +97,7 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 
 - [x] Opracowanie architektury relacyjnej bazy danych (PostgreSQL)
 - [x] Backendowy moduł rejestracji i logowania (Spring Security, JWT, BCrypt, DTO)
-- [x] Frontendowy formularz rejestracji z walidacją w czasie rzeczywistym, maskowaniem telefonów/kodów i wskaźnikiem siły hasła
+- [x] Frontendowy formularz rejestracji z walidacją w czasie rzeczywistym
 - [x] Widok logowania (`/login`) i obsługa sesji klienta w Next.js
 - [ ] Panel administratora do zarządzania kontami ze statusem `PENDING`
 - [ ] Strona główna z ogłoszeniami
