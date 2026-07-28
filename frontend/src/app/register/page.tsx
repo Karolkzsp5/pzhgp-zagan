@@ -203,7 +203,7 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
                             <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
-                                   maxLength={9}
+                                   maxLength={11}
                                    placeholder={focusedField === 'phoneNumber' ? "np. 123 456 789" : ""}
                                    onFocus={() => setFocusedField('phoneNumber')}
                                    onBlur={() => setFocusedField(null)}

@@ -22,6 +22,7 @@ export default function LoginPage() {
         password: ''
     });
 
+    const [rememberMe, setRememberMe] = useState<boolean>(false);
     const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +51,13 @@ export default function LoginPage() {
             if (response.ok) {
                 setMessage({ text: 'Zalogowano pomyślnie! Przekierowywanie...', type: 'success' });
 
-                localStorage.setItem('jwt_token', data);
+                if (rememberMe) {
+                    localStorage.setItem('jwt_token', data);
+                    sessionStorage.removeItem('jwt_token');
+                } else {
+                    sessionStorage.setItem('jwt_token', data);
+                    localStorage.removeItem('jwt_token');
+                }
 
                 setTimeout(() => {
                     router.push('/');
@@ -67,7 +74,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie PZHGP Żagań</h1>
+                <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie Hodowcy</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -92,6 +99,23 @@ export default function LoginPage() {
                             required
                             className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                         />
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center">
+                            <input
+                                id="remember-me"
+                                name="remember-me"
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                disabled={message.type === 'info'}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
+                            />
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer select-none">
+                                Zapamiętaj mnie
+                            </label>
+                        </div>
                     </div>
 
                     {message.text && (
