@@ -15,6 +15,7 @@ interface MessageState {
 }
 
 export default function LoginPage() {
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const router = useRouter();
 
     const [formData, setFormData] = useState<LoginFormData>({
@@ -35,7 +36,8 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setMessage({ text: 'Logowanie...', type: 'info' });
+        setMessage({ text: '', type: '' });
+        setIsLoading(true);
 
         try {
             const response = await fetch('http://localhost:8080/api/auth/login', {
@@ -49,8 +51,6 @@ export default function LoginPage() {
             const data = await response.text();
 
             if (response.ok) {
-                setMessage({ text: 'Zalogowano pomyślnie! Przekierowywanie...', type: 'success' });
-
                 if (rememberMe) {
                     localStorage.setItem('jwt_token', data);
                     sessionStorage.removeItem('jwt_token');
@@ -59,15 +59,15 @@ export default function LoginPage() {
                     localStorage.removeItem('jwt_token');
                 }
 
-                setTimeout(() => {
-                    router.push('/');
-                }, 1500);
+                router.push('/');
 
             } else {
                 setMessage({ text: data, type: 'error' });
+                setIsLoading(false);
             }
         } catch (error) {
             setMessage({ text: 'Błąd połączenia z serwerem. Upewnij się, że backend jest uruchomiony.', type: 'error' });
+            setIsLoading(false);
         }
     };
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
                                 type="checkbox"
                                 checked={rememberMe}
                                 onChange={(e) => setRememberMe(e.target.checked)}
-                                disabled={message.type === 'info'}
+                                disabled={isLoading}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
                             />
                             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer select-none">
@@ -130,8 +130,8 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        disabled={message.type === 'info'}
-                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed disabled:hover:bg-blue-400 flex justify-center items-center"
+                        disabled={isLoading}
+                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center"
                     >
                         {message.type === 'info' ? (
                             <>
