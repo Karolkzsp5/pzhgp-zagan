@@ -1,0 +1,20 @@
+package com.pzhgp.backend.dto;
+
+import com.pzhgp.backend.entity.AccountStatus;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record BreederResponseDto(
+        Long id,
+        String name,
+        String surname,
+        String email,
+        String phoneNumber,
+        LocalDate dateOfBirth,
+        String city,
+        Integer sectionId,
+        AccountStatus status,
+        LocalDateTime createdAt
+) {
+}
