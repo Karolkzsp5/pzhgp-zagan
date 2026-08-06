@@ -49,9 +49,17 @@ export default function RegisterPage() {
         return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
     };
 
-    const formatPostalCode = (val: string) => {
+    const formatPostalCode = (val: string, prevVal: string) => {
+        if (val.length < prevVal.length) {
+            if (val.endsWith('-')) {
+                return val.slice(0, -1);
+            }
+            return val;
+        }
+
         const digits = val.replace(/\D/g, '').slice(0, 5);
-        if (digits.length > 2) {
+
+        if (digits.length >= 2) {
             return `${digits.slice(0, 2)}-${digits.slice(2)}`;
         }
         return digits;
@@ -104,7 +112,7 @@ export default function RegisterPage() {
         if (name === 'phoneNumber') {
             formattedValue = formatPhoneNumber(value);
         } else if (name === 'postalCode') {
-            formattedValue = formatPostalCode(value);
+            formattedValue = formatPostalCode(value, formData.postalCode);
         } else if (['name', 'surname', 'city', 'street'].includes(name)) {
             formattedValue = formatTextOnly(value);
         } else if (name === 'sectionId') {
