@@ -140,11 +140,15 @@ export default function RegisterPage() {
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setMessage({ text: 'Podane hasła nie są identyczne!', type: 'error' });
+            setMessage({ text: 'Podane hasła nie są identyczne.', type: 'error' });
             return;
         }
 
-        setMessage({ text: 'Wysyłanie...', type: 'info' });
+        const rawPhoneNumber = formData.phoneNumber.replace(/\s+/g, '');
+        if (rawPhoneNumber.length !== 9) {
+            setMessage({ text: 'Numer telefonu musi zawierać dokładnie 9 cyfr.', type: 'error' });
+            return;
+        }
 
         try {
             const { confirmPassword, ...dataToSend } = formData;

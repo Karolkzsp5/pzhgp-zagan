@@ -20,11 +20,11 @@ public class BreederService {
     public void registerNewBreeder(RegistrationRequest request) {
 
         if (breederRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Użytkownik z podanym adresem e-mail już istnieje!");
+            throw new IllegalArgumentException("Użytkownik z podanym adresem e-mail już istnieje.");
         }
 
         if (request.phoneNumber() != null && breederRepository.existsByPhoneNumber(request.phoneNumber())) {
-            throw new IllegalArgumentException("Użytkownik z podanym numerem telefonu już istnieje!");
+            throw new IllegalArgumentException("Użytkownik z podanym numerem telefonu już istnieje.");
         }
 
         Breeder newBreeder = new Breeder();

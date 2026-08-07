@@ -35,3 +35,13 @@
 //     }
 //   }
 // }
+declare namespace Cypress {
+    interface Chainable {
+        selectSection(sectionValue?: string): Chainable<Element>;
+    }
+}
+
+
+Cypress.Commands.add('selectSection', (sectionValue = '1') => {
+    cy.get('select[name="sectionId"]').select(sectionValue);
+});
