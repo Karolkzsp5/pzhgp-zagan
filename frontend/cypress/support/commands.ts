@@ -38,9 +38,24 @@
 declare namespace Cypress {
     interface Chainable {
         selectSection(sectionValue?: string): Chainable<Element>;
+        fillEmail(email?: string): Chainable<Element>;
+        fillPhoneNumber(phoneNumber?: string): Chainable<Element>;
+        fillPassword(password?: string): Chainable<Element>;
     }
 }
 
+Cypress.Commands.add('fillEmail', (email = 'testcypress1@test.com') => {
+    cy.get('input[name="email"]').clear().type(email, { delay: 20 });
+});
+
+Cypress.Commands.add('fillPhoneNumber', (phoneNumber = '123456789') => {
+    cy.get('input[name="phoneNumber"]').clear().type(phoneNumber, { delay: 20 });
+});
+
+Cypress.Commands.add('fillPassword', (password = 'Testcypress1@') => {
+    cy.get('input[name="password"]').clear().type(password);
+    cy.get('input[name="confirmPassword"]').clear().type(password);
+});
 
 Cypress.Commands.add('selectSection', (sectionValue = '1') => {
     cy.get('select[name="sectionId"]').select(sectionValue);

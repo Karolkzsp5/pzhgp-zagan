@@ -96,7 +96,7 @@ export default function RegisterPage() {
     };
 
     const validateStrongPassword = (pass: string): string | null => {
-        if (pass.length < 8) return "Hasło musi mieć co najmniej 8 znaków.";
+        if (pass.length < 8) return "Hasło musi zawierać co najmniej 8 znaków.";
         if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return "Hasło musi zawierać co najmniej jedną dużą literę.";
         if (!/[a-ząćęłńóśźż]/.test(pass)) return "Hasło musi zawierać co najmniej jedną małą literę.";
         if (!/\d/.test(pass)) return "Hasło musi zawierać co najmniej jedną cyfrę.";
@@ -128,8 +128,15 @@ export default function RegisterPage() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (formData.sectionId === 0) {
-            setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.email)) {
+            setMessage({ text: 'Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).', type: 'error' });
+            return;
+        }
+
+        const rawPhoneNumber = formData.phoneNumber.replace(/\s+/g, '');
+        if (rawPhoneNumber.length !== 9) {
+            setMessage({ text: 'Numer telefonu musi zawierać dokładnie 9 cyfr.', type: 'error' });
             return;
         }
 
@@ -144,9 +151,8 @@ export default function RegisterPage() {
             return;
         }
 
-        const rawPhoneNumber = formData.phoneNumber.replace(/\s+/g, '');
-        if (rawPhoneNumber.length !== 9) {
-            setMessage({ text: 'Numer telefonu musi zawierać dokładnie 9 cyfr.', type: 'error' });
+        if (formData.sectionId === 0) {
+            setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
             return;
         }
 
@@ -216,7 +222,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
                             <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
                                    maxLength={11}
-                                   placeholder={focusedField === 'phoneNumber' ? "np. 123 456 789" : ""}
                                    onFocus={() => setFocusedField('phoneNumber')}
                                    onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
@@ -262,7 +267,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
                             <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} required
                                    maxLength={6}
-                                   placeholder={focusedField === 'postalCode' ? "np. 68-100" : ""}
                                    onFocus={() => setFocusedField('postalCode')}
                                    onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
