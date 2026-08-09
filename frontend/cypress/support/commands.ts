@@ -41,6 +41,7 @@ declare namespace Cypress {
         fillEmail(email?: string): Chainable<Element>;
         fillPhoneNumber(phoneNumber?: string): Chainable<Element>;
         fillPassword(password?: string): Chainable<Element>;
+        fillHouseNumber(houseNumber?: string): Chainable<Element>;
     }
 }
 
@@ -59,4 +60,8 @@ Cypress.Commands.add('fillPassword', (password = 'Testcypress1@') => {
 
 Cypress.Commands.add('selectSection', (sectionValue = '1') => {
     cy.get('select[name="sectionId"]').select(sectionValue);
+});
+
+Cypress.Commands.add('fillHouseNumber', (houseNumber = '14a') => {
+    cy.get('input[name="houseNumber"]').clear().type(houseNumber, { delay: 20 });
 });

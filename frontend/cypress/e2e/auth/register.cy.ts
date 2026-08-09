@@ -116,6 +116,7 @@ describe('Breeder Registration Process Test', () => {
         cy.fillPhoneNumber();
         cy.fillPassword();
         cy.selectSection();
+        cy.fillHouseNumber();
 
         cy.get('input[name="email"]').type('jan.nowak@example.com');
         cy.get('button[type="submit"]').click();
@@ -155,6 +156,7 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="password"]').type('Testcypress1@', { delay: 20 });
         cy.get('input[name="confirmPassword"]').type('Testcypress1@');
         cy.selectSection();
+        cy.fillHouseNumber();
 
         cy.get('input[name="phoneNumber"]').clear().type('123456789');
         cy.get('button[type="submit"]').click();
@@ -233,15 +235,16 @@ describe('Breeder Registration Process Test', () => {
     ////Postal code tests///
     ////////////////////////
 
-    it('Postal code test - Should ignore any letters and special characters included in the Postal code input', () => {
-        cy.get('input[name="postalCode"]').clear().type('11-111').should('have.value', '11-111');
+    it('Postal code test - Should ignore any letters and special characters', () => {
+        cy.get('input[name="postalCode"]').invoke('removeAttr', 'maxlength').clear()
+            .type('1f1&-1a1@1u', { delay: 20 }).should('have.value', '11-111');
     });
 
     ////////////////////////
     ///////City tests///////
     ////////////////////////
 
-    it('City test - Should ignore any letters and special characters included in the City input', () => {
+    it('City test - Should ignore any letters and special characters', () => {
         cy.get('input[name="city"]').clear().type('D1ł@u3g$i5e', { delay: 20 }).should('have.value', 'Długie');
     });
 
@@ -253,7 +256,7 @@ describe('Breeder Registration Process Test', () => {
     //////Street tests//////
     ////////////////////////
 
-    it('Street test - Should ignore any letters and special characters included in the Street input', () => {
+    it('Street test - Should ignore any letters and special characters', () => {
         cy.get('input[name="street"]').clear().type('P1o@l3n$a', { delay: 20 }).should('have.value', 'Polna');
     });
 
@@ -265,7 +268,13 @@ describe('Breeder Registration Process Test', () => {
     ///House number tests///
     ////////////////////////
 
+    it('House number test - Should ignore any special characters except "/" and "-"', () => {
+        cy.get('input[name="houseNumber"]').clear().type('1@#4a/%8*c', { delay: 20 }).should('have.value', '14a/8c');
+    });
 
+    it('House number test - Should ignore Polish characters', () => {
+        cy.get('input[name="houseNumber"]').clear().type('1ąć4a/ó8ńc', { delay: 20 }).should('have.value', '14a/8c');
+    });
 
     ///////////////////////////
     //Final registration test//

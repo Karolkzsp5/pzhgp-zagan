@@ -117,6 +117,8 @@ export default function RegisterPage() {
             formattedValue = formatTextOnly(value);
         } else if (name === 'sectionId') {
             formattedValue = parseInt(value) || 0;
+        } else if (name === 'houseNumber') {
+            formattedValue = value.replace(/[^0-9a-zA-Z\s\/-]/g, '');
         }
 
         setFormData((prev) => ({
@@ -153,6 +155,12 @@ export default function RegisterPage() {
 
         if (formData.sectionId === 0) {
             setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
+            return;
+        }
+
+        const houseNumberRegex = /^[1-9]\d*\s?[a-zA-Z]?(\s?[\/-]\s?[1-9]\d*\s?[a-zA-Z]?)?$/;
+        if (!houseNumberRegex.test(formData.houseNumber)) {
+            setMessage({ text: 'Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).', type: 'error' });
             return;
         }
 
@@ -197,12 +205,14 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Imię</label>
                             <input type="text" name="name" value={formData.name} onChange={handleChange} required
+                                   maxLength={32}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
                             <input type="text" name="surname" value={formData.surname} onChange={handleChange} required
+                                   maxLength={64}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
@@ -215,6 +225,7 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Adres E-mail</label>
                             <input type="email" name="email" value={formData.email} onChange={handleChange} required
+                                   maxLength={320}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
@@ -275,18 +286,21 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Miejscowość</label>
                             <input type="text" name="city" value={formData.city} onChange={handleChange} required
+                                   maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Ulica</label>
                             <input type="text" name="street" value={formData.street} onChange={handleChange} required
+                                   maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Numer domu/lokalu</label>
                             <input type="text" name="houseNumber" value={formData.houseNumber} onChange={handleChange} required
+                                   maxLength={10}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 

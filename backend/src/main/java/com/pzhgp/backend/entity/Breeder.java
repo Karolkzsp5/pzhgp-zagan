@@ -24,14 +24,14 @@ public class Breeder {
     @Column(nullable = false, length = 64)
     private String surname;
 
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
     @Column(nullable = false, unique = true, length = 320)
     private String email;
 
     @Column(name = "phone_number", nullable = false, length = 9)
     private String phoneNumber;
-
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
 
     @Column(name = "section_id", nullable = false)
     private Integer sectionId;
