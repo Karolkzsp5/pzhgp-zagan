@@ -49,7 +49,7 @@ Cypress.Commands.add('fillEmail', (email = 'testcypress1@test.com') => {
     cy.get('input[name="email"]').clear().type(email, { delay: 20 });
 });
 
-Cypress.Commands.add('fillPhoneNumber', (phoneNumber = '123456789') => {
+Cypress.Commands.add('fillPhoneNumber', (phoneNumber = '444444444') => {
     cy.get('input[name="phoneNumber"]').clear().type(phoneNumber, { delay: 20 });
 });
 
