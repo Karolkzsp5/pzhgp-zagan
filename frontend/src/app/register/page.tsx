@@ -49,9 +49,17 @@ export default function RegisterPage() {
         return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
     };
 
-    const formatPostalCode = (val: string) => {
+    const formatPostalCode = (val: string, prevVal: string) => {
+        if (val.length < prevVal.length) {
+            if (val.endsWith('-')) {
+                return val.slice(0, -1);
+            }
+            return val;
+        }
+
         const digits = val.replace(/\D/g, '').slice(0, 5);
-        if (digits.length > 2) {
+
+        if (digits.length >= 2) {
             return `${digits.slice(0, 2)}-${digits.slice(2)}`;
         }
         return digits;
@@ -88,7 +96,7 @@ export default function RegisterPage() {
     };
 
     const validateStrongPassword = (pass: string): string | null => {
-        if (pass.length < 8) return "Hasło musi mieć co najmniej 8 znaków.";
+        if (pass.length < 8) return "Hasło musi zawierać co najmniej 8 znaków.";
         if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return "Hasło musi zawierać co najmniej jedną dużą literę.";
         if (!/[a-ząćęłńóśźż]/.test(pass)) return "Hasło musi zawierać co najmniej jedną małą literę.";
         if (!/\d/.test(pass)) return "Hasło musi zawierać co najmniej jedną cyfrę.";
@@ -104,11 +112,13 @@ export default function RegisterPage() {
         if (name === 'phoneNumber') {
             formattedValue = formatPhoneNumber(value);
         } else if (name === 'postalCode') {
-            formattedValue = formatPostalCode(value);
+            formattedValue = formatPostalCode(value, formData.postalCode);
         } else if (['name', 'surname', 'city', 'street'].includes(name)) {
             formattedValue = formatTextOnly(value);
         } else if (name === 'sectionId') {
             formattedValue = parseInt(value) || 0;
+        } else if (name === 'houseNumber') {
+            formattedValue = value.replace(/[^0-9a-zA-Z\s\/-]/g, '');
         }
 
         setFormData((prev) => ({
@@ -120,8 +130,15 @@ export default function RegisterPage() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (formData.sectionId === 0) {
-            setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.email)) {
+            setMessage({ text: 'Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).', type: 'error' });
+            return;
+        }
+
+        const rawPhoneNumber = formData.phoneNumber.replace(/\s+/g, '');
+        if (rawPhoneNumber.length !== 9) {
+            setMessage({ text: 'Numer telefonu musi zawierać dokładnie 9 cyfr.', type: 'error' });
             return;
         }
 
@@ -132,11 +149,20 @@ export default function RegisterPage() {
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setMessage({ text: 'Podane hasła nie są identyczne!', type: 'error' });
+            setMessage({ text: 'Podane hasła nie są identyczne.', type: 'error' });
             return;
         }
 
-        setMessage({ text: 'Wysyłanie...', type: 'info' });
+        if (formData.sectionId === 0) {
+            setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
+            return;
+        }
+
+        const houseNumberRegex = /^[1-9]\d*\s?[a-zA-Z]?(\s?[\/-]\s?[1-9]\d*\s?[a-zA-Z]?)?$/;
+        if (!houseNumberRegex.test(formData.houseNumber)) {
+            setMessage({ text: 'Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).', type: 'error' });
+            return;
+        }
 
         try {
             const { confirmPassword, ...dataToSend } = formData;
@@ -179,12 +205,14 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Imię</label>
                             <input type="text" name="name" value={formData.name} onChange={handleChange} required
+                                   maxLength={32}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
                             <input type="text" name="surname" value={formData.surname} onChange={handleChange} required
+                                   maxLength={64}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
@@ -197,6 +225,7 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Adres E-mail</label>
                             <input type="email" name="email" value={formData.email} onChange={handleChange} required
+                                   maxLength={320}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
@@ -204,7 +233,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
                             <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
                                    maxLength={11}
-                                   placeholder={focusedField === 'phoneNumber' ? "np. 123 456 789" : ""}
                                    onFocus={() => setFocusedField('phoneNumber')}
                                    onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
@@ -250,7 +278,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
                             <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} required
                                    maxLength={6}
-                                   placeholder={focusedField === 'postalCode' ? "np. 68-100" : ""}
                                    onFocus={() => setFocusedField('postalCode')}
                                    onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
@@ -259,18 +286,21 @@ export default function RegisterPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Miejscowość</label>
                             <input type="text" name="city" value={formData.city} onChange={handleChange} required
+                                   maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Ulica</label>
                             <input type="text" name="street" value={formData.street} onChange={handleChange} required
+                                   maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Numer domu/lokalu</label>
                             <input type="text" name="houseNumber" value={formData.houseNumber} onChange={handleChange} required
+                                   maxLength={10}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
