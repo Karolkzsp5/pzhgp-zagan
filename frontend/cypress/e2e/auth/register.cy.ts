@@ -308,6 +308,11 @@ describe('Breeder Registration Process Test', () => {
     ///////////////////////////
 
     it('Should successfully register the user', () => {
+        cy.intercept('POST', '**/api/auth/register', {
+            statusCode: 201,
+            body: ''
+        }).as('successfulRegistration');
+
         cy.get('input[name="name"]').type('Tomasz', { delay: 50 });
         cy.get('input[name="surname"]').type('Nowak');
         cy.get('input[name="dateOfBirth"]').clear().type('2003-01-12');
@@ -320,8 +325,15 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="city"]').type('Test');
         cy.get('input[name="street"]').type('Testowa');
         cy.get('input[name="houseNumber"]').type('15b');
-        cy.get('button[type="submit"]').click();
 
-        cy.contains('Rejestracja przebiegła pomyślnie. Konto oczekuje na akceptację administratora.').should('be.visible');
+        cy.get('button[type="submit"]').click();
+        cy.wait('@successfulRegistration');
+
+        cy.location('search').should('include', 'registered=true');
+        cy.contains('Rejestracja przebiegła pomyślnie').should('be.visible');
+        cy.contains('Twoje konto zostało pomyślnie utworzone i oczekuje na akceptację administratora.').should('be.visible');
+
+        cy.contains('button', 'Rozumiem').click();
+        cy.contains('Rejestracja przebiegła pomyślnie').should('not.exist');
     });
 });

@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 interface RegistrationFormData {
     name: string;
@@ -25,6 +26,7 @@ interface MessageState {
 }
 
 export default function RegisterPage() {
+    const router = useRouter();
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -183,12 +185,12 @@ export default function RegisterPage() {
             const data = await response.text();
 
             if (response.status === 201) {
-                setMessage({ text: data, type: 'success' });
+                router.push('/?registered=true');
             } else {
                 setMessage({ text: data, type: 'error' });
             }
         } catch (error) {
-            setMessage({ text: 'Błąd połączenia z serwerem. Upewnij się, że backend jest uruchomiony.', type: 'error' });
+            setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
         }
     };
 
