@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.service.BreederService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,10 +17,10 @@ public class AuthController {
     private final BreederService breederService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegistrationRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegistrationRequest request) {
         try {
             breederService.registerNewBreeder(request);
-            return ResponseEntity.status(201).body("Rejestracja przebiegła pomyślnie. Konto oczekuje na akceptację administratora.");
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

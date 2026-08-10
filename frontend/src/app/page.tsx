@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from 'next/link';
+import RegistrationModal from './components/RegistrationModal';
 
-export default function HomePage() {
+export default function HomePage({ searchParams }: { searchParams: { registered?: string } }){
   const announcements = [
     {
       id: 1,
@@ -40,7 +41,7 @@ export default function HomePage() {
 
   return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-
+        <RegistrationModal />
         <nav className="bg-blue-700 text-white shadow-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16 items-center">

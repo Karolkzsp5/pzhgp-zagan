@@ -44,13 +44,18 @@ describe('Breeder Login Process', () => {
     });
 
     it('Should log the user in and redirect them to the home page', () => {
+        cy.intercept('POST', '**/api/auth/login', {
+            statusCode: 200,
+            body: 'mockowany_token_jwt_123'
+        }).as('successfulLogin');
+
         cy.get('input[name="email"]').clear().type('test.cypress1@test.cy');
         cy.get('input[name="password"]').clear().type('Test.cypress1');
         cy.get('input[name="remember-me"]').check();
         cy.get('button[type="submit"]').click();
 
+        cy.wait('@successfulLogin');
         cy.location('pathname').should('eq', '/');
-
         cy.window().its('localStorage').invoke('getItem', 'jwt_token').should('exist');
     });
 });
