@@ -16,7 +16,7 @@ function ModalContent() {
     if (!showModal) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-50 bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity">
+        <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
             <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl transform transition-all">
                 <div className="text-center">
                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
