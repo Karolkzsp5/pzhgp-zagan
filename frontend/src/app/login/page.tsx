@@ -66,7 +66,7 @@ export default function LoginPage() {
                 setIsLoading(false);
             }
         } catch (error) {
-            setMessage({ text: 'Błąd połączenia z serwerem. Upewnij się, że backend jest uruchomiony.', type: 'error' });
+            setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
             setIsLoading(false);
         }
     };
