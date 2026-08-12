@@ -8,8 +8,8 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Entity // mówi springowi że ta klasa to tabela w bazie danych
-@Table(name = "breeders") //nazwa tabeli w postgresql
+@Entity
+@Table(name = "breeders")
 @Getter
 @Setter
 @NoArgsConstructor

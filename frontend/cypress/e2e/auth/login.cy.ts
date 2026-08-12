@@ -29,7 +29,7 @@ describe('Breeder Login Process', () => {
         cy.contains('Nieprawidłowy adres e-mail lub hasło.').should('be.visible');
     });
 
-    it('Should prevent user from logging in if their account has not been approved by an administrator', () => {
+    it('Should prevent user from logging in if their account has not been approved by an administrator (PENDING Status)', () => {
         cy.intercept('POST', '**/api/auth/login', {
             statusCode: 403,
             body: 'Twoje konto oczekuje jeszcze na akceptację administratora.'
