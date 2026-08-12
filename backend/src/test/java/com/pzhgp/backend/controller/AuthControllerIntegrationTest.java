@@ -45,7 +45,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Powinien zwrócić status 400 Bad Request przy brakujących lub błędnych danych wejściowych")
+    @DisplayName("Should return a 400 Bad Request status code if the input data is missing or incorrect")
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(
                 "", "", "", "", "", "", "", 0, "niepoprawny-email", "", ""
@@ -58,7 +58,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Powinien zwrócić status 400 Bad Request przy próbie rejestracji z istniejącym mailem")
+    @DisplayName("Should return a 400 Bad Request status code when attempting to register with an existing email address")
     void shouldReturnBadRequestWhenEmailIsDuplicatedIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +78,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("INTEGRACJA: Powinien zwrócić status 400 Bad Request przy próbie rejestracji z istniejącym numerem telefonu")
+    @DisplayName("Should return a 400 Bad Request status code when attempting to register with an existing phone number")
     void shouldReturnBadRequestWhenPhoneNumberIsDuplicatedIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +98,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Powinien obsłużyć poprawną rejestrację i zwrócić status 201")
+    @DisplayName("Should handle the registration correctly and return status code 201")
     void shouldRegisterUserSuccessfullyIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -107,7 +107,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Powinien zwrócić status 401 Unauthorized przy próbie logowania z błędnymi danymi")
+    @DisplayName("Should return a 401 Unauthorized status when attempting to log in with incorrect data")
     void shouldReturnUnauthorizedOnInvalidLogin() throws Exception {
         LoginRequest invalidLogin = new LoginRequest("doesntexist@test.pl", "BadPassword123");
 
@@ -118,7 +118,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Powinien pomyślnie zalogować aktywnego użytkownika i zwrócić token JWT")
+    @DisplayName("Should successfully log in the active user and return a JWT token")
     void shouldLoginSuccessfullyAndReturnJwtIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
