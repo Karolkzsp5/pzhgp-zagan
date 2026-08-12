@@ -53,7 +53,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien rzucić wyjątek, gdy adres e-mail już istnieje w bazie")
+    @DisplayName("Should throw an exception if the email address already exists in the database")
     void shouldThrowExceptionWhenEmailAlreadyExists() {
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(true);
 
@@ -65,7 +65,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien rzucić wyjątek, gdy numer telefonu już istnieje w bazie")
+    @DisplayName("Should throw an exception if the phone number already exists in the database")
     void shouldThrowExceptionWhenPhoneNumberAlreadyExists() {
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(true);
@@ -78,7 +78,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien pomyślnie zarejestrować nowego hodowcę")
+    @DisplayName("Should successfully register a new breeder")
     void shouldRegisterNewBreederSuccessfully() {
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
@@ -90,7 +90,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien rzucić wyjątek przy logowaniu na nieistniejący adres e-mail")
+    @DisplayName("Should throw an exception when logging in with a non-existent email address")
     void shouldThrowExceptionWhenLoginEmailDoesNotExist() {
         LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@");
 
@@ -103,7 +103,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien rzucić wyjątek przy logowaniu z błędnym hasłem")
+    @DisplayName("Should throw an exception when logging in with an incorrect password")
     void shouldThrowExceptionWhenLoginPasswordIsIncorrect() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123");
 
@@ -117,7 +117,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien zablokować logowanie dla konta oczekującego (PENDING)")
+    @DisplayName("Should block logins for the account marked as “PENDING”")
     void shouldThrowExceptionWhenLoggingInWithPendingAccount() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
         activeBreeder.setStatus(AccountStatus.PENDING);
@@ -132,7 +132,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Powinien pomyślnie zalogować i zwrócić token JWT")
+    @DisplayName("Should log in successfully and return a JWT token")
     void shouldLoginSuccessfullyAndReturnToken() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
 
