@@ -22,6 +22,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(breeder.getEmail())
                 .claim("id", breeder.getId())
+                .claim("name", breeder.getName())
                 .claim("role", breeder.getRole())
                 .claim("status", breeder.getStatus())
                 .issuedAt(new Date(System.currentTimeMillis()))

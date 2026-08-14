@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from 'next/link';
 import RegistrationModal from './components/RegistrationModal';
+import Navbar from './components/Navbar';
 
 export default function HomePage({ searchParams }: { searchParams: { registered?: string } }){
   const announcements = [
@@ -42,24 +43,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
   return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <RegistrationModal />
-        <nav className="bg-blue-700 text-white shadow-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <div className="flex-shrink-0 font-bold text-xl tracking-wider">
-                PZHGP Żagań
-              </div>
-              <div className="flex space-x-4">
-                <Link href="/login" className="hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                  Zaloguj się
-                </Link>
-                <Link href="/register" className="bg-white text-blue-700 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-bold transition shadow-sm">
-                  Rejestracja
-                </Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
+        <Navbar />
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
