@@ -139,7 +139,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
         <footer className="bg-gray-800 text-gray-300 py-8 text-center text-sm mt-auto">
           <p>&copy; 2026 Karol Kondracki. Wszelkie prawa zastrzeżone.</p>
-          <p className="mt-2 text-gray-500">System zrealizowany w ramach pracy dyplomowej.</p>
+          <p className="mt-2 text-gray-500">System realizowany w ramach pracy dyplomowej.</p>
         </footer>
       </div>
   );

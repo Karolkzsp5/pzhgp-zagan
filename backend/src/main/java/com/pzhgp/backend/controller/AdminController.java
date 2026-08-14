@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "*") // Na czas testów
 @RequiredArgsConstructor
 public class AdminController {
 
