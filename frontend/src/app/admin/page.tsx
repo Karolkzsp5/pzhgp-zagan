@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import AdminGuard from '../components/AdminGuard';
+import Navbar from '../components/Navbar';
 
 interface PendingBreeder {
     id: number;
@@ -105,6 +105,7 @@ export default function AdminPanelPage() {
 
     return (
         <AdminGuard>
+            <Navbar />
             <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-between items-center mb-8">
@@ -112,9 +113,6 @@ export default function AdminPanelPage() {
                             <h1 className="text-3xl font-bold text-gray-900">Panel Administratora</h1>
                             <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami użytkowników.</p>
                         </div>
-                        <Link href="/" className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-                            Powrót do strony głównej
-                        </Link>
                     </div>
 
                     {error ? (
@@ -142,7 +140,7 @@ export default function AdminPanelPage() {
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
+                                        <thead className="bg-blue-100">
                                         <tr>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hodowca</th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontakt</th>
@@ -153,7 +151,7 @@ export default function AdminPanelPage() {
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                         {pendingBreeders.map((breeder) => (
-                                            <tr key={breeder.id} className="hover:bg-gray-50 transition duration-150">
+                                            <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
                                                     <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
