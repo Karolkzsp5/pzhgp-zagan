@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminGuard from '../components/AdminGuard';
-import Navbar from '../components/Navbar';
+import Navbar from "@/app/components/Navbar";
 
-interface PendingBreeder {
+interface BreederDto {
     id: number;
     name: string;
     surname: string;
@@ -26,20 +26,21 @@ const sectionNames: Record<number, string> = {
 };
 
 export default function AdminPanelPage() {
-    const [pendingBreeders, setPendingBreeders] = useState<PendingBreeder[]>([]);
+    const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
+    const [activeBreeders, setActiveBreeders] = useState<BreederDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const router = useRouter();
 
     useEffect(() => {
-        fetchPendingAccounts();
+        fetchAllAccounts();
     }, []);
 
     const getToken = () => {
         return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
     };
 
-    const fetchPendingAccounts = async () => {
+    const fetchAllAccounts = async () => {
         const token = getToken();
         if (!token) {
             router.push('/login');
@@ -47,17 +48,21 @@ export default function AdminPanelPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/admin/pending', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const [pendingRes, activeRes] = await Promise.all([
+                fetch('http://localhost:8080/api/admin/pending', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                }),
+                fetch('http://localhost:8080/api/admin/active', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                })
+            ]);
 
-            if (response.ok) {
-                const data = await response.json();
-                setPendingBreeders(data);
-            } else if (response.status === 401 || response.status === 403) {
+            if (pendingRes.ok && activeRes.ok) {
+                const pendingData = await pendingRes.json();
+                const activeData = await activeRes.json();
+                setPendingBreeders(pendingData);
+                setActiveBreeders(activeData);
+            } else if (pendingRes.status === 401 || pendingRes.status === 403) {
                 setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
             } else {
                 setError('Wystąpił błąd podczas pobierania danych.');
@@ -69,11 +74,13 @@ export default function AdminPanelPage() {
         }
     };
 
-    const handleAction = async (id: number, action: 'approve' | 'reject') => {
+    const handleAction = async (id: number, action: 'approve' | 'reject' | 'block') => {
         const token = getToken();
         if (!token) return;
 
-        const method = action === 'approve' ? 'PUT' : 'DELETE';
+        let method = 'PUT';
+        if (action === 'reject') method = 'DELETE';
+
         const url = `http://localhost:8080/api/admin/${action}/${id}`;
 
         try {
@@ -85,7 +92,17 @@ export default function AdminPanelPage() {
             });
 
             if (response.ok) {
-                setPendingBreeders(prev => prev.filter(breeder => breeder.id !== id));
+                if (action === 'approve') {
+                    const approvedBreeder = pendingBreeders.find(b => b.id === id);
+                    if (approvedBreeder) {
+                        setPendingBreeders(prev => prev.filter(b => b.id !== id));
+                        setActiveBreeders(prev => [...prev, { ...approvedBreeder, status: 'ACTIVE' }]);
+                    }
+                } else if (action === 'reject') {
+                    setPendingBreeders(prev => prev.filter(b => b.id !== id));
+                } else if (action === 'block') {
+                    setActiveBreeders(prev => prev.filter(b => b.id !== id));
+                }
             } else {
                 const errorData = await response.text();
                 alert(`Błąd: ${errorData}`);
@@ -107,11 +124,12 @@ export default function AdminPanelPage() {
         <AdminGuard>
             <Navbar />
             <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center mb-8">
+                <div className="max-w-7xl mx-auto space-y-12">
+
+                    <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Panel Administratora</h1>
-                            <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami użytkowników.</p>
+                            <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                         </div>
                     </div>
 
@@ -129,69 +147,129 @@ export default function AdminPanelPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
-                            {pendingBreeders.length === 0 ? (
-                                <div className="p-8 text-center text-gray-500">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Brak kont oczekujących na akceptację.
+                        <>
+                            <section>
+                                <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
+                                <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+                                    {pendingBreeders.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500">
+                                            Brak kont oczekujących na akceptację.
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                                <thead className="bg-blue-100">
+                                                <tr>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Lokalizacja / Sekcja</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-gray-200">
+                                                {pendingBreeders.map((breeder) => (
+                                                    <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
+                                                            <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                            <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">{breeder.city}</div>
+                                                            <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                                            <button
+                                                                onClick={() => handleAction(breeder.id, 'approve')}
+                                                                className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
+                                                            >
+                                                                Akceptuj
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if(window.confirm('Czy na pewno chcesz odrzucić i usunąć to konto?')) {
+                                                                        handleAction(breeder.id, 'reject');
+                                                                    }
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
+                                                            >
+                                                                Odrzuć
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-blue-100">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hodowca</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontakt</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokalizacja / Sekcja</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Rejestracji</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akcje</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {pendingBreeders.map((breeder) => (
-                                            <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
-                                                    <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                    <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                    <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleAction(breeder.id, 'approve')}
-                                                        className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
-                                                    >
-                                                        Akceptuj
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if(window.confirm('Czy na pewno chcesz odrzucić i usunąć to konto?')) {
-                                                                handleAction(breeder.id, 'reject');
-                                                            }
-                                                        }}
-                                                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
-                                                    >
-                                                        Odrzuć
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
+                            </section>
+
+                            <section>
+                                <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Aktywne konta</h2>
+                                <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+                                    {activeBreeders.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500">
+                                            Brak aktywnych kont w systemie.
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                                <thead className="bg-blue-100">
+                                                <tr>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Lokalizacja / Sekcja</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-gray-200">
+                                                {activeBreeders.map((breeder) => (
+                                                    <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
+                                                            <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                            <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">{breeder.city}</div>
+                                                            <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                                            <button
+                                                                onClick={() => {
+                                                                    if(window.confirm('Czy na pewno chcesz zablokować tego użytkownika? Straci on możliwość logowania do systemu.')) {
+                                                                        handleAction(breeder.id, 'block');
+                                                                    }
+                                                                }}
+                                                                className="text-orange-600 hover:text-orange-900 bg-orange-50 hover:bg-orange-100 px-3 py-1 rounded-md transition"
+                                                            >
+                                                                Zablokuj
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </section>
+                        </>
                     )}
                 </div>
             </div>
