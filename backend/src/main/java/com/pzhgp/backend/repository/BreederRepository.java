@@ -10,10 +10,10 @@ import java.util.Optional;
 
 @Repository
 public interface BreederRepository extends JpaRepository<Breeder, Long> {
-
-    Optional<Breeder> findByEmail(String email);
     boolean existsByEmail(String email);
     boolean existsByPhoneNumber(String phoneNumber);
 
+    Optional<Breeder> findByEmail(String email);
     List<Breeder> findByStatus(AccountStatus status);
+    List<Breeder> findByStatusIn(List<AccountStatus> statuses);
 }

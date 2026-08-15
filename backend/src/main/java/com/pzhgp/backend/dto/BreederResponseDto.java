@@ -12,9 +12,13 @@ public record BreederResponseDto(
         String email,
         String phoneNumber,
         LocalDate dateOfBirth,
+        String postalCode,
         String city,
+        String street,
+        String houseNumber,
         Integer sectionId,
         AccountStatus status,
+        String role,
         LocalDateTime createdAt
 ) {
 }

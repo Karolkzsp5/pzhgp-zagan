@@ -3,20 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminGuard from '../components/AdminGuard';
-import Navbar from '../components/Navbar';
-
-interface PendingBreeder {
-    id: number;
-    name: string;
-    surname: string;
-    email: string;
-    phoneNumber: string;
-    dateOfBirth: string;
-    city: string;
-    sectionId: number;
-    status: string;
-    createdAt: string;
-}
+import Navbar from "@/app/components/Navbar";
+import BreederDetailsModal, { BreederDto } from '../components/BreederDetailsModal';
 
 const sectionNames: Record<number, string> = {
     1: 'Żagań',
@@ -26,20 +14,30 @@ const sectionNames: Record<number, string> = {
 };
 
 export default function AdminPanelPage() {
-    const [pendingBreeders, setPendingBreeders] = useState<PendingBreeder[]>([]);
+    const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
+    const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [currentUserEmail, setCurrentUserEmail] = useState('');
+
+    const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+    const [selectedBreeder, setSelectedBreeder] = useState<BreederDto | null>(null);
+
     const router = useRouter();
 
     useEffect(() => {
-        fetchPendingAccounts();
+        fetchAllAccounts();
+
+        const handleClickOutside = () => setOpenDropdownId(null);
+        window.addEventListener('click', handleClickOutside);
+        return () => window.removeEventListener('click', handleClickOutside);
     }, []);
 
     const getToken = () => {
         return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
     };
 
-    const fetchPendingAccounts = async () => {
+    const fetchAllAccounts = async () => {
         const token = getToken();
         if (!token) {
             router.push('/login');
@@ -47,17 +45,30 @@ export default function AdminPanelPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/admin/pending', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const payloadBase64 = token.split('.')[1];
+            const decodedJson = atob(payloadBase64);
+            const payload = JSON.parse(decodedJson);
+            setCurrentUserEmail(payload.sub);
+        } catch (e) {
+            console.error("Błąd dekodowania tokenu", e);
+        }
 
-            if (response.ok) {
-                const data = await response.json();
-                setPendingBreeders(data);
-            } else if (response.status === 401 || response.status === 403) {
+        try {
+            const [pendingRes, registeredRes] = await Promise.all([
+                fetch('http://localhost:8080/api/admin/pending', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                }),
+                fetch('http://localhost:8080/api/admin/registered', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                })
+            ]);
+
+            if (pendingRes.ok && registeredRes.ok) {
+                const pendingData = await pendingRes.json();
+                const registeredData = await registeredRes.json();
+                setPendingBreeders(pendingData);
+                setRegisteredBreeders(registeredData);
+            } else if (pendingRes.status === 401 || pendingRes.status === 403) {
                 setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
             } else {
                 setError('Wystąpił błąd podczas pobierania danych.');
@@ -69,11 +80,13 @@ export default function AdminPanelPage() {
         }
     };
 
-    const handleAction = async (id: number, action: 'approve' | 'reject') => {
+    const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
         const token = getToken();
         if (!token) return;
 
-        const method = action === 'approve' ? 'PUT' : 'DELETE';
+        let method = 'PUT';
+        if (action === 'reject') method = 'DELETE';
+
         const url = `http://localhost:8080/api/admin/${action}/${id}`;
 
         try {
@@ -85,7 +98,23 @@ export default function AdminPanelPage() {
             });
 
             if (response.ok) {
-                setPendingBreeders(prev => prev.filter(breeder => breeder.id !== id));
+                if (action === 'approve') {
+                    const approved = pendingBreeders.find(b => b.id === id);
+                    if (approved) {
+                        setPendingBreeders(prev => prev.filter(b => b.id !== id));
+                        setRegisteredBreeders(prev => [...prev, { ...approved, status: 'ACTIVE' }]);
+                    }
+                } else if (action === 'reject') {
+                    setPendingBreeders(prev => prev.filter(b => b.id !== id));
+                } else if (action === 'block') {
+                    setRegisteredBreeders(prev =>
+                        prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b)
+                    );
+                } else if (action === 'unblock') {
+                    setRegisteredBreeders(prev =>
+                        prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b)
+                    );
+                }
             } else {
                 const errorData = await response.text();
                 alert(`Błąd: ${errorData}`);
@@ -93,6 +122,11 @@ export default function AdminPanelPage() {
         } catch (err) {
             alert('Błąd połączenia z serwerem podczas wykonywania akcji.');
         }
+    };
+
+    const handleChangeRole = (id: number) => {
+        alert("Funkcja zmiany roli będzie wkrótce dostępna.");
+        setOpenDropdownId(null);
     };
 
     if (isLoading) {
@@ -107,94 +141,231 @@ export default function AdminPanelPage() {
         <AdminGuard>
             <Navbar />
             <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Panel Administratora</h1>
-                            <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami użytkowników.</p>
-                        </div>
+                <div className="max-w-7xl mx-auto space-y-12">
+
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Panel Administratora</h1>
+                        <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                     </div>
 
                     {error ? (
                         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm text-red-700">{error}</p>
-                                </div>
-                            </div>
+                            <p className="text-sm text-red-700">{error}</p>
                         </div>
                     ) : (
-                        <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
-                            {pendingBreeders.length === 0 ? (
-                                <div className="p-8 text-center text-gray-500">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Brak kont oczekujących na akceptację.
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-blue-100">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hodowca</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontakt</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokalizacja / Sekcja</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Rejestracji</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akcje</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {pendingBreeders.map((breeder) => (
-                                            <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
-                                                    <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                    <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                    <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleAction(breeder.id, 'approve')}
-                                                        className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
-                                                    >
-                                                        Akceptuj
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if(window.confirm('Czy na pewno chcesz odrzucić i usunąć to konto?')) {
-                                                                handleAction(breeder.id, 'reject');
-                                                            }
-                                                        }}
-                                                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
-                                                    >
-                                                        Odrzuć
-                                                    </button>
-                                                </td>
+                        <>
+                            {/* Oczekujące konta */}
+                            <section>
+                                <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
+                                <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
+                                    {pendingBreeders.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500">
+                                            Brak kont oczekujących na akceptację.
+                                        </div>
+                                    ) : (
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-blue-100">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
                                             </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {pendingBreeders.map((breeder) => (
+                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
+                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                        <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
+                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                                        <button
+                                                            onClick={() => handleAction(breeder.id, 'approve')}
+                                                            className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
+                                                        >
+                                                            Akceptuj
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                if(window.confirm('Czy na pewno chcesz odrzucić i usunąć to konto?')) {
+                                                                    handleAction(breeder.id, 'reject');
+                                                                }
+                                                            }}
+                                                            className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
+                                                        >
+                                                            Odrzuć
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </section>
+
+                            {/* Konta hodowców */}
+                            <section>
+                                <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
+                                <div className="bg-white shadow overflow-visible sm:rounded-lg border border-gray-200 min-h-[250px]">
+                                    {registeredBreeders.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500">
+                                            Brak zarejestrowanych kont w systemie.
+                                        </div>
+                                    ) : (
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-blue-100">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {registeredBreeders.map((breeder) => (
+                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900 flex items-center">
+                                                            {breeder.name} {breeder.surname}
+                                                            {breeder.role === 'ADMINISTRATOR' && (
+                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                                    ADMIN
+                                                                </span>
+                                                            )}
+                                                            {breeder.email === currentUserEmail && (
+                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                                    TO TY
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                        <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {breeder.status === 'ACTIVE' ? (
+                                                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                                    Aktywny
+                                                                </span>
+                                                        ) : (
+                                                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                                    Zablokowany
+                                                                </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
+                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
+                                                            }}
+                                                            className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition focus:outline-none"
+                                                        >
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                            </svg>
+                                                        </button>
+
+                                                        {openDropdownId === breeder.id && (
+                                                            <div
+                                                                className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedBreeder(breeder);
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                >
+                                                                    Szczegóły
+                                                                </button>
+
+                                                                {breeder.role !== 'ADMINISTRATOR' && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleChangeRole(breeder.id)}
+                                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                        >
+                                                                            Zmień rolę
+                                                                        </button>
+
+                                                                        {breeder.status === 'ACTIVE' ? (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    if(window.confirm('Czy zablokować tego użytkownika?')) {
+                                                                                        handleAction(breeder.id, 'block');
+                                                                                        setOpenDropdownId(null);
+                                                                                    }
+                                                                                }}
+                                                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
+                                                                            >
+                                                                                Zablokuj
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    if(window.confirm('Czy odblokować to konto?')) {
+                                                                                        handleAction(breeder.id, 'unblock');
+                                                                                        setOpenDropdownId(null);
+                                                                                    }
+                                                                                }}
+                                                                                className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition border-t border-gray-50"
+                                                                            >
+                                                                                Odblokuj
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            </section>
+                        </>
                     )}
                 </div>
             </div>
+
+            {selectedBreeder && (
+                <BreederDetailsModal
+                    breeder={selectedBreeder}
+                    onClose={() => setSelectedBreeder(null)}
+                    sectionNames={sectionNames}
+                />
+            )}
+
         </AdminGuard>
     );
 }
