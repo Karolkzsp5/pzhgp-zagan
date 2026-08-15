@@ -26,8 +26,8 @@ public class AdminService {
     }
 
     // Pobieranie zaakceptowanych, aktywnych kont
-    public List<BreederResponseDto> getActiveAccounts() {
-        return breederRepository.findByStatus(AccountStatus.ACTIVE)
+    public List<BreederResponseDto> getAllRegisteredAccounts() {
+        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -75,6 +75,19 @@ public class AdminService {
         breederRepository.save(breeder);
     }
 
+    @Transactional
+    public void unblockAccount(Long id) {
+        Breeder breeder = breederRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+
+        if (breeder.getStatus() != AccountStatus.BLOCKED) {
+            throw new RuntimeException("Tylko zablokowane konta mogą zostać odblokowane.");
+        }
+
+        breeder.setStatus(AccountStatus.ACTIVE);
+        breederRepository.save(breeder);
+    }
+
     private BreederResponseDto mapToDto(Breeder breeder) {
         return new BreederResponseDto(
                 breeder.getId(),
@@ -86,6 +99,7 @@ public class AdminService {
                 breeder.getCity(),
                 breeder.getSectionId(),
                 breeder.getStatus(),
+                breeder.getRole(),
                 breeder.getCreatedAt()
         );
     }

@@ -22,10 +22,10 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getPendingAccounts());
     }
 
-    // GET: http://localhost:8080/api/admin/active
-    @GetMapping("/active")
-    public ResponseEntity<List<BreederResponseDto>> getActiveAccounts() {
-        return ResponseEntity.ok(adminService.getActiveAccounts());
+    // GET: http://localhost:8080/api/admin/registered
+    @GetMapping("/registered")
+    public ResponseEntity<List<BreederResponseDto>> getRegisteredAccounts() {
+        return ResponseEntity.ok(adminService.getAllRegisteredAccounts());
     }
 
     // PUT: http://localhost:8080/api/admin/approve/{id}
@@ -58,6 +58,17 @@ public class AdminController {
             return ResponseEntity.ok("Konto zostało pomyślnie zablokowane.");
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // PUT: http://localhost:8080/api/admin/unblock/{id}
+    @PutMapping("/unblock/{id}")
+    public ResponseEntity<String> unblockAccount(@PathVariable Long id) {
+        try {
+            adminService.unblockAccount(id);
+            return ResponseEntity.ok("Konto zostało pomyślnie odblokowane.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

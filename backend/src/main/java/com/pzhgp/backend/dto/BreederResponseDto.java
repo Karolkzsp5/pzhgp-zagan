@@ -15,6 +15,7 @@ public record BreederResponseDto(
         String city,
         Integer sectionId,
         AccountStatus status,
+        String role,
         LocalDateTime createdAt
 ) {
 }
