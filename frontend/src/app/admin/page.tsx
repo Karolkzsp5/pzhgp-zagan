@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminGuard from '../components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
-// Importujemy wyciągnięty komponent i jego interfejs
 import BreederDetailsModal, { BreederDto } from '../components/BreederDetailsModal';
 
 const sectionNames: Record<number, string> = {
@@ -295,7 +294,7 @@ export default function AdminPanelPage() {
 
                                                         {openDropdownId === breeder.id && (
                                                             <div
-                                                                className="absolute right-8 top-10 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-100 flex flex-col"
+                                                                className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
                                                                 <button
@@ -303,7 +302,7 @@ export default function AdminPanelPage() {
                                                                         setSelectedBreeder(breeder);
                                                                         setOpenDropdownId(null);
                                                                     }}
-                                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
                                                                 >
                                                                     Szczegóły
                                                                 </button>
@@ -312,7 +311,7 @@ export default function AdminPanelPage() {
                                                                     <>
                                                                         <button
                                                                             onClick={() => handleChangeRole(breeder.id)}
-                                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
                                                                         >
                                                                             Zmień rolę
                                                                         </button>
@@ -325,7 +324,7 @@ export default function AdminPanelPage() {
                                                                                         setOpenDropdownId(null);
                                                                                     }
                                                                                 }}
-                                                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition border-t border-gray-50"
+                                                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
                                                                             >
                                                                                 Zablokuj
                                                                             </button>

@@ -7,7 +7,10 @@ export interface BreederDto {
     email: string;
     phoneNumber: string;
     dateOfBirth: string;
+    postalCode: string;
     city: string;
+    street: string;
+    houseNumber: string;
     sectionId: number;
     status: 'PENDING' | 'ACTIVE' | 'BLOCKED';
     createdAt: string;
@@ -34,7 +37,7 @@ export default function BreederDetailsModal({ breeder, onClose, sectionNames }: 
                     </svg>
                 </button>
 
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">Karta hodowcy</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">Dane hodowcy</h3>
 
                 <div className="space-y-4">
                     <div>
@@ -55,10 +58,16 @@ export default function BreederDetailsModal({ breeder, onClose, sectionNames }: 
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Data urodzenia</p>
                             <p className="text-sm font-medium text-gray-800">{breeder.dateOfBirth}</p>
                         </div>
+
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider">Miejscowość</p>
-                            <p className="text-sm font-medium text-gray-800">{breeder.city}</p>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Adres zamieszkania</p>
+                            <p className="text-sm font-medium text-gray-800">
+                                ul. {breeder.street} {breeder.houseNumber}
+                                <br />
+                                {breeder.postalCode} {breeder.city}
+                            </p>
                         </div>
+
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Sekcja</p>
                             <p className="text-sm font-medium text-gray-800">{sectionNames[breeder.sectionId] || 'Nieznana'}</p>
