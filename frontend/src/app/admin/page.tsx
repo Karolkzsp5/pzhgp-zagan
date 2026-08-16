@@ -22,6 +22,8 @@ export default function AdminPanelPage() {
 
     const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
     const [selectedBreeder, setSelectedBreeder] = useState<BreederDto | null>(null);
+    const [roleChangeBreeder, setRoleChangeBreeder] = useState<BreederDto | null>(null);
+    const [newRole, setNewRole] = useState<string>('');
 
     const router = useRouter();
 
@@ -124,9 +126,33 @@ export default function AdminPanelPage() {
         }
     };
 
-    const handleChangeRole = (id: number) => {
-        alert("Funkcja zmiany roli będzie wkrótce dostępna.");
-        setOpenDropdownId(null);
+    const submitRoleChange = async () => {
+        if (!roleChangeBreeder) return;
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const response = await fetch(`http://localhost:8080/api/admin/${roleChangeBreeder.id}/role`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: newRole })
+            });
+
+            if (response.ok) {
+                setRegisteredBreeders(prev =>
+                    prev.map(b => b.id === roleChangeBreeder.id ? { ...b, role: newRole } : b)
+                );
+                setRoleChangeBreeder(null);
+            } else {
+                const errorData = await response.text();
+                alert(`Błąd: ${errorData}`);
+            }
+        } catch (err) {
+            alert('Błąd połączenia z serwerem podczas zmiany roli.');
+        }
     };
 
     if (isLoading) {
@@ -248,6 +274,11 @@ export default function AdminPanelPage() {
                                                                     ADMIN
                                                                 </span>
                                                             )}
+                                                            {breeder.role === 'MODERATOR' && (
+                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                                    MODERATOR
+                                                                </span>
+                                                            )}
                                                             {breeder.email === currentUserEmail && (
                                                                 <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
                                                                     TO TY
@@ -310,7 +341,11 @@ export default function AdminPanelPage() {
                                                                 {breeder.role !== 'ADMINISTRATOR' && (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => handleChangeRole(breeder.id)}
+                                                                            onClick={() => {
+                                                                                setRoleChangeBreeder(breeder);
+                                                                                setNewRole(breeder.role);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
                                                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
                                                                         >
                                                                             Zmień rolę
@@ -358,12 +393,55 @@ export default function AdminPanelPage() {
                 </div>
             </div>
 
+            {/* Kompoment: dane hodowcy */}
             {selectedBreeder && (
                 <BreederDetailsModal
                     breeder={selectedBreeder}
                     onClose={() => setSelectedBreeder(null)}
                     sectionNames={sectionNames}
                 />
+            )}
+
+            {/* Modal: zmiana roli */}
+            {roleChangeBreeder && (
+                <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+                    <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">Zmień rolę</h3>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Wybierz nowe uprawnienia dla użytkownika:
+                            <span className="block text-base font-semibold text-gray-900 mt-1">
+                                {roleChangeBreeder.name} {roleChangeBreeder.surname}
+                            </span>
+                        </p>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Nowa rola w systemie</label>
+                            <select
+                                value={newRole}
+                                onChange={(e) => setNewRole(e.target.value)}
+                                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
+                            >
+                                <option value="BREEDER">Hodowca (Podstawowy dostęp)</option>
+                                <option value="MODERATOR">Moderator (Zarządzanie lotami)</option>
+                            </select>
+                        </div>
+
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setRoleChangeBreeder(null)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm"
+                            >
+                                Anuluj
+                            </button>
+                            <button
+                                onClick={submitRoleChange}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
+                            >
+                                Zapisz zmiany
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </AdminGuard>

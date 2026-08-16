@@ -88,6 +88,23 @@ public class AdminService {
         breederRepository.save(breeder);
     }
 
+    @Transactional
+    public void changeRole(Long id, String newRole) {
+        Breeder breeder = breederRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+
+        if ("ADMINISTRATOR".equals(breeder.getRole())) {
+            throw new IllegalStateException("Nie możesz zmieniać uprawnień innym administratorom.");
+        }
+
+        if (!List.of("BREEDER", "MODERATOR").contains(newRole)) {
+            throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
+        }
+
+        breeder.setRole(newRole);
+        breederRepository.save(breeder);
+    }
+
     private BreederResponseDto mapToDto(Breeder breeder) {
         return new BreederResponseDto(
                 breeder.getId(),
