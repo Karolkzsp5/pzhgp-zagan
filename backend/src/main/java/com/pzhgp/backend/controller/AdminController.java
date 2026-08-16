@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -69,6 +70,23 @@ public class AdminController {
         try {
             adminService.unblockAccount(id);
             return ResponseEntity.ok("Konto zostało pomyślnie odblokowane.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // PUT: http://localhost:8080/api/admin/{id}/role
+    @PutMapping("/{id}/role")
+    public ResponseEntity<String> changeRole(@PathVariable Long id, @RequestBody Map<String, String> requestBody) {
+        try {
+            String newRole = requestBody.get("role");
+            if (newRole == null || newRole.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Nie podano nowej roli.");
+            }
+            adminService.changeRole(id, newRole);
+            return ResponseEntity.ok("Rola została pomyślnie zmieniona.");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
