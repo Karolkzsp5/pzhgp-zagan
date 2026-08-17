@@ -25,6 +25,10 @@ export default function AdminPanelPage() {
     const [roleChangeBreeder, setRoleChangeBreeder] = useState<BreederDto | null>(null);
     const [newRole, setNewRole] = useState<string>('');
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterSection, setFilterSection] = useState<string>('ALL');
+    const [sortBy, setSortBy] = useState<'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A'>('NEWEST');
+
     const router = useRouter();
 
     useEffect(() => {
@@ -155,6 +159,32 @@ export default function AdminPanelPage() {
         }
     };
 
+    const processBreeders = (breeders: BreederDto[]) => {
+        return breeders
+            .filter((b) => {
+                const searchLower = searchTerm.toLowerCase();
+                const matchesSearch =
+                    b.name.toLowerCase().includes(searchLower) ||
+                    b.surname.toLowerCase().includes(searchLower) ||
+                    b.email.toLowerCase().includes(searchLower) ||
+                    b.phoneNumber.includes(searchLower);
+
+                const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
+
+                return matchesSearch && matchesSection;
+            })
+            .sort((a, b) => {
+                if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
+                if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
+                return 0;
+            });
+    };
+
+    const processedPending = processBreeders(pendingBreeders);
+    const processedRegistered = processBreeders(registeredBreeders);
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -174,6 +204,48 @@ export default function AdminPanelPage() {
                         <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                     </div>
 
+                    {/* Wyszukiwanie i filtrowanie */}
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 transition"
+                                placeholder="Szukaj po imieniu, nazwisku, emailu lub telefonie..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <select
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                                value={filterSection}
+                                onChange={(e) => setFilterSection(e.target.value)}
+                            >
+                                <option value="ALL">Wszystkie sekcje</option>
+                                {Object.entries(sectionNames).map(([id, name]) => (
+                                    <option key={id} value={id}>{name}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as any)}
+                            >
+                                <option value="NEWEST">Od najnowszego</option>
+                                <option value="OLDEST">Od najstarszego</option>
+                                <option value="A_Z">Alfabetycznie (A-Z)</option>
+                                <option value="Z_A">Alfabetycznie (Z-A)</option>
+                            </select>
+                        </div>
+                    </div>
+
                     {error ? (
                         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
                             <p className="text-sm text-red-700">{error}</p>
@@ -184,7 +256,7 @@ export default function AdminPanelPage() {
                             <section>
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
                                 <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
-                                    {pendingBreeders.length === 0 ? (
+                                    {processedPending.length === 0 ? (
                                         <div className="p-8 text-center text-gray-500">
                                             Brak kont oczekujących na akceptację.
                                         </div>
@@ -194,25 +266,23 @@ export default function AdminPanelPage() {
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
                                             </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                            {pendingBreeders.map((breeder) => (
+                                            {processedPending.map((breeder) => (
                                                 <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
-                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{breeder.email}</div>
                                                         <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
@@ -246,8 +316,8 @@ export default function AdminPanelPage() {
                             {/* Konta hodowców */}
                             <section>
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
-                                <div className="bg-white shadow overflow-visible sm:rounded-lg border border-gray-200 min-h-[250px]">
-                                    {registeredBreeders.length === 0 ? (
+                                <div className="bg-white shadow overflow-visible sm:rounded-lg border border-gray-200">
+                                    {processedRegistered.length === 0 ? (
                                         <div className="p-8 text-center text-gray-500">
                                             Brak zarejestrowanych kont w systemie.
                                         </div>
@@ -258,13 +328,13 @@ export default function AdminPanelPage() {
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
                                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
                                             </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                            {registeredBreeders.map((breeder) => (
+                                            {processedRegistered.map((breeder) => (
                                                 <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900 flex items-center">
@@ -285,7 +355,6 @@ export default function AdminPanelPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{breeder.email}</div>
@@ -303,8 +372,7 @@ export default function AdminPanelPage() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
