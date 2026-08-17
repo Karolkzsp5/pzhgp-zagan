@@ -194,7 +194,7 @@ export default function AdminPanelPage() {
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
                                             </tr>
@@ -204,15 +204,13 @@ export default function AdminPanelPage() {
                                                 <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
-                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{breeder.email}</div>
                                                         <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
@@ -258,7 +256,7 @@ export default function AdminPanelPage() {
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Miejscowość / Sekcja</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
                                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
                                             </tr>
@@ -285,7 +283,6 @@ export default function AdminPanelPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">Data ur: {breeder.dateOfBirth}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{breeder.email}</div>
@@ -303,8 +300,7 @@ export default function AdminPanelPage() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{breeder.city}</div>
-                                                        <div className="text-sm text-gray-500">Sekcja: {sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                        <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {new Date(breeder.createdAt).toLocaleDateString('pl-PL')}
