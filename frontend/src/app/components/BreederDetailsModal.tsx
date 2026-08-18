@@ -25,7 +25,7 @@ interface BreederDetailsModalProps {
 
 export default function BreederDetailsModal({ breeder, onClose, sectionNames }: BreederDetailsModalProps) {
     return (
-        <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+        <div data-cy="details-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
             <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 relative">
 
                 <button

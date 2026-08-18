@@ -187,7 +187,7 @@ export default function AdminPanelPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50" data-cy="loading-spinner">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
             </div>
         );
@@ -200,7 +200,7 @@ export default function AdminPanelPage() {
                 <div className="max-w-7xl mx-auto space-y-12">
 
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Panel Administratora</h1>
+                        <h1 className="text-3xl font-bold text-gray-900" data-cy="admin-panel-title">Panel Administratora</h1>
                         <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                     </div>
 
@@ -213,6 +213,7 @@ export default function AdminPanelPage() {
                                 </svg>
                             </div>
                             <input
+                                data-cy="search-input"
                                 type="text"
                                 className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 transition"
                                 placeholder="Szukaj po imieniu, nazwisku, emailu lub telefonie..."
@@ -223,6 +224,7 @@ export default function AdminPanelPage() {
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <select
+                                data-cy="section-filter"
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
                                 value={filterSection}
                                 onChange={(e) => setFilterSection(e.target.value)}
@@ -234,6 +236,7 @@ export default function AdminPanelPage() {
                             </select>
 
                             <select
+                                data-cy="sort-filter"
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -247,7 +250,7 @@ export default function AdminPanelPage() {
                     </div>
 
                     {error ? (
-                        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
+                        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6" data-cy="error-message">
                             <p className="text-sm text-red-700">{error}</p>
                         </div>
                     ) : (
@@ -257,11 +260,11 @@ export default function AdminPanelPage() {
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
                                 <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
                                     {processedPending.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-500">
+                                        <div className="p-8 text-center text-gray-500" data-cy="no-pending-accounts">
                                             Brak kont oczekujących na akceptację.
                                         </div>
                                     ) : (
-                                        <table className="min-w-full divide-y divide-gray-200">
+                                        <table className="min-w-full divide-y divide-gray-200" data-cy="pending-table">
                                             <thead className="bg-blue-100">
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
@@ -273,7 +276,7 @@ export default function AdminPanelPage() {
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                             {processedPending.map((breeder) => (
-                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`pending-row-${breeder.id}`}>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
                                                     </td>
@@ -289,12 +292,14 @@ export default function AdminPanelPage() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                         <button
+                                                            data-cy={`approve-btn-${breeder.id}`}
                                                             onClick={() => handleAction(breeder.id, 'approve')}
                                                             className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
                                                         >
                                                             Akceptuj
                                                         </button>
                                                         <button
+                                                            data-cy={`reject-btn-${breeder.id}`}
                                                             onClick={() => {
                                                                 if(window.confirm('Czy na pewno chcesz odrzucić i usunąć to konto?')) {
                                                                     handleAction(breeder.id, 'reject');
@@ -318,11 +323,11 @@ export default function AdminPanelPage() {
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
                                 <div className="bg-white shadow overflow-visible sm:rounded-lg border border-gray-200">
                                     {processedRegistered.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-500">
+                                        <div className="p-8 text-center text-gray-500" data-cy="no-registered-accounts">
                                             Brak zarejestrowanych kont w systemie.
                                         </div>
                                     ) : (
-                                        <table className="min-w-full divide-y divide-gray-200">
+                                        <table className="min-w-full divide-y divide-gray-200" data-cy="registered-table">
                                             <thead className="bg-blue-100">
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
@@ -335,22 +340,22 @@ export default function AdminPanelPage() {
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                             {processedRegistered.map((breeder) => (
-                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150">
+                                                <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`registered-row-${breeder.id}`}>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900 flex items-center">
                                                             {breeder.name} {breeder.surname}
                                                             {breeder.role === 'ADMINISTRATOR' && (
-                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                                <span data-cy="badge-admin" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
                                                                     ADMIN
                                                                 </span>
                                                             )}
                                                             {breeder.role === 'MODERATOR' && (
-                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                                <span data-cy="badge-moderator" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
                                                                     MODERATOR
                                                                 </span>
                                                             )}
                                                             {breeder.email === currentUserEmail && (
-                                                                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                                <span data-cy="badge-you" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
                                                                     TO TY
                                                                 </span>
                                                             )}
@@ -362,11 +367,11 @@ export default function AdminPanelPage() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {breeder.status === 'ACTIVE' ? (
-                                                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                            <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                                     Aktywny
                                                                 </span>
                                                         ) : (
-                                                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                            <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                                                                     Zablokowany
                                                                 </span>
                                                         )}
@@ -380,6 +385,7 @@ export default function AdminPanelPage() {
 
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                                                         <button
+                                                            data-cy={`kebab-menu-btn-${breeder.id}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
@@ -393,10 +399,12 @@ export default function AdminPanelPage() {
 
                                                         {openDropdownId === breeder.id && (
                                                             <div
+                                                                data-cy={`dropdown-menu-${breeder.id}`}
                                                                 className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
                                                                 <button
+                                                                    data-cy="details-option"
                                                                     onClick={() => {
                                                                         setSelectedBreeder(breeder);
                                                                         setOpenDropdownId(null);
@@ -409,6 +417,7 @@ export default function AdminPanelPage() {
                                                                 {breeder.role !== 'ADMINISTRATOR' && (
                                                                     <>
                                                                         <button
+                                                                            data-cy="change-role-option"
                                                                             onClick={() => {
                                                                                 setRoleChangeBreeder(breeder);
                                                                                 setNewRole(breeder.role);
@@ -421,6 +430,7 @@ export default function AdminPanelPage() {
 
                                                                         {breeder.status === 'ACTIVE' ? (
                                                                             <button
+                                                                                data-cy="block-option"
                                                                                 onClick={() => {
                                                                                     if(window.confirm('Czy zablokować tego użytkownika?')) {
                                                                                         handleAction(breeder.id, 'block');
@@ -433,6 +443,7 @@ export default function AdminPanelPage() {
                                                                             </button>
                                                                         ) : (
                                                                             <button
+                                                                                data-cy="unblock-option"
                                                                                 onClick={() => {
                                                                                     if(window.confirm('Czy odblokować to konto?')) {
                                                                                         handleAction(breeder.id, 'unblock');
@@ -472,7 +483,7 @@ export default function AdminPanelPage() {
 
             {/* Modal: zmiana roli */}
             {roleChangeBreeder && (
-                <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+                <div data-cy="role-change-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
                         <h3 className="text-2xl font-bold text-gray-900 mb-4">Zmień rolę</h3>
                         <p className="text-sm text-gray-600 mb-6">
@@ -485,6 +496,7 @@ export default function AdminPanelPage() {
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Nowa rola w systemie</label>
                             <select
+                                data-cy="role-select"
                                 value={newRole}
                                 onChange={(e) => setNewRole(e.target.value)}
                                 className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
@@ -496,12 +508,14 @@ export default function AdminPanelPage() {
 
                         <div className="flex justify-end space-x-3">
                             <button
+                                data-cy="cancel-role-btn"
                                 onClick={() => setRoleChangeBreeder(null)}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm"
                             >
                                 Anuluj
                             </button>
                             <button
+                                data-cy="save-role-btn"
                                 onClick={submitRoleChange}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
                             >
