@@ -62,10 +62,10 @@ export default function AdminPanelPage() {
 
         try {
             const [pendingRes, registeredRes] = await Promise.all([
-                fetch('http://localhost:8080/api/admin/pending', {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/pending`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                 }),
-                fetch('http://localhost:8080/api/admin/registered', {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/registered`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                 })
             ]);
@@ -94,7 +94,7 @@ export default function AdminPanelPage() {
         let method = 'PUT';
         if (action === 'reject') method = 'DELETE';
 
-        const url = `http://localhost:8080/api/admin/${action}/${id}`;
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/${action}/${id}`;
 
         try {
             const response = await fetch(url, {
@@ -137,7 +137,7 @@ export default function AdminPanelPage() {
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:8080/api/admin/${roleChangeBreeder.id}/role`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -324,7 +324,7 @@ export default function AdminPanelPage() {
                                 {/* Konta hodowców */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
-                                    <div className="bg-white shadow overflow-visible sm:rounded-lg border border-gray-200">
+                                    <div className={`bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200 transition-all duration-300 ${openDropdownId ? 'pb-40' : ''}`}>
                                         {processedRegistered.length === 0 ? (
                                             <div className="p-8 text-center text-gray-500" data-cy="no-registered-accounts">
                                                 Brak zarejestrowanych kont w systemie.
