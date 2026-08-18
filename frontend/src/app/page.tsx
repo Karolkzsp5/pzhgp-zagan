@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from 'next/link';
 import RegistrationModal from './components/RegistrationModal';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 export default function HomePage({ searchParams }: { searchParams: { registered?: string } }){
   const announcements = [
@@ -120,11 +121,8 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
             </div>
           </aside>
         </main>
-
-        <footer className="bg-gray-800 text-gray-300 py-8 text-center text-sm mt-auto">
-          <p>&copy; 2026 Karol Kondracki. Wszelkie prawa zastrzeżone.</p>
-          <p className="mt-2 text-gray-500">System realizowany w ramach pracy dyplomowej.</p>
-        </footer>
+        
+        <Footer />
       </div>
   );
 }

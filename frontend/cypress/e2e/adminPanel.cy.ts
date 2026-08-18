@@ -415,10 +415,10 @@ describe('Panel Administratora - Testy E2E', () => {
             cy.contains('p', 'Imię i nazwisko').next().should('have.text', 'Anna Kowalska');
             cy.contains('p', 'Email').next().should('have.text', 'anna.k@test.pl');
             cy.contains('p', 'Telefon').next().should('have.text', '444555666');
-            cy.contains('p', 'Data urodzenia').next().should('have.text', '1985-05-15');
+            cy.contains('p', 'Data urodzenia').next().should('have.text', '15.05.1985');
             cy.contains('p', 'Adres zamieszkania').next().should('contain.text', 'ul. Krótka 5a').and('contain.text', '68-113 Chotków');
             cy.contains('p', 'Sekcja').next().should('have.text', 'Chotków');
-            cy.contains('p', 'Data rejestracji').next().should('contain.text', '1.08.2026');
+            cy.contains('p', 'Data rejestracji').next().should('contain.text', '01.08.2026');
             cy.contains('p', 'Rola w systemie').next().should('have.text', 'BREEDER');
             cy.contains('p', 'Obecny status').next().should('have.text', 'ACTIVE');
 
@@ -428,7 +428,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="details-modal"]').should('not.exist');
     });
 
-    it('Should correctly open the change-role modal, display the data, and save the new role', () => {
+    it('Should correctly open the role change modal, display the data, and save the new role', () => {
         cy.intercept('PUT', 'http://localhost:8080/api/admin/2/role', {
             statusCode: 200,
             body: 'Rola została pomyślnie zmieniona'
