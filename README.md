@@ -99,7 +99,8 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 - [x] Backendowy moduł rejestracji i logowania (Spring Security, JWT, BCrypt, DTO)
 - [x] Frontendowy formularz rejestracji z walidacją w czasie rzeczywistym
 - [x] Widok logowania (`/login`) i obsługa sesji klienta w Next.js
-- [ ] Panel administratora do zarządzania kontami ze statusem `PENDING`
+- [x] Panel administratora do zarządzania kontami ze statusem `PENDING`
+- [ ] Centrum powiadomień
 - [ ] Strona główna z ogłoszeniami
 - [ ] Podstrona do tworzenia planów lotów
 - [ ] Parser plików `.txt` dla list konkursowych i generator tabel wyników
