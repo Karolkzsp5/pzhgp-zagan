@@ -27,6 +27,7 @@ interface MessageState {
 
 export default function RegisterPage() {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -166,6 +167,7 @@ export default function RegisterPage() {
             return;
         }
 
+        setIsLoading(true);
         try {
             const { confirmPassword, ...dataToSend } = formData;
 
@@ -174,7 +176,7 @@ export default function RegisterPage() {
                 phoneNumber: formData.phoneNumber.replace(/\s+/g, '')
             };
 
-            const response = await fetch('http://localhost:8080/api/auth/register', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -191,6 +193,8 @@ export default function RegisterPage() {
             }
         } catch (error) {
             setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -320,10 +324,10 @@ export default function RegisterPage() {
 
                     <button
                         type="submit"
-                        disabled={message.type === 'info'}
-                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed disabled:hover:bg-blue-400 flex justify-center items-center"
+                        disabled={isLoading}
+                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center"
                     >
-                        {message.type === 'info' ? (
+                        {isLoading ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

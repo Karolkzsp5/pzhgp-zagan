@@ -17,24 +17,14 @@ public class AuthController {
     private final BreederService breederService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegistrationRequest request) {
-        try {
-            breederService.registerNewBreeder(request);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest request) {
+        breederService.registerNewBreeder(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        try {
-            String token = breederService.login(request);
-            return ResponseEntity.ok(token);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        }
+        String token = breederService.login(request);
+        return ResponseEntity.ok(token);
     }
 }

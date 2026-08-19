@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAuthToken, decodeJwt } from '@/utils/jwt';
 import AdminGuard from '../components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
 import BreederDetailsModal, { BreederDto } from '../components/BreederDetailsModal';
@@ -40,24 +41,16 @@ export default function AdminPanelPage() {
         return () => window.removeEventListener('click', handleClickOutside);
     }, []);
 
-    const getToken = () => {
-        return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
-    };
-
     const fetchAllAccounts = async () => {
-        const token = getToken();
+        const token = getAuthToken();
         if (!token) {
             router.push('/login');
             return;
         }
 
-        try {
-            const payloadBase64 = token.split('.')[1];
-            const decodedJson = atob(payloadBase64);
-            const payload = JSON.parse(decodedJson);
+        const payload = decodeJwt(token);
+        if (payload) {
             setCurrentUserEmail(payload.sub);
-        } catch (e) {
-            console.error("Błąd dekodowania tokenu", e);
         }
 
         try {
@@ -88,7 +81,7 @@ export default function AdminPanelPage() {
     };
 
     const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
-        const token = getToken();
+        const token = getAuthToken();
         if (!token) return;
 
         let method = 'PUT';
@@ -133,7 +126,7 @@ export default function AdminPanelPage() {
 
     const submitRoleChange = async () => {
         if (!roleChangeBreeder) return;
-        const token = getToken();
+        const token = getAuthToken();
         if (!token) return;
 
         try {
@@ -183,8 +176,13 @@ export default function AdminPanelPage() {
             });
     };
 
-    const processedPending = processBreeders(pendingBreeders);
-    const processedRegistered = processBreeders(registeredBreeders);
+    const processedPending = useMemo(() => {
+        return processBreeders(pendingBreeders);
+    }, [pendingBreeders, searchTerm, filterSection, sortBy]);
+
+    const processedRegistered = useMemo(() => {
+        return processBreeders(registeredBreeders);
+    }, [registeredBreeders, searchTerm, filterSection, sortBy]);
 
     if (isLoading) {
         return (

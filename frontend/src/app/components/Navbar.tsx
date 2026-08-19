@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getAuthToken, decodeJwt } from '@/utils/jwt';
 
 export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -13,26 +14,14 @@ export default function Navbar() {
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+        const token = getAuthToken();
 
         if (token) {
-            try {
-                const payloadBase64 = token.split('.')[1];
-
-                const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-                const decodedJson = decodeURIComponent(
-                    atob(base64).split('').map(function(c) {
-                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                    }).join('')
-                );
-
-                const payload = JSON.parse(decodedJson);
-
+            const payload = decodeJwt(token);
+            if (payload) {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
-            } catch (error) {
-                console.error("Błąd dekodowania tokenu", error);
             }
         }
 
