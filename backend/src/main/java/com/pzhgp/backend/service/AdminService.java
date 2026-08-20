@@ -3,7 +3,9 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.BreederResponseDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.repository.BreederRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +38,7 @@ public class AdminService {
     @Transactional
     public void approveAccount(Long id) {
         Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new RuntimeException("Konto nie ma statusu oczekującego na akceptację.");
@@ -49,7 +51,7 @@ public class AdminService {
     @Transactional
     public void rejectAccount(Long id) {
         Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new RuntimeException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
@@ -61,9 +63,9 @@ public class AdminService {
     @Transactional
     public void blockAccount(Long id) {
         Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
-        if ("ADMINISTRATOR".equals(breeder.getRole())) {
+        if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new IllegalStateException("Odmowa dostępu: Nie możesz zablokować konta innego administratora.");
         }
 
@@ -78,7 +80,7 @@ public class AdminService {
     @Transactional
     public void unblockAccount(Long id) {
         Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.BLOCKED) {
             throw new RuntimeException("Tylko zablokowane konta mogą zostać odblokowane.");
@@ -89,20 +91,24 @@ public class AdminService {
     }
 
     @Transactional
-    public void changeRole(Long id, String newRole) {
+    public void changeRole(Long id, String newRoleStr) {
         Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono hodowcy o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
-        if ("ADMINISTRATOR".equals(breeder.getRole())) {
+        if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new IllegalStateException("Nie możesz zmieniać uprawnień innym administratorom.");
         }
 
-        if (!List.of("BREEDER", "MODERATOR").contains(newRole)) {
+        try {
+            Role newRole = Role.valueOf(newRoleStr.toUpperCase());
+            if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
+                throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
+            }
+            breeder.setRole(newRole);
+            breederRepository.save(breeder);
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
         }
-
-        breeder.setRole(newRole);
-        breederRepository.save(breeder);
     }
 
     private BreederResponseDto mapToDto(Breeder breeder) {
@@ -119,7 +125,7 @@ public class AdminService {
                 breeder.getHouseNumber(),
                 breeder.getSectionId(),
                 breeder.getStatus(),
-                breeder.getRole(),
+                breeder.getRole().name(),
                 breeder.getCreatedAt()
         );
     }

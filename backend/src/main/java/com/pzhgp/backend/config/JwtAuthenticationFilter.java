@@ -1,5 +1,8 @@
 package com.pzhgp.backend.config;
 
+import com.pzhgp.backend.entity.AccountStatus;
+import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -24,6 +28,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final BreederRepository breederRepository; // Dodano weryfikację bazy
 
     @Override
     protected void doFilterInternal(
@@ -49,16 +54,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = jwtService.extractRole(jwt);
 
                 if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                    Optional<Breeder> breederOpt = breederRepository.findByEmail(userEmail);
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userEmail,
-                            null,
-                            Collections.singletonList(authority)
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    if (breederOpt.isPresent() && breederOpt.get().getStatus() == AccountStatus.ACTIVE) {
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                        if (role != null && !role.trim().isEmpty()) {
+                            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+
+                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                    userEmail,
+                                    null,
+                                    Collections.singletonList(authority)
+                            );
+                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        }
+                    } else {
+                        log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
+                    }
                 }
             }
         } catch (Exception e) {

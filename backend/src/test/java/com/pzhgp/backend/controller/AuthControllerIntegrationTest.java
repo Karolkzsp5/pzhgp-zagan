@@ -17,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,7 +41,7 @@ class AuthControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         validRequest = new RegistrationRequest(
-                "Jan", "Kowalski", "1995-05-15", "68-100", "Żagań",
+                "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
                 "Słowackiego", "10", 1, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
         );
     }
@@ -48,7 +50,7 @@ class AuthControllerIntegrationTest {
     @DisplayName("Should return a 400 Bad Request status code if the input data is missing or incorrect")
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(
-                "", "", "", "", "", "", "", 0, "niepoprawny-email", "", ""
+                "", "", LocalDate.parse(""), "", "", "", "", 0, "niepoprawny-email", "", ""
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -66,7 +68,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated());
 
         RegistrationRequest duplicateRequest = new RegistrationRequest(
-                "Andrzej", "Nowak", "1990-01-01", "68-100", "Żagań",
+                "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
                 "Długa", "5", 1, "integration.test@pzhgp.pl", "111222333", "OtherPass1!"
         );
 
@@ -86,7 +88,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated());
 
         RegistrationRequest duplicatePhoneRequest = new RegistrationRequest(
-                "Andrzej", "Nowak", "1990-01-01", "68-100", "Żagań",
+                "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
                 "Długa", "5", 1, "inny.mail@pzhgp.pl", "444444444", "InneHaslo1!"
         );
 
