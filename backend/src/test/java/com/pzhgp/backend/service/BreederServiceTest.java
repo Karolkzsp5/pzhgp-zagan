@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,7 +42,7 @@ class BreederServiceTest {
     @BeforeEach
     void setUp() {
         validRegistrationRequest = new RegistrationRequest(
-                "Tomasz", "Nowak", "2003-01-12", "11-111", "Test",
+                "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
                 "Testowa", "15b", 1, "testcypress@test.com", "444444444", "Testcypress1@"
         );
 

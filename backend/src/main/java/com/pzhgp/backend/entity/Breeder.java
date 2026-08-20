@@ -30,14 +30,15 @@ public class Breeder {
     @Column(nullable = false, unique = true, length = 320)
     private String email;
 
-    @Column(name = "phone_number", nullable = false, length = 9)
+    @Column(name = "phone_number", nullable = false, length = 9, unique = true)
     private String phoneNumber;
 
     @Column(name = "section_id", nullable = false)
     private Integer sectionId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String role; // BREEDER, MODERATOR, ADMINISTRATOR
+    private Role role;
 
     @Column(name = "postal_code", length = 6)
     private String postalCode;
@@ -65,6 +66,6 @@ public class Breeder {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.status = AccountStatus.PENDING;
-        this.role = "BREEDER";
+        this.role = Role.BREEDER;
     }
 }

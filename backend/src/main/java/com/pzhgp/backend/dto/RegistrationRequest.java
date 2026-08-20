@@ -1,9 +1,7 @@
 package com.pzhgp.backend.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+import java.time.LocalDate;
 
 public record RegistrationRequest(
         @NotBlank(message = "Imię nie może być puste")
@@ -12,10 +10,12 @@ public record RegistrationRequest(
         @NotBlank(message = "Nazwisko nie może być puste")
         String surname,
 
-        @NotBlank(message = "Data urodzenia nie może być pusta")
-        String dateOfBirth,
+        @NotNull(message = "Data urodzenia nie może być pusta")
+        @Past(message = "Data urodzenia musi być z przeszłości")
+        LocalDate dateOfBirth,
 
         @NotBlank(message = "Kod pocztowy nie może być pusty")
+        @Pattern(regexp = "^\\d{2}-\\d{3}$", message = "Niepoprawny format kodu pocztowego (wymagany: XX-XXX)")
         String postalCode,
 
         @NotBlank(message = "Miejscowość nie może być pusta")
@@ -35,7 +35,7 @@ public record RegistrationRequest(
         String email,
 
         @NotBlank(message = "Numer telefonu nie może być pusty")
-        @Size(min = 9, max = 9, message = "Numer telefonu musi mieć dokładnie 9 cyfr")
+        @Pattern(regexp = "^\\d{9}$", message = "Numer telefonu musi mieć dokładnie 9 cyfr")
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste")
