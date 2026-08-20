@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -97,7 +98,7 @@ class BreederServiceTest {
 
         when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.empty());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
                 () -> breederService.login(loginRequest));
 
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());
@@ -111,7 +112,7 @@ class BreederServiceTest {
         when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(false);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
                 () -> breederService.login(loginRequest));
 
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());

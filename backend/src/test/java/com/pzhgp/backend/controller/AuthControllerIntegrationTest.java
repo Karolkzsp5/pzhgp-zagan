@@ -50,7 +50,7 @@ class AuthControllerIntegrationTest {
     @DisplayName("Should return a 400 Bad Request status code if the input data is missing or incorrect")
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(
-                "", "", LocalDate.parse(""), "", "", "", "", 0, "niepoprawny-email", "", ""
+                "", "", null, "", "", "", "", null, "niepoprawny-email", "", ""
         );
 
         mockMvc.perform(post("/api/auth/register")
