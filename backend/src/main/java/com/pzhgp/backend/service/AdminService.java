@@ -99,6 +99,10 @@ public class AdminService {
             throw new IllegalStateException("Nie możesz zmieniać uprawnień innym administratorom.");
         }
 
+        if (newRoleStr == null) {
+            throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
+        }
+
         try {
             Role newRole = Role.valueOf(newRoleStr.toUpperCase());
             if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
