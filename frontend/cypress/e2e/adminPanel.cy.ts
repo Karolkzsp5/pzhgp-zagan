@@ -39,8 +39,6 @@ describe('Panel Administratora - Testy E2E', () => {
             body: mockRegistered
         }).as('getRegistered');
 
-        cy.on('window:confirm', () => true);
-
         cy.visit('/admin', {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('jwt_token', fakeToken);
@@ -146,7 +144,7 @@ describe('Panel Administratora - Testy E2E', () => {
                     cy.contains('Chotków').should('be.visible');
                 });
 
-                cy.get('td').eq(4).should('contain.text', '1.08.2026');
+                cy.get('td').eq(4).should('contain.text', '01.08.2026');
                 cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-2"]').should('be.visible');
             });
 
@@ -175,7 +173,7 @@ describe('Panel Administratora - Testy E2E', () => {
                     cy.contains('Wymiarki').should('be.visible');
                 });
 
-                cy.get('td').eq(4).should('contain.text', '1.07.2026');
+                cy.get('td').eq(4).should('contain.text', '01.07.2026');
                 cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-3"]').should('be.visible');
             });
 
@@ -369,6 +367,10 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="approve-btn-1"]').click();
+
+        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
+
         cy.wait('@approveAccount');
 
         cy.get('[data-cy="pending-row-1"]').should('not.exist');
@@ -392,6 +394,10 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="reject-btn-1"]').click();
+
+        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
+
         cy.wait('@rejectAccount');
 
         cy.get('[data-cy="pending-row-1"]').should('not.exist');
@@ -488,6 +494,10 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
         cy.get('[data-cy="block-option"]').click();
+
+        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
+
         cy.wait('@blockAccount');
 
         cy.get('[data-cy="registered-row-2"]').within(() => {
@@ -501,6 +511,10 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
         cy.get('[data-cy="unblock-option"]').click();
+
+        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
+
         cy.wait('@unblockAccount');
 
         cy.get('[data-cy="registered-row-2"]').within(() => {
