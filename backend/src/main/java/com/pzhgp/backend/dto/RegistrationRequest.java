@@ -25,6 +25,8 @@ public record RegistrationRequest(
         String street,
 
         @NotBlank(message = "Numer domu/lokalu nie może być pusty")
+        @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$",
+                message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
         String houseNumber,
 
         @NotNull(message = "ID sekcji nie może być puste")
@@ -32,6 +34,8 @@ public record RegistrationRequest(
 
         @NotBlank(message = "Adres e-mail nie może być pusty")
         @Email(message = "Niepoprawny format adresu e-mail")
+        @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                message = "Wymagany poprawny adres e-mail z domeną")
         String email,
 
         @NotBlank(message = "Numer telefonu nie może być pusty")
@@ -39,7 +43,10 @@ public record RegistrationRequest(
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste")
-        @Size(min = 8, message = "Hasło musi mieć minimum 8 znaków")
+        @Pattern(
+                regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
+                message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny"
+        )
         String password
 ) {
 }
