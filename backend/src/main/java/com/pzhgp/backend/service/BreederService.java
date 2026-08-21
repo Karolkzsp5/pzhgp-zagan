@@ -4,7 +4,10 @@ import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.repository.SectionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class BreederService {
 
     private final BreederRepository breederRepository;
+    private final SectionRepository sectionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -25,6 +29,8 @@ public class BreederService {
         if (request.phoneNumber() != null && breederRepository.existsByPhoneNumber(request.phoneNumber())) {
             throw new IllegalArgumentException("Użytkownik z podanym numerem telefonu już istnieje.");
         }
+        Section section = sectionRepository.findById(request.sectionId().longValue())
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o podanym ID: " + request.sectionId()));
 
         Breeder newBreeder = new Breeder();
         newBreeder.setName(request.name());
@@ -36,7 +42,7 @@ public class BreederService {
         newBreeder.setCity(request.city());
         newBreeder.setStreet(request.street());
         newBreeder.setHouseNumber(request.houseNumber());
-        newBreeder.setSectionId(request.sectionId());
+        newBreeder.setSection(section);
         newBreeder.setPasswordHash(passwordEncoder.encode(request.password()));
 
         breederRepository.save(newBreeder);

@@ -127,7 +127,7 @@ public class AdminService {
                 breeder.getCity(),
                 breeder.getStreet(),
                 breeder.getHouseNumber(),
-                breeder.getSectionId(),
+                breeder.getSection().getId().intValue(),
                 breeder.getStatus(),
                 breeder.getRole().name(),
                 breeder.getCreatedAt()

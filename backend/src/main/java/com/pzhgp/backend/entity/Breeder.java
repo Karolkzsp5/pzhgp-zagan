@@ -33,8 +33,9 @@ public class Breeder {
     @Column(name = "phone_number", nullable = false, length = 9, unique = true)
     private String phoneNumber;
 
-    @Column(name = "section_id", nullable = false)
-    private Integer sectionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id", nullable = false)
+    private Section section;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
