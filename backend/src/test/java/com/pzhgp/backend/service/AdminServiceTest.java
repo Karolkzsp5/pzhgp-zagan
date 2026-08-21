@@ -192,7 +192,7 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully change role of an account")
+    @DisplayName("Should successfully change role to MODERATOR")
     void shouldChangeRoleSuccessfully() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
@@ -203,11 +203,35 @@ class AdminServiceTest {
     }
 
     @Test
+    @DisplayName("Should successfully change role to BREEDER")
+    void shouldChangeRoleToBreederSuccessfully() {
+        activeBreeder.setRole(Role.MODERATOR);
+        when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+
+        assertDoesNotThrow(() -> adminService.changeRole(2L, "BREEDER"));
+
+        assertEquals(Role.BREEDER, activeBreeder.getRole());
+        verify(breederRepository, times(1)).save(activeBreeder);
+    }
+
+    @Test
     @DisplayName("Should throw IllegalArgumentException when changing to invalid role")
     void shouldThrowExceptionOnInvalidRole() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, "SUPERMAN"));
+
+        assertEquals("Przekazano nieprawidłową rolę.", ex.getMessage());
+        verify(breederRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when role is null")
+    void shouldThrowExceptionWhenRoleIsNull() {
+        when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> adminService.changeRole(2L, null));
 
         assertEquals("Przekazano nieprawidłową rolę.", ex.getMessage());
         verify(breederRepository, never()).save(any());
