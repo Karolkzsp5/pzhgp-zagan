@@ -29,6 +29,9 @@ class AdminServiceTest {
     @Mock
     private BreederRepository breederRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private AdminService adminService;
 
