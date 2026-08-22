@@ -19,7 +19,7 @@ public class AdminService {
 
     private final BreederRepository breederRepository;
 
-    // Pobieranie kont oczekujących na akceptację
+    @Transactional(readOnly = true)
     public List<BreederResponseDto> getPendingAccounts() {
         return breederRepository.findByStatus(AccountStatus.PENDING)
                 .stream()
@@ -27,7 +27,7 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    // Pobieranie zaakceptowanych, aktywnych kont
+    @Transactional(readOnly = true)
     public List<BreederResponseDto> getAllRegisteredAccounts() {
         return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))
                 .stream()
@@ -41,7 +41,7 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
-            throw new RuntimeException("Konto nie ma statusu oczekującego na akceptację.");
+            throw new IllegalStateException("Konto nie ma statusu oczekującego na akceptację.");
         }
 
         breeder.setStatus(AccountStatus.ACTIVE);
@@ -54,7 +54,7 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
-            throw new RuntimeException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
+            throw new IllegalStateException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
         }
 
         breederRepository.delete(breeder);
@@ -70,7 +70,7 @@ public class AdminService {
         }
 
         if (breeder.getStatus() != AccountStatus.ACTIVE) {
-            throw new RuntimeException("Tylko aktywne konta mogą zostać zablokowane.");
+            throw new IllegalStateException("Tylko aktywne konta mogą zostać zablokowane.");
         }
 
         breeder.setStatus(AccountStatus.BLOCKED);
@@ -83,7 +83,7 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.BLOCKED) {
-            throw new RuntimeException("Tylko zablokowane konta mogą zostać odblokowane.");
+            throw new IllegalStateException("Tylko zablokowane konta mogą zostać odblokowane.");
         }
 
         breeder.setStatus(AccountStatus.ACTIVE);
