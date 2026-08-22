@@ -8,16 +8,10 @@ import Navbar from "@/app/components/Navbar";
 import BreederDetailsModal, { BreederDto } from '../components/BreederDetailsModal';
 import Footer from '../components/Footer';
 
-const sectionNames: Record<number, string> = {
-    1: 'Żagań',
-    2: 'Wymiarki',
-    3: 'Chotków',
-    4: 'Kożuchów'
-};
-
 export default function AdminPanelPage() {
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
+    const [sectionsList, setSectionsList] = useState<{id: number, name: string}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [currentUserEmail, setCurrentUserEmail] = useState('');
@@ -61,13 +55,14 @@ export default function AdminPanelPage() {
         }
 
         try {
-            const [pendingRes, registeredRes] = await Promise.all([
+            const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/pending`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                 }),
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/registered`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                })
+                }),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`)
             ]);
 
             if (pendingRes.ok && registeredRes.ok) {
@@ -80,6 +75,12 @@ export default function AdminPanelPage() {
             } else {
                 setError('Wystąpił błąd podczas pobierania danych.');
             }
+
+            if (sectionsRes.ok) {
+                const sectionsData = await sectionsRes.json();
+                setSectionsList(sectionsData);
+            }
+
         } catch (err) {
             setError('Błąd połączenia z serwerem.');
         } finally {
@@ -238,8 +239,10 @@ export default function AdminPanelPage() {
                                     onChange={(e) => setFilterSection(e.target.value)}
                                 >
                                     <option value="ALL">Wszystkie sekcje</option>
-                                    {Object.entries(sectionNames).map(([id, name]) => (
-                                        <option key={id} value={id}>{name}</option>
+                                    {sectionsList.map((section) => (
+                                        <option key={section.id} value={section.id.toString()}>
+                                            {section.name}
+                                        </option>
                                     ))}
                                 </select>
 
@@ -293,7 +296,7 @@ export default function AdminPanelPage() {
                                                             <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                            <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -396,7 +399,7 @@ export default function AdminPanelPage() {
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-500">{sectionNames[breeder.sectionId] || 'Nieznana'}</div>
+                                                            <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -505,7 +508,6 @@ export default function AdminPanelPage() {
                 <BreederDetailsModal
                     breeder={selectedBreeder}
                     onClose={() => setSelectedBreeder(null)}
-                    sectionNames={sectionNames}
                 />
             )}
 

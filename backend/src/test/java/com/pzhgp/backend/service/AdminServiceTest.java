@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.BreederResponseDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
+import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +51,8 @@ class AdminServiceTest {
         breeder.setEmail(name.toLowerCase() + "@test.pl");
         breeder.setPhoneNumber("111222333");
         breeder.setDateOfBirth(LocalDate.of(1980, 1, 1));
-        breeder.setSectionId(1);
+        Section section = new Section(1L, "Żagań", 1);
+        breeder.setSection(section);
         breeder.setStatus(status);
         breeder.setRole(role);
         breeder.setCreatedAt(LocalDateTime.now());
