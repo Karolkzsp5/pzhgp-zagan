@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
@@ -25,9 +25,15 @@ interface MessageState {
     type: 'success' | 'error' | 'info' | '';
 }
 
+interface SectionDto {
+    id: number;
+    name: string;
+}
+
 export default function RegisterPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [sections, setSections] = useState<SectionDto[]>([]);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -46,6 +52,24 @@ export default function RegisterPage() {
 
     const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
     const [focusedField, setFocusedField] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchSections = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setSections(data);
+                } else {
+                    console.error('Nie udało się pobrać listy sekcji z serwera.');
+                }
+            } catch (error) {
+                console.error('Błąd połączenia podczas pobierania sekcji:', error);
+            }
+        };
+
+        fetchSections();
+    }, []);
 
     const formatPhoneNumber = (val: string) => {
         const digits = val.replace(/\D/g, '').slice(0, 9);
@@ -273,10 +297,11 @@ export default function RegisterPage() {
                             <select name="sectionId" value={formData.sectionId} onChange={handleChange} required
                                     className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white">
                                 <option value={0}>Wybierz</option>
-                                <option value={1}>Żagań</option>
-                                <option value={2}>Wymiarki</option>
-                                <option value={3}>Chotków</option>
-                                <option value={4}>Kożuchów</option>
+                                {sections.map((section) => (
+                                    <option key={section.id} value={section.id}>
+                                        {section.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 

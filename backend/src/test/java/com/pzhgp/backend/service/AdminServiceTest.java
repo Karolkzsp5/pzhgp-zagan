@@ -51,7 +51,7 @@ class AdminServiceTest {
         breeder.setEmail(name.toLowerCase() + "@test.pl");
         breeder.setPhoneNumber("111222333");
         breeder.setDateOfBirth(LocalDate.of(1980, 1, 1));
-        Section section = new Section(1L, "Żagań");
+        Section section = new Section(1L, "Żagań", 1);
         breeder.setSection(section);
         breeder.setStatus(status);
         breeder.setRole(role);

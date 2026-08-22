@@ -12,6 +12,7 @@ export interface BreederDto {
     street: string;
     houseNumber: string;
     sectionId: number;
+    sectionName: string;
     status: 'PENDING' | 'ACTIVE' | 'BLOCKED';
     createdAt: string;
     role: string;
@@ -20,10 +21,10 @@ export interface BreederDto {
 interface BreederDetailsModalProps {
     breeder: BreederDto;
     onClose: () => void;
-    sectionNames: Record<number, string>;
+
 }
 
-export default function BreederDetailsModal({ breeder, onClose, sectionNames }: BreederDetailsModalProps) {
+export default function BreederDetailsModal({ breeder, onClose }: BreederDetailsModalProps) {
     return (
         <div data-cy="details-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
             <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 relative">
@@ -72,7 +73,7 @@ export default function BreederDetailsModal({ breeder, onClose, sectionNames }: 
 
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Sekcja</p>
-                            <p className="text-sm font-medium text-gray-800">{sectionNames[breeder.sectionId] || 'Nieznana'}</p>
+                            <p className="text-sm font-medium text-gray-800">{breeder.sectionName}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Data rejestracji</p>

@@ -17,6 +17,7 @@ public record BreederResponseDto(
         String street,
         String houseNumber,
         Integer sectionId,
+        String sectionName,
         AccountStatus status,
         String role,
         LocalDateTime createdAt

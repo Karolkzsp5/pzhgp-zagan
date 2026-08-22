@@ -3,7 +3,7 @@ describe('Panel Administratora - Testy E2E', () => {
         {
             id: 1, name: 'Jan', surname: 'Nowak', email: 'jan.nowak@test.pl', phoneNumber: '111222333',
             dateOfBirth: '1990-01-01', postalCode: '68-100', city: 'Żagań', street: 'Długa', houseNumber: '1',
-            sectionId: 1, status: 'PENDING', createdAt: '2026-08-10T10:00:00', role: 'BREEDER'
+            sectionId: 1, status: 'PENDING', createdAt: '2026-08-10T10:00:00', role: 'BREEDER', sectionName: 'Żagań'
         }
     ];
 
@@ -11,19 +11,26 @@ describe('Panel Administratora - Testy E2E', () => {
         {
             id: 2, name: 'Anna', surname: 'Kowalska', email: 'anna.k@test.pl', phoneNumber: '444555666',
             dateOfBirth: '1985-05-15', postalCode: '68-113', city: 'Chotków', street: 'Krótka', houseNumber: '5a',
-            sectionId: 3, status: 'ACTIVE', createdAt: '2026-08-01T10:00:00', role: 'BREEDER'
+            sectionId: 3, status: 'ACTIVE', createdAt: '2026-08-01T10:00:00', role: 'BREEDER', sectionName: 'Chotków'
         },
         {
             id: 3, name: 'Michał', surname: 'Admin', email: 'admin@pzhgp.pl', phoneNumber: '000000000',
             dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '10b/14a',
-            sectionId: 2, status: 'ACTIVE', createdAt: '2026-07-01T10:00:00', role: 'ADMINISTRATOR'
+            sectionId: 2, status: 'ACTIVE', createdAt: '2026-07-01T10:00:00', role: 'ADMINISTRATOR', sectionName: 'Wymiarki'
         },
         {
             id: 4, name: 'Piotr', surname: 'Moderator', email: 'piotr.m@test.pl', phoneNumber: '123123123',
             dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '1',
             sectionId: 4, status: 'ACTIVE', createdAt: '2026-06-13T10:00:00',
-            role: 'MODERATOR'
+            role: 'MODERATOR', sectionName: 'Kożuchów'
         }
+    ];
+
+    const mockSections = [
+        { id: 1, name: 'Żagań' },
+        { id: 2, name: 'Wymiarki' },
+        { id: 3, name: 'Chotków' },
+        { id: 4, name: 'Kożuchów' }
     ];
 
     const fakeToken = "header.eyJzdWIiOiJhZG1pbkBwemhncC5wbCIsInJvbGUiOiJBRE1JTklTVFJBVE9SIiwiZXhwIjo5OTk5OTk5OTk5fQ.signature";
@@ -39,13 +46,18 @@ describe('Panel Administratora - Testy E2E', () => {
             body: mockRegistered
         }).as('getRegistered');
 
+        cy.intercept('GET', '**/api/sections', {
+            statusCode: 200,
+            body: mockSections
+        }).as('getSections');
+
         cy.visit('/admin', {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('jwt_token', fakeToken);
             }
         });
 
-        cy.wait(['@getPending', '@getRegistered']);
+        cy.wait(['@getSections', '@getPending', '@getRegistered']);
     });
 
     it('Should correctly render the entire admin panel', () => {

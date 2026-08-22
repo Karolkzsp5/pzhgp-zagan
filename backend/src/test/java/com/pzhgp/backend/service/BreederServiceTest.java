@@ -87,11 +87,11 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should successfully register a new breeder")
     void shouldRegisterNewBreederSuccessfully() {
-        Section mockSection = new Section(1L, "Żagań");
+        Section section = new Section(1L, "Żagań", 1);
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
         when(passwordEncoder.encode(validRegistrationRequest.password())).thenReturn("hashedPassword123");
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(mockSection));
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
 
         assertDoesNotThrow(() -> breederService.registerNewBreeder(validRegistrationRequest));
 

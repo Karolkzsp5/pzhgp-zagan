@@ -1,10 +1,23 @@
-import {fill} from "eslint-config-next";
-
 describe('Breeder Registration Process Test', () => {
-    beforeEach(() => {
-        cy.visit('/register');
-    });
 
+    const mockSections = [
+        { id: 1, name: 'Żagań' },
+        { id: 2, name: 'Wymiarki' },
+        { id: 3, name: 'Chotków' },
+        { id: 4, name: 'Kożuchów' }
+    ];
+
+    beforeEach(() => {
+        cy.intercept('GET', '**/api/sections', {
+            statusCode: 200,
+            body: mockSections
+        }).as('getSections');
+
+        cy.visit('/register');
+
+        cy.wait('@getSections');
+    });
+    
     it('Should display a registration form with the relevant fields', () => {
         cy.get('h1').should('contain.text', 'Rejestracja Hodowcy PZHGP');
 

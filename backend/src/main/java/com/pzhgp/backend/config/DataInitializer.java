@@ -16,22 +16,22 @@ public class DataInitializer implements CommandLineRunner {
 
     private final SectionRepository sectionRepository;
 
+    private record SectionSeed(String name, int sortOrder) {}
+
     @Override
     public void run(String... args) {
-        if (sectionRepository.count() == 0) {
-            log.info("Baza danych sekcji jest pusta. Rozpoczynnie inicjalizacji.");
+        List<SectionSeed> defaultSections = List.of(
+                new SectionSeed("Żagań", 1),
+                new SectionSeed("Wymiarki", 2),
+                new SectionSeed("Chotków", 3),
+                new SectionSeed("Kożuchów", 4)
+        );
 
-            List<Section> defaultSections = List.of(
-                    new Section(null, "Żagań"),
-                    new Section(null, "Wymiarki"),
-                    new Section(null, "Chotków"),
-                    new Section(null, "Kożuchów")
-            );
-
-            sectionRepository.saveAll(defaultSections);
-            log.info("Pomyślnie zainicjalizowano {} sekcje podstawowe.", defaultSections.size());
-        } else {
-            log.info("Sekcje są już załadowane w bazie danych. Pomijam inicjalizację.");
+        for (SectionSeed seed : defaultSections) {
+            if (!sectionRepository.existsByName(seed.name())) {
+                sectionRepository.save(new Section(null, seed.name(), seed.sortOrder()));
+                log.info("Zainicjalizowano brakującą sekcję: {} (sortOrder: {})", seed.name(), seed.sortOrder());
+            }
         }
     }
 }
