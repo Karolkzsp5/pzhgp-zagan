@@ -4,7 +4,9 @@ import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.repository.SectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,9 @@ class BreederServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private SectionRepository sectionRepository;
 
     @Mock
     private JwtService jwtService;
@@ -82,9 +87,11 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should successfully register a new breeder")
     void shouldRegisterNewBreederSuccessfully() {
+        Section mockSection = new Section(1L, "Żagań");
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
         when(passwordEncoder.encode(validRegistrationRequest.password())).thenReturn("hashedPassword123");
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(mockSection));
 
         assertDoesNotThrow(() -> breederService.registerNewBreeder(validRegistrationRequest));
 
