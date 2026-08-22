@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.BreederResponseDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.NotificationType;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private final BreederRepository breederRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getPendingAccounts() {
@@ -46,6 +48,13 @@ public class AdminService {
 
         breeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(breeder);
+
+        notificationService.createNotification(
+                breeder.getId(),
+                "Administrator zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
+                "/",
+                NotificationType.ACCOUNT_APPROVED
+        );
     }
 
     @Transactional
@@ -110,6 +119,16 @@ public class AdminService {
             }
             breeder.setRole(newRole);
             breederRepository.save(breeder);
+
+            String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
+
+            notificationService.createNotification(
+                    breeder.getId(),
+                    "Administrator zmienił twoją rolę na: " + roleNamePL,
+                    "/settings",
+                    NotificationType.ROLE_CHANGED
+            );
+
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
         }
