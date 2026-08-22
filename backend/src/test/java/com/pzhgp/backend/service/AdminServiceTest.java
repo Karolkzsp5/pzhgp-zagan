@@ -96,11 +96,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when approving non-PENDING account")
+    @DisplayName("Should throw IllegalStateException when approving non-PENDING account")
     void shouldThrowExceptionWhenApprovingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> adminService.approveAccount(2L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.approveAccount(2L));
 
         assertEquals("Konto nie ma statusu oczekującego na akceptację.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -127,11 +127,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when rejecting non-PENDING account")
+    @DisplayName("Should throw IllegalStateException when rejecting non-PENDING account")
     void shouldThrowExceptionWhenRejectingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> adminService.rejectAccount(2L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.rejectAccount(2L));
 
         assertEquals("Można usunąć fizycznie tylko konta o statusie oczekującym.", ex.getMessage());
         verify(breederRepository, never()).delete(any());
@@ -160,11 +160,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when trying to block non-ACTIVE account")
+    @DisplayName("Should throw IllegalStateException when trying to block non-ACTIVE account")
     void shouldThrowExceptionWhenBlockingNonActiveAccount() {
         when(breederRepository.findById(1L)).thenReturn(Optional.of(pendingBreeder));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> adminService.blockAccount(1L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.blockAccount(1L));
 
         assertEquals("Tylko aktywne konta mogą zostać zablokowane.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -183,11 +183,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when trying to unblock non-BLOCKED account")
+    @DisplayName("Should throw IllegalStateException when trying to unblock non-BLOCKED account")
     void shouldThrowExceptionWhenUnblockingNonBlockedAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> adminService.unblockAccount(2L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.unblockAccount(2L));
 
         assertEquals("Tylko zablokowane konta mogą zostać odblokowane.", ex.getMessage());
         verify(breederRepository, never()).save(any());
