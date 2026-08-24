@@ -242,7 +242,7 @@ export default function Navbar() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </button>
-
+                                    
                                     {isDropdownOpen && (
                                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
                                             {userRole === 'ADMINISTRATOR' && (
