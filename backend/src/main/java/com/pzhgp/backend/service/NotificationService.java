@@ -45,6 +45,25 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void createBulkNotifications(List<Breeder> recipients, String message, String link, NotificationType type) {
+        if (recipients == null || recipients.isEmpty()) {
+            return;
+        }
+
+        List<Notification> notifications = recipients.stream().map(recipient -> {
+            Notification notification = new Notification();
+            notification.setRecipient(recipient);
+            notification.setMessage(message);
+            notification.setLink(link);
+            notification.setType(type);
+            notification.setRead(false);
+            return notification;
+        }).collect(Collectors.toList());
+
+        notificationRepository.saveAll(notifications);
+    }
+
     @Transactional(readOnly = true)
     public long getUnreadCount(String userEmail) {
         Breeder breeder = getBreederByEmail(userEmail);
@@ -68,13 +87,7 @@ public class NotificationService {
     @Transactional
     public void markAllAsRead(String userEmail) {
         Breeder breeder = getBreederByEmail(userEmail);
-        List<Notification> unreadNotifications = notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(breeder.getId())
-                .stream()
-                .filter(n -> !n.isRead())
-                .toList();
-
-        unreadNotifications.forEach(n -> n.setRead(true));
-        notificationRepository.saveAll(unreadNotifications);
+        notificationRepository.markAllAsReadByRecipientId(breeder.getId());
     }
 
     private Breeder getBreederByEmail(String email) {
