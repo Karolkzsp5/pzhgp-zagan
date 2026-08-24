@@ -39,19 +39,19 @@ public class AnnouncementService {
         announcementRepository.save(announcement);
 
         List<Breeder> activeBreeders = breederRepository.findByStatus(AccountStatus.ACTIVE);
+        List<Breeder> recipients = activeBreeders.stream()
+                .filter(b -> !b.getId().equals(author.getId()))
+                .collect(Collectors.toList());
+
         String authorFullName = author.getName() + " " + author.getSurname();
         String notificationMessage = "Hodowca " + authorFullName + " dodał ogłoszenie na stronie głównej";
 
-        for (Breeder recipient : activeBreeders) {
-            if (!recipient.getId().equals(author.getId())) {
-                notificationService.createNotification(
-                        recipient.getId(),
-                        notificationMessage,
-                        "/",
-                        NotificationType.NEW_ANNOUNCEMENT
-                );
-            }
-        }
+        notificationService.createBulkNotifications(
+                recipients,
+                notificationMessage,
+                "/",
+                NotificationType.NEW_ANNOUNCEMENT
+        );
     }
 
     @Transactional
