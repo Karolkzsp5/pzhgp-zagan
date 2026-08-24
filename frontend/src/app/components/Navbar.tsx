@@ -146,10 +146,10 @@ export default function Navbar() {
                     <div className="flex items-center space-x-2 sm:space-x-4">
                         {!isLoggedIn ? (
                             <>
-                                <Link href="/login" className="hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                                <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition">
                                     Zaloguj się
                                 </Link>
-                                <Link href="/register" className="bg-white text-blue-700 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-bold transition shadow-sm">
+                                <Link href="/register" className="whitespace-nowrap bg-white text-blue-700 hover:bg-gray-100 px-2 sm:px-3 py-2 rounded-md text-sm font-bold transition shadow-sm">
                                     Rejestracja
                                 </Link>
                             </>
@@ -176,8 +176,9 @@ export default function Navbar() {
                                         )}
                                     </button>
 
+                                    {/* Powiadomienia */}
                                     {isNotificationsOpen && (
-                                        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
+                                        <div className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                 <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                 {unreadCount > 0 && (
