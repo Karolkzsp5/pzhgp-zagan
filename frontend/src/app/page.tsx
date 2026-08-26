@@ -9,7 +9,6 @@ import Footer from './components/Footer';
 import AnnouncementModal from './components/AnnouncementModal';
 import { getAuthToken } from '@/utils/jwt';
 
-// Interfejs zgodny z naszym DTO z backendu
 interface Announcement {
   id: number;
   title: string;
@@ -44,7 +43,6 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
   };
 
   useEffect(() => {
-    // 1. Sprawdzenie roli użytkownika na podstawie JWT
     const token = getAuthToken();
     if (token) {
       try {
@@ -56,11 +54,9 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
       }
     }
 
-    // 2. Pobranie ogłoszeń
     fetchAnnouncements();
   }, []);
 
-  // Sprawdzenie, czy użytkownik ma prawo dodawać ogłoszenia
   const canManageAnnouncements = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
 
   return (
@@ -71,7 +67,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
-              Oddział 0368 Żagań
+              Oddział 0369 Żagań
             </h1>
             <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
               Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych. Śledź wyniki, analizuj plany lotów i bądź na bieżąco z życiem oddziału.
@@ -89,12 +85,10 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
         <main className="flex-grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* SEKCJA OGŁOSZEŃ (2/3 szerokości) */}
           <section className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
               <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>
 
-              {/* Przycisk widoczny tylko dla uprawnionych */}
               {canManageAnnouncements && (
                   <button
                       onClick={() => setIsModalOpen(true)}
@@ -121,7 +115,6 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
                           }`}
                       >
                         <div className="flex justify-between items-start mb-4">
-                          {/* Lewa strona: Tytuł */}
                           <div className="flex items-center gap-3">
                             <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
                           </div>
@@ -138,7 +131,6 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
                           </div>
                         </div>
 
-                        {/* Bezpieczne renderowanie HTML z użyciem klas Tailwind Typography (prose) */}
                         <div
                             className="prose prose-sm sm:prose-base max-w-none text-gray-600 mt-3 leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
@@ -160,7 +152,6 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
             </div>
           </section>
 
-          {/* BAZOWY PANEL BOCZNY (1/3 szerokości) */}
           <aside className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Szybki dostęp</h3>
@@ -196,11 +187,10 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
         <Footer />
 
-        {/* Modal do dodawania ogłoszeń */}
         <AnnouncementModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            onSuccess={fetchAnnouncements} // Automatycznie odświeży listę po dodaniu!
+            onSuccess={fetchAnnouncements}
         />
       </div>
   );

@@ -27,6 +27,12 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
     const [error, setError] = useState('');
 
     useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
         if (announcementToEdit) {
             setTitle(announcementToEdit.title);
             setContent(announcementToEdit.content);
@@ -37,6 +43,10 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             setIsPinned(false);
         }
         setError('');
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [announcementToEdit, isOpen]);
 
     if (!isOpen) return null;
@@ -105,7 +115,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">
-                                Tytuł ogłoszenia *
+                                Tytuł ogłoszenia
                             </label>
                             <input
                                 type="text"
@@ -119,7 +129,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">
-                                Treść ogłoszenia *
+                                Treść ogłoszenia
                             </label>
                             <TextEditor content={content} onChange={setContent} />
                         </div>

@@ -11,6 +11,9 @@
     "cypress:run": "cypress run"
   },
   "dependencies": {
+    "@tiptap/extension-highlight": "^3.30.5",
+    "@tiptap/extension-text-align": "^3.30.5",
+    "@tiptap/extension-underline": "^3.30.5",
     "@tiptap/pm": "^3.30.3",
     "@tiptap/react": "^3.30.3",
     "@tiptap/starter-kit": "^3.30.3",
