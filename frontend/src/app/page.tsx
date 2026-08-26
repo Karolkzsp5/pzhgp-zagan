@@ -20,10 +20,15 @@ interface Announcement {
 }
 
 export default function HomePage({ searchParams }: { searchParams: { registered?: string } }) {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+
+  const [postToDelete, setPostToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchAnnouncements = async () => {
     setIsLoading(true);
@@ -46,18 +51,56 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
     const token = getAuthToken();
     if (token) {
       try {
-        // Dekodowanie payloadu (środkowej części) tokena JWT
         const payload = JSON.parse(atob(token.split('.')[1]));
         setUserRole(payload.role || null);
+        setCurrentUser(payload.sub || payload.username || null);
       } catch (e) {
         console.error("Błąd dekodowania tokena", e);
       }
     }
-
     fetchAnnouncements();
   }, []);
 
-  const canManageAnnouncements = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
+  const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
+
+  const canEditOrDelete = (post: Announcement) => {
+    return userRole === 'ADMINISTRATOR' || currentUser === post.authorName;
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const time = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    const day = date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return `${time}, ${day}`;
+  };
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
+
+    setIsDeleting(true);
+    const token = getAuthToken();
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements/${postToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        fetchAnnouncements();
+        setPostToDelete(null);
+      } else {
+        alert('Wystąpił błąd podczas usuwania ogłoszenia.');
+      }
+    } catch (error) {
+      console.error('Błąd serwera:', error);
+      alert('Brak połączenia z serwerem.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -89,9 +132,12 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
             <div className="flex items-center justify-between border-b pb-2">
               <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>
 
-              {canManageAnnouncements && (
+              {canAddAnnouncement && (
                   <button
-                      onClick={() => setIsModalOpen(true)}
+                      onClick={() => {
+                        setEditingAnnouncement(null);
+                        setIsModalOpen(true);
+                      }}
                       className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
                   >
                     + Dodaj ogłoszenie
@@ -121,12 +167,14 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
                           <div className="flex items-center gap-2 ml-4">
                             {post.isPinned && (
-                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5985E1">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#789DE5" className="shrink-0" title="Przypięte ogłoszenie"
+                                >
                                   <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                 </svg>
                             )}
                             <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                              {new Date(post.createdAt).toLocaleDateString('pl-PL')}
+                              {new Date(post.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>
                           </div>
                         </div>
@@ -136,13 +184,36 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                         />
 
-                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                          <div className="text-sm text-gray-400 font-medium">
-                            Dodał: <span className="text-gray-600">{post.authorName}</span>
+                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
+
+                          <div className="flex flex-col gap-1">
+                            <div className="text-sm text-gray-400 font-medium">
+                              Dodał: <span className="text-gray-600">{post.authorName}</span>
+                            </div>
+                            {post.updatedAt && (
+                                <div className="text-xs text-gray-400 italic">
+                                  Edytowano: {formatDateTime(post.updatedAt)}
+                                </div>
+                            )}
                           </div>
-                          {post.updatedAt && (
-                              <div className="text-xs text-gray-400 italic">
-                                Edytowano: {new Date(post.updatedAt).toLocaleDateString('pl-PL')}
+
+                          {canEditOrDelete(post) && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                      setEditingAnnouncement(post);
+                                      setIsModalOpen(true);
+                                    }}
+                                    className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition font-medium border border-gray-200"
+                                >
+                                  Edytuj
+                                </button>
+                                <button
+                                    onClick={() => setPostToDelete(post.id)}
+                                    className="text-sm bg-white hover:bg-red-50 text-red-600 px-3 py-1 rounded transition font-medium border border-red-200"
+                                >
+                                  Usuń
+                                </button>
                               </div>
                           )}
                         </div>
@@ -189,9 +260,47 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
         <AnnouncementModal
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingAnnouncement(null);
+            }}
             onSuccess={fetchAnnouncements}
+            announcementToEdit={editingAnnouncement}
         />
+
+        {/* Confirmation modal for deleting an announcement */}
+        {postToDelete !== null && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4 animate-fadeIn">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-gray-900">Usuń ogłoszenie</h3>
+                  </div>
+                  <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                    Czy na pewno chcesz trwale usunąć to ogłoszenie? Tej operacji nie można cofnąć.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                        onClick={() => setPostToDelete(null)}
+                        disabled={isDeleting}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                        onClick={confirmDelete}
+                        disabled={isDeleting}
+                        className={`px-4 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${
+                            isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                        }`}
+                    >
+                      {isDeleting ? 'Usuwanie...' : 'Usuń'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+        )}
       </div>
   );
 }

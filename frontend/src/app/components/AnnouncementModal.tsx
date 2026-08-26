@@ -98,7 +98,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/50 bg-opacity-50 animate-fadeIn p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 animate-fadeIn">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-lg">
                     <h2 className="text-xl font-bold text-gray-800">
@@ -111,7 +111,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">=
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">
@@ -121,7 +121,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 text-gray-900 focus:outline-none transition-all"
                                 placeholder="Wpisz tytuł (min. 3 znaki)"
                                 required
                             />
