@@ -221,6 +221,12 @@ export default function TextEditor({ content, onChange }: TextEditorProps) {
         },
     });
 
+    useEffect(() => {
+        if (editor && content !== editor.getHTML()) {
+            editor.commands.setContent(content);
+        }
+    }, [content, editor]);
+
     return (
         <div className="border border-gray-300 rounded-md shadow-sm bg-white overflow-hidden focus-within:ring-1 focus-within:ring-gray-900 focus-within:border-gray-900 transition-all">
             <MenuBar editor={editor} />
