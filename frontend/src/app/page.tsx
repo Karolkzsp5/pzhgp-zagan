@@ -1,50 +1,73 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 import RegistrationModal from './components/RegistrationModal';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AnnouncementModal from './components/AnnouncementModal';
+import { getAuthToken } from '@/utils/jwt';
 
-export default function HomePage({ searchParams }: { searchParams: { registered?: string } }){
-  const announcements = [
-    {
-      id: 1,
-      title: "Harmonogram lotów - Sezon 2026",
-      date: "28-07-2026",
-      content: "\n" +
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam non fringilla quam. Donec sem mi, facilisis sed est vitae, mollis auctor magna. " +
-          "Etiam pharetra at augue dapibus blandit. Donec ornare vulputate sapien, vel rhoncus lectus pretium at. Cras dictum ante lectus, sit amet pharetra nisl aliquam id. " +
-          "Fusce vestibulum eu lacus sit amet aliquet. Quisque ipsum dolor, sodales vitae ultrices et, rutrum id leo. Sed sollicitudin, quam at sodales sodales, " +
-          "justo mauris suscipit nisl, id scelerisque purus enim eget mauris. Ut vehicula felis ac odio molestie, vitae feugiat lacus finibus. In ornare velit at mauris ultricies, " +
-          "id iaculis tortor malesuada. Cras ligula quam, bibendum nec neque eget, faucibus condimentum massa. Duis luctus cursus diam id viverra. " +
-          "Nulla tempus diam quis eros placerat pulvinar. In varius lacus vehicula, placerat libero in, mollis lorem. Proin porttitor nibh ac fringilla fermentum. " +
-          "Duis convallis leo non lorem malesuada viverra.",
-      author: "Jan Kowalski"
-    },
-    {
-      id: 2,
-      title: "Zebranie sekcji",
-      date: "25-07-2026",
-      content: "\n" +
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam non fringilla quam. Donec sem mi, facilisis sed est vitae, mollis auctor magna. " +
-          "Etiam pharetra at augue dapibus blandit. Donec ornare vulputate sapien, vel rhoncus lectus pretium at. Cras dictum ante lectus, sit amet pharetra nisl aliquam id. " +
-          "Fusce vestibulum eu lacus sit amet aliquet. Quisque ipsum dolor, sodales vitae ultrices et, rutrum id leo. Sed sollicitudin, quam at sodales sodales, " +
-          "justo mauris suscipit nisl, id scelerisque purus enim eget mauris. Ut vehicula felis ac odio molestie, vitae feugiat lacus finibus. In ornare velit at mauris ultricies, " +
-          "id iaculis tortor malesuada. Cras ligula quam, bibendum nec neque eget, faucibus condimentum massa. Duis luctus cursus diam id viverra. " +
-          "Nulla tempus diam quis eros placerat pulvinar. In varius lacus vehicula, placerat libero in, mollis lorem. Proin porttitor nibh ac fringilla fermentum. " +
-          "Duis convallis leo non lorem malesuada viverra." +
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce varius neque et diam rutrum, ut dapibus felis facilisis. Proin tincidunt velit sed elit " +
-          "placerat vulputate. Mauris viverra a ante ut volutpat. Proin nec arcu id nulla laoreet fermentum eget non massa. Cras tristique metus felis, vitae bibendum " +
-          "dolor feugiat at. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nullam elementum felis sit amet mi euismod sodales. " +
-          "Vestibulum non elementum eros, ac vehicula sapien. Vivamus pretium vestibulum lacus, ut laoreet erat consequat vel. Nulla facilisi. Mauris sodales fringilla velit " +
-          "vitae mattis.",
-      author: "Prezes Sekcji"
+// Interfejs zgodny z naszym DTO z backendu
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  authorName: string;
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export default function HomePage({ searchParams }: { searchParams: { registered?: string } }) {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  const fetchAnnouncements = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnnouncements(data);
+      } else {
+        console.error('Błąd pobierania ogłoszeń');
+      }
+    } catch (error) {
+      console.error('Błąd połączenia z serwerem', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    // 1. Sprawdzenie roli użytkownika na podstawie JWT
+    const token = getAuthToken();
+    if (token) {
+      try {
+        // Dekodowanie payloadu (środkowej części) tokena JWT
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(payload.role || null);
+      } catch (e) {
+        console.error("Błąd dekodowania tokena", e);
+      }
+    }
+
+    // 2. Pobranie ogłoszeń
+    fetchAnnouncements();
+  }, []);
+
+  // Sprawdzenie, czy użytkownik ma prawo dodawać ogłoszenia
+  const canManageAnnouncements = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
 
   return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <RegistrationModal />
         <Navbar />
+
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
@@ -66,29 +89,78 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
 
         <main className="flex-grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
+          {/* SEKCJA OGŁOSZEŃ (2/3 szerokości) */}
           <section className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
               <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>
+
+              {/* Przycisk widoczny tylko dla uprawnionych */}
+              {canManageAnnouncements && (
+                  <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
+                  >
+                    + Dodaj ogłoszenie
+                  </button>
+              )}
             </div>
 
             <div className="space-y-6">
-              {announcements.map((post) => (
-                  <article key={post.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition duration-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
-                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">{post.date}</span>
-                    </div>
-                    <p className="text-gray-600 mt-3 leading-relaxed">
-                      {post.content}
-                    </p>
-                    <div className="mt-4 text-sm text-gray-400 font-medium">
-                      Dodał: {post.author}
-                    </div>
-                  </article>
-              ))}
+              {isLoading ? (
+                  <div className="text-center py-12 text-gray-500">Ładowanie ogłoszeń...</div>
+              ) : announcements.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
+                    Brak aktualnych ogłoszeń.
+                  </div>
+              ) : (
+                  announcements.map((post) => (
+                      <article
+                          key={post.id}
+                          className={`bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition duration-200 ${
+                              post.isPinned ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
+                          }`}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          {/* Lewa strona: Tytuł */}
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
+                          </div>
+
+                          <div className="flex items-center gap-2 ml-4">
+                            {post.isPinned && (
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5985E1">
+                                  <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                </svg>
+                            )}
+                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                              {new Date(post.createdAt).toLocaleDateString('pl-PL')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bezpieczne renderowanie HTML z użyciem klas Tailwind Typography (prose) */}
+                        <div
+                            className="prose prose-sm sm:prose-base max-w-none text-gray-600 mt-3 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+                        />
+
+                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                          <div className="text-sm text-gray-400 font-medium">
+                            Dodał: <span className="text-gray-600">{post.authorName}</span>
+                          </div>
+                          {post.updatedAt && (
+                              <div className="text-xs text-gray-400 italic">
+                                Edytowano: {new Date(post.updatedAt).toLocaleDateString('pl-PL')}
+                              </div>
+                          )}
+                        </div>
+                      </article>
+                  ))
+              )}
             </div>
           </section>
 
+          {/* BAZOWY PANEL BOCZNY (1/3 szerokości) */}
           <aside className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Szybki dostęp</h3>
@@ -121,8 +193,15 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
             </div>
           </aside>
         </main>
-        
+
         <Footer />
+
+        {/* Modal do dodawania ogłoszeń */}
+        <AnnouncementModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={fetchAnnouncements} // Automatycznie odświeży listę po dodaniu!
+        />
       </div>
   );
 }
