@@ -42,4 +42,13 @@ public class AnnouncementController {
         announcementService.updateAnnouncement(id, requestDto, authentication.getName());
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAnnouncement(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        announcementService.deleteAnnouncement(id, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
 }
