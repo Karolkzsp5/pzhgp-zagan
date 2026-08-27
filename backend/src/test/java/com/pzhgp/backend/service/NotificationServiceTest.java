@@ -148,10 +148,10 @@ class NotificationServiceTest {
         List<NotificationDto> result = notificationService.getUserNotifications("test@test.pl");
 
         assertEquals(1, result.size());
-        assertEquals(100L, result.get(0).id());
-        assertEquals("Testowa wiadomość", result.get(0).message());
-        assertFalse(result.get(0).isRead());
-        assertEquals("ACCOUNT_APPROVED", result.get(0).type());
+        assertEquals(100L, result.getFirst().id());
+        assertEquals("Testowa wiadomość", result.getFirst().message());
+        assertFalse(result.getFirst().isRead());
+        assertEquals("ACCOUNT_APPROVED", result.getFirst().type());
     }
 
     @Test

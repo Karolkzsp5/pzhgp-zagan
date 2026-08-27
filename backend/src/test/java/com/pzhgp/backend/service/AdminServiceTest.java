@@ -70,7 +70,7 @@ class AdminServiceTest {
         List<BreederResponseDto> result = adminService.getPendingAccounts();
 
         assertEquals(1, result.size());
-        assertEquals(AccountStatus.PENDING, result.get(0).status());
+        assertEquals(AccountStatus.PENDING, result.getFirst().status());
         verify(breederRepository, times(1)).findByStatus(AccountStatus.PENDING);
     }
 
