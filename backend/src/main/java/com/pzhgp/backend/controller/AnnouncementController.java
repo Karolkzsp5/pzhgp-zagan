@@ -20,8 +20,12 @@ public class AnnouncementController {
     private final AnnouncementService announcementService;
 
     @GetMapping
-    public ResponseEntity<List<AnnouncementResponseDto>> getAllAnnouncements() {
-        return ResponseEntity.ok(announcementService.getAllAnnouncements());
+    public ResponseEntity<List<AnnouncementResponseDto>> getAllAnnouncements(Authentication authentication) {
+        String currentUserEmail = null;
+        if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
+            currentUserEmail = authentication.getName();
+        }
+        return ResponseEntity.ok(announcementService.getAllAnnouncements(currentUserEmail));
     }
 
     @PostMapping

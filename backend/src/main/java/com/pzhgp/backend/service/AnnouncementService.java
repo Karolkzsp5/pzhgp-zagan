@@ -111,24 +111,46 @@ public class AnnouncementService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnnouncementResponseDto> getAllAnnouncements() {
+    public List<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail) {
+        Breeder currentUser = null;
+        if (currentUserEmail != null) {
+            currentUser = breederRepository.findByEmail(currentUserEmail).orElse(null);
+        }
+
+        Breeder finalCurrentUser = currentUser;
         return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()
                 .stream()
-                .map(this::mapToDto)
+                .map(announcement -> mapToDto(announcement, finalCurrentUser))
                 .collect(Collectors.toList());
     }
 
-    private AnnouncementResponseDto mapToDto(Announcement announcement) {
+    private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {
+        boolean canEdit = false;
+        boolean canDelete = false;
+
+        if (currentUser != null) {
+            boolean isAuthor = announcement.getAuthor().getId().equals(currentUser.getId());
+            boolean isAdmin = currentUser.getRole() == Role.ADMINISTRATOR;
+            boolean isAuthorAdmin = announcement.getAuthor().getRole() == Role.ADMINISTRATOR;
+
+            if (isAuthor) {
+                canEdit = true;
+                canDelete = true;
+            } else if (isAdmin && !isAuthorAdmin) {
+                canDelete = true;
+            }
+        }
+
         return new AnnouncementResponseDto(
                 announcement.getId(),
                 announcement.getTitle(),
                 announcement.getContent(),
                 announcement.getAuthor().getName() + " " + announcement.getAuthor().getSurname(),
-                announcement.getAuthor().getEmail(),
-                announcement.getAuthor().getRole().name(),
                 announcement.isPinned(),
                 announcement.getCreatedAt(),
-                announcement.getUpdatedAt()
+                announcement.getUpdatedAt(),
+                canEdit,
+                canDelete
         );
     }
 }

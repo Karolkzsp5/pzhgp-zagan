@@ -7,9 +7,9 @@ public record AnnouncementResponseDto(
         String title,
         String content,
         String authorName,
-        String authorEmail,
-        String authorRole,
         boolean isPinned,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        boolean canEdit,
+        boolean canDelete
 ) {}
