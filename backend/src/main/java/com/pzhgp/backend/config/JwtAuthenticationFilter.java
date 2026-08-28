@@ -28,7 +28,7 @@ import java.util.Optional;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final BreederRepository breederRepository; // Dodano weryfikację bazy
+    private final BreederRepository breederRepository;
 
     @Override
     protected void doFilterInternal(
