@@ -91,19 +91,27 @@ class AdminServiceTest {
     @DisplayName("Should approve PENDING account successfully")
     void shouldApproveAccount() {
         when(breederRepository.findById(1L)).thenReturn(Optional.of(pendingBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        assertDoesNotThrow(() -> adminService.approveAccount(1L));
+        assertDoesNotThrow(() -> adminService.approveAccount(1L, "admin@test.pl"));
 
         assertEquals(AccountStatus.ACTIVE, pendingBreeder.getStatus());
         verify(breederRepository, times(1)).save(pendingBreeder);
+        verify(notificationService, times(1)).createNotification(
+                eq(1L),
+                contains("Prezes Oddzialu"),
+                anyString(),
+                any()
+        );
     }
 
     @Test
     @DisplayName("Should throw IllegalStateException when approving non-PENDING account")
     void shouldThrowExceptionWhenApprovingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.approveAccount(2L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.approveAccount(2L, "admin@test.pl"));
 
         assertEquals("Konto nie ma statusu oczekującego na akceptację.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -114,7 +122,7 @@ class AdminServiceTest {
     void shouldThrowEntityNotFoundWhenAccountMissing() {
         when(breederRepository.findById(99L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(99L));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(99L, "admin@test.pl"));
 
         assertEquals("Nie znaleziono hodowcy o ID: 99", ex.getMessage());
     }
@@ -200,11 +208,18 @@ class AdminServiceTest {
     @DisplayName("Should successfully change role to MODERATOR")
     void shouldChangeRoleSuccessfully() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        assertDoesNotThrow(() -> adminService.changeRole(2L, "MODERATOR"));
+        assertDoesNotThrow(() -> adminService.changeRole(2L, "MODERATOR", "admin@test.pl"));
 
         assertEquals(Role.MODERATOR, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
+        verify(notificationService, times(1)).createNotification(
+                eq(2L),
+                contains("Prezes Oddzialu"),
+                anyString(),
+                any()
+        );
     }
 
     @Test
@@ -212,8 +227,9 @@ class AdminServiceTest {
     void shouldChangeRoleToBreederSuccessfully() {
         activeBreeder.setRole(Role.MODERATOR);
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        assertDoesNotThrow(() -> adminService.changeRole(2L, "BREEDER"));
+        assertDoesNotThrow(() -> adminService.changeRole(2L, "BREEDER", "admin@test.pl"));
 
         assertEquals(Role.BREEDER, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
@@ -223,8 +239,9 @@ class AdminServiceTest {
     @DisplayName("Should throw IllegalArgumentException when changing to invalid role")
     void shouldThrowExceptionOnInvalidRole() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, "SUPERMAN"));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, "SUPERMAN", "admin@test.pl"));
 
         assertEquals("Przekazano nieprawidłową rolę.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -234,9 +251,9 @@ class AdminServiceTest {
     @DisplayName("Should throw IllegalArgumentException when role is null")
     void shouldThrowExceptionWhenRoleIsNull() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> adminService.changeRole(2L, null));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, null, "admin@test.pl"));
 
         assertEquals("Przekazano nieprawidłową rolę.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -246,10 +263,22 @@ class AdminServiceTest {
     @DisplayName("Should throw IllegalStateException when trying to change role of ADMINISTRATOR")
     void shouldPreventChangingAdminRole() {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.changeRole(3L, "BREEDER"));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
 
         assertEquals("Nie możesz zmieniać uprawnień innym administratorom.", ex.getMessage());
         verify(breederRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when admin is missing during approval")
+    void shouldThrowExceptionWhenAdminMissingDuringApproval() {
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(pendingBreeder));
+        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(1L, "unknown@test.pl"));
+
+        assertEquals("Nie znaleziono administratora.", ex.getMessage());
     }
 }

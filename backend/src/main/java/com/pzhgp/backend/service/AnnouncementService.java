@@ -7,6 +7,9 @@ import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,17 +114,17 @@ public class AnnouncementService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail) {
+    public Page<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail, int page, int size) {
         Breeder currentUser = null;
         if (currentUserEmail != null) {
             currentUser = breederRepository.findByEmail(currentUserEmail).orElse(null);
         }
 
         Breeder finalCurrentUser = currentUser;
-        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()
-                .stream()
-                .map(announcement -> mapToDto(announcement, finalCurrentUser))
-                .collect(Collectors.toList());
+        Pageable pageable = PageRequest.of(page, size);
+
+        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable)
+                .map(announcement -> mapToDto(announcement, finalCurrentUser));
     }
 
     private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {

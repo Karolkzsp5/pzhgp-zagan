@@ -110,7 +110,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/announcements - Should fetch data from real database (Public Access)")
+    @DisplayName("GET /api/announcements - Should fetch paginated data from real database (Public Access)")
     void shouldFetchAnnouncementsFromDatabase() throws Exception {
         Announcement announcement = new Announcement();
         announcement.setTitle("Prawdziwe Ogłoszenie");
@@ -120,12 +120,19 @@ class AnnouncementIntegrationTest {
         announcementRepository.save(announcement);
 
         mockMvc.perform(get("/api/announcements")
+                        .param("page", "0")
+                        .param("size", "5")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(1))
-                .andExpect(jsonPath("$[0].title").value("Prawdziwe Ogłoszenie"))
-                .andExpect(jsonPath("$[0].authorName").value("Admin Testowy"))
-                .andExpect(jsonPath("$[0].canEdit").value(false));
+                .andExpect(jsonPath("$.content.size()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Prawdziwe Ogłoszenie"))
+                .andExpect(jsonPath("$.content[0].authorName").value("Admin Testowy"))
+                .andExpect(jsonPath("$.content[0].canEdit").value(false))
+
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test

@@ -120,7 +120,7 @@ class AdminControllerIntegrationTest {
     void shouldApproveAccount() throws Exception {
         mockMvc.perform(put("/api/admin/approve/1").header("Authorization", adminToken))
                 .andExpect(status().isOk());
-        verify(adminService, times(1)).approveAccount(1L);
+        verify(adminService, times(1)).approveAccount(1L, "admin@test.pl");
     }
 
     @Test
@@ -156,7 +156,7 @@ class AdminControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
                 .andExpect(status().isOk());
-        verify(adminService, times(1)).changeRole(1L, "MODERATOR");
+        verify(adminService, times(1)).changeRole(1L, "MODERATOR", "admin@test.pl");
     }
 
     @Test
@@ -173,7 +173,7 @@ class AdminControllerIntegrationTest {
     @DisplayName("Should return 404 Not Found when trying to perform action on non-existent account")
     void shouldReturnNotFoundWhenEntityDoesNotExist() throws Exception {
         doThrow(new EntityNotFoundException("Nie znaleziono hodowcy o ID: 99"))
-                .when(adminService).approveAccount(99L);
+                .when(adminService).approveAccount(99L, "admin@test.pl");
 
         mockMvc.perform(put("/api/admin/approve/99")
                         .header("Authorization", adminToken))

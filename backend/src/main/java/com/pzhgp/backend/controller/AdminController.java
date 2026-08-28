@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.BreederResponseDto;
 import com.pzhgp.backend.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,8 +28,8 @@ public class AdminController {
     }
 
     @PutMapping("/approve/{id}")
-    public ResponseEntity<String> approveAccount(@PathVariable Long id) {
-        adminService.approveAccount(id);
+    public ResponseEntity<String> approveAccount(@PathVariable Long id, Authentication authentication) {
+        adminService.approveAccount(id, authentication.getName());
         return ResponseEntity.ok("Konto zostało pomyślnie zaakceptowane.");
     }
 
@@ -51,12 +52,12 @@ public class AdminController {
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<String> changeRole(@PathVariable Long id, @RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<String> changeRole(@PathVariable Long id, @RequestBody Map<String, String> requestBody, Authentication authentication) {
         String newRole = requestBody.get("role");
         if (newRole == null || newRole.trim().isEmpty()) {
             throw new IllegalArgumentException("Nie podano nowej roli.");
         }
-        adminService.changeRole(id, newRole);
+        adminService.changeRole(id, newRole, authentication.getName());
         return ResponseEntity.ok("Rola została pomyślnie zmieniona.");
     }
 }
