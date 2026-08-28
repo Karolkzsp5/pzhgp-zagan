@@ -104,9 +104,12 @@ public class AdminService {
     }
 
     @Transactional
-    public void changeRole(Long id, String newRoleStr) {
+    public void changeRole(Long id, String newRoleStr, String adminEmail) {
         Breeder breeder = breederRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+
+        Breeder admin = breederRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new IllegalStateException("Nie możesz zmieniać uprawnień innym administratorom.");
@@ -125,10 +128,11 @@ public class AdminService {
             breederRepository.save(breeder);
 
             String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
+            String adminFullName = admin.getName() + " " + admin.getSurname();
 
             notificationService.createNotification(
                     breeder.getId(),
-                    "Administrator zmienił twoją rolę na: " + roleNamePL,
+                    "Administrator " + adminFullName + " zmienił twoją rolę na: " + roleNamePL,
                     "/settings",
                     NotificationType.ROLE_CHANGED
             );
