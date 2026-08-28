@@ -13,6 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -199,12 +202,13 @@ class AnnouncementServiceTest {
     @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Moderator)")
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenUserIsAuthor() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()).thenReturn(List.of(announcement));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        List<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail());
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
-        assertEquals(1, result.size());
-        AnnouncementResponseDto dto = result.getFirst();
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
         assertTrue(dto.canEdit(), "Autor (moderator) powinien móc edytować swoje ogłoszenie");
         assertTrue(dto.canDelete(), "Autor (moderator) powinien móc usunąć swoje ogłoszenie");
     }
@@ -214,12 +218,13 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenAdminIsAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()).thenReturn(List.of(announcement));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        List<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail());
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
-        assertEquals(1, result.size());
-        AnnouncementResponseDto dto = result.getFirst();
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
         assertTrue(dto.canEdit(), "Autor (admin) powinien móc edytować swoje ogłoszenie");
         assertTrue(dto.canDelete(), "Autor (admin) powinien móc usunąć swoje ogłoszenie");
     }
@@ -228,12 +233,13 @@ class AnnouncementServiceTest {
     @DisplayName("Should set canDelete=true and canEdit=false flags for administrator viewing moderator's post")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAdmin() {
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()).thenReturn(List.of(announcement));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        List<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail());
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
-        assertEquals(1, result.size());
-        AnnouncementResponseDto dto = result.getFirst();
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Admin nie powinien mieć prawa edycji cudzego posta");
         assertTrue(dto.canDelete(), "Admin powinien mieć prawo usunięcia posta moderatora");
     }
@@ -241,12 +247,13 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should set false flags for both actions when user is anonymous")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAnonymous() {
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()).thenReturn(List.of(announcement));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        List<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null);
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null, 0, 10);
 
-        assertEquals(1, result.size());
-        AnnouncementResponseDto dto = result.getFirst();
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Niezalogowany użytkownik nie może edytować");
         assertFalse(dto.canDelete(), "Niezalogowany użytkownik nie może usuwać");
     }
@@ -256,12 +263,13 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsFalse_WhenUserIsModeratorAndNotAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc()).thenReturn(List.of(announcement));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        List<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail());
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
-        assertEquals(1, result.size());
-        AnnouncementResponseDto dto = result.getFirst();
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Moderator nie powinien móc edytować cudzego ogłoszenia");
         assertFalse(dto.canDelete(), "Moderator nie powinien móc usuwać cudzego ogłoszenia");
     }

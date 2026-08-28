@@ -1,5 +1,6 @@
 package com.pzhgp.backend.config;
 
+import com.pzhgp.backend.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -42,9 +43,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority("ADMINISTRATOR", "MODERATOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority("ADMINISTRATOR", "MODERATOR")
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMINISTRATOR")
+                        .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMINISTRATOR.name())
 
                         .anyRequest().authenticated()
                 )

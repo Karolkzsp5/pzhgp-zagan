@@ -38,9 +38,12 @@ public class AdminService {
     }
 
     @Transactional
-    public void approveAccount(Long id) {
+    public void approveAccount(Long id, String adminEmail) {
         Breeder breeder = breederRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+
+        Breeder admin = breederRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new IllegalStateException("Konto nie ma statusu oczekującego na akceptację.");
@@ -49,9 +52,10 @@ public class AdminService {
         breeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(breeder);
 
+        String adminFullName = admin.getName() + " " + admin.getSurname();
         notificationService.createNotification(
                 breeder.getId(),
-                "Administrator zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
+                "Administrator " + adminFullName + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
                 "/",
                 NotificationType.ACCOUNT_APPROVED
         );

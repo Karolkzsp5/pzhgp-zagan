@@ -33,18 +33,24 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
   const [postToDelete, setPostToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchAnnouncements = async () => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchAnnouncements = async (page = 0) => {
     setIsLoading(true);
     const token = getAuthToken();
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements?page=${page}&size=10`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       if (response.ok) {
         const data = await response.json();
-        setAnnouncements(data);
+        setAnnouncements(data.content);
+
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.number);
       } else {
         console.error('Błąd pobierania ogłoszeń');
       }
@@ -63,7 +69,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
         setUserRole(payload.role || null);
       }
     }
-    fetchAnnouncements();
+    fetchAnnouncements(0);
   }, []);
 
   const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
@@ -90,7 +96,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
       });
 
       if (response.ok) {
-        fetchAnnouncements();
+        fetchAnnouncements(currentPage);
         setPostToDelete(null);
       } else {
         alert('Wystąpił błąd podczas usuwania ogłoszenia.');
@@ -154,77 +160,102 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
                     Brak aktualnych ogłoszeń.
                   </div>
               ) : (
-                  announcements.map((post) => (
-                      <article
-                          key={post.id}
-                          className={`bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition duration-200 ${
-                              post.isPinned ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
-                          }`}
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
-                          </div>
-
-                          <div className="flex items-center gap-2 ml-4">
-                            {post.isPinned && (
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#789DE5" className="shrink-0"
-                                >
-                                  <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
-                                </svg>
-                            )}
-                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                              {new Date(post.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div
-                            className="prose prose-sm sm:prose-base max-w-none text-gray-600 mt-3 leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
-                        />
-
-                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
-
-                          <div className="flex flex-col gap-1">
-                            <div className="text-sm text-gray-400 font-medium">
-                              Dodał: <span className="text-gray-600">{post.authorName}</span>
+                  <>
+                    {announcements.map((post) => (
+                        <article
+                            key={post.id}
+                            className={`bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition duration-200 ${
+                                post.isPinned ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
+                            }`}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
                             </div>
-                            {post.updatedAt && (
-                                <div className="text-xs text-gray-400 italic">
-                                  Edytowano: {formatDateTime(post.updatedAt)}
+
+                            <div className="flex items-center gap-2 ml-4">
+                              {post.isPinned && (
+                                  <svg
+                                      xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#789DE5" className="shrink-0"
+                                  >
+                                    <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                  </svg>
+                              )}
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                                {new Date(post.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div
+                              className="prose prose-sm sm:prose-base max-w-none text-gray-600 mt-3 leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+                          />
+
+                          <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
+
+                            <div className="flex flex-col gap-1">
+                              <div className="text-sm text-gray-400 font-medium">
+                                Dodał: <span className="text-gray-600">{post.authorName}</span>
+                              </div>
+                              {post.updatedAt && (
+                                  <div className="text-xs text-gray-400 italic">
+                                    Edytowano: {formatDateTime(post.updatedAt)}
+                                  </div>
+                              )}
+                            </div>
+
+                            {/* edit and delete buttons */}
+                            {(post.canEdit || post.canDelete) && (
+                                <div className="flex items-center gap-2">
+                                  {post.canEdit && (
+                                      <button
+                                          onClick={() => {
+                                            setEditingAnnouncement(post);
+                                            setIsModalOpen(true);
+                                          }}
+                                          className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition font-medium border border-gray-200"
+                                      >
+                                        Edytuj
+                                      </button>
+                                  )}
+                                  {post.canDelete && (
+                                      <button
+                                          onClick={() => setPostToDelete(post.id)}
+                                          className="text-sm bg-white hover:bg-red-50 text-red-600 px-3 py-1 rounded transition font-medium border border-red-200"
+                                      >
+                                        Usuń
+                                      </button>
+                                  )}
                                 </div>
                             )}
                           </div>
+                        </article>
+                    ))}
 
-                          {/* Buttons rendering */}
-                          {(post.canEdit || post.canDelete) && (
-                              <div className="flex items-center gap-2">
-                                {post.canEdit && (
-                                    <button
-                                        onClick={() => {
-                                          setEditingAnnouncement(post);
-                                          setIsModalOpen(true);
-                                        }}
-                                        className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition font-medium border border-gray-200"
-                                    >
-                                      Edytuj
-                                    </button>
-                                )}
-                                {post.canDelete && (
-                                    <button
-                                        onClick={() => setPostToDelete(post.id)}
-                                        className="text-sm bg-white hover:bg-red-50 text-red-600 px-3 py-1 rounded transition font-medium border border-red-200"
-                                    >
-                                      Usuń
-                                    </button>
-                                )}
-                              </div>
-                          )}
+                    {/* Pagination buttons */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center space-x-4 mt-8 pt-4 border-t border-gray-200">
+                          <button
+                              onClick={() => fetchAnnouncements(currentPage - 1)}
+                              disabled={currentPage === 0}
+                              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          >
+                            Poprzednia
+                          </button>
+                          <span className="text-sm text-gray-600 font-medium">
+                          Strona {currentPage + 1} z {totalPages}
+                        </span>
+                          <button
+                              onClick={() => fetchAnnouncements(currentPage + 1)}
+                              disabled={currentPage === totalPages - 1}
+                              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          >
+                            Następna
+                          </button>
                         </div>
-                      </article>
-                  ))
+                    )}
+                  </>
               )}
             </div>
           </section>
@@ -270,7 +301,7 @@ export default function HomePage({ searchParams }: { searchParams: { registered?
               setIsModalOpen(false);
               setEditingAnnouncement(null);
             }}
-            onSuccess={fetchAnnouncements}
+            onSuccess={() => fetchAnnouncements(0)}
             announcementToEdit={editingAnnouncement}
         />
 

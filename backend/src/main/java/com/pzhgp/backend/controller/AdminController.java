@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.BreederResponseDto;
 import com.pzhgp.backend.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,8 +28,8 @@ public class AdminController {
     }
 
     @PutMapping("/approve/{id}")
-    public ResponseEntity<String> approveAccount(@PathVariable Long id) {
-        adminService.approveAccount(id);
+    public ResponseEntity<String> approveAccount(@PathVariable Long id, Authentication authentication) {
+        adminService.approveAccount(id, authentication.getName());
         return ResponseEntity.ok("Konto zostało pomyślnie zaakceptowane.");
     }
 
