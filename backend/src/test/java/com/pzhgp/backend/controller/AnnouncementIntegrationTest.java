@@ -5,6 +5,7 @@ import com.pzhgp.backend.dto.AnnouncementRequestDto;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,15 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -36,9 +35,6 @@ class AnnouncementIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     private AnnouncementRepository announcementRepository;
 
     @Autowired
@@ -46,6 +42,9 @@ class AnnouncementIntegrationTest {
 
     @Autowired
     private SectionRepository sectionRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -62,11 +61,6 @@ class AnnouncementIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute("DELETE FROM notifications");
-        jdbcTemplate.execute("DELETE FROM announcements");
-        jdbcTemplate.execute("DELETE FROM breeders");
-        jdbcTemplate.execute("DELETE FROM sections");
-
         Section section = new Section();
         section.setName("Sekcja Testowa");
         section.setSortOrder(1);
@@ -74,7 +68,7 @@ class AnnouncementIntegrationTest {
 
         admin = new Breeder();
         admin.setEmail("admin@test.pl");
-        admin.setName("Admin");
+        admin.setName("Administrator");
         admin.setSurname("Testowy");
         admin.setPhoneNumber("111111111");
         admin.setPasswordHash("hashed1");
@@ -85,8 +79,8 @@ class AnnouncementIntegrationTest {
         adminToken = jwtService.generateToken(admin);
 
         moderator = new Breeder();
-        moderator.setEmail("mod@test.pl");
-        moderator.setName("Mod");
+        moderator.setEmail("moderator@test.pl");
+        moderator.setName("Moderator");
         moderator.setSurname("Testowy");
         moderator.setPhoneNumber("222222222");
         moderator.setPasswordHash("hashed2");
@@ -126,12 +120,49 @@ class AnnouncementIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.size()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Prawdziwe Ogłoszenie"))
-                .andExpect(jsonPath("$.content[0].authorName").value("Admin Testowy"))
+                .andExpect(jsonPath("$.content[0].authorName").value("Administrator Testowy"))
                 .andExpect(jsonPath("$.content[0].canEdit").value(false))
 
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1))
                 .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.last").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/announcements - Should correctly paginate results")
+    void shouldPaginateAnnouncementsCorrectly() throws Exception {
+        for (int i = 1; i <= 12; i++) {
+            Announcement announcement = new Announcement();
+            announcement.setTitle("Ogłoszenie nr " + i);
+            announcement.setContent("Testowa treść " + i);
+            announcement.setAuthor(admin);
+            announcement.setPinned(false);
+            announcementRepository.save(announcement);
+        }
+
+        assertEquals(12, announcementRepository.count());
+
+        mockMvc.perform(get("/api/announcements")
+                        .param("page", "1")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.size()").value(5))
+                .andExpect(jsonPath("$.totalElements").value(12))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.size").value(5))
+                .andExpect(jsonPath("$.first").value(false))
+                .andExpect(jsonPath("$.last").value(false));
+
+        mockMvc.perform(get("/api/announcements")
+                        .param("page", "2")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.size()").value(2))
+                .andExpect(jsonPath("$.number").value(2))
                 .andExpect(jsonPath("$.last").value(true));
     }
 
@@ -154,6 +185,20 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /api/announcements - Should allow MODERATOR to create announcement")
+    void shouldAllowModeratorToCreateAnnouncement() throws Exception {
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Lot próbny", "Informacje dla hodowców", false);
+
+        mockMvc.perform(post("/api/announcements")
+                        .header("Authorization", "Bearer " + modToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isCreated());
+
+        assertEquals(1, announcementRepository.count());
+    }
+
+    @Test
     @DisplayName("POST /api/announcements - Spring Security should block standard Breeder")
     void shouldBlockBreederFromCreatingAnnouncement() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zły tytuł", "Nieważne", false);
@@ -168,11 +213,29 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /api/announcements/{id} - Administrator should successfully delete Moderator's post from real DB")
+    @DisplayName("PUT /api/announcements/{id} - Should return 403 Forbidden when BREEDER tries to update announcement")
+    void shouldDenyBreederFromUpdatingAnnouncement() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Admina");
+        announcement.setContent("Treść");
+        announcement.setAuthor(admin);
+        announcementRepository.save(announcement);
+
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zmieniony tytuł", "Treść", false);
+
+        mockMvc.perform(put("/api/announcements/{id}", announcement.getId())
+                        .header("Authorization", "Bearer " + breederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/announcements/{id} - Administrator should successfully delete Moderator's post from DB")
     void adminShouldDeleteModeratorsPostFromDatabase() throws Exception {
         Announcement announcement = new Announcement();
-        announcement.setTitle("Ogłoszenie Moda");
-        announcement.setContent("Treść Moda");
+        announcement.setTitle("Ogłoszenie Moderatora");
+        announcement.setContent("Treść Moderatora");
         announcement.setAuthor(moderator);
         announcementRepository.save(announcement);
 
@@ -208,5 +271,46 @@ class AnnouncementIntegrationTest {
         assertEquals("Nowy tytuł", updatedInDb.getTitle());
         assertEquals("Nowa treść", updatedInDb.getContent());
         assertTrue(updatedInDb.isPinned());
+    }
+
+    @Test
+    @DisplayName("POST /api/announcements - Should use current role from database instead of outdated JWT claim")
+    void shouldReflectDbRoleChangeDespiteOldJwt() throws Exception {
+        Breeder currentAdmin = breederRepository.findByEmail("admin@test.pl").orElseThrow();
+        currentAdmin.setRole(Role.BREEDER);
+        breederRepository.save(currentAdmin);
+
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Próba ataku", "Mam stary token!", false);
+
+        mockMvc.perform(post("/api/announcements")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /api/announcements - Should create notifications for all active breeders except the author")
+    void shouldCreateNotificationsOnAnnouncementCreation() throws Exception {
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Nowe ogłoszenie", "Ważne info", true);
+
+        mockMvc.perform(post("/api/announcements")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isCreated());
+
+        List<Notification> notifications = notificationRepository.findAll();
+
+        assertEquals(2, notifications.size());
+
+        assertTrue(notifications.stream()
+                .anyMatch(n -> n.getRecipient().getEmail().equals("moderator@test.pl")));
+
+        assertTrue(notifications.stream()
+                .anyMatch(n -> n.getRecipient().getEmail().equals("hodowca@test.pl")));
+
+        assertFalse(notifications.stream()
+                .anyMatch(n -> n.getRecipient().getEmail().equals("admin@test.pl")));
     }
 }
