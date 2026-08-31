@@ -17,7 +17,6 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
     @Query("DELETE FROM ForumPost p WHERE p.topic.id = :topicId")
     void deleteAllByTopicId(@Param("topicId") Long topicId);
 
-    // Nowa metoda do pobierania wpisów z optymalizacją (JOIN z tabelą breeders)
     @EntityGraph(attributePaths = {"author"})
     Page<ForumPost> findByTopicId(Long topicId, Pageable pageable);
 }

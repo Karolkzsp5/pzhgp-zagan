@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
 public class ForumCategoryService {
 
     private final ForumCategoryRepository categoryRepository;
-
-    // ZMIANA: Wstrzyknięcie brakującego repozytorium tematów
     private final ForumTopicRepository topicRepository;
 
     @Transactional(readOnly = true)
@@ -57,7 +55,6 @@ public class ForumCategoryService {
         ForumCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
 
-        // Zabezpieczenie przed usunięciem kategorii z tematami (tutaj zgłaszało błąd)
         if (topicRepository.existsByCategoryId(id)) {
             throw new IllegalStateException("Nie można usunąć kategorii, która zawiera tematy.");
         }
