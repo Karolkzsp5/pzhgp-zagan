@@ -13,5 +13,5 @@ public record ForumTopicDto(
         Integer views,
         LocalDateTime createdAt,
         Boolean canDelete,
-        Boolean canModerate // Dla kłódki i pinezki
+        Boolean canModerate
 ) {}

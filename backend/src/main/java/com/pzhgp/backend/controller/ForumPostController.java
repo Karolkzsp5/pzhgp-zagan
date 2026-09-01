@@ -18,7 +18,6 @@ public class ForumPostController {
 
     private final ForumPostService postService;
 
-    // Pobieranie wpisów z danego tematu
     @GetMapping("/topics/{topicId}/posts")
     public ResponseEntity<Page<ForumPostDto>> getPostsByTopic(
             @PathVariable Long topicId,
@@ -29,7 +28,6 @@ public class ForumPostController {
         return ResponseEntity.ok(postService.getPostsByTopic(topicId, page, size, authentication.getName()));
     }
 
-    // Dodawanie nowego wpisu do tematu
     @PostMapping("/topics/{topicId}/posts")
     public ResponseEntity<Void> addPostToTopic(
             @PathVariable Long topicId,
@@ -40,7 +38,6 @@ public class ForumPostController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // Edycja istniejącego wpisu
     @PutMapping("/posts/{postId}")
     public ResponseEntity<Void> updatePost(
             @PathVariable Long postId,
@@ -51,7 +48,6 @@ public class ForumPostController {
         return ResponseEntity.ok().build();
     }
 
-    // Usuwanie wpisu
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long postId,

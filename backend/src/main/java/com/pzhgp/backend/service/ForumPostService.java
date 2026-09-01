@@ -27,19 +27,16 @@ public class ForumPostService {
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    // ZMIANA 1: Dodaliśmy parametr requesterEmail
     public Page<ForumPostDto> getPostsByTopic(Long topicId, int page, int size, String requesterEmail) {
         if (!topicRepository.existsById(topicId)) {
             throw new EntityNotFoundException("Nie znaleziono tematu o ID: " + topicId);
         }
 
-        // ZMIANA 2: Pobieramy użytkownika, który wysłał zapytanie
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
 
-        // ZMIANA 3: Przekazujemy obiekt requester do metody mapującej (używamy wyrażenia lambda)
         return postRepository.findByTopicId(topicId, pageable).map(post -> mapToDto(post, requester));
     }
 
@@ -110,11 +107,9 @@ public class ForumPostService {
         postRepository.delete(post);
     }
 
-    // ZMIANA 4: Metoda przyjmuje teraz również obiekt requester i oblicza flagi uprawnień
     private ForumPostDto mapToDto(ForumPost post, Breeder requester) {
         String authorFullName = post.getAuthor().getName() + " " + post.getAuthor().getSurname();
 
-        // Logika uprawnień
         boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
         boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
@@ -124,8 +119,8 @@ public class ForumPostService {
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),
-                isAuthor,                   // canEdit - tylko autor może edytować swój wpis
-                isAuthor || hasPrivileges   // canDelete - usunąć może autor LUB admin/moderator
+                isAuthor,
+                isAuthor || hasPrivileges
         );
     }
 }

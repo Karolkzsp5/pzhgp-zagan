@@ -19,7 +19,6 @@ public class ForumTopicController {
 
     private final ForumTopicService topicService;
 
-    // Pobieranie tematów z danej kategorii (Paginacja)
     @GetMapping("/categories/{categoryId}/topics")
     public ResponseEntity<Page<ForumTopicDto>> getTopicsByCategory(
             @PathVariable Long categoryId,
@@ -38,7 +37,6 @@ public class ForumTopicController {
         return ResponseEntity.ok(topicService.getTopicAndIncrementViews(topicId, authentication.getName()));
     }
 
-    // Dodawanie nowego tematu
     @PostMapping("/topics")
     public ResponseEntity<Void> createTopic(
             @Valid @RequestBody ForumTopicRequest request,
@@ -60,7 +58,6 @@ public class ForumTopicController {
         return ResponseEntity.ok().build();
     }
 
-    // Usuwanie tematu
     @DeleteMapping("/topics/{id}")
     public ResponseEntity<Void> deleteTopic(
             @PathVariable Long id,

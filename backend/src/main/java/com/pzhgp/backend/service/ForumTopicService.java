@@ -32,14 +32,11 @@ public class ForumTopicService {
             throw new EntityNotFoundException("Nie znaleziono kategorii o ID: " + categoryId);
         }
 
-        // Pobieramy użytkownika, który wysyła zapytanie
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        // Sortujemy od najnowszych postów
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastPostAt"));
 
-        // Przekazujemy obiekt requestera do metody mapującej
         return topicRepository.findByCategoryId(categoryId, pageable)
                 .map(topic -> mapToDto(topic, requester));
     }
@@ -52,14 +49,12 @@ public class ForumTopicService {
         Breeder author = breederRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        // 1. Zapisujemy nowy temat
         ForumTopic topic = new ForumTopic();
         topic.setCategory(category);
         topic.setAuthor(author);
         topic.setTitle(request.title());
         topic = topicRepository.save(topic);
 
-        // 2. Zapisujemy od razu pierwszy wpis w temacie
         ForumPost firstPost = new ForumPost();
         firstPost.setTopic(topic);
         firstPost.setAuthor(author);
@@ -69,12 +64,11 @@ public class ForumTopicService {
 
     @Transactional
     public ForumTopicDto getTopicAndIncrementViews(Long topicId, String requesterEmail) {
-        // 1. Atomowe podbicie licznika w bazie (bez wczytywania encji do pamięci)
-        topicRepository.incrementViews(topicId);
-
-        // 2. Pobranie zaktualizowanego tematu
         ForumTopic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu."));
+
+        topicRepository.incrementViews(topicId);
+        topic.setViews(topic.getViews() + 1);
 
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
@@ -96,7 +90,7 @@ public class ForumTopicService {
         switch (action) {
             case LOCK -> topic.setIsLocked(!topic.getIsLocked());
             case PIN -> topic.setIsPinned(!topic.getIsPinned());
-            default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna."); // Choć przy Enumie to teoretycznie niemożliwe
+            default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna.");
         }
     }
 
@@ -115,10 +109,7 @@ public class ForumTopicService {
             throw new IllegalStateException("Brak uprawnień do usunięcia tego tematu.");
         }
 
-        // 1. Optymalne usunięcie wszystkich komentarzy powiązanych z tematem jednym zapytaniem SQL
         postRepository.deleteAllByTopicId(topicId);
-
-        // 2. Usunięcie samego tematu
         topicRepository.delete(topic);
     }
 
@@ -138,8 +129,8 @@ public class ForumTopicService {
                 topic.getLastPostAt(),
                 topic.getViews(),
                 topic.getCreatedAt(),
-                isAuthor || hasPrivileges, // canDelete
-                hasPrivileges              // canModerate
+                isAuthor || hasPrivileges,
+                hasPrivileges
         );
     }
 }
