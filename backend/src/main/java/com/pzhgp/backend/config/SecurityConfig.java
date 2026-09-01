@@ -45,8 +45,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/forum/categories").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/forum/categories/**").hasAuthority(Role.ADMINISTRATOR.name())
 
+                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMINISTRATOR.name())
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
