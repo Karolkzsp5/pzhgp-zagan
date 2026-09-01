@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,7 +103,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories - Anyone can fetch categories")
+    @DisplayName("GET /categories - Authenticated can fetch categories")
     void getAllCategories_ShouldReturn200() throws Exception {
         mockMvc.perform(get("/api/forum/categories")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
@@ -113,10 +112,16 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET /categories - Unauthenticated user gets 403 Forbidden")
+    void getAllCategories_WhenUnauthenticated_ShouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/forum/categories"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("POST /categories - Admin can create category")
     void createCategory_AsAdmin_ShouldReturn201() throws Exception {
         long initialCount = categoryRepository.count();
-        // Zakładam, że żądanie to prosty JSON z nazwą, możesz to podmienić na odpowiednie DTO
         Map<String, String> request = Map.of("name", "Nowy Dział");
 
         mockMvc.perform(post("/api/forum/categories")
@@ -155,12 +160,44 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("PUT /categories/{id} - Breeder gets 403 Forbidden")
+    void updateCategory_AsBreeder_ShouldReturn403() throws Exception {
+        Map<String, String> request = Map.of("name", "Zmieniona Nazwa");
+
+        mockMvc.perform(put("/api/forum/categories/" + category.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("DELETE /categories/{id} - Admin can delete category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + category.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isNoContent()); // Zamień na .isOk() jeśli Twój kontroler zwraca 200
+                .andExpect(status().isNoContent());
 
         assertTrue(categoryRepository.findById(category.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("DELETE /categories/{id} - Breeder gets 403 Forbidden")
+    void deleteCategory_AsBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/categories/" + category.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /categories/9999 - Should return 404 Not Found")
+    void updateCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
+        Map<String, String> request = Map.of("name", "Test");
+
+        mockMvc.perform(put("/api/forum/categories/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
     }
 }
