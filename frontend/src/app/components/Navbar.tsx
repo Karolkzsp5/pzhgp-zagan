@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getAuthToken, decodeJwt } from '@/utils/jwt';
 
 interface NotificationDto {
@@ -28,6 +28,7 @@ export default function Navbar() {
     const notificationsRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
+    const pathname = usePathname(); // Hook do sprawdzania aktywnej ścieżki
 
     useEffect(() => {
         const token = getAuthToken();
@@ -135,15 +136,46 @@ export default function Navbar() {
         return date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
     };
 
+    const isActive = (path: string) => {
+        if (path === '/') return pathname === '/';
+        return pathname.startsWith(path);
+    };
+
+    const navLinks = [
+        { name: 'Wyniki lotów', href: '/results', show: true },
+        { name: 'Forum', href: '/forum', show: isLoggedIn },
+        { name: 'Kontakt', href: '/contact', show: true },
+    ];
+
     return (
         <nav className="bg-blue-700 text-white shadow-md relative z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
-                    <Link href="/" className="flex-shrink-0 font-bold text-xl tracking-wider hover:text-gray-200 transition">
-                        PZHGP Żagań
-                    </Link>
 
-                    <div className="flex items-center space-x-2 sm:space-x-4">
+                    <div className="flex items-center flex-1">
+                        <Link href="/" className="flex-shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition">
+                            PZHGP Żagań
+                        </Link>
+                    </div>
+
+                    <div className="hidden md:flex flex-1 justify-center space-x-8">
+                        {navLinks.filter(link => link.show).map((link) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={`text-sm font-medium transition-all duration-200 py-1 ${
+                                    isActive(link.href)
+                                        ? 'border-b-2 border-white text-white'
+                                        : 'text-blue-100 hover:text-white border-b-2 border-transparent hover:border-blue-300'
+                                }`}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Notification and profile */}
+                    <div className="flex items-center justify-end flex-1 space-x-2 sm:space-x-4">
                         {!isLoggedIn ? (
                             <>
                                 <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition">
@@ -156,6 +188,7 @@ export default function Navbar() {
                         ) : (
                             <div className="flex items-center space-x-1 sm:space-x-3">
 
+                                {/* Ikona Powiadomień */}
                                 <div className="relative" ref={notificationsRef}>
                                     <button
                                         onClick={() => {
@@ -176,7 +209,7 @@ export default function Navbar() {
                                         )}
                                     </button>
 
-                                    {/* Powiadomienia */}
+                                    {/* Modal Powiadomień */}
                                     {isNotificationsOpen && (
                                         <div className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
@@ -242,7 +275,7 @@ export default function Navbar() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </button>
-                                    
+
                                     {isDropdownOpen && (
                                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
                                             {userRole === 'ADMINISTRATOR' && (
