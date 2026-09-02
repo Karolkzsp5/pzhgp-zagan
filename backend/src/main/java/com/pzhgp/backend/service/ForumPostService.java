@@ -46,7 +46,7 @@ public class ForumPostService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu."));
 
         if (topic.getIsLocked()) {
-            throw new IllegalStateException("Temat jest zamknięty. Nie można dodawać nowych odpowiedzi.");
+            throw new IllegalStateException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
         }
 
         Breeder author = breederRepository.findByEmail(authorEmail)
@@ -65,7 +65,7 @@ public class ForumPostService {
             String authorFullName = author.getName() + " " + author.getSurname();
             notificationService.createNotification(
                     topic.getAuthor().getId(),
-                    authorFullName + " odpowiedział w Twoim temacie: " + topic.getTitle(),
+                    authorFullName + " dodał/a odpowiedź w twoim wątku: " + topic.getTitle(),
                     "/forum/topic/" + topic.getId(),
                     NotificationType.NEW_REPLY
             );

@@ -23,6 +23,11 @@ public class ForumCategoryController {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ForumCategoryDto> getCategoryById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.getCategoryById(id));
+    }
+
     @PostMapping
     public ResponseEntity<Void> createCategory(@Valid @RequestBody ForumCategoryRequest request) {
         categoryService.createCategory(request);

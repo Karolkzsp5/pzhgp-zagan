@@ -201,14 +201,16 @@ const MenuBar = ({ editor }: { editor: any }) => {
     );
 };
 
+const editorExtensions = [
+    StarterKit,
+    Underline,
+    Highlight.configure({ multicolor: true }),
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+];
+
 export default function TextEditor({ content, onChange }: TextEditorProps) {
     const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Underline,
-            Highlight.configure({ multicolor: true }),
-            TextAlign.configure({ types: ['heading', 'paragraph'] }),
-        ],
+        extensions: editorExtensions,
         content: content,
         immediatelyRender: false,
         editorProps: {

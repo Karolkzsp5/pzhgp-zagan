@@ -28,6 +28,13 @@ public class ForumCategoryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public ForumCategoryDto getCategoryById(Long id) {
+        ForumCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        return mapToDto(category);
+    }
+
     @Transactional
     public void createCategory(ForumCategoryRequest request) {
         ForumCategory category = new ForumCategory();
