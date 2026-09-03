@@ -5,16 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "forum_topics")
+@Table(name = "forum_threads")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ForumTopic {
+public class ForumThread {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -28,7 +28,7 @@ export default function Navbar() {
     const notificationsRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
-    const pathname = usePathname(); // Hook do sprawdzania aktywnej ścieżki
+    const pathname = usePathname();
 
     useEffect(() => {
         const token = getAuthToken();

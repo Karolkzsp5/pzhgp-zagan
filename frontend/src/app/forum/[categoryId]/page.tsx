@@ -2,11 +2,11 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import ThreadModal from '../../components/ThreadModal';
-import ForumGuard from '../../components/ForumGuard';
-import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThreadDto } from '../../services/forumService';
+import Navbar from '@/app/components/Navbar';
+import Footer from '@/app/components/Footer';
+import ThreadModal from '@/app/components/ThreadModal';
+import ForumGuard from '@/app/components/ForumGuard';
+import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThreadDto } from '@/app/services/forumService';
 
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const resolvedParams = use(params);
@@ -23,7 +23,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
     const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
 
     useEffect(() => {
-        loadData();
+        void loadData();
     }, [categoryId, currentPage]);
 
     const loadData = async () => {
@@ -57,7 +57,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
 
-                <main className="flex-grow max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
+                <main className="grow max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
                     <nav className="flex text-sm text-gray-500 mb-6 font-medium">
                         <Link href="/forum" className="hover:text-blue-600 transition">Forum</Link>
                         <span className="mx-2">/</span>
@@ -78,16 +78,14 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                         </button>
                     </div>
 
-                    {error && (
-                        <div className="bg-red-50 border-l-4 border-red-400 p-4 shadow-sm border border-gray-200 border-t-0">
-                            <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                    )}
-
                     <div className="bg-white shadow-sm border border-gray-200 rounded-b-lg overflow-hidden">
                         {isLoading ? (
                             <div className="flex justify-center items-center py-20">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-16 text-red-600 font-medium">
+                                {error}
                             </div>
                         ) : threads.length === 0 ? (
                             <div className="text-center py-16 text-gray-500">
@@ -151,7 +149,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                         )}
                     </div>
 
-                    {totalPages > 1 && (
+                    {!isLoading && !error && totalPages > 1 && (
                         <div className="flex justify-center items-center space-x-4 mt-8">
                             <button
                                 onClick={() => setCurrentPage(prev => prev - 1)}
@@ -181,7 +179,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     onClose={() => setIsThreadModalOpen(false)}
                     onSuccess={() => {
                         setCurrentPage(0);
-                        loadData();
+                        void loadData();
                     }}
                     categoryId={categoryId}
                 />

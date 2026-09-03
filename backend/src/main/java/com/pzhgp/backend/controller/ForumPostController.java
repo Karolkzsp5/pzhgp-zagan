@@ -18,23 +18,23 @@ public class ForumPostController {
 
     private final ForumPostService postService;
 
-    @GetMapping("/topics/{topicId}/posts")
-    public ResponseEntity<Page<ForumPostDto>> getPostsByTopic(
-            @PathVariable Long topicId,
+    @GetMapping("/threads/{threadId}/posts")
+    public ResponseEntity<Page<ForumPostDto>> getPostsByThread(
+            @PathVariable Long threadId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(postService.getPostsByTopic(topicId, page, size, authentication.getName()));
+        return ResponseEntity.ok(postService.getPostsByThread(threadId, page, size, authentication.getName()));
     }
 
-    @PostMapping("/topics/{topicId}/posts")
-    public ResponseEntity<Void> addPostToTopic(
-            @PathVariable Long topicId,
+    @PostMapping("/threads/{threadId}/posts")
+    public ResponseEntity<Void> addPostToThread(
+            @PathVariable Long threadId,
             @Valid @RequestBody ForumPostRequest request,
             Authentication authentication
     ) {
-        postService.addPost(topicId, request, authentication.getName());
+        postService.addPost(threadId, request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

@@ -23,9 +23,10 @@ export interface ForumThreadDto {
 
 export interface ForumPostDto {
     id: number;
-    body: string;
     authorName: string;
+    body: string;
     createdAt: string;
+    editedAt: string | null;
     canEdit: boolean;
     canDelete: boolean;
 }
@@ -57,7 +58,7 @@ export const fetchCategoryById = async (categoryId: number): Promise<ForumCatego
 
 export const fetchThreadsByCategory = async (categoryId: number, page = 0): Promise<PageResponse<ForumThreadDto>> => {
     const token = getAuthToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryId}/topics?page=${page}&size=15`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryId}/threads?page=${page}&size=15`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
     if (!response.ok) throw new Error('Błąd pobierania wątków');
@@ -66,7 +67,7 @@ export const fetchThreadsByCategory = async (categoryId: number, page = 0): Prom
 
 export const fetchThreadById = async (threadId: number): Promise<ForumThreadDto & { categoryName?: string }> => {
     const token = getAuthToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/topics/${threadId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
     if (!response.ok) throw new Error('Błąd pobierania wątku');
@@ -75,7 +76,7 @@ export const fetchThreadById = async (threadId: number): Promise<ForumThreadDto 
 
 export const fetchPostsByThread = async (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> => {
     const token = getAuthToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/topics/${threadId}/posts?page=${page}&size=20`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/posts?page=${page}&size=20`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
     if (!response.ok) throw new Error('Błąd pobierania postów');
@@ -84,7 +85,7 @@ export const fetchPostsByThread = async (threadId: number, page = 0): Promise<Pa
 
 export const createPost = async (threadId: number, body: string): Promise<void> => {
     const token = getAuthToken();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/topics/${threadId}/posts`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/posts`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,

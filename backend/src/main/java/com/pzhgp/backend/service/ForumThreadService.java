@@ -1,13 +1,13 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.ForumTopicDto;
-import com.pzhgp.backend.dto.ForumTopicRequest;
-import com.pzhgp.backend.dto.TopicAction;
+import com.pzhgp.backend.dto.ForumThreadDto;
+import com.pzhgp.backend.dto.ForumThreadRequest;
+import com.pzhgp.backend.dto.ThreadAction;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
-import com.pzhgp.backend.repository.ForumTopicRepository;
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,15 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ForumTopicService {
+public class ForumThreadService {
 
-    private final ForumTopicRepository topicRepository;
+    private final ForumThreadRepository threadRepository;
     private final ForumCategoryRepository categoryRepository;
     private final BreederRepository breederRepository;
     private final ForumPostRepository postRepository;
 
     @Transactional(readOnly = true)
-    public Page<ForumTopicDto> getTopicsByCategory(Long categoryId, int page, int size, String requesterEmail) {
+    public Page<ForumThreadDto> getThreadsByCategory(Long categoryId, int page, int size, String requesterEmail) {
         if (!categoryRepository.existsById(categoryId)) {
             throw new EntityNotFoundException("Nie znaleziono kategorii o ID: " + categoryId);
         }
@@ -37,49 +37,48 @@ public class ForumTopicService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastPostAt"));
 
-        return topicRepository.findByCategoryId(categoryId, pageable)
-                .map(topic -> mapToDto(topic, requester));
+        return threadRepository.findByCategoryId(categoryId, pageable)
+                .map(thread -> mapToDto(thread, requester));
     }
 
     @Transactional
-    public void createTopic(ForumTopicRequest request, String authorEmail) {
+    public void createThread(ForumThreadRequest request, String authorEmail) {
         ForumCategory category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii."));
 
         Breeder author = breederRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        ForumTopic topic = new ForumTopic();
-        topic.setCategory(category);
-        topic.setAuthor(author);
-        topic.setTitle(request.title());
-        topic = topicRepository.save(topic);
+        ForumThread thread = new ForumThread();
+        thread.setCategory(category);
+        thread.setAuthor(author);
+        thread.setTitle(request.title());
+        thread = threadRepository.save(thread);
 
         ForumPost firstPost = new ForumPost();
-        firstPost.setTopic(topic);
+        firstPost.setThread(thread);
         firstPost.setAuthor(author);
         firstPost.setBody(request.initialPostContent());
         postRepository.save(firstPost);
     }
 
     @Transactional
-    public ForumTopicDto getTopicAndIncrementViews(Long topicId, String requesterEmail) {
-        ForumTopic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu."));
+    public ForumThreadDto getThreadAndIncrementViews(Long threadId, String requesterEmail) {
+        threadRepository.incrementViews(threadId);
 
-        topicRepository.incrementViews(topicId);
-        topic.setViews(topic.getViews() + 1);
+        ForumThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        return mapToDto(topic, requester);
+        return mapToDto(thread, requester);
     }
 
     @Transactional
-    public void toggleTopicStatus(Long topicId, String requesterEmail, TopicAction action) {
-        ForumTopic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu."));
+    public void toggleThreadStatus(Long threadId, String requesterEmail, ThreadAction action) {
+        ForumThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
@@ -88,47 +87,50 @@ public class ForumTopicService {
         }
 
         switch (action) {
-            case LOCK -> topic.setIsLocked(!topic.getIsLocked());
-            case PIN -> topic.setIsPinned(!topic.getIsPinned());
+            case LOCK -> thread.setIsLocked(!thread.getIsLocked());
+            case PIN -> thread.setIsPinned(!thread.getIsPinned());
             default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna.");
         }
     }
 
     @Transactional
-    public void deleteTopic(Long topicId, String requesterEmail) {
-        ForumTopic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu o ID: " + topicId));
+    public void deleteThread(Long threadId, String requesterEmail) {
+        ForumThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
 
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        boolean isAuthor = topic.getAuthor().getId().equals(requester.getId());
+        boolean isAuthor = thread.getAuthor().getId().equals(requester.getId());
         boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
         if (!isAuthor && !hasPrivileges) {
-            throw new IllegalStateException("Brak uprawnień do usunięcia tego tematu.");
+            throw new IllegalStateException("Brak uprawnień do usunięcia tego wątku.");
         }
 
-        postRepository.deleteAllByTopicId(topicId);
-        topicRepository.delete(topic);
+        postRepository.deleteAllByThreadId(threadId);
+        threadRepository.delete(thread);
     }
 
-    private ForumTopicDto mapToDto(ForumTopic topic, Breeder requester) {
-        String authorFullName = topic.getAuthor().getName() + " " + topic.getAuthor().getSurname();
-
-        boolean isAuthor = topic.getAuthor().getId().equals(requester.getId());
+    private ForumThreadDto mapToDto(ForumThread thread, Breeder requester) {
+        String authorFullName = thread.getAuthor().getName() + " " + thread.getAuthor().getSurname();
+        boolean isAuthor = thread.getAuthor().getId().equals(requester.getId());
         boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
-        return new ForumTopicDto(
-                topic.getId(),
-                topic.getCategory().getId(),
-                topic.getTitle(),
+        long totalPosts = postRepository.countByThreadId(thread.getId());
+        int repliesCount = (int) Math.max(0, totalPosts - 1);
+
+        return new ForumThreadDto(
+                thread.getId(),
+                thread.getCategory().getId(),
+                thread.getTitle(),
                 authorFullName,
-                topic.getIsLocked(),
-                topic.getIsPinned(),
-                topic.getLastPostAt(),
-                topic.getViews(),
-                topic.getCreatedAt(),
+                repliesCount,
+                thread.getIsLocked(),
+                thread.getIsPinned(),
+                thread.getLastPostAt(),
+                thread.getViews(),
+                thread.getCreatedAt(),
                 isAuthor || hasPrivileges,
                 hasPrivileges
         );

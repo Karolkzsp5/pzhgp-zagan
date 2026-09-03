@@ -56,7 +56,7 @@ class ForumPostIntegrationTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private ForumTopic topic;
+    private ForumThread topic;
     private ForumPost post;
 
     private String topicAuthorToken;
@@ -136,7 +136,7 @@ class ForumPostIntegrationTest {
         category.setName("Kategoria Testowa");
         categoryRepository.save(category);
 
-        topic = new ForumTopic();
+        topic = new ForumThread();
         topic.setCategory(category);
         topic.setAuthor(topicAuthor);
         topic.setTitle("Temat do dyskusji");
@@ -182,7 +182,7 @@ class ForumPostIntegrationTest {
 
         assertEquals(initialPostCount + 1, postRepository.count());
 
-        ForumTopic updatedTopic = topicRepository.findById(topic.getId()).get();
+        ForumThread updatedTopic = topicRepository.findById(topic.getId()).get();
         assertTrue(updatedTopic.getLastPostAt().isAfter(beforePost));
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());

@@ -14,9 +14,12 @@ import org.springframework.stereotype.Repository;
 public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
 
     @Modifying
-    @Query("DELETE FROM ForumPost p WHERE p.topic.id = :topicId")
-    void deleteAllByTopicId(@Param("topicId") Long topicId);
+    @Query("DELETE FROM ForumPost p WHERE p.thread.id = :threadId")
+    void deleteAllByThreadId(@Param("threadId") Long threadId);
 
     @EntityGraph(attributePaths = {"author"})
-    Page<ForumPost> findByTopicId(Long topicId, Pageable pageable);
+    Page<ForumPost> findByThreadId(Long threadId, Pageable pageable);
+
+    // NOWOŚĆ: Liczenie postów do statystyk
+    long countByThreadId(Long threadId);
 }

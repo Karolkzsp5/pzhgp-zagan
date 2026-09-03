@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthToken, decodeJwt } from '@/utils/jwt';
-import AdminGuard from '../components/AdminGuard';
+import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
-import BreederDetailsModal, { BreederDto } from '../components/BreederDetailsModal';
-import Footer from '../components/Footer';
+import BreederDetailsModal, { BreederDto } from '@/app/components/BreederDetailsModal';
+import Footer from '@/app/components/Footer';
 
 export default function AdminPanelPage() {
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);

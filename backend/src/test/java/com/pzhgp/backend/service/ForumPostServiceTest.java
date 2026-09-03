@@ -47,7 +47,7 @@ class ForumPostServiceTest {
     private Breeder topicAuthor;
     private Breeder postAuthor;
     private Breeder moderator;
-    private ForumTopic topic;
+    private ForumThread topic;
     private ForumPost post;
 
     @BeforeEach
@@ -71,7 +71,7 @@ class ForumPostServiceTest {
         moderator.setEmail("mod@test.pl");
         moderator.setRole(Role.MODERATOR);
 
-        topic = new ForumTopic();
+        topic = new ForumThread();
         topic.setId(100L);
         topic.setAuthor(topicAuthor);
         topic.setTitle("Tytuł Tematu");

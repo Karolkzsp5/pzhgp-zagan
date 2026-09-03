@@ -1,6 +1,6 @@
 package com.pzhgp.backend.dto;
 
-public enum TopicAction {
+public enum ThreadAction {
     LOCK,
     PIN
 }

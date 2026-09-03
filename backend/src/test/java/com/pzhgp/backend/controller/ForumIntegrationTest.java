@@ -1,7 +1,7 @@
 package com.pzhgp.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pzhgp.backend.dto.ForumTopicRequest;
+import com.pzhgp.backend.dto.ForumThreadRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.*;
 import com.pzhgp.backend.service.JwtService;
@@ -31,7 +31,7 @@ class ForumIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ForumTopicRepository topicRepository;
+    private ForumThreadRepository threadRepository;
 
     @Autowired
     private ForumCategoryRepository categoryRepository;
@@ -51,7 +51,7 @@ class ForumIntegrationTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private ForumCategory category;
-    private ForumTopic topic;
+    private ForumThread thread;
 
     private String authorToken;
     private String otherBreederToken;
@@ -117,17 +117,17 @@ class ForumIntegrationTest {
         category.setName("Kategoria Testowa");
         categoryRepository.save(category);
 
-        topic = new ForumTopic();
-        topic.setCategory(category);
-        topic.setAuthor(author);
-        topic.setTitle("Tytuł początkowy");
-        topic.setIsLocked(false);
-        topic.setIsPinned(false);
-        topic.setViews(0);
-        topicRepository.save(topic);
+        thread = new ForumThread();
+        thread.setCategory(category);
+        thread.setAuthor(author);
+        thread.setTitle("Tytuł początkowy");
+        thread.setIsLocked(false);
+        thread.setIsPinned(false);
+        thread.setViews(0);
+        threadRepository.save(thread);
 
         ForumPost post = new ForumPost();
-        post.setTopic(topic);
+        post.setThread(thread);
         post.setAuthor(author);
         post.setBody("Treść wpisu testowego");
         postRepository.save(post);
@@ -135,9 +135,9 @@ class ForumIntegrationTest {
 
 
     @Test
-    @DisplayName("GET /categories/{id}/topics - Should fetch real data from H2")
-    void getTopicsByCategory_ShouldReturnRealData() throws Exception {
-        mockMvc.perform(get("/api/forum/categories/" + category.getId() + "/topics")
+    @DisplayName("GET /categories/{id}/threads - Should fetch real data from H2")
+    void getThreadsByCategory_ShouldReturnRealData() throws Exception {
+        mockMvc.perform(get("/api/forum/categories/" + category.getId() + "/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Tytuł początkowy"))
@@ -146,167 +146,167 @@ class ForumIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /topics/{id} - Should increment views in real DB")
-    void getTopic_ShouldIncrementViewsInDb() throws Exception {
-        mockMvc.perform(get("/api/forum/topics/" + topic.getId())
+    @DisplayName("GET /threads/{id} - Should increment views in real DB")
+    void getThread_ShouldIncrementViewsInDb() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/" + thread.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isOk());
 
-        assertEquals(1, topicRepository.findById(topic.getId()).get().getViews());
+        assertEquals(1, threadRepository.findById(thread.getId()).get().getViews());
     }
 
     @Test
-    @DisplayName("POST /topics - Should save new topic and post to H2 DB")
-    void createTopic_ShouldSaveToDb() throws Exception {
-        long initialTopicCount = topicRepository.count();
-        ForumTopicRequest request = new ForumTopicRequest(category.getId(), "Nowy temat", "Nowa treść");
+    @DisplayName("POST /threads - Should save new thread and post to H2 DB")
+    void createThread_ShouldSaveToDb() throws Exception {
+        long initialThreadCount = threadRepository.count();
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Nowy temat", "Nowa treść");
 
-        mockMvc.perform(post("/api/forum/topics")
+        mockMvc.perform(post("/api/forum/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        assertEquals(initialTopicCount + 1, topicRepository.count());
+        assertEquals(initialThreadCount + 1, threadRepository.count());
     }
 
     @Test
-    @DisplayName("POST /topics - Unauthenticated user should be rejected (403 Forbidden)")
-    void createTopic_WhenUnauthenticated_ShouldFail() throws Exception {
-        ForumTopicRequest request = new ForumTopicRequest(category.getId(), "Haker", "Próba ataku");
+    @DisplayName("POST /threads - Unauthenticated user should be rejected (403 Forbidden)")
+    void createThread_WhenUnauthenticated_ShouldFail() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Haker", "Próba ataku");
 
-        mockMvc.perform(post("/api/forum/topics")
+        mockMvc.perform(post("/api/forum/threads")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
-        assertEquals(1, topicRepository.count());
+        assertEquals(1, threadRepository.count());
     }
 
     @Test
-    @DisplayName("DELETE /topics/{id} - As Author, should return 204 and remove from DB")
-    void deleteTopic_AsAuthor_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/topics/" + topic.getId())
+    @DisplayName("DELETE /threads/{id} - As Author, should return 204 and remove from DB")
+    void deleteThread_AsAuthor_ShouldRemoveFromDb() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isNoContent());
 
-        assertTrue(topicRepository.findById(topic.getId()).isEmpty());
+        assertTrue(threadRepository.findById(thread.getId()).isEmpty());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/lock - As Admin, should change status to true")
-    void lockTopic_AsAdmin_ShouldChangeDb() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/lock")
+    @DisplayName("PUT /threads/{id}/lock - As Admin, should change status to true")
+    void lockThread_AsAdmin_ShouldChangeDb() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        assertTrue(topicRepository.findById(topic.getId()).get().getIsLocked());
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/lock - As Moderator, should return 200 OK")
-    void lockTopic_AsModerator_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/lock")
+    @DisplayName("PUT /threads/{id}/lock - As Moderator, should return 200 OK")
+    void lockThread_AsModerator_ShouldReturn200() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
                 .andExpect(status().isOk());
 
-        assertTrue(topicRepository.findById(topic.getId()).get().getIsLocked());
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/lock - Role changed to BREEDER in DB after ADMIN JWT issuance should return 403")
-    void lockTopic_WhenAdminRoleDowngradedInDb_ShouldReturn403() throws Exception {
+    @DisplayName("PUT /threads/{id}/lock - Role changed to BREEDER in DB after ADMIN JWT issuance should return 403")
+    void lockThread_WhenAdminRoleDowngradedInDb_ShouldReturn403() throws Exception {
         Breeder adminUser = breederRepository.findByEmail("admin@test.pl").get();
         adminUser.setRole(Role.BREEDER);
         breederRepository.save(adminUser);
 
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/lock")
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isForbidden());
 
-        assertFalse(topicRepository.findById(topic.getId()).get().getIsLocked());
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/pin - As Moderator, should return 200 OK")
-    void pinTopic_AsModerator_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/pin")
+    @DisplayName("PUT /threads/{id}/pin - As Moderator, should return 200 OK")
+    void pinThread_AsModerator_ShouldReturn200() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
                 .andExpect(status().isOk());
 
-        assertTrue(topicRepository.findById(topic.getId()).get().getIsPinned());
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/pin - As Breeder, should return 403 Forbidden")
-    void pinTopic_AsBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/pin")
+    @DisplayName("PUT /threads/{id}/pin - As Breeder, should return 403 Forbidden")
+    void pinThread_AsBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isForbidden());
 
-        assertFalse(topicRepository.findById(topic.getId()).get().getIsPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
 
 
     @Test
-    @DisplayName("PUT /topics/{id}/lock - As Breeder, should return 403 Forbidden")
-    void lockTopic_AsBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/lock")
+    @DisplayName("PUT /threads/{id}/lock - As Breeder, should return 403 Forbidden")
+    void lockThread_AsBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isForbidden());
 
-        assertFalse(topicRepository.findById(topic.getId()).get().getIsLocked());
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
-    @DisplayName("DELETE /topics/{id} - As Other Breeder, should return 403 Forbidden")
-    void deleteTopic_AsOtherBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/topics/" + topic.getId())
+    @DisplayName("DELETE /threads/{id} - As Other Breeder, should return 403 Forbidden")
+    void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isForbidden());
 
-        assertTrue(topicRepository.existsById(topic.getId()));
+        assertTrue(threadRepository.existsById(thread.getId()));
     }
 
 
     @Test
-    @DisplayName("GET /topics/9999 - Should return 404 Not Found for non-existent topic")
-    void getTopic_WhenTopicDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/topics/9999")
+    @DisplayName("GET /threads/9999 - Should return 404 Not Found for non-existent thread")
+    void getThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/9999")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("DELETE /topics/9999 - Should return 404 Not Found for non-existent topic")
-    void deleteTopic_WhenTopicDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/api/forum/topics/9999")
+    @DisplayName("DELETE /threads/9999 - Should return 404 Not Found for non-existent thread")
+    void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/9999")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /topics - As Moderator, should save new topic and return 201 Created")
-    void createTopic_AsModerator_ShouldReturn201() throws Exception {
-        long initialTopicCount = topicRepository.count();
-        ForumTopicRequest request = new ForumTopicRequest(category.getId(), "Temat Moderatora", "Treść stworzona przez moderatora");
+    @DisplayName("POST /threads - As Moderator, should save new thread and return 201 Created")
+    void createThread_AsModerator_ShouldReturn201() throws Exception {
+        long initialThreadCount = threadRepository.count();
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Temat Moderatora", "Treść stworzona przez moderatora");
 
-        mockMvc.perform(post("/api/forum/topics")
+        mockMvc.perform(post("/api/forum/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        assertEquals(initialTopicCount + 1, topicRepository.count());
+        assertEquals(initialThreadCount + 1, threadRepository.count());
     }
 
     @Test
-    @DisplayName("PUT /topics/{id}/pin - As Administrator, should change pin status to true and return 200 OK")
-    void pinTopic_AsAdmin_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/api/forum/topics/" + topic.getId() + "/pin")
+    @DisplayName("PUT /threads/{id}/pin - As Administrator, should change pin status to true and return 200 OK")
+    void pinThread_AsAdmin_ShouldReturn200() throws Exception {
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        assertTrue(topicRepository.findById(topic.getId()).get().getIsPinned());
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
 }

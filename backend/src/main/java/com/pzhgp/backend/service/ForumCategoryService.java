@@ -4,7 +4,7 @@ import com.pzhgp.backend.dto.ForumCategoryDto;
 import com.pzhgp.backend.dto.ForumCategoryRequest;
 import com.pzhgp.backend.entity.ForumCategory;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
-import com.pzhgp.backend.repository.ForumTopicRepository; // Dodany import
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 public class ForumCategoryService {
 
     private final ForumCategoryRepository categoryRepository;
-    private final ForumTopicRepository topicRepository;
+    private final ForumThreadRepository threadRepository;
 
     @Transactional(readOnly = true)
     public List<ForumCategoryDto> getAllCategories() {
-        return categoryRepository.findAllByOrderBySortOrderAsc()
+        return categoryRepository.findAllByOrderBySortOrderAscNameAsc()
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -62,7 +62,7 @@ public class ForumCategoryService {
         ForumCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
 
-        if (topicRepository.existsByCategoryId(id)) {
+        if (threadRepository.existsByCategoryId(id)) {
             throw new IllegalStateException("Nie można usunąć kategorii, która zawiera tematy.");
         }
 

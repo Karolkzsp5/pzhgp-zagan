@@ -3,10 +3,10 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/Footer';
-import TextEditor from '../../../components/TextEditor';
-import ForumGuard from '../../../components/ForumGuard';
+import Navbar from '@/app/components/Navbar';
+import Footer from '@/app/components/Footer';
+import TextEditor from '@/app/components/TextEditor';
+import ForumGuard from '@/app/components/ForumGuard';
 import { fetchThreadById, fetchPostsByThread, createPost, ForumThreadDto, ForumPostDto } from '@/app/services/forumService';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
