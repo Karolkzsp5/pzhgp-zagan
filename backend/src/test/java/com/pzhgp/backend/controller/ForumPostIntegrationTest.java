@@ -34,7 +34,7 @@ class ForumPostIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ForumTopicRepository topicRepository;
+    private ForumThreadRepository threadRepository;
 
     @Autowired
     private ForumCategoryRepository categoryRepository;
@@ -56,10 +56,10 @@ class ForumPostIntegrationTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private ForumThread topic;
+    private ForumThread thread;
     private ForumPost post;
 
-    private String topicAuthorToken;
+    private String threadAuthorToken;
     private String postAuthorToken;
     private String otherBreederToken;
     private String modToken;
@@ -96,17 +96,17 @@ class ForumPostIntegrationTest {
         breederRepository.save(moderator);
         modToken = jwtService.generateToken(moderator);
 
-        Breeder topicAuthor = new Breeder();
-        topicAuthor.setEmail("topic.author@test.pl");
-        topicAuthor.setName("Jan");
-        topicAuthor.setSurname("Autor Tematu");
-        topicAuthor.setPhoneNumber("333333333");
-        topicAuthor.setPasswordHash("hashed3");
-        topicAuthor.setRole(Role.BREEDER);
-        topicAuthor.setStatus(AccountStatus.ACTIVE);
-        topicAuthor.setSection(section);
-        breederRepository.save(topicAuthor);
-        topicAuthorToken = jwtService.generateToken(topicAuthor);
+        Breeder threadAuthor = new Breeder();
+        threadAuthor.setEmail("thread.author@test.pl");
+        threadAuthor.setName("Jan");
+        threadAuthor.setSurname("Autor Tematu");
+        threadAuthor.setPhoneNumber("333333333");
+        threadAuthor.setPasswordHash("hashed3");
+        threadAuthor.setRole(Role.BREEDER);
+        threadAuthor.setStatus(AccountStatus.ACTIVE);
+        threadAuthor.setSection(section);
+        breederRepository.save(threadAuthor);
+        threadAuthorToken = jwtService.generateToken(threadAuthor);
 
         Breeder postAuthor = new Breeder();
         postAuthor.setEmail("post.author@test.pl");
@@ -136,17 +136,17 @@ class ForumPostIntegrationTest {
         category.setName("Kategoria Testowa");
         categoryRepository.save(category);
 
-        topic = new ForumThread();
-        topic.setCategory(category);
-        topic.setAuthor(topicAuthor);
-        topic.setTitle("Temat do dyskusji");
-        topic.setIsLocked(false);
-        topic.setIsPinned(false);
-        topic.setViews(0);
-        topicRepository.save(topic);
+        thread = new ForumThread();
+        thread.setCategory(category);
+        thread.setAuthor(threadAuthor);
+        thread.setTitle("Temat do dyskusji");
+        thread.setIsLocked(false);
+        thread.setIsPinned(false);
+        thread.setViews(0);
+        threadRepository.save(thread);
 
         post = new ForumPost();
-        post.setTopic(topic);
+        post.setThread(thread);
         post.setAuthor(postAuthor);
         post.setBody("Początkowa treść posta");
         postRepository.save(post);
@@ -154,9 +154,9 @@ class ForumPostIntegrationTest {
 
 
     @Test
-    @DisplayName("GET /topics/{id}/posts - Should fetch mapped posts from H2")
-    void getPostsByTopic_ShouldReturnRealData() throws Exception {
-        mockMvc.perform(get("/api/forum/topics/" + topic.getId() + "/posts")
+    @DisplayName("GET /threads/{id}/posts - Should fetch mapped posts from H2")
+    void getPostsByThread_ShouldReturnRealData() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].body").value("Początkowa treść posta"))
@@ -166,15 +166,15 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /topics/{id}/posts - Should save post, update lastPostAt, and create NEW_REPLY notification")
-    void addPost_ShouldSaveToDbAndUpdateTopicAndNotify() throws Exception {
+    @DisplayName("POST /threads/{id}/posts - Should save post, update lastPostAt, and create NEW_REPLY notification")
+    void addPost_ShouldSaveToDbAndUpdateThreadAndNotify() throws Exception {
         long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
-        LocalDateTime beforePost = topicRepository.findById(topic.getId()).get().getLastPostAt();
+        LocalDateTime beforePost = threadRepository.findById(thread.getId()).get().getLastPostAt();
 
         ForumPostRequest request = new ForumPostRequest("Zupełnie nowa odpowiedź");
 
-        mockMvc.perform(post("/api/forum/topics/" + topic.getId() + "/posts")
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -182,8 +182,8 @@ class ForumPostIntegrationTest {
 
         assertEquals(initialPostCount + 1, postRepository.count());
 
-        ForumThread updatedTopic = topicRepository.findById(topic.getId()).get();
-        assertTrue(updatedTopic.getLastPostAt().isAfter(beforePost));
+        ForumThread updatedThread = threadRepository.findById(thread.getId()).get();
+        assertTrue(updatedThread.getLastPostAt().isAfter(beforePost));
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
 
@@ -193,19 +193,19 @@ class ForumPostIntegrationTest {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Brak powiadomienia NEW_REPLY w bazie!"));
 
-        assertEquals(topic.getAuthor().getId(), replyNotification.getRecipient().getId());
+        assertEquals(thread.getAuthor().getId(), replyNotification.getRecipient().getId());
     }
 
     @Test
-    @DisplayName("POST /topics/{id}/posts - As Topic Author, should save post but NOT create NEW_REPLY notification")
-    void addPost_WhenReplierIsTopicAuthor_ShouldNotNotify() throws Exception {
+    @DisplayName("POST /threads/{id}/posts - As Thread Author, should save post but NOT create NEW_REPLY notification")
+    void addPost_WhenReplierIsThreadAuthor_ShouldNotNotify() throws Exception {
         long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
 
         ForumPostRequest request = new ForumPostRequest("Podbijam swój własny temat");
 
-        mockMvc.perform(post("/api/forum/topics/" + topic.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + topicAuthorToken)
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + threadAuthorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -274,14 +274,14 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /topics/{id}/posts - Adding post to a locked topic should return 403 Forbidden")
-    void addPost_WhenTopicIsLocked_ShouldReturn403() throws Exception {
-        topic.setIsLocked(true);
-        topicRepository.save(topic);
+    @DisplayName("POST /threads/{id}/posts - Adding post to a locked thread should return 403 Forbidden")
+    void addPost_WhenThreadIsLocked_ShouldReturn403() throws Exception {
+        thread.setIsLocked(true);
+        threadRepository.save(thread);
 
         ForumPostRequest request = new ForumPostRequest("Próba odpisu");
 
-        mockMvc.perform(post("/api/forum/topics/" + topic.getId() + "/posts")
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -291,11 +291,11 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /topics/{id}/posts - Unauthenticated user should be rejected (403 Forbidden)")
+    @DisplayName("POST /threads/{id}/posts - Unauthenticated user should be rejected (403 Forbidden)")
     void addPost_WhenUnauthenticated_ShouldFail() throws Exception {
         ForumPostRequest request = new ForumPostRequest("Anonim pyta");
 
-        mockMvc.perform(post("/api/forum/topics/" + topic.getId() + "/posts")
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -303,9 +303,9 @@ class ForumPostIntegrationTest {
 
 
     @Test
-    @DisplayName("GET /topics/9999/posts - Should return 404 Not Found")
-    void getPostsByTopic_WhenTopicNotFound_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/topics/9999/posts")
+    @DisplayName("GET /threads/9999/posts - Should return 404 Not Found")
+    void getPostsByThread_WhenThreadNotFound_ShouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/9999/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isNotFound());
     }

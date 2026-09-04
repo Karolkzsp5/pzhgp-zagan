@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,32 +20,37 @@ public class ForumCategoryController {
     private final ForumCategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<ForumCategoryDto>> getAllCategories() {
-        return ResponseEntity.ok(categoryService.getAllCategories());
+    public ResponseEntity<List<ForumCategoryDto>> getAllCategories(Authentication authentication) {
+        return ResponseEntity.ok(categoryService.getAllCategories(authentication.getName()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ForumCategoryDto> getCategoryById(@PathVariable Long id) {
-        return ResponseEntity.ok(categoryService.getCategoryById(id));
+    public ResponseEntity<ForumCategoryDto> getCategoryById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(categoryService.getCategoryById(id, authentication.getName()));
     }
 
     @PostMapping
-    public ResponseEntity<Void> createCategory(@Valid @RequestBody ForumCategoryRequest request) {
-        categoryService.createCategory(request);
+    public ResponseEntity<Void> createCategory(
+            @Valid @RequestBody ForumCategoryRequest request,
+            Authentication authentication
+    ) {
+        categoryService.createCategory(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateCategory(
             @PathVariable Long id,
-            @Valid @RequestBody ForumCategoryRequest request) {
-        categoryService.updateCategory(id, request);
+            @Valid @RequestBody ForumCategoryRequest request,
+            Authentication authentication
+    ) {
+        categoryService.updateCategory(id, request, authentication.getName());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        categoryService.deleteCategory(id);
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id, Authentication authentication) {
+        categoryService.deleteCategory(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

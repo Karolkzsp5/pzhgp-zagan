@@ -4,7 +4,7 @@ import com.pzhgp.backend.dto.ForumCategoryDto;
 import com.pzhgp.backend.dto.ForumCategoryRequest;
 import com.pzhgp.backend.entity.ForumCategory;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
-import com.pzhgp.backend.repository.ForumTopicRepository;
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +30,7 @@ class ForumCategoryServiceTest {
     private ForumCategoryRepository categoryRepository;
 
     @Mock
-    private ForumTopicRepository topicRepository;
+    private ForumThreadRepository threadRepository;
 
     @InjectMocks
     private ForumCategoryService categoryService;
@@ -52,13 +52,13 @@ class ForumCategoryServiceTest {
     @Test
     @DisplayName("Should return all categories sorted by sortOrder")
     void getAllCategories_ShouldReturnList() {
-        when(categoryRepository.findAllByOrderBySortOrderAsc()).thenReturn(List.of(category));
+        when(categoryRepository.findAllByOrderBySortOrderAscNameAsc()).thenReturn(List.of(category));
 
         List<ForumCategoryDto> result = categoryService.getAllCategories();
 
         assertFalse(result.isEmpty());
         assertEquals("Choroby i leczenie", result.getFirst().name());
-        verify(categoryRepository, times(1)).findAllByOrderBySortOrderAsc();
+        verify(categoryRepository, times(1)).findAllByOrderBySortOrderAscNameAsc();
     }
 
     @Test
@@ -101,10 +101,10 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should delete category if it has no topics")
-    void deleteCategory_WhenNoTopicsExist_ShouldRemoveFromRepository() {
+    @DisplayName("Should delete category if it has no threads")
+    void deleteCategory_WhenNoThreadsExist_ShouldRemoveFromRepository() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(topicRepository.existsByCategoryId(1L)).thenReturn(false);
+        when(threadRepository.existsByCategoryId(1L)).thenReturn(false);
 
         categoryService.deleteCategory(1L);
 
@@ -112,10 +112,10 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when deleting category that contains topics")
-    void deleteCategory_WhenTopicsExist_ShouldThrowException() {
+    @DisplayName("Should throw IllegalStateException when deleting category that contains threads")
+    void deleteCategory_WhenThreadsExist_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(topicRepository.existsByCategoryId(1L)).thenReturn(true);
+        when(threadRepository.existsByCategoryId(1L)).thenReturn(true);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             categoryService.deleteCategory(1L);
@@ -135,6 +135,6 @@ class ForumCategoryServiceTest {
         });
 
         verify(categoryRepository, never()).delete(any());
-        verify(topicRepository, never()).existsByCategoryId(anyLong());
+        verify(threadRepository, never()).existsByCategoryId(anyLong());
     }
 }

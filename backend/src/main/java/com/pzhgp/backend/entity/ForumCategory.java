@@ -26,6 +26,10 @@ public class ForumCategory {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private Breeder author;
+
     @Column(name = "sort_order")
     private Integer sortOrder;
 

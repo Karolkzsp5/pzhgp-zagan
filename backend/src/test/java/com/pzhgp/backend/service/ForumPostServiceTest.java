@@ -5,7 +5,7 @@ import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
-import com.pzhgp.backend.repository.ForumTopicRepository;
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +35,7 @@ class ForumPostServiceTest {
     @Mock
     private ForumPostRepository postRepository;
     @Mock
-    private ForumTopicRepository topicRepository;
+    private ForumThreadRepository threadRepository;
     @Mock
     private BreederRepository breederRepository;
     @Mock
@@ -44,20 +44,20 @@ class ForumPostServiceTest {
     @InjectMocks
     private ForumPostService postService;
 
-    private Breeder topicAuthor;
+    private Breeder threadAuthor;
     private Breeder postAuthor;
     private Breeder moderator;
-    private ForumThread topic;
+    private ForumThread thread;
     private ForumPost post;
 
     @BeforeEach
     void setUp() {
-        topicAuthor = new Breeder();
-        topicAuthor.setId(1L);
-        topicAuthor.setEmail("topic.author@test.pl");
-        topicAuthor.setName("Jan");
-        topicAuthor.setSurname("Kowalski");
-        topicAuthor.setRole(Role.BREEDER);
+        threadAuthor = new Breeder();
+        threadAuthor.setId(1L);
+        threadAuthor.setEmail("thread.author@test.pl");
+        threadAuthor.setName("Jan");
+        threadAuthor.setSurname("Kowalski");
+        threadAuthor.setRole(Role.BREEDER);
 
         postAuthor = new Breeder();
         postAuthor.setId(2L);
@@ -71,28 +71,28 @@ class ForumPostServiceTest {
         moderator.setEmail("mod@test.pl");
         moderator.setRole(Role.MODERATOR);
 
-        topic = new ForumThread();
-        topic.setId(100L);
-        topic.setAuthor(topicAuthor);
-        topic.setTitle("Tytuł Tematu");
-        topic.setIsLocked(false);
-        topic.setLastPostAt(LocalDateTime.now().minusDays(1));
+        thread = new ForumThread();
+        thread.setId(100L);
+        thread.setAuthor(threadAuthor);
+        thread.setTitle("Tytuł Tematu");
+        thread.setIsLocked(false);
+        thread.setLastPostAt(LocalDateTime.now().minusDays(1));
 
         post = new ForumPost();
         post.setId(500L);
-        post.setTopic(topic);
+        post.setThread(thread);
         post.setAuthor(postAuthor);
         post.setBody("Stara treść posta");
     }
 
 
     @Test
-    @DisplayName("Should add post, explicitly update topic lastPostAt, and send NEW_REPLY notification")
+    @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
     void addPost_ShouldSaveAndNotify() {
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
-        LocalDateTime oldLastPostAt = topic.getLastPostAt();
+        LocalDateTime oldLastPostAt = thread.getLastPostAt();
 
-        when(topicRepository.findById(100L)).thenReturn(Optional.of(topic));
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
         when(postRepository.save(any(ForumPost.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -102,23 +102,23 @@ class ForumPostServiceTest {
         verify(postRepository, times(1)).save(postCaptor.capture());
         assertEquals("Odpowiedź do tematu", postCaptor.getValue().getBody());
         assertEquals(postAuthor, postCaptor.getValue().getAuthor());
-        assertEquals(topic, postCaptor.getValue().getTopic());
+        assertEquals(thread, postCaptor.getValue().getThread());
 
-        verify(topicRepository, times(1)).save(topic);
-        assertTrue(topic.getLastPostAt().isAfter(oldLastPostAt));
+        verify(threadRepository, times(1)).save(thread);
+        assertTrue(thread.getLastPostAt().isAfter(oldLastPostAt));
 
         verify(notificationService, times(1)).createNotification(
                 eq(1L),
-                contains("Piotr Nowak odpowiedział"),
-                eq("/forum/topic/100"),
+                contains("Piotr Nowak dodał/a odpowiedź"),
+                eq("/forum/thread/100"),
                 eq(NotificationType.NEW_REPLY)
         );
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when topic does not exist on addPost")
-    void addPost_WhenTopicNotFound_ShouldThrowException() {
-        when(topicRepository.findById(999L)).thenReturn(Optional.empty());
+    @DisplayName("Should throw EntityNotFoundException when thread does not exist on addPost")
+    void addPost_WhenThreadNotFound_ShouldThrowException() {
+        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
         ForumPostRequest request = new ForumPostRequest("Odpowiedź");
 
         assertThrows(EntityNotFoundException.class, () -> {
@@ -129,12 +129,12 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to add post to a locked topic")
-    void addPost_WhenTopicIsLocked_ShouldThrowException() {
-        topic.setIsLocked(true);
+    @DisplayName("Should throw IllegalStateException when trying to add post to a locked thread")
+    void addPost_WhenThreadIsLocked_ShouldThrowException() {
+        thread.setIsLocked(true);
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
 
-        when(topicRepository.findById(100L)).thenReturn(Optional.of(topic));
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             postService.addPost(100L, request, "post.author@test.pl");
@@ -147,7 +147,7 @@ class ForumPostServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when user does not exist on addPost")
     void addPost_WhenUserNotFound_ShouldThrowException() {
-        when(topicRepository.findById(100L)).thenReturn(Optional.of(topic));
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         ForumPostRequest request = new ForumPostRequest("Odpowiedź widmo");
@@ -239,10 +239,10 @@ class ForumPostServiceTest {
     @DisplayName("Should throw IllegalStateException when random user tries to delete a post")
     void deletePost_WhenRequesterIsRandomUser_ShouldThrowException() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("topic.author@test.pl")).thenReturn(Optional.of(topicAuthor));
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor));
 
         assertThrows(IllegalStateException.class, () -> {
-            postService.deletePost(500L, "topic.author@test.pl");
+            postService.deletePost(500L, "thread.author@test.pl");
         });
 
         verify(postRepository, never()).delete(any());
@@ -251,14 +251,14 @@ class ForumPostServiceTest {
 
     @Test
     @DisplayName("Should return mapped page of posts with edit=true and delete=true for Author")
-    void getPostsByTopic_WhenRequesterIsAuthor_ShouldMapFlagsCorrectly() {
+    void getPostsByThread_WhenRequesterIsAuthor_ShouldMapFlagsCorrectly() {
         Page<ForumPost> page = new PageImpl<>(List.of(post));
 
-        when(topicRepository.existsById(100L)).thenReturn(true);
+        when(threadRepository.existsById(100L)).thenReturn(true);
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.findByTopicId(eq(100L), any(Pageable.class))).thenReturn(page);
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
 
-        Page<ForumPostDto> result = postService.getPostsByTopic(100L, 0, 10, "post.author@test.pl");
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "post.author@test.pl");
 
         assertNotNull(result);
         ForumPostDto dto = result.getContent().getFirst();
@@ -268,14 +268,14 @@ class ForumPostServiceTest {
 
     @Test
     @DisplayName("Should return mapped page of posts with edit=false and delete=true for Moderator")
-    void getPostsByTopic_WhenRequesterIsModerator_ShouldMapFlagsCorrectly() {
+    void getPostsByThread_WhenRequesterIsModerator_ShouldMapFlagsCorrectly() {
         Page<ForumPost> page = new PageImpl<>(List.of(post));
 
-        when(topicRepository.existsById(100L)).thenReturn(true);
+        when(threadRepository.existsById(100L)).thenReturn(true);
         when(breederRepository.findByEmail("mod@test.pl")).thenReturn(Optional.of(moderator));
-        when(postRepository.findByTopicId(eq(100L), any(Pageable.class))).thenReturn(page);
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
 
-        Page<ForumPostDto> result = postService.getPostsByTopic(100L, 0, 10, "mod@test.pl");
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "mod@test.pl");
 
         assertNotNull(result);
         ForumPostDto dto = result.getContent().getFirst();
@@ -285,14 +285,14 @@ class ForumPostServiceTest {
 
     @Test
     @DisplayName("Should return mapped page of posts with edit=false and delete=false for regular user")
-    void getPostsByTopic_WhenRequesterIsRegularUser_ShouldMapFlagsCorrectly() {
+    void getPostsByThread_WhenRequesterIsRegularUser_ShouldMapFlagsCorrectly() {
         Page<ForumPost> page = new PageImpl<>(List.of(post));
 
-        when(topicRepository.existsById(100L)).thenReturn(true);
-        when(breederRepository.findByEmail("topic.author@test.pl")).thenReturn(Optional.of(topicAuthor));
-        when(postRepository.findByTopicId(eq(100L), any(Pageable.class))).thenReturn(page);
+        when(threadRepository.existsById(100L)).thenReturn(true);
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor));
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
 
-        Page<ForumPostDto> result = postService.getPostsByTopic(100L, 0, 10, "topic.author@test.pl");
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "thread.author@test.pl");
 
         assertNotNull(result);
         ForumPostDto dto = result.getContent().getFirst();
@@ -302,27 +302,27 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when fetching posts for non-existent topic")
-    void getPostsByTopic_WhenTopicNotFound_ShouldThrowException() {
-        when(topicRepository.existsById(999L)).thenReturn(false);
+    @DisplayName("Should throw EntityNotFoundException when fetching posts for non-existent thread")
+    void getPostsByThread_WhenThreadNotFound_ShouldThrowException() {
+        when(threadRepository.existsById(999L)).thenReturn(false);
 
         assertThrows(EntityNotFoundException.class, () -> {
-            postService.getPostsByTopic(999L, 0, 10, "post.author@test.pl");
+            postService.getPostsByThread(999L, 0, 10, "post.author@test.pl");
         });
 
-        verify(postRepository, never()).findByTopicId(anyLong(), any());
+        verify(postRepository, never()).findByThreadId(anyLong(), any());
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when user does not exist on getPostsByTopic")
-    void getPostsByTopic_WhenUserNotFound_ShouldThrowException() {
-        when(topicRepository.existsById(100L)).thenReturn(true);
+    @DisplayName("Should throw EntityNotFoundException when user does not exist on getPostsByThread")
+    void getPostsByThread_WhenUserNotFound_ShouldThrowException() {
+        when(threadRepository.existsById(100L)).thenReturn(true);
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> {
-            postService.getPostsByTopic(100L, 0, 10, "unknown@test.pl");
+            postService.getPostsByThread(100L, 0, 10, "unknown@test.pl");
         });
 
-        verify(postRepository, never()).findByTopicId(anyLong(), any());
+        verify(postRepository, never()).findByThreadId(anyLong(), any());
     }
 }

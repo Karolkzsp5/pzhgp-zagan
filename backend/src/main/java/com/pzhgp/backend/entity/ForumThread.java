@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
 import java.time.LocalDateTime;
 
 @Entity
@@ -44,6 +45,9 @@ public class ForumThread {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Formula("(SELECT COUNT(p.id) FROM forum_posts p WHERE p.thread_id = id) - 1")
+    private Integer repliesCount;
 
     @PrePersist
     protected void onCreate() {

@@ -80,8 +80,8 @@ public class ForumPostService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (!post.getAuthor().getId().equals(requester.getId())) {
-            throw new IllegalStateException("Brak uprawnień. Możesz edytować tylko własne wpisy.");
+        if (!canEditContent(post.getAuthor(), requester)) {
+            throw new IllegalStateException("Brak uprawnień. Nikt nie może edytować cudzych postów.");
         }
 
         post.setBody(request.body());
@@ -97,10 +97,7 @@ public class ForumPostService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
-
-        if (!isAuthor && !hasPrivileges) {
+        if (!canDeleteContent(post.getAuthor(), requester)) {
             throw new IllegalStateException("Brak uprawnień do usunięcia tego wpisu.");
         }
 
@@ -111,10 +108,25 @@ public class ForumPostService {
         postRepository.delete(post);
     }
 
+    private boolean canEditContent(Breeder author, Breeder requester) {
+        return author.getId().equals(requester.getId());
+    }
+
+    private boolean canDeleteContent(Breeder author, Breeder requester) {
+        if (author.getId().equals(requester.getId())) {
+            return true;
+        }
+        if (requester.getRole() == Role.ADMINISTRATOR) {
+            return author.getRole() != Role.ADMINISTRATOR;
+        }
+        if (requester.getRole() == Role.MODERATOR) {
+            return author.getRole() == Role.BREEDER;
+        }
+        return false;
+    }
+
     private ForumPostDto mapToDto(ForumPost post, Breeder requester) {
         String authorFullName = post.getAuthor().getName() + " " + post.getAuthor().getSurname();
-        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
         return new ForumPostDto(
                 post.getId(),
@@ -122,8 +134,8 @@ public class ForumPostService {
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),
-                isAuthor,
-                isAuthor || hasPrivileges
+                canEditContent(post.getAuthor(), requester),
+                canDeleteContent(post.getAuthor(), requester)
         );
     }
 }

@@ -13,6 +13,7 @@ public record ForumThreadDto(
         LocalDateTime lastPostAt,
         Integer views,
         LocalDateTime createdAt,
+        Boolean canEdit,
         Boolean canDelete,
         Boolean canModerate
 ) {}

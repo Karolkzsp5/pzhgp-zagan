@@ -17,6 +17,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ForumThreadService {
@@ -25,6 +28,7 @@ public class ForumThreadService {
     private final ForumCategoryRepository categoryRepository;
     private final BreederRepository breederRepository;
     private final ForumPostRepository postRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public Page<ForumThreadDto> getThreadsByCategory(Long categoryId, int page, int size, String requesterEmail) {
@@ -60,17 +64,36 @@ public class ForumThreadService {
         firstPost.setAuthor(author);
         firstPost.setBody(request.initialPostContent());
         postRepository.save(firstPost);
+
+        String authorFullName = author.getName() + " " + author.getSurname();
+        String notificationMessage = authorFullName + " dodał/a nowy wątek na forum";
+        String notificationLink = "/forum/thread/" + thread.getId();
+
+        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
+                .filter(breeder -> !breeder.getId().equals(author.getId()))
+                .collect(Collectors.toList());
+
+        if (!recipients.isEmpty()) {
+            notificationService.createBulkNotifications(
+                    recipients,
+                    notificationMessage,
+                    notificationLink,
+                    NotificationType.NEW_THREAD
+            );
+        }
     }
 
     @Transactional
     public ForumThreadDto getThreadAndIncrementViews(Long threadId, String requesterEmail) {
-        threadRepository.incrementViews(threadId);
-
         ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+
+        if (!thread.getAuthor().getId().equals(requester.getId())) {
+            thread.setViews(thread.getViews() + 1);
+        }
 
         return mapToDto(thread, requester);
     }
@@ -82,8 +105,8 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (requester.getRole() != Role.ADMINISTRATOR && requester.getRole() != Role.MODERATOR) {
-            throw new IllegalStateException("Brak uprawnień do moderacji.");
+        if (!canDeleteContent(thread.getAuthor(), requester)) {
+            throw new IllegalStateException("Brak uprawnień do moderacji tego wątku.");
         }
 
         switch (action) {
@@ -101,10 +124,7 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        boolean isAuthor = thread.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
-
-        if (!isAuthor && !hasPrivileges) {
+        if (!canDeleteContent(thread.getAuthor(), requester)) {
             throw new IllegalStateException("Brak uprawnień do usunięcia tego wątku.");
         }
 
@@ -112,13 +132,29 @@ public class ForumThreadService {
         threadRepository.delete(thread);
     }
 
+    // Permission logic
+
+    private boolean canEditContent(Breeder author, Breeder requester) {
+        return author.getId().equals(requester.getId());
+    }
+
+    private boolean canDeleteContent(Breeder author, Breeder requester) {
+        if (author.getId().equals(requester.getId())) {
+            return true;
+        }
+        if (requester.getRole() == Role.ADMINISTRATOR) {
+            return author.getRole() != Role.ADMINISTRATOR;
+        }
+        if (requester.getRole() == Role.MODERATOR) {
+            return author.getRole() == Role.BREEDER;
+        }
+        return false;
+    }
+
     private ForumThreadDto mapToDto(ForumThread thread, Breeder requester) {
         String authorFullName = thread.getAuthor().getName() + " " + thread.getAuthor().getSurname();
-        boolean isAuthor = thread.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
-        long totalPosts = postRepository.countByThreadId(thread.getId());
-        int repliesCount = (int) Math.max(0, totalPosts - 1);
+        int repliesCount = thread.getRepliesCount() != null ? Math.max(0, thread.getRepliesCount()) : 0;
 
         return new ForumThreadDto(
                 thread.getId(),
@@ -131,8 +167,9 @@ public class ForumThreadService {
                 thread.getLastPostAt(),
                 thread.getViews(),
                 thread.getCreatedAt(),
-                isAuthor || hasPrivileges,
-                hasPrivileges
+                canEditContent(thread.getAuthor(), requester),
+                canDeleteContent(thread.getAuthor(), requester),
+                canDeleteContent(thread.getAuthor(), requester)
         );
     }
 }

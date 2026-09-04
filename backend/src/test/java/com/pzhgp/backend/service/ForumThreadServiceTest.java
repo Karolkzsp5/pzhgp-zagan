@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumThreadService Unit Tests")
 class ForumThreadServiceTest {
 
     @Mock
@@ -83,17 +82,16 @@ class ForumThreadServiceTest {
         thread.setId(100L);
         thread.setAuthor(author);
         thread.setCategory(category);
-        thread.setTitle("Testowy temat");
+        thread.setTitle("Testowy wątek");
         thread.setIsLocked(false);
         thread.setIsPinned(false);
         thread.setViews(0);
     }
 
-
     @Test
     @DisplayName("Should create a new thread and save its initial post with correct relations")
     void createThread_ShouldSaveThreadAndFirstPost() {
-        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Temat", "Treść pierwszego posta");
+        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść pierwszego posta");
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
         when(threadRepository.save(any(ForumThread.class))).thenReturn(thread);
@@ -102,7 +100,7 @@ class ForumThreadServiceTest {
 
         ArgumentCaptor<ForumThread> threadCaptor = ArgumentCaptor.forClass(ForumThread.class);
         verify(threadRepository, times(1)).save(threadCaptor.capture());
-        assertEquals("Nowy Temat", threadCaptor.getValue().getTitle());
+        assertEquals("Nowy Wątek", threadCaptor.getValue().getTitle());
         assertEquals(author, threadCaptor.getValue().getAuthor());
 
         ArgumentCaptor<ForumPost> postCaptor = ArgumentCaptor.forClass(ForumPost.class);
@@ -120,6 +118,9 @@ class ForumThreadServiceTest {
         when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
         when(threadRepository.findByCategoryId(eq(10L), any(Pageable.class))).thenReturn(page);
 
+        // Mockowanie zapytania o ilość postów do statystyk (2 posty, czyli 1 odpowiedź)
+        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+
         Page<ForumThreadDto> result = threadService.getThreadsByCategory(10L, 0, 10, "author@test.com");
 
         assertNotNull(result);
@@ -127,9 +128,10 @@ class ForumThreadServiceTest {
         ForumThreadDto dto = result.getContent().getFirst();
 
         assertEquals(100L, dto.id());
-        assertEquals("Testowy temat", dto.title());
+        assertEquals("Testowy wątek", dto.title());
         assertEquals("Jan Kowalski", dto.authorName());
         assertEquals(10L, dto.categoryId());
+        assertEquals(1, dto.repliesCount()); // Wyliczone jako: 2 - 1 = 1
         assertTrue(dto.canDelete());
         assertFalse(dto.canModerate());
     }
@@ -146,16 +148,18 @@ class ForumThreadServiceTest {
         verify(threadRepository, never()).findByCategoryId(anyLong(), any());
     }
 
-
     @Test
     @DisplayName("Should increment views and return thread with Moderator permissions")
     void getThreadAndIncrementViews_WithModeratorPermissions() {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+        when(postRepository.countByThreadId(100L)).thenReturn(5L);
+
+        assertEquals(0, thread.getViews());
 
         ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "mod@test.com");
 
-        verify(threadRepository, times(1)).incrementViews(100L);
+        assertEquals(1, thread.getViews());
         assertNotNull(result);
         assertTrue(result.canDelete());
         assertTrue(result.canModerate());
@@ -166,27 +170,41 @@ class ForumThreadServiceTest {
     void getThreadAndIncrementViews_WithRandomUserPermissions() {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("random@test.com")).thenReturn(Optional.of(randomUser));
+        when(postRepository.countByThreadId(100L)).thenReturn(3L);
+
+        assertEquals(0, thread.getViews());
 
         ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "random@test.com");
 
-        verify(threadRepository, times(1)).incrementViews(100L);
+        assertEquals(1, thread.getViews());
         assertNotNull(result);
         assertFalse(result.canDelete());
         assertFalse(result.canModerate());
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException and NOT increment views when thread is not found")
+    @DisplayName("Should NOT increment views when requester is the author of the thread")
+    void getThreadAndIncrementViews_WhenRequesterIsAuthor_ShouldNotIncrementViews() {
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
+        when(postRepository.countByThreadId(100L)).thenReturn(1L);
+
+        assertEquals(0, thread.getViews());
+
+        threadService.getThreadAndIncrementViews(100L, "author@test.com");
+
+        assertEquals(0, thread.getViews());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when thread is not found")
     void getThreadAndIncrementViews_WhenThreadNotFound_ShouldThrowException() {
         when(threadRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> {
             threadService.getThreadAndIncrementViews(999L, "author@test.com");
         });
-
-        verify(threadRepository, never()).incrementViews(anyLong());
     }
-
 
     @Test
     @DisplayName("Author should be able to delete their own thread along with all posts")
@@ -234,7 +252,7 @@ class ForumThreadServiceTest {
             threadService.deleteThread(100L, "random@test.com");
         });
 
-        assertEquals("Brak uprawnień do usunięcia tego tematu.", exception.getMessage());
+        assertEquals("Brak uprawnień do usunięcia tego wątku.", exception.getMessage());
         verify(postRepository, never()).deleteAllByThreadId(anyLong());
         verify(threadRepository, never()).delete(any());
     }
@@ -248,7 +266,6 @@ class ForumThreadServiceTest {
             threadService.deleteThread(999L, "author@test.com");
         });
     }
-
 
     @Test
     @DisplayName("Admin should be able to toggle lock status both ways")
