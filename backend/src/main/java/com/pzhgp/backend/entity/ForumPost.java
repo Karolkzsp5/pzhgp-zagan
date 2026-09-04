@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,8 +20,8 @@ public class ForumPost {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id", nullable = false)
-    private ForumTopic topic;
+    @JoinColumn(name = "thread_id", nullable = false)
+    private ForumThread thread;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "breeder_id", nullable = false)

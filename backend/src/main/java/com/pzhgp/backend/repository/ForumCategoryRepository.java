@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface ForumCategoryRepository extends JpaRepository<ForumCategory, Long> {
-    List<ForumCategory> findAllByOrderBySortOrderAsc();
+    List<ForumCategory> findAllByOrderBySortOrderAscNameAsc();
 }

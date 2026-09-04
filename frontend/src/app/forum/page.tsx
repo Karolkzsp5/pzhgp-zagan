@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import Navbar from '@/app/components/Navbar';
+import Footer from '@/app/components/Footer';
 import { getAuthToken, decodeJwt } from '@/utils/jwt';
-import { fetchCategories, ForumCategoryDto } from '../services/forumService';
-import CategoryModal from '../components/CategoryModal';
-import ForumGuard from '../components/ForumGuard';
+import { fetchCategories, ForumCategoryDto } from '@/app/services/forumService';
+import CategoryModal from '@/app/components/CategoryModal';
+import ForumGuard from '@/app/components/ForumGuard';
 
 export default function ForumPage() {
     const [categories, setCategories] = useState<ForumCategoryDto[]>([]);
@@ -45,96 +45,97 @@ export default function ForumPage() {
 
     return (
         <ForumGuard>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar />
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+                <Navbar />
 
-            <main className="flex-grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-5 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Forum Hodowców</h1>
-                        <p className="mt-2 text-sm text-gray-600">
-                            Wybierz kategorię, aby przeglądać tematy lub rozpocząć nową dyskusję.
-                        </p>
-                    </div>
+                <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-5 mb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Forum Hodowców</h1>
+                            <p className="mt-2 text-sm text-gray-600">
+                                Wybierz kategorię, aby przeglądać tematy lub rozpocząć nową dyskusję.
+                            </p>
+                        </div>
 
-                    {canManageCategories && (
-                        <button
-                            onClick={() => {
-                                setEditingCategory(null);
-                                setIsCategoryModalOpen(true);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
-                        >
-                            + Dodaj kategorię
-                        </button>
-                    )}
-                </div>
-
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                )}
-
-                {isLoading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-                    </div>
-                ) : categories.length === 0 && !error ? (
-                    <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
-                        Brak dostępnych kategorii forum.
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {categories.map((category) => (
-                            <Link
-                                href={`/forum/${category.id}`}
-                                key={category.id}
-                                className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition group flex flex-col h-full"
+                        {canManageCategories && (
+                            <button
+                                onClick={() => {
+                                    setEditingCategory(null);
+                                    setIsCategoryModalOpen(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
                             >
-                                <div className="flex items-start justify-between mb-3">
-                                    <h2 className="text-xl font-bold text-blue-700 group-hover:text-blue-800">
-                                        {category.name}
-                                    </h2>
-                                    <div className="flex gap-2 items-center">
-                                        {canManageCategories && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    setEditingCategory(category);
-                                                    setIsCategoryModalOpen(true);
-                                                }}
-                                                className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                        )}
-                                        <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-gray-600 text-sm flex-grow">
-                                    {category.description || "Brak opisu kategorii."}
-                                </p>
-                            </Link>
-                        ))}
+                                + Dodaj kategorię
+                            </button>
+                        )}
                     </div>
-                )}
-            </main>
-            <CategoryModal
-                isOpen={isCategoryModalOpen}
-                onClose={() => {
-                    setIsCategoryModalOpen(false);
-                    setEditingCategory(null);
-                }}
-                onSuccess={() => loadCategories()}
-                categoryToEdit={editingCategory}
-            />
-            <Footer />
-        </div>
+
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
+                            <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                    )}
+
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+                        </div>
+                    ) : categories.length === 0 && !error ? (
+                        <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
+                            Brak dostępnych kategorii forum.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {categories.map((category) => (
+                                <Link
+                                    href={`/forum/${category.id}`}
+                                    key={category.id}
+                                    className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition group flex flex-col h-full"
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <h2 className="text-xl font-bold text-blue-700 group-hover:text-blue-800">
+                                            {category.name}
+                                        </h2>
+
+                                        {canManageCategories && (
+                                            <div className="flex gap-2 items-center">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setEditingCategory(category);
+                                                        setIsCategoryModalOpen(true);
+                                                    }}
+                                                    className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
+                                                        <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {category.description && (
+                                        <p className="text-gray-600 text-sm grow">
+                                            {category.description}
+                                        </p>
+                                    )}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </main>
+                <CategoryModal
+                    isOpen={isCategoryModalOpen}
+                    onClose={() => {
+                        setIsCategoryModalOpen(false);
+                        setEditingCategory(null);
+                    }}
+                    onSuccess={() => void loadCategories()}
+                    categoryToEdit={editingCategory}
+                />
+                <Footer />
+            </div>
         </ForumGuard>
     );
 }

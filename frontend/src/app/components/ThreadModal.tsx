@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import TextEditor from './TextEditor';
 import { getAuthToken } from '@/utils/jwt';
 
@@ -31,7 +31,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
 
     if (!isOpen) return null;
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
 
@@ -48,7 +48,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         const token = getAuthToken();
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/topics`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

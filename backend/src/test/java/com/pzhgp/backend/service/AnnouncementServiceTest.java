@@ -106,7 +106,7 @@ class AnnouncementServiceTest {
         verify(announcementRepository, times(1)).save(any(Announcement.class));
         verify(notificationService, times(1)).createBulkNotifications(
                 argThat(list -> list.size() == 1 && list.contains(standardBreeder)),
-                eq("Hodowca Jan Kowalski dodał ogłoszenie na stronie głównej"),
+                eq("Jan Kowalski dodał/a ogłoszenie na stronie głównej"),
                 eq("/"),
                 eq(NotificationType.NEW_ANNOUNCEMENT)
         );

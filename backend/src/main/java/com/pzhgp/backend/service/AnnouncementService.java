@@ -47,7 +47,7 @@ public class AnnouncementService {
                 .collect(Collectors.toList());
 
         String authorFullName = author.getName() + " " + author.getSurname();
-        String notificationMessage = "Hodowca " + authorFullName + " dodał ogłoszenie na stronie głównej";
+        String notificationMessage = authorFullName + " dodał/a ogłoszenie na stronie głównej";
 
         notificationService.createBulkNotifications(
                 recipients,

@@ -5,7 +5,7 @@ import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
-import com.pzhgp.backend.repository.ForumTopicRepository;
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,14 +22,14 @@ import java.time.LocalDateTime;
 public class ForumPostService {
 
     private final ForumPostRepository postRepository;
-    private final ForumTopicRepository topicRepository;
+    private final ForumThreadRepository threadRepository;
     private final BreederRepository breederRepository;
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public Page<ForumPostDto> getPostsByTopic(Long topicId, int page, int size, String requesterEmail) {
-        if (!topicRepository.existsById(topicId)) {
-            throw new EntityNotFoundException("Nie znaleziono tematu o ID: " + topicId);
+    public Page<ForumPostDto> getPostsByThread(Long threadId, int page, int size, String requesterEmail) {
+        if (!threadRepository.existsById(threadId)) {
+            throw new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId);
         }
 
         Breeder requester = breederRepository.findByEmail(requesterEmail)
@@ -37,15 +37,15 @@ public class ForumPostService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
 
-        return postRepository.findByTopicId(topicId, pageable).map(post -> mapToDto(post, requester));
+        return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));
     }
 
     @Transactional
-    public void addPost(Long topicId, ForumPostRequest request, String authorEmail) {
-        ForumTopic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tematu."));
+    public void addPost(Long threadId, ForumPostRequest request, String authorEmail) {
+        ForumThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
-        if (topic.getIsLocked()) {
+        if (thread.getIsLocked()) {
             throw new IllegalStateException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
         }
 
@@ -53,20 +53,20 @@ public class ForumPostService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         ForumPost post = new ForumPost();
-        post.setTopic(topic);
+        post.setThread(thread);
         post.setAuthor(author);
         post.setBody(request.body());
         postRepository.save(post);
 
-        topic.setLastPostAt(LocalDateTime.now());
-        topicRepository.save(topic);
+        thread.setLastPostAt(LocalDateTime.now());
+        threadRepository.save(thread);
 
-        if (!topic.getAuthor().getId().equals(author.getId())) {
+        if (!thread.getAuthor().getId().equals(author.getId())) {
             String authorFullName = author.getName() + " " + author.getSurname();
             notificationService.createNotification(
-                    topic.getAuthor().getId(),
-                    authorFullName + " dodał/a odpowiedź w twoim wątku: " + topic.getTitle(),
-                    "/forum/topic/" + topic.getId(),
+                    thread.getAuthor().getId(),
+                    authorFullName + " dodał/a odpowiedź w twoim wątku na forum",
+                    "/forum/thread/" + thread.getId(),
                     NotificationType.NEW_REPLY
             );
         }
@@ -80,8 +80,8 @@ public class ForumPostService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (!post.getAuthor().getId().equals(requester.getId())) {
-            throw new IllegalStateException("Brak uprawnień. Możesz edytować tylko własne wpisy.");
+        if (!canEditContent(post.getAuthor(), requester)) {
+            throw new IllegalStateException("Brak uprawnień. Nikt nie może edytować cudzych postów.");
         }
 
         post.setBody(request.body());
@@ -97,21 +97,36 @@ public class ForumPostService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
-
-        if (!isAuthor && !hasPrivileges) {
+        if (!canDeleteContent(post.getAuthor(), requester)) {
             throw new IllegalStateException("Brak uprawnień do usunięcia tego wpisu.");
+        }
+
+        if (postRepository.countByThreadId(post.getThread().getId()) <= 1) {
+            throw new IllegalStateException("Nie można usunąć jedynego wpisu w wątku. Aby to zrobić, usuń cały wątek.");
         }
 
         postRepository.delete(post);
     }
 
+    private boolean canEditContent(Breeder author, Breeder requester) {
+        return author.getId().equals(requester.getId());
+    }
+
+    private boolean canDeleteContent(Breeder author, Breeder requester) {
+        if (author.getId().equals(requester.getId())) {
+            return true;
+        }
+        if (requester.getRole() == Role.ADMINISTRATOR) {
+            return author.getRole() != Role.ADMINISTRATOR;
+        }
+        if (requester.getRole() == Role.MODERATOR) {
+            return author.getRole() == Role.BREEDER;
+        }
+        return false;
+    }
+
     private ForumPostDto mapToDto(ForumPost post, Breeder requester) {
         String authorFullName = post.getAuthor().getName() + " " + post.getAuthor().getSurname();
-
-        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
-        boolean hasPrivileges = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
 
         return new ForumPostDto(
                 post.getId(),
@@ -119,8 +134,8 @@ public class ForumPostService {
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),
-                isAuthor,
-                isAuthor || hasPrivileges
+                canEditContent(post.getAuthor(), requester),
+                canDeleteContent(post.getAuthor(), requester)
         );
     }
 }

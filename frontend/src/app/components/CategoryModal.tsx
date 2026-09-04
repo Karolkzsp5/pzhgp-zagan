@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getAuthToken } from '@/utils/jwt';
-import { ForumCategoryDto } from '../services/forumService';
+import { ForumCategoryDto } from '@/app/services/forumService';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -14,7 +14,7 @@ interface CategoryModalProps {
 export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEdit }: CategoryModalProps) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [sortOrder, setSortOrder] = useState<number>(1);
+    const [sortOrder, setSortOrder] = useState<number | string>(1);
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -61,6 +61,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
             : `${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`;
 
         const method = categoryToEdit ? 'PUT' : 'POST';
+        const finalSortOrder = sortOrder === '' ? 1 : Number(sortOrder);
 
         try {
             const response = await fetch(url, {
@@ -69,7 +70,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, description, sortOrder }),
+                body: JSON.stringify({ name, description, sortOrder: finalSortOrder }),
             });
 
             if (response.ok) {
@@ -136,7 +137,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                             <input
                                 type="number"
                                 value={sortOrder}
-                                onChange={(e) => setSortOrder(Number(e.target.value))}
+                                onChange={(e) => setSortOrder(e.target.value === '' ? '' : Number(e.target.value))}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 focus:outline-none transition-all"
                                 placeholder="1"
                                 min="1"

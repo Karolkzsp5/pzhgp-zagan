@@ -7,5 +7,7 @@ public record ForumCategoryDto(
         String name,
         String description,
         Integer sortOrder,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Boolean canEdit,
+        Boolean canDelete
 ) {}
