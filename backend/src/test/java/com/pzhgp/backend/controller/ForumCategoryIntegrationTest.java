@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Forum Category Integration Tests")
 class ForumCategoryIntegrationTest {
 
     @Autowired
@@ -49,10 +50,12 @@ class ForumCategoryIntegrationTest {
 
     private ForumCategory adminCategory;
     private ForumCategory modCategory;
+    private ForumCategory anotherAdminCategory;
 
     private String adminToken;
     private String modToken;
     private String breederToken;
+    private String anotherAdminToken;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +75,18 @@ class ForumCategoryIntegrationTest {
         admin.setSection(section);
         breederRepository.save(admin);
         adminToken = jwtService.generateToken(admin);
+
+        Breeder anotherAdmin = new Breeder();
+        anotherAdmin.setEmail("admin2@test.pl");
+        anotherAdmin.setName("Drugi");
+        anotherAdmin.setSurname("Admin");
+        anotherAdmin.setPhoneNumber("999999999");
+        anotherAdmin.setPasswordHash("hashed9");
+        anotherAdmin.setRole(Role.ADMINISTRATOR);
+        anotherAdmin.setStatus(AccountStatus.ACTIVE);
+        anotherAdmin.setSection(section);
+        breederRepository.save(anotherAdmin);
+        anotherAdminToken = jwtService.generateToken(anotherAdmin);
 
         Breeder moderator = new Breeder();
         moderator.setEmail("mod@test.pl");
@@ -108,6 +123,12 @@ class ForumCategoryIntegrationTest {
         modCategory.setAuthor(moderator);
         modCategory.setSortOrder(2);
         categoryRepository.save(modCategory);
+
+        anotherAdminCategory = new ForumCategory();
+        anotherAdminCategory.setName("Kategoria Innego Admina");
+        anotherAdminCategory.setAuthor(anotherAdmin);
+        anotherAdminCategory.setSortOrder(3);
+        categoryRepository.save(anotherAdminCategory);
     }
 
     @Test
@@ -168,6 +189,7 @@ class ForumCategoryIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+
     @Test
     @DisplayName("PUT /categories/{id} - Moderator can update THEIR OWN category")
     void updateCategory_AsModeratorOnOwnCategory_ShouldReturn200() throws Exception {
@@ -183,6 +205,20 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("PUT /categories/{id} - Admin can update Moderator's category")
+    void updateCategory_AsAdminOnModeratorCategory_ShouldReturn200() throws Exception {
+        Map<String, String> request = Map.of("name", "Zmieniona przez Admina");
+
+        mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        assertEquals("Zmieniona przez Admina", categoryRepository.findById(modCategory.getId()).get().getName());
+    }
+
+    @Test
     @DisplayName("PUT /categories/{id} - Moderator attempting to update Admin's category gets 403 Forbidden")
     void updateCategory_AsModeratorOnAdminCategory_ShouldReturn403() throws Exception {
         Map<String, String> request = Map.of("name", "Włam Moderatora");
@@ -192,6 +228,22 @@ class ForumCategoryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+
+        assertEquals("Wystawy i loty", categoryRepository.findById(adminCategory.getId()).get().getName());
+    }
+
+    @Test
+    @DisplayName("PUT /categories/{id} - Admin attempting to update ANOTHER Admin's category gets 403 Forbidden")
+    void updateCategory_AsAdminOnAnotherAdminCategory_ShouldReturn403() throws Exception {
+        Map<String, String> request = Map.of("name", "Włam Admina");
+
+        mockMvc.perform(put("/api/forum/categories/" + anotherAdminCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        assertEquals("Kategoria Innego Admina", categoryRepository.findById(anotherAdminCategory.getId()).get().getName());
     }
 
     @Test
@@ -204,7 +256,10 @@ class ForumCategoryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+
+        assertEquals("Wystawy i loty", categoryRepository.findById(adminCategory.getId()).get().getName());
     }
+
 
     @Test
     @DisplayName("DELETE /categories/{id} - Admin can delete category")
@@ -222,6 +277,8 @@ class ForumCategoryIntegrationTest {
         mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
                 .andExpect(status().isForbidden());
+
+        assertTrue(categoryRepository.findById(modCategory.getId()).isPresent());
     }
 
     @Test

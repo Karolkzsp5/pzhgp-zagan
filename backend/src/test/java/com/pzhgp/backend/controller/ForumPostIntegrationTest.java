@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Forum Post Integration Tests")
 class ForumPostIntegrationTest {
 
     @Autowired
@@ -56,8 +57,11 @@ class ForumPostIntegrationTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    private ForumCategory category;
     private ForumThread thread;
     private ForumPost post;
+
+    private Breeder threadAuthor;
 
     private String threadAuthorToken;
     private String postAuthorToken;
@@ -96,7 +100,7 @@ class ForumPostIntegrationTest {
         breederRepository.save(moderator);
         modToken = jwtService.generateToken(moderator);
 
-        Breeder threadAuthor = new Breeder();
+        threadAuthor = new Breeder();
         threadAuthor.setEmail("thread.author@test.pl");
         threadAuthor.setName("Jan");
         threadAuthor.setSurname("Autor Tematu");
@@ -132,7 +136,7 @@ class ForumPostIntegrationTest {
         breederRepository.save(otherBreeder);
         otherBreederToken = jwtService.generateToken(otherBreeder);
 
-        ForumCategory category = new ForumCategory();
+        category = new ForumCategory();
         category.setName("Kategoria Testowa");
         category.setAuthor(admin);
         categoryRepository.save(category);
@@ -166,6 +170,7 @@ class ForumPostIntegrationTest {
         mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta"))
                 .andExpect(jsonPath("$.content[1].authorName").value("Piotr Autor Posta"))
                 .andExpect(jsonPath("$.content[1].canEdit").value(true))
@@ -246,6 +251,28 @@ class ForumPostIntegrationTest {
     }
 
     @Test
+    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 403")
+    void deletePost_WhenOnlyOnePostInThread_ShouldReturn403() throws Exception {
+        ForumThread singleThread = new ForumThread();
+        singleThread.setCategory(category);
+        singleThread.setAuthor(threadAuthor);
+        singleThread.setTitle("Tylko jeden post");
+        threadRepository.save(singleThread);
+
+        ForumPost singlePost = new ForumPost();
+        singlePost.setThread(singleThread);
+        singlePost.setAuthor(threadAuthor);
+        singlePost.setBody("To jest jedyny post");
+        postRepository.save(singlePost);
+
+        mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + threadAuthorToken))
+                .andExpect(status().isForbidden());
+
+        assertTrue(postRepository.existsById(singlePost.getId()));
+    }
+
+    @Test
     @DisplayName("DELETE /posts/{id} - As Admin, should remove from DB")
     void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + post.getId())
@@ -254,7 +281,6 @@ class ForumPostIntegrationTest {
 
         assertTrue(postRepository.findById(post.getId()).isEmpty());
     }
-
 
     @Test
     @DisplayName("PUT /posts/{id} - As Moderator, trying to edit someone's post should return 403 Forbidden")
@@ -307,7 +333,6 @@ class ForumPostIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
-
 
     @Test
     @DisplayName("GET /threads/9999/posts - Should return 404 Not Found")

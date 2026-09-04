@@ -127,7 +127,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Should return mapped page of threads when category exists")
     void getThreadsByCategory_Success() {
-        thread.setRepliesCount(1); // Symulujemy działanie @Formula (np. 1 odpowiedź)
+        thread.setRepliesCount(1);
         Page<ForumThread> page = new PageImpl<>(List.of(thread));
 
         when(categoryRepository.existsById(10L)).thenReturn(true);
@@ -176,7 +176,7 @@ class ForumThreadServiceTest {
         assertNotNull(result);
         assertTrue(result.canDelete());
         assertTrue(result.canModerate());
-        assertFalse(result.canEdit()); // Mod nie jest autorem, więc nie edytuje tytułu
+        assertFalse(result.canEdit());
     }
 
     @Test
@@ -207,10 +207,10 @@ class ForumThreadServiceTest {
 
         ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "author@test.com");
 
-        assertEquals(0, thread.getViews()); // Licznik pozostaje bez zmian
+        assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
         assertTrue(result.canDelete());
-        assertFalse(result.canModerate()); // Hodowca nie zamyka ani nie przypina
+        assertFalse(result.canModerate());
     }
 
     @Test
@@ -257,6 +257,46 @@ class ForumThreadServiceTest {
 
         verify(postRepository, times(1)).deleteAllByThreadId(100L);
         verify(threadRepository, times(1)).delete(thread);
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalStateException when Admin tries to delete another Admin's thread")
+    void deleteThread_WhenRequesterIsAdminOnAnotherAdminThread_ShouldThrowException() {
+        Breeder anotherAdmin = new Breeder();
+        anotherAdmin.setId(99L);
+        anotherAdmin.setRole(Role.ADMINISTRATOR);
+        thread.setAuthor(anotherAdmin);
+
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            threadService.deleteThread(100L, "admin@test.com");
+        });
+
+        assertEquals("Brak uprawnień do usunięcia tego wątku.", exception.getMessage());
+        verify(postRepository, never()).deleteAllByThreadId(anyLong());
+        verify(threadRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalStateException when Moderator tries to delete another Moderator's thread")
+    void deleteThread_WhenRequesterIsModeratorOnAnotherModeratorThread_ShouldThrowException() {
+        Breeder anotherModerator = new Breeder();
+        anotherModerator.setId(99L);
+        anotherModerator.setRole(Role.MODERATOR);
+        thread.setAuthor(anotherModerator);
+
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            threadService.deleteThread(100L, "mod@test.com");
+        });
+
+        assertEquals("Brak uprawnień do usunięcia tego wątku.", exception.getMessage());
+        verify(postRepository, never()).deleteAllByThreadId(anyLong());
+        verify(threadRepository, never()).delete(any());
     }
 
     @Test

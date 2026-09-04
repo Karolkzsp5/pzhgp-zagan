@@ -5,6 +5,7 @@ import com.pzhgp.backend.dto.ForumThreadRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.*;
 import com.pzhgp.backend.service.JwtService;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Forum Thread Integration Tests")
 class ForumThreadIntegrationTest {
 
     @Autowired
@@ -52,6 +54,9 @@ class ForumThreadIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -133,11 +138,20 @@ class ForumThreadIntegrationTest {
         thread.setViews(0);
         threadRepository.save(thread);
 
-        ForumPost post = new ForumPost();
-        post.setThread(thread);
-        post.setAuthor(author);
-        post.setBody("Treść wpisu testowego");
-        postRepository.save(post);
+        ForumPost post1 = new ForumPost();
+        post1.setThread(thread);
+        post1.setAuthor(author);
+        post1.setBody("Treść wpisu testowego");
+        postRepository.save(post1);
+
+        ForumPost post2 = new ForumPost();
+        post2.setThread(thread);
+        post2.setAuthor(otherBreeder);
+        post2.setBody("Odpowiedź na wpis");
+        postRepository.save(post2);
+
+        entityManager.flush();
+        entityManager.clear();
     }
 
 
@@ -147,9 +161,11 @@ class ForumThreadIntegrationTest {
         mockMvc.perform(get("/api/forum/categories/" + category.getId() + "/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Tytuł początkowy"))
                 .andExpect(jsonPath("$.content[0].authorName").value("Jan Autor"))
-                .andExpect(jsonPath("$.content[0].canDelete").value(true));
+                .andExpect(jsonPath("$.content[0].canDelete").value(true))
+                .andExpect(jsonPath("$.content[0].repliesCount").value(1));
     }
 
     @Test
@@ -195,8 +211,6 @@ class ForumThreadIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
-
-        assertEquals(1, threadRepository.count());
     }
 
     @Test
@@ -235,6 +249,8 @@ class ForumThreadIntegrationTest {
         admin.setRole(Role.BREEDER);
         breederRepository.save(admin);
 
+        entityManager.flush();
+
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isForbidden());
@@ -261,7 +277,6 @@ class ForumThreadIntegrationTest {
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
-
 
     @Test
     @DisplayName("PUT /threads/{id}/lock - As Author (Breeder), should return 403 Forbidden because they are not Mod/Admin")

@@ -150,6 +150,21 @@ class ForumPostServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw EntityNotFoundException when user does not exist on addPost")
+    void addPost_WhenUserNotFound_ShouldThrowException() {
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
+
+        ForumPostRequest request = new ForumPostRequest("Odpowiedź widmo");
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            postService.addPost(100L, request, "unknown@test.pl");
+        });
+
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Author should be able to edit their own post")
     void updatePost_WhenRequesterIsAuthor_ShouldUpdateBody() {
         ForumPostRequest request = new ForumPostRequest("Nowa, zedytowana treść");
