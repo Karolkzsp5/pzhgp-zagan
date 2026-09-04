@@ -28,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@DisplayName("Forum Category Integration Tests")
 class ForumCategoryIntegrationTest {
 
     @Autowired
@@ -48,7 +47,8 @@ class ForumCategoryIntegrationTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private ForumCategory category;
+    private ForumCategory adminCategory;
+    private ForumCategory modCategory;
 
     private String adminToken;
     private String modToken;
@@ -97,9 +97,17 @@ class ForumCategoryIntegrationTest {
         breederRepository.save(standardBreeder);
         breederToken = jwtService.generateToken(standardBreeder);
 
-        category = new ForumCategory();
-        category.setName("Wystawy i loty");
-        categoryRepository.save(category);
+        adminCategory = new ForumCategory();
+        adminCategory.setName("Wystawy i loty");
+        adminCategory.setAuthor(admin);
+        adminCategory.setSortOrder(1);
+        categoryRepository.save(adminCategory);
+
+        modCategory = new ForumCategory();
+        modCategory.setName("Kategoria Moderatora");
+        modCategory.setAuthor(moderator);
+        modCategory.setSortOrder(2);
+        categoryRepository.save(modCategory);
     }
 
     @Test
@@ -134,6 +142,21 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /categories - Moderator can create category")
+    void createCategory_AsModerator_ShouldReturn201() throws Exception {
+        long initialCount = categoryRepository.count();
+        Map<String, String> request = Map.of("name", "Dział Moderatora");
+
+        mockMvc.perform(post("/api/forum/categories")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        assertEquals(initialCount + 1, categoryRepository.count());
+    }
+
+    @Test
     @DisplayName("POST /categories - Breeder gets 403 Forbidden")
     void createCategory_AsBreeder_ShouldReturn403() throws Exception {
         Map<String, String> request = Map.of("name", "Próba ataku");
@@ -146,17 +169,29 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Moderator can update category")
-    void updateCategory_AsModerator_ShouldReturn200() throws Exception {
-        Map<String, String> request = Map.of("name", "Zmieniona Nazwa");
+    @DisplayName("PUT /categories/{id} - Moderator can update THEIR OWN category")
+    void updateCategory_AsModeratorOnOwnCategory_ShouldReturn200() throws Exception {
+        Map<String, String> request = Map.of("name", "Zmieniona Nazwa Mod");
 
-        mockMvc.perform(put("/api/forum/categories/" + category.getId())
+        mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        assertEquals("Zmieniona Nazwa", categoryRepository.findById(category.getId()).get().getName());
+        assertEquals("Zmieniona Nazwa Mod", categoryRepository.findById(modCategory.getId()).get().getName());
+    }
+
+    @Test
+    @DisplayName("PUT /categories/{id} - Moderator attempting to update Admin's category gets 403 Forbidden")
+    void updateCategory_AsModeratorOnAdminCategory_ShouldReturn403() throws Exception {
+        Map<String, String> request = Map.of("name", "Włam Moderatora");
+
+        mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -164,7 +199,7 @@ class ForumCategoryIntegrationTest {
     void updateCategory_AsBreeder_ShouldReturn403() throws Exception {
         Map<String, String> request = Map.of("name", "Zmieniona Nazwa");
 
-        mockMvc.perform(put("/api/forum/categories/" + category.getId())
+        mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -174,17 +209,25 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("DELETE /categories/{id} - Admin can delete category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/api/forum/categories/" + category.getId())
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
-        assertTrue(categoryRepository.findById(category.getId()).isEmpty());
+        assertTrue(categoryRepository.findById(adminCategory.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("DELETE /categories/{id} - Moderator gets 403 Forbidden")
+    void deleteCategory_AsModerator_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("DELETE /categories/{id} - Breeder gets 403 Forbidden")
     void deleteCategory_AsBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/categories/" + category.getId())
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
                 .andExpect(status().isForbidden());
     }
@@ -195,7 +238,7 @@ class ForumCategoryIntegrationTest {
         Map<String, String> request = Map.of("name", "Test");
 
         mockMvc.perform(put("/api/forum/categories/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());

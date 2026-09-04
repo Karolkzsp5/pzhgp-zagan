@@ -17,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -25,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-class ForumIntegrationTest {
+class ForumThreadIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -46,12 +48,16 @@ class ForumIntegrationTest {
     private ForumPostRepository postRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private ForumCategory category;
     private ForumThread thread;
+    private Breeder admin;
 
     private String authorToken;
     private String otherBreederToken;
@@ -65,7 +71,7 @@ class ForumIntegrationTest {
         section.setSortOrder(1);
         sectionRepository.save(section);
 
-        Breeder admin = new Breeder();
+        admin = new Breeder();
         admin.setEmail("admin@test.pl");
         admin.setName("Administrator");
         admin.setSurname("Testowy");
@@ -115,6 +121,7 @@ class ForumIntegrationTest {
 
         category = new ForumCategory();
         category.setName("Kategoria Testowa");
+        category.setAuthor(admin);
         categoryRepository.save(category);
 
         thread = new ForumThread();
@@ -156,9 +163,11 @@ class ForumIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should save new thread and post to H2 DB")
-    void createThread_ShouldSaveToDb() throws Exception {
+    @DisplayName("POST /threads - Should save new thread, post to H2 DB and send NEW_THREAD notification")
+    void createThread_ShouldSaveToDbAndNotify() throws Exception {
         long initialThreadCount = threadRepository.count();
+        long initialNotificationCount = notificationRepository.count();
+
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Nowy temat", "Nowa treść");
 
         mockMvc.perform(post("/api/forum/threads")
@@ -168,6 +177,13 @@ class ForumIntegrationTest {
                 .andExpect(status().isCreated());
 
         assertEquals(initialThreadCount + 1, threadRepository.count());
+        assertTrue(notificationRepository.count() > initialNotificationCount);
+
+        List<Notification> allNotifications = notificationRepository.findAll();
+        boolean hasNewThreadNotification = allNotifications.stream()
+                .anyMatch(n -> n.getType() == NotificationType.NEW_THREAD);
+
+        assertTrue(hasNewThreadNotification, "Baza powinna zawierać powiadomienie NEW_THREAD");
     }
 
     @Test
@@ -216,9 +232,8 @@ class ForumIntegrationTest {
     @Test
     @DisplayName("PUT /threads/{id}/lock - Role changed to BREEDER in DB after ADMIN JWT issuance should return 403")
     void lockThread_WhenAdminRoleDowngradedInDb_ShouldReturn403() throws Exception {
-        Breeder adminUser = breederRepository.findByEmail("admin@test.pl").get();
-        adminUser.setRole(Role.BREEDER);
-        breederRepository.save(adminUser);
+        admin.setRole(Role.BREEDER);
+        breederRepository.save(admin);
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
@@ -249,10 +264,10 @@ class ForumIntegrationTest {
 
 
     @Test
-    @DisplayName("PUT /threads/{id}/lock - As Breeder, should return 403 Forbidden")
-    void lockThread_AsBreeder_ShouldReturn403() throws Exception {
+    @DisplayName("PUT /threads/{id}/lock - As Author (Breeder), should return 403 Forbidden because they are not Mod/Admin")
+    void lockThread_AsBreederAuthor_ShouldReturn403() throws Exception {
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());

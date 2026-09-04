@@ -134,6 +134,7 @@ class ForumPostIntegrationTest {
 
         ForumCategory category = new ForumCategory();
         category.setName("Kategoria Testowa");
+        category.setAuthor(admin);
         categoryRepository.save(category);
 
         thread = new ForumThread();
@@ -144,6 +145,12 @@ class ForumPostIntegrationTest {
         thread.setIsPinned(false);
         thread.setViews(0);
         threadRepository.save(thread);
+
+        ForumPost firstPost = new ForumPost();
+        firstPost.setThread(thread);
+        firstPost.setAuthor(threadAuthor);
+        firstPost.setBody("Treść otwierająca wątek");
+        postRepository.save(firstPost);
 
         post = new ForumPost();
         post.setThread(thread);
@@ -159,10 +166,10 @@ class ForumPostIntegrationTest {
         mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].body").value("Początkowa treść posta"))
-                .andExpect(jsonPath("$.content[0].authorName").value("Piotr Autor Posta"))
-                .andExpect(jsonPath("$.content[0].canEdit").value(true))
-                .andExpect(jsonPath("$.content[0].canDelete").value(true));
+                .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta"))
+                .andExpect(jsonPath("$.content[1].authorName").value("Piotr Autor Posta"))
+                .andExpect(jsonPath("$.content[1].canEdit").value(true))
+                .andExpect(jsonPath("$.content[1].canDelete").value(true));
     }
 
     @Test
@@ -287,7 +294,7 @@ class ForumPostIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
-        assertEquals(1, postRepository.count());
+        assertEquals(2, postRepository.count());
     }
 
     @Test

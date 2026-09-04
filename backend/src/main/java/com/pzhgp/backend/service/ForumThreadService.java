@@ -39,7 +39,10 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastPostAt"));
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "isPinned")
+                        .and(Sort.by(Sort.Direction.DESC, "lastPostAt"))
+        );
 
         return threadRepository.findByCategoryId(categoryId, pageable)
                 .map(thread -> mapToDto(thread, requester));
@@ -105,7 +108,7 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (!canDeleteContent(thread.getAuthor(), requester)) {
+        if (!canModerate(requester)) {
             throw new IllegalStateException("Brak uprawnień do moderacji tego wątku.");
         }
 
@@ -151,6 +154,10 @@ public class ForumThreadService {
         return false;
     }
 
+    private boolean canModerate(Breeder requester) {
+        return requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
+    }
+
     private ForumThreadDto mapToDto(ForumThread thread, Breeder requester) {
         String authorFullName = thread.getAuthor().getName() + " " + thread.getAuthor().getSurname();
 
@@ -169,7 +176,7 @@ public class ForumThreadService {
                 thread.getCreatedAt(),
                 canEditContent(thread.getAuthor(), requester),
                 canDeleteContent(thread.getAuthor(), requester),
-                canDeleteContent(thread.getAuthor(), requester)
+                canModerate(requester)
         );
     }
 }
