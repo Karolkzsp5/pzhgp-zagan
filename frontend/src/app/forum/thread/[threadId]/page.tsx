@@ -1,17 +1,38 @@
 "use client";
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import TextEditor from '@/app/components/TextEditor';
 import ForumGuard from '@/app/components/ForumGuard';
-import { fetchThreadById, fetchPostsByThread, createPost, ForumThreadDto, ForumPostDto } from '@/app/services/forumService';
+import { useRouter } from 'next/navigation';
+import {
+    fetchThreadById,
+    fetchPostsByThread,
+    createPost,
+    deleteThread,
+    toggleThreadStatus,
+    deletePost,
+    updatePost,
+    ForumThreadDto,
+    ForumPostDto
+} from '@/app/services/forumService';
+
+const getRoleDisplayName = (role?: string) => {
+    switch (role) {
+        case 'ADMINISTRATOR': return 'Administrator';
+        case 'MODERATOR': return 'Moderator';
+        case 'BREEDER': return 'Hodowca';
+        default: return 'Hodowca';
+    }
+};
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const resolvedParams = use(params);
     const threadId = parseInt(resolvedParams.threadId);
+    const router = useRouter();
 
     const [thread, setThread] = useState<(ForumThreadDto & { categoryId?: number; categoryName?: string }) | null>(null);
     const [posts, setPosts] = useState<ForumPostDto[]>([]);
@@ -26,9 +47,27 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     const [isReplying, setIsReplying] = useState(false);
     const [replyError, setReplyError] = useState('');
 
+    const [editingPostId, setEditingPostId] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+    const [editError, setEditError] = useState('');
+
+    const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+    const optionsRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         loadThreadData();
     }, [threadId, currentPage]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+                setIsOptionsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const loadThreadData = async () => {
         setIsLoading(true);
@@ -42,6 +81,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             const postsData = await fetchPostsByThread(threadId, currentPage);
             setPosts(postsData.content);
             setTotalPages(postsData.totalPages);
+
+            cancelEditing();
 
         } catch (err) {
             setError('Nie udało się pobrać dyskusji. Sprawdź połączenie.');
@@ -73,6 +114,74 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             setReplyError('Wystąpił błąd podczas publikowania odpowiedzi.');
         } finally {
             setIsReplying(false);
+        }
+    };
+
+    const handleDeleteThread = async () => {
+        if (!window.confirm('Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.')) return;
+        try {
+            await deleteThread(threadId);
+            router.push(thread?.categoryId ? `/forum/${thread.categoryId}` : '/forum');
+        } catch (err: any) {
+            alert(err.message || 'Wystąpił błąd podczas usuwania wątku.');
+        }
+    };
+
+    const handleToggleStatus = async (action: 'LOCK' | 'PIN') => {
+        try {
+            await toggleThreadStatus(threadId, action);
+            setThread(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    isLocked: action === 'LOCK' ? !prev.isLocked : prev.isLocked,
+                    isPinned: action === 'PIN' ? !prev.isPinned : prev.isPinned
+                };
+            });
+        } catch (err: any) {
+            alert(err.message || `Wystąpił błąd (${action}).`);
+        }
+    };
+
+    const startEditing = (post: ForumPostDto) => {
+        setEditingPostId(post.id);
+        setEditContent(post.body);
+        setEditError('');
+    };
+
+    const cancelEditing = () => {
+        setEditingPostId(null);
+        setEditContent('');
+        setEditError('');
+    };
+
+    const handleEditSubmit = async (postId: number) => {
+        if (!editContent || editContent === '<p></p>') {
+            setEditError('Treść wpisu nie może być pusta.');
+            return;
+        }
+
+        setIsEditSubmitting(true);
+        setEditError('');
+
+        try {
+            await updatePost(postId, editContent);
+            cancelEditing();
+            await loadThreadData();
+        } catch (err: any) {
+            setEditError(err.message || 'Wystąpił błąd podczas zapisywania wpisu.');
+        } finally {
+            setIsEditSubmitting(false);
+        }
+    };
+
+    const handleDeletePost = async (postId: number) => {
+        if (!window.confirm('Czy na pewno chcesz usunąć ten wpis?')) return;
+        try {
+            await deletePost(postId);
+            loadThreadData();
+        } catch (err: any) {
+            alert(err.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
         }
     };
 
@@ -109,17 +218,17 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     )}
 
                     {thread && (
-                        <div className="bg-white p-6 rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex items-center justify-between">
+                        <div className="bg-white p-6 rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                                     {thread.isPinned && (
-                                        <svg className="w-5 h-5 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                                        <svg className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                            <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                         </svg>
                                     )}
                                     {thread.isLocked && (
-                                        <svg className="w-5 h-5 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                        <svg className="w-6 h-6 text-amber-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                            <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
                                         </svg>
                                     )}
                                     {thread.title}
@@ -128,6 +237,48 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatDate(thread.createdAt)}
                                 </div>
                             </div>
+
+                            {(thread.canModerate || thread.canDelete) && (
+                                <div className="relative" ref={optionsRef}>
+                                    <button
+                                        onClick={() => setIsOptionsOpen(!isOptionsOpen)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition"
+                                    >
+                                        Zarządzaj
+                                        <svg className={`w-4 h-4 transition-transform ${isOptionsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {isOptionsOpen && (
+                                        <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-max min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">                                            {thread.canModerate && (
+                                                <>
+                                                    <button
+                                                        onClick={() => { handleToggleStatus('PIN'); setIsOptionsOpen(false); }}
+                                                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
+                                                    >
+                                                        {thread.isPinned ? 'Odepnij wątek' : 'Przypnij wątek'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { handleToggleStatus('LOCK'); setIsOptionsOpen(false); }}
+                                                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 transition border-t border-gray-100"
+                                                    >
+                                                        {thread.isLocked ? 'Odblokuj wątek' : 'Zablokuj wątek'}
+                                                    </button>
+                                                </>
+                                            )}
+                                            {thread.canDelete && (
+                                                <button
+                                                    onClick={() => { handleDeleteThread(); setIsOptionsOpen(false); }}
+                                                    className="block w-full text-left px-4 py-3 text-sm text-red-600 font-medium hover:bg-red-50 transition border-t border-gray-100"
+                                                >
+                                                    Usuń wątek
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -141,27 +292,79 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                 {posts.map((post) => (
                                     <div key={post.id} className="flex flex-col sm:flex-row p-0">
                                         <div className="bg-gray-50 sm:w-48 p-4 sm:p-6 sm:border-r border-gray-100 shrink-0">
-                                            <div className="font-bold text-gray-900 wrap-break-word">{post.authorName}</div>
+                                            <div className="font-bold text-gray-900 break-words">{post.authorName}</div>
                                             <div className="text-xs text-gray-500 mt-1">
-                                                Użytkownik
+                                                {getRoleDisplayName(post.authorRole)}
                                             </div>
                                         </div>
 
                                         <div className="p-4 sm:p-6 grow flex flex-col min-w-0">
-                                            <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100">
-                                                Napisano: {formatDate(post.createdAt)}
+                                            <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100 flex justify-between">
+                                                <span>Napisano: {formatDate(post.createdAt)}</span>
+                                                {post.editedAt && (
+                                                    <span className="italic" title={formatDate(post.editedAt)}>
+                                                        (Edytowano)
+                                                    </span>
+                                                )}
                                             </div>
 
-                                            <div
-                                                className="prose prose-sm sm:prose-base max-w-none text-gray-800 wrap-break-wgrowgrow"
-                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
-                                            />
+                                            {editingPostId === post.id ? (
+                                                <div className="mt-4">
+                                                    <TextEditor content={editContent} onChange={setEditContent} />
 
-                                            {(post.canEdit || post.canDelete) && (
-                                                <div className="mt-6 pt-3 flex justify-end gap-3 border-t border-gray-50">
-                                                    {post.canEdit && <button className="text-xs font-medium text-gray-500 hover:text-blue-600 transition">Edytuj</button>}
-                                                    {post.canDelete && <button className="text-xs font-medium text-gray-500 hover:text-red-600 transition">Usuń</button>}
+                                                    {editError && (
+                                                        <div className="mt-3 bg-red-50 text-red-600 p-2 rounded text-sm border border-red-100">
+                                                            {editError}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="mt-3 flex justify-end gap-2">
+                                                        <button
+                                                            onClick={cancelEditing}
+                                                            disabled={isEditSubmitting}
+                                                            className="px-4 py-1.5 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                                                        >
+                                                            Anuluj
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEditSubmit(post.id)}
+                                                            disabled={isEditSubmitting}
+                                                            className={`px-4 py-1.5 rounded text-sm font-medium text-white transition shadow-sm ${
+                                                                isEditSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                                            }`}
+                                                        >
+                                                            {isEditSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            ) : (
+                                                <>
+                                                    <div
+                                                        className="prose prose-sm sm:prose-base max-w-none text-gray-800 break-words grow prose-p:my-0"
+                                                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
+                                                    />
+
+                                                    {(post.canEdit || post.canDelete) && (
+                                                        <div className="mt-6 pt-3 flex justify-end gap-3 border-t border-gray-50">
+                                                            {post.canEdit && (
+                                                                <button
+                                                                    onClick={() => startEditing(post)}
+                                                                    className="text-xs font-medium text-gray-500 hover:text-blue-600 transition"
+                                                                >
+                                                                    Edytuj
+                                                                </button>
+                                                            )}
+                                                            {post.canDelete && (
+                                                                <button
+                                                                    onClick={() => handleDeletePost(post.id)}
+                                                                    className="text-xs font-medium text-gray-500 hover:text-red-600 transition"
+                                                                >
+                                                                    Usuń
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -193,8 +396,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     <div className="mt-8 pt-8 border-t border-gray-200">
                         {thread?.isLocked ? (
                             <div className="bg-amber-50 p-6 rounded-lg text-center border border-amber-200">
-                                <svg className="w-8 h-8 text-amber-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                <svg className="w-8 h-8 text-amber-500 mx-auto mb-2" fill="currentColor" viewBox="0 -960 960 960">
+                                    <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
                                 </svg>
                                 <h3 className="text-lg font-bold text-amber-800">Wątek zablokowany</h3>
                                 <p className="text-sm text-amber-700 mt-1">Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.</p>

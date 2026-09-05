@@ -131,6 +131,7 @@ public class ForumPostService {
         return new ForumPostDto(
                 post.getId(),
                 authorFullName,
+                post.getAuthor().getRole().name(),
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),
