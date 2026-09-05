@@ -120,6 +120,24 @@ public class ForumThreadService {
     }
 
     @Transactional
+    public void updateThreadTitle(Long threadId, String title, String requesterEmail) {
+        ForumThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        Breeder requester = breederRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+
+        if (!thread.getAuthor().getId().equals(requester.getId())) {
+            throw new IllegalStateException("Brak uprawnień. Tylko autor może edytować tytuł wątku.");
+        }
+
+        if (title == null || title.trim().length() < 5 || title.trim().length() > 150) {
+            throw new IllegalArgumentException("Tytuł wątku musi mieć od 5 do 150 znaków.");
+        }
+
+        thread.setTitle(title.trim());
+    }
+
+    @Transactional
     public void deleteThread(Long threadId, String requesterEmail) {
         ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));

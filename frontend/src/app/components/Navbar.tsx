@@ -85,15 +85,19 @@ export default function Navbar() {
 
         if (!notif.isRead) {
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                if (!response.ok) {
+                    throw new Error('Nie udało się oznaczyć powiadomienia jako przeczytane.');
+                }
+
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                console.error('Błąd oznaczania jako przeczytane:', error);
+                console.error('Błąd oznaczania jako przeczytane: ', error);
             }
         }
 
@@ -109,10 +113,14 @@ export default function Navbar() {
         if (!token) return;
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
+            if (!response.ok) {
+                throw new Error('Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.');
+            }
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);

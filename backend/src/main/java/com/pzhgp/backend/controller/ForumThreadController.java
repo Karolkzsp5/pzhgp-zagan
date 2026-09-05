@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
@@ -46,15 +48,12 @@ public class ForumThreadController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PutMapping("/threads/{id}/lock")
-    public ResponseEntity<Void> toggleLock(@PathVariable Long id, Authentication authentication) {
-        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.LOCK);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/threads/{id}/pin")
-    public ResponseEntity<Void> togglePin(@PathVariable Long id, Authentication authentication) {
-        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.PIN);
+    @PutMapping("/threads/{id}/title")
+    public ResponseEntity<Void> updateThreadTitle(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        threadService.updateThreadTitle(id, request.get("title"), authentication.getName());
         return ResponseEntity.ok().build();
     }
 
@@ -65,5 +64,17 @@ public class ForumThreadController {
     ) {
         threadService.deleteThread(id, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/threads/{id}/lock")
+    public ResponseEntity<Void> toggleLock(@PathVariable Long id, Authentication authentication) {
+        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.LOCK);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/threads/{id}/pin")
+    public ResponseEntity<Void> togglePin(@PathVariable Long id, Authentication authentication) {
+        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.PIN);
+        return ResponseEntity.ok().build();
     }
 }

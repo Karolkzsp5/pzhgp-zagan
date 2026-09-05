@@ -20,6 +20,5 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
     @EntityGraph(attributePaths = {"author"})
     Page<ForumPost> findByThreadId(Long threadId, Pageable pageable);
 
-    // NOWOŚĆ: Liczenie postów do statystyk
     long countByThreadId(Long threadId);
 }

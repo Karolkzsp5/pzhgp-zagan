@@ -63,7 +63,37 @@ export const fetchCategoryById = async (categoryId: number): Promise<ForumCatego
 };
 
 export const createCategory = async (name: string, description: string, sortOrder: number): Promise<void> => {
+    const token = getAuthToken();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, description, sortOrder })
+    });
 
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Nie udało się utworzyć kategorii.');
+    }
+};
+
+export const updateCategory = async (id: number, name: string, description: string, sortOrder: number): Promise<void> => {
+    const token = getAuthToken();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, description, sortOrder })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Nie udało się zaktualizować kategorii.');
+    }
 };
 
 export const deleteCategory = async (id: number): Promise<void> => {
@@ -91,6 +121,22 @@ export const fetchThreadById = async (threadId: number): Promise<ForumThreadDto 
     });
     if (!response.ok) throw new Error('Błąd pobierania wątku');
     return response.json();
+};
+
+export const updateThreadTitle = async (threadId: number, title: string): Promise<void> => {
+    const token = getAuthToken();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/title`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title })
+    });
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Nie udało się zaktualizować tytułu wątku.');
+    }
 };
 
 export const deleteThread = async (id: number): Promise<void> => {

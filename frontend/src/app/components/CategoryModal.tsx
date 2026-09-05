@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getAuthToken } from '@/utils/jwt';
 import { ForumCategoryDto } from '@/app/services/forumService';
+import { createCategory, updateCategory } from '@/app/services/forumService';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -54,34 +54,18 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
         }
 
         setIsLoading(true);
-        const token = getAuthToken();
-
-        const url = categoryToEdit
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryToEdit.id}`
-            : `${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`;
-
-        const method = categoryToEdit ? 'PUT' : 'POST';
         const finalSortOrder = sortOrder === '' ? 1 : Number(sortOrder);
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ name, description, sortOrder: finalSortOrder }),
-            });
-
-            if (response.ok) {
-                onSuccess();
-                onClose();
+            if (categoryToEdit) {
+                await updateCategory(categoryToEdit.id, name, description, finalSortOrder);
             } else {
-                const errorData = await response.text();
-                setError(errorData || 'Wystąpił błąd podczas zapisywania kategorii.');
+                await createCategory(name, description, finalSortOrder);
             }
-        } catch (err) {
-            setError('Błąd połączenia z serwerem.');
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Wystąpił błąd podczas zapisywania kategorii.');
         } finally {
             setIsLoading(false);
         }

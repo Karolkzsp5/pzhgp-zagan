@@ -8,6 +8,7 @@ import Footer from '@/app/components/Footer';
 import TextEditor from '@/app/components/TextEditor';
 import ForumGuard from '@/app/components/ForumGuard';
 import { useRouter } from 'next/navigation';
+import ConfirmModal from '@/app/components/ConfirmModal';
 import {
     fetchThreadById,
     fetchPostsByThread,
@@ -16,6 +17,7 @@ import {
     toggleThreadStatus,
     deletePost,
     updatePost,
+    updateThreadTitle,
     ForumThreadDto,
     ForumPostDto
 } from '@/app/services/forumService';
@@ -54,6 +56,33 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
+
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editTitleContent, setEditTitleContent] = useState('');
+    const [isTitleSubmitting, setIsTitleSubmitting] = useState(false);
+
+    if (isNaN(threadId)) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center py-16 text-red-600 font-medium text-xl">
+                    Nieprawidłowy adres URL. Wątek nie istnieje.
+                </div>
+            </div>
+        );
+    }
+
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        isAlert: false,
+        onConfirm: () => {}
+    });
+
+    const closeConfirmModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    const showAlert = (title: string, message: string) => {
+        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
+    };
 
     useEffect(() => {
         loadThreadData();
@@ -117,14 +146,22 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         }
     };
 
-    const handleDeleteThread = async () => {
-        if (!window.confirm('Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.')) return;
-        try {
-            await deleteThread(threadId);
-            router.push(thread?.categoryId ? `/forum/${thread.categoryId}` : '/forum');
-        } catch (err: any) {
-            alert(err.message || 'Wystąpił błąd podczas usuwania wątku.');
-        }
+    const handleDeleteThread = () => {
+        setModalConfig({
+            isOpen: true,
+            title: 'Usuń wątek',
+            message: 'Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.',
+            isAlert: false,
+            onConfirm: async () => {
+                closeConfirmModal();
+                try {
+                    await deleteThread(threadId);
+                    router.push(thread?.categoryId ? `/forum/${thread.categoryId}` : '/forum');
+                } catch (err: any) {
+                    showAlert('Błąd', err.message || 'Wystąpił błąd podczas usuwania wątku.');
+                }
+            }
+        });
     };
 
     const handleToggleStatus = async (action: 'LOCK' | 'PIN') => {
@@ -139,7 +176,25 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 };
             });
         } catch (err: any) {
-            alert(err.message || `Wystąpił błąd (${action}).`);
+            showAlert('Błąd', err.message || `Wystąpił błąd (${action}).`);
+        }
+    };
+
+    const handleTitleEditSubmit = async () => {
+        if (editTitleContent.length < 5 || editTitleContent.length > 150) {
+            showAlert('Błąd walidacji', 'Tytuł wątku musi mieć od 5 do 150 znaków.');
+            return;
+        }
+
+        setIsTitleSubmitting(true);
+        try {
+            await updateThreadTitle(threadId, editTitleContent);
+            setThread(prev => prev ? { ...prev, title: editTitleContent } : prev);
+            setIsEditingTitle(false);
+        } catch (err: any) {
+            showAlert('Błąd edycji', err.message || 'Wystąpił błąd podczas zapisywania tytułu.');
+        } finally {
+            setIsTitleSubmitting(false);
         }
     };
 
@@ -175,14 +230,22 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         }
     };
 
-    const handleDeletePost = async (postId: number) => {
-        if (!window.confirm('Czy na pewno chcesz usunąć ten wpis?')) return;
-        try {
-            await deletePost(postId);
-            loadThreadData();
-        } catch (err: any) {
-            alert(err.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
-        }
+    const handleDeletePost = (postId: number) => {
+        setModalConfig({
+            isOpen: true,
+            title: 'Usuń wpis',
+            message: 'Czy na pewno chcesz usunąć ten wpis?',
+            isAlert: false,
+            onConfirm: async () => {
+                closeConfirmModal();
+                try {
+                    await deletePost(postId);
+                    loadThreadData();
+                } catch (err: any) {
+                    showAlert('Nie można usunąć', err.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
+                }
+            }
+        });
     };
 
     const formatDate = (dateString: string) => {
@@ -219,20 +282,58 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                     {thread && (
                         <div className="bg-white p-6 rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                    {thread.isPinned && (
-                                        <svg className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
-                                            <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
-                                        </svg>
-                                    )}
-                                    {thread.isLocked && (
-                                        <svg className="w-6 h-6 text-amber-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
-                                            <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
-                                        </svg>
-                                    )}
-                                    {thread.title}
-                                </h1>
+                            <div className="flex-grow w-full sm:w-auto">
+                                {isEditingTitle ? (
+                                    <div className="flex items-center gap-2 w-full max-w-2xl">
+                                        <input
+                                            type="text"
+                                            value={editTitleContent}
+                                            onChange={(e) => setEditTitleContent(e.target.value)}
+                                            className="flex-grow px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none font-bold text-xl text-gray-900"
+                                            disabled={isTitleSubmitting}
+                                            autoFocus
+                                        />
+                                        <button
+                                            onClick={handleTitleEditSubmit}
+                                            disabled={isTitleSubmitting}
+                                            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-md transition shadow-sm disabled:opacity-50"
+                                        >
+                                            Zapisz
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingTitle(false)}
+                                            disabled={isTitleSubmitting}
+                                            className="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition disabled:opacity-50"
+                                        >
+                                            Anuluj
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                                        {thread.isPinned && (
+                                            <svg className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                                <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                            </svg>
+                                        )}
+                                        {thread.isLocked && (
+                                            <svg className="w-6 h-6 text-red-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                                <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+                                            </svg>
+                                        )}
+                                        {thread.title}
+                                        {thread.canEdit && (
+                                            <button
+                                                onClick={() => { setEditTitleContent(thread.title); setIsEditingTitle(true); }}
+                                                className="ml-1 p-1 text-gray-400 hover:text-blue-600 transition rounded-full hover:bg-blue-50"
+                                                title="Edytuj tytuł wątku"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+                                                    <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </h1>
+                                )}
                                 <div className="mt-2 text-sm text-gray-500">
                                     Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatDate(thread.createdAt)}
                                 </div>
@@ -429,8 +530,15 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                         )}
                     </div>
                 </main>
-
                 <Footer />
+                <ConfirmModal
+                    isOpen={modalConfig.isOpen}
+                    title={modalConfig.title}
+                    message={modalConfig.message}
+                    isAlert={modalConfig.isAlert}
+                    onConfirm={modalConfig.onConfirm}
+                    onCancel={closeConfirmModal}
+                />
             </div>
         </ForumGuard>
     );

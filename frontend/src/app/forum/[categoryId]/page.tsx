@@ -24,6 +24,16 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
     const [error, setError] = useState('');
     const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
 
+    if (isNaN(categoryId)) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center py-16 text-red-600 font-medium text-xl">
+                    Nieprawidłowy adres URL. Kategoria nie istnieje.
+                </div>
+            </div>
+        );
+    }
+
     useEffect(() => {
         void loadData();
     }, [categoryId, currentPage]);
