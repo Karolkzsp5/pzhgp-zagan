@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import ThreadModal from '@/app/components/ThreadModal';
@@ -11,6 +12,7 @@ import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThrea
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const resolvedParams = use(params);
     const categoryId = parseInt(resolvedParams.categoryId);
+    const router = useRouter();
 
     const [category, setCategory] = useState<ForumCategoryDto | null>(null);
     const [threads, setThreads] = useState<ForumThreadDto[]>([]);
@@ -109,23 +111,27 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                     {threads.map((thread) => (
-                                        <tr key={thread.id} className="hover:bg-blue-50/50 transition group">
+                                        <tr
+                                            key={thread.id}
+                                            onClick={() => router.push(`/forum/thread/${thread.id}`)}
+                                            className="hover:bg-blue-50/50 transition group cursor-pointer"
+                                        >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
                                                     {thread.isPinned && (
-                                                        <svg className="w-4 h-4 text-blue-500 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                                                        <svg className="w-5 h-5 text-blue-500 mr-2 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                                            <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                         </svg>
                                                     )}
                                                     {thread.isLocked && (
-                                                        <svg className="w-4 h-4 text-red-500 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                        <svg className="w-5 h-5 text-amber-500 mr-2 shrink-0" fill="currentColor" viewBox="0 -960 960 960">
+                                                            <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
                                                         </svg>
                                                     )}
                                                     <div>
-                                                        <Link href={`/forum/thread/${thread.id}`} className="text-base font-bold text-blue-700 hover:underline">
+                                                        <span className="text-base font-bold text-blue-700 group-hover:underline">
                                                             {thread.title}
-                                                        </Link>
+                                                        </span>
                                                         <div className="text-xs text-gray-500 mt-1">
                                                             Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatDate(thread.createdAt)}
                                                         </div>

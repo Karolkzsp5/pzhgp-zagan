@@ -108,7 +108,7 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (!canModerate(requester)) {
+        if (!canModerateContent(thread.getAuthor(), requester)) {
             throw new IllegalStateException("Brak uprawnień do moderacji tego wątku.");
         }
 
@@ -154,13 +154,18 @@ public class ForumThreadService {
         return false;
     }
 
-    private boolean canModerate(Breeder requester) {
-        return requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
+    private boolean canModerateContent(Breeder author, Breeder requester) {
+        if (requester.getRole() == Role.ADMINISTRATOR) {
+            return true;
+        }
+        if (requester.getRole() == Role.MODERATOR) {
+            return author.getId().equals(requester.getId()) || author.getRole() == Role.BREEDER;
+        }
+        return false;
     }
 
     private ForumThreadDto mapToDto(ForumThread thread, Breeder requester) {
         String authorFullName = thread.getAuthor().getName() + " " + thread.getAuthor().getSurname();
-
         int repliesCount = thread.getRepliesCount() != null ? Math.max(0, thread.getRepliesCount()) : 0;
 
         return new ForumThreadDto(
@@ -176,7 +181,7 @@ public class ForumThreadService {
                 thread.getCreatedAt(),
                 canEditContent(thread.getAuthor(), requester),
                 canDeleteContent(thread.getAuthor(), requester),
-                canModerate(requester)
+                canModerateContent(thread.getAuthor(), requester)
         );
     }
 }
