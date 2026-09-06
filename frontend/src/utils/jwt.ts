@@ -18,3 +18,11 @@ export const decodeJwt = (token: string) => {
         return null;
     }
 };
+
+export const isJwtValid = (token: string | null): boolean => {
+    if (!token) return false;
+    const payload = decodeJwt(token);
+    if (!payload) return false;
+    if (!payload.exp) return true;
+    return payload.exp * 1000 > Date.now();
+};

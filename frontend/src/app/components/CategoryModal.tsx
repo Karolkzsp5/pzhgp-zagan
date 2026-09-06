@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getAuthToken } from '@/utils/jwt';
 import { ForumCategoryDto } from '@/app/services/forumService';
+import { createCategory, updateCategory } from '@/app/services/forumService';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -48,40 +48,30 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
         e.preventDefault();
         setError('');
 
-        if (name.length < 3 || name.length > 100) {
+        const cleanName = name.trim();
+        if (cleanName.length < 3 || cleanName.length > 100) {
             setError('Nazwa kategorii musi mieć od 3 do 100 znaków.');
             return;
         }
 
+        const finalSortOrder = Number(sortOrder);
+        if (!Number.isInteger(finalSortOrder) || finalSortOrder < 1) {
+            setError('Kolejność sortowania musi być dodatnią liczbą całkowitą (min. 1).');
+            return;
+        }
+
         setIsLoading(true);
-        const token = getAuthToken();
-
-        const url = categoryToEdit
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryToEdit.id}`
-            : `${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`;
-
-        const method = categoryToEdit ? 'PUT' : 'POST';
-        const finalSortOrder = sortOrder === '' ? 1 : Number(sortOrder);
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ name, description, sortOrder: finalSortOrder }),
-            });
-
-            if (response.ok) {
-                onSuccess();
-                onClose();
+            if (categoryToEdit) {
+                await updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
             } else {
-                const errorData = await response.text();
-                setError(errorData || 'Wystąpił błąd podczas zapisywania kategorii.');
+                await createCategory(cleanName, description.trim(), finalSortOrder);
             }
-        } catch (err) {
-            setError('Błąd połączenia z serwerem.');
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Wystąpił błąd podczas zapisywania kategorii.');
         } finally {
             setIsLoading(false);
         }

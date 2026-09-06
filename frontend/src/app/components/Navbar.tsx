@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import {getAuthToken, decodeJwt, isJwtValid} from '@/utils/jwt';
 
 interface NotificationDto {
     id: number;
@@ -33,15 +33,18 @@ export default function Navbar() {
     useEffect(() => {
         const token = getAuthToken();
 
-        if (token) {
-            const payload = decodeJwt(token);
+        if (isJwtValid(token)) {
+            const payload = decodeJwt(token!);
             if (payload) {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
 
-                fetchNotifications(token);
+                fetchNotifications(token!);
             }
+        } else if (token) {
+            localStorage.removeItem('jwt_token');
+            sessionStorage.removeItem('jwt_token');
         }
 
         const handleClickOutside = (event: MouseEvent) => {
@@ -85,15 +88,19 @@ export default function Navbar() {
 
         if (!notif.isRead) {
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                if (!response.ok) {
+                    throw new Error('Nie udało się oznaczyć powiadomienia jako przeczytane.');
+                }
+
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                console.error('Błąd oznaczania jako przeczytane:', error);
+                console.error('Błąd oznaczania jako przeczytane: ', error);
             }
         }
 
@@ -109,10 +116,14 @@ export default function Navbar() {
         if (!token) return;
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
+            if (!response.ok) {
+                throw new Error('Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.');
+            }
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);

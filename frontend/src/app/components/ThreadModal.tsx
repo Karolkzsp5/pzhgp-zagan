@@ -35,11 +35,16 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         e.preventDefault();
         setError('');
 
-        if (title.length < 5 || title.length > 150) {
+        const cleanTitle = title.trim();
+        if (cleanTitle.length < 5 || cleanTitle.length > 150) {
             setError('Tytuł wątku musi mieć od 5 do 150 znaków.');
             return;
         }
-        if (!content || content === '<p></p>') {
+
+        const doc = new DOMParser().parseFromString(content, 'text/html');
+        const isHtmlEmpty = !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
+
+        if (isHtmlEmpty) {
             setError('Treść wiadomości nie może być pusta.');
             return;
         }
@@ -56,7 +61,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                 },
                 body: JSON.stringify({
                     categoryId: categoryId,
-                    title: title,
+                    title: cleanTitle,
                     initialPostContent: content
                 }),
             });

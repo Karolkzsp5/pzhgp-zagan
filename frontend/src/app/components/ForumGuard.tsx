@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken } from '@/utils/jwt';
+import {getAuthToken, isJwtValid} from '@/utils/jwt';
 
 export default function ForumGuard({ children }: { children: React.ReactNode }) {
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -11,11 +11,14 @@ export default function ForumGuard({ children }: { children: React.ReactNode }) 
     useEffect(() => {
         const token = getAuthToken();
 
-        if (!token) {
+        if (!isJwtValid(token)) {
+            localStorage.removeItem('jwt_token');
+            sessionStorage.removeItem('jwt_token');
             router.push('/');
-        } else {
-            setIsAuthorized(true);
+            return;
         }
+
+        setIsAuthorized(true);
     }, [router]);
 
     if (!isAuthorized) {

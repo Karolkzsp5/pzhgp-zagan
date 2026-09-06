@@ -50,7 +50,6 @@ public class ForumCategoryService {
         Breeder author = breederRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        // Hodowca nie może dodawać kategorii
         if (author.getRole() == Role.BREEDER) {
             throw new IllegalStateException("Brak uprawnień. Hodowcy nie mogą tworzyć kategorii.");
         }
@@ -100,14 +99,11 @@ public class ForumCategoryService {
         categoryRepository.delete(category);
     }
 
-    // --- LOGIKA UPRAWNIEŃ ---
 
     private boolean canEditCategory(Breeder author, Breeder requester) {
-        // Moderator i Administrator mogą edytować własne
         if (author.getId().equals(requester.getId())) {
             return true;
         }
-        // Administrator może edytować kategorie, ale nie te od innego administratora
         if (requester.getRole() == Role.ADMINISTRATOR) {
             return author.getRole() != Role.ADMINISTRATOR;
         }
@@ -115,7 +111,6 @@ public class ForumCategoryService {
     }
 
     private boolean canDeleteCategory(Breeder author, Breeder requester) {
-        // Tylko Administrator może usuwać (z wyjątkiem kategorii innego administratora)
         if (requester.getRole() == Role.ADMINISTRATOR) {
             return author.getId().equals(requester.getId()) || author.getRole() != Role.ADMINISTRATOR;
         }

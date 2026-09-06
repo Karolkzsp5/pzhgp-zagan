@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
 import { fetchCategories, deleteCategory, ForumCategoryDto } from '@/app/services/forumService';
 import CategoryModal from '@/app/components/CategoryModal';
 import ForumGuard from '@/app/components/ForumGuard';
+import ConfirmModal from '@/app/components/ConfirmModal';
 
 export default function ForumPage() {
     const [categories, setCategories] = useState<ForumCategoryDto[]>([]);
@@ -17,10 +18,23 @@ export default function ForumPage() {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ForumCategoryDto | null>(null);
 
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        isAlert: false,
+        onConfirm: () => {}
+    });
+
+    const closeConfirmModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    const showAlert = (title: string, message: string) => {
+        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
+    };
+
     useEffect(() => {
         const token = getAuthToken();
-        if (token) {
-            const payload = decodeJwt(token);
+        if (isJwtValid(token)) {
+            const payload = decodeJwt(token!);
             if (payload) {
                 setUserRole(payload.role || null);
             }
@@ -40,16 +54,24 @@ export default function ForumPage() {
         }
     };
 
-    const handleDeleteCategory = async (id: number, e: React.MouseEvent) => {
+    const handleDeleteCategory = (id: number, e: React.MouseEvent) => {
         e.preventDefault();
-        if (!window.confirm('Czy na pewno chcesz usunąć tę kategorię? Nie może zawierać wątków.')) return;
 
-        try {
-            await deleteCategory(id);
-            loadCategories();
-        } catch (err: any) {
-            alert(err.message || 'Wystąpił błąd podczas usuwania kategorii.');
-        }
+        setModalConfig({
+            isOpen: true,
+            title: 'Usuń kategorię',
+            message: 'Czy na pewno chcesz usunąć tę kategorię? Upewnij się, że nie zawiera ona żadnych wątków.',
+            isAlert: false,
+            onConfirm: async () => {
+                closeConfirmModal();
+                try {
+                    await deleteCategory(id);
+                    loadCategories();
+                } catch (err: any) {
+                    showAlert('Błąd', err.message || 'Wystąpił błąd podczas usuwania kategorii.');
+                }
+            }
+        });
     };
 
     const canCreateCategory = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
@@ -158,6 +180,15 @@ export default function ForumPage() {
                     }}
                     onSuccess={() => loadCategories()}
                     categoryToEdit={editingCategory}
+                />
+
+                <ConfirmModal
+                    isOpen={modalConfig.isOpen}
+                    title={modalConfig.title}
+                    message={modalConfig.message}
+                    isAlert={modalConfig.isAlert}
+                    onConfirm={modalConfig.onConfirm}
+                    onCancel={closeConfirmModal}
                 />
                 <Footer />
             </div>
