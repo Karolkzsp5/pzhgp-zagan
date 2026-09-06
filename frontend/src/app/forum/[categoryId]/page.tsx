@@ -11,7 +11,7 @@ import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThrea
 
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const resolvedParams = use(params);
-    const categoryId = parseInt(resolvedParams.categoryId);
+    const categoryId = Number(resolvedParams.categoryId);
     const router = useRouter();
 
     const [category, setCategory] = useState<ForumCategoryDto | null>(null);
@@ -24,18 +24,10 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
     const [error, setError] = useState('');
     const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
 
-    if (isNaN(categoryId)) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center py-16 text-red-600 font-medium text-xl">
-                    Nieprawidłowy adres URL. Kategoria nie istnieje.
-                </div>
-            </div>
-        );
-    }
-
     useEffect(() => {
-        void loadData();
+        if (Number.isInteger(categoryId)) {
+            void loadData();
+        }
     }, [categoryId, currentPage]);
 
     const loadData = async () => {
@@ -51,6 +43,10 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
             setThreads(pageData.content);
             setTotalPages(pageData.totalPages);
 
+            if (pageData.content.length === 0 && currentPage > 0) {
+                setCurrentPage(currentPage - 1);
+            }
+
         } catch (err) {
             setError('Nie udało się pobrać danych. Sprawdź połączenie z serwerem.');
         } finally {
@@ -63,6 +59,16 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
             day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
         });
     };
+
+    if (!Number.isInteger(categoryId)) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center py-16 text-red-600 font-medium text-xl">
+                    Nieprawidłowy adres URL. Kategoria nie istnieje.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <ForumGuard>
@@ -194,8 +200,11 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     isOpen={isThreadModalOpen}
                     onClose={() => setIsThreadModalOpen(false)}
                     onSuccess={() => {
-                        setCurrentPage(0);
-                        void loadData();
+                        if (currentPage === 0) {
+                            void loadData();
+                        } else {
+                            setCurrentPage(0);
+                        }
                     }}
                     categoryId={categoryId}
                 />

@@ -48,19 +48,25 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
         e.preventDefault();
         setError('');
 
-        if (name.length < 3 || name.length > 100) {
+        const cleanName = name.trim();
+        if (cleanName.length < 3 || cleanName.length > 100) {
             setError('Nazwa kategorii musi mieć od 3 do 100 znaków.');
             return;
         }
 
+        const finalSortOrder = Number(sortOrder);
+        if (!Number.isInteger(finalSortOrder) || finalSortOrder < 1) {
+            setError('Kolejność sortowania musi być dodatnią liczbą całkowitą (min. 1).');
+            return;
+        }
+
         setIsLoading(true);
-        const finalSortOrder = sortOrder === '' ? 1 : Number(sortOrder);
 
         try {
             if (categoryToEdit) {
-                await updateCategory(categoryToEdit.id, name, description, finalSortOrder);
+                await updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
             } else {
-                await createCategory(name, description, finalSortOrder);
+                await createCategory(cleanName, description.trim(), finalSortOrder);
             }
             onSuccess();
             onClose();

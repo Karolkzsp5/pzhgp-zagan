@@ -33,7 +33,7 @@ const getRoleDisplayName = (role?: string) => {
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const resolvedParams = use(params);
-    const threadId = parseInt(resolvedParams.threadId);
+    const threadId = Number(resolvedParams.threadId);
     const router = useRouter();
 
     const [thread, setThread] = useState<(ForumThreadDto & { categoryId?: number; categoryName?: string }) | null>(null);
@@ -61,16 +61,6 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     const [editTitleContent, setEditTitleContent] = useState('');
     const [isTitleSubmitting, setIsTitleSubmitting] = useState(false);
 
-    if (isNaN(threadId)) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center py-16 text-red-600 font-medium text-xl">
-                    Nieprawidłowy adres URL. Wątek nie istnieje.
-                </div>
-            </div>
-        );
-    }
-
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
         title: '',
@@ -85,7 +75,9 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     useEffect(() => {
-        loadThreadData();
+        if (Number.isInteger(threadId)) {
+            loadThreadData();
+        }
     }, [threadId, currentPage]);
 
     useEffect(() => {
@@ -102,7 +94,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setIsLoading(true);
         setError('');
         try {
-            if (!thread) {
+            if (!thread || thread.id !== threadId) {
                 const threadData = await fetchThreadById(threadId);
                 setThread(threadData);
             }
@@ -110,6 +102,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             const postsData = await fetchPostsByThread(threadId, currentPage);
             setPosts(postsData.content);
             setTotalPages(postsData.totalPages);
+
+            if (postsData.content.length === 0 && currentPage > 0) {
+                setCurrentPage(currentPage - 1);
+            }
 
             cancelEditing();
 
@@ -120,11 +116,17 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         }
     };
 
+    const isHtmlEmpty = (html: string) => {
+        if (!html) return true;
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
+    };
+
     const handleReplySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setReplyError('');
 
-        if (!replyContent || replyContent === '<p></p>') {
+        if (isHtmlEmpty(replyContent)) {
             setReplyError('Treść odpowiedzi nie może być pusta.');
             return;
         }
@@ -134,11 +136,18 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await createPost(threadId, replyContent);
             setReplyContent('');
 
-            if (currentPage !== Math.max(0, totalPages - 1)) {
-                setCurrentPage(Math.max(0, totalPages - 1));
+            const updatedThread = await fetchThreadById(threadId);
+            setThread(updatedThread);
+
+            const totalPostsCount = (updatedThread.repliesCount || 0) + 1;
+            const targetPage = Math.max(0, Math.ceil(totalPostsCount / 20) - 1);
+
+            if (currentPage !== targetPage) {
+                setCurrentPage(targetPage);
             } else {
-                loadThreadData();
+                await loadThreadData();
             }
+
         } catch (err) {
             setReplyError('Wystąpił błąd podczas publikowania odpowiedzi.');
         } finally {
@@ -181,15 +190,17 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const handleTitleEditSubmit = async () => {
-        if (editTitleContent.length < 5 || editTitleContent.length > 150) {
+        const cleanTitle = editTitleContent.trim();
+
+        if (cleanTitle.length < 5 || cleanTitle.length > 150) {
             showAlert('Błąd walidacji', 'Tytuł wątku musi mieć od 5 do 150 znaków.');
             return;
         }
 
         setIsTitleSubmitting(true);
         try {
-            await updateThreadTitle(threadId, editTitleContent);
-            setThread(prev => prev ? { ...prev, title: editTitleContent } : prev);
+            await updateThreadTitle(threadId, cleanTitle);
+            setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
         } catch (err: any) {
             showAlert('Błąd edycji', err.message || 'Wystąpił błąd podczas zapisywania tytułu.');
@@ -211,7 +222,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const handleEditSubmit = async (postId: number) => {
-        if (!editContent || editContent === '<p></p>') {
+        if (isHtmlEmpty(editContent)) {
             setEditError('Treść wpisu nie może być pusta.');
             return;
         }
@@ -253,6 +264,16 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
         });
     };
+
+    if (!Number.isInteger(threadId)) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center py-16 text-red-600 font-medium text-xl">
+                    Nieprawidłowy adres URL. Wątek nie istnieje.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <ForumGuard>

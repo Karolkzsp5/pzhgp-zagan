@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
 import { fetchCategories, deleteCategory, ForumCategoryDto } from '@/app/services/forumService';
 import CategoryModal from '@/app/components/CategoryModal';
 import ForumGuard from '@/app/components/ForumGuard';
@@ -33,8 +33,8 @@ export default function ForumPage() {
 
     useEffect(() => {
         const token = getAuthToken();
-        if (token) {
-            const payload = decodeJwt(token);
+        if (isJwtValid(token)) {
+            const payload = decodeJwt(token!);
             if (payload) {
                 setUserRole(payload.role || null);
             }

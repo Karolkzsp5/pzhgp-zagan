@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import {getAuthToken, decodeJwt, isJwtValid} from '@/utils/jwt';
 
 interface NotificationDto {
     id: number;
@@ -33,15 +33,18 @@ export default function Navbar() {
     useEffect(() => {
         const token = getAuthToken();
 
-        if (token) {
-            const payload = decodeJwt(token);
+        if (isJwtValid(token)) {
+            const payload = decodeJwt(token!);
             if (payload) {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
 
-                fetchNotifications(token);
+                fetchNotifications(token!);
             }
+        } else if (token) {
+            localStorage.removeItem('jwt_token');
+            sessionStorage.removeItem('jwt_token');
         }
 
         const handleClickOutside = (event: MouseEvent) => {
