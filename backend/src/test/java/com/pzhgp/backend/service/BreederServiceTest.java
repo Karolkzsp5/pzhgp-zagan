@@ -7,10 +7,12 @@ import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.SectionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -85,7 +87,21 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully register a new breeder")
+    @DisplayName("Should throw EntityNotFoundException when section does not exist")
+    void shouldThrowExceptionWhenSectionDoesNotExist() {
+        when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
+        when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
+        when(sectionRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> breederService.registerNewBreeder(validRegistrationRequest));
+
+        assertEquals("Nie znaleziono sekcji o podanym ID: 1", ex.getMessage());
+        verify(breederRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should successfully register a new breeder and explicitly map necessary fields")
     void shouldRegisterNewBreederSuccessfully() {
         Section section = new Section(1L, "Żagań", 1);
         when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
@@ -95,7 +111,15 @@ class BreederServiceTest {
 
         assertDoesNotThrow(() -> breederService.registerNewBreeder(validRegistrationRequest));
 
-        verify(breederRepository, times(1)).save(any(Breeder.class));
+        ArgumentCaptor<Breeder> captor = ArgumentCaptor.forClass(Breeder.class);
+        verify(breederRepository, times(1)).save(captor.capture());
+
+        Breeder saved = captor.getValue();
+        assertEquals("Tomasz", saved.getName());
+        assertEquals("Nowak", saved.getSurname());
+        assertEquals("testcypress@test.com", saved.getEmail());
+        assertEquals("hashedPassword123", saved.getPasswordHash());
+        assertEquals(section, saved.getSection());
     }
 
     @Test
@@ -126,7 +150,7 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Should block logins for the account marked as “PENDING”")
+    @DisplayName("Should block logins for the account marked as PENDING")
     void shouldThrowExceptionWhenLoggingInWithPendingAccount() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
         activeBreeder.setStatus(AccountStatus.PENDING);
@@ -138,6 +162,21 @@ class BreederServiceTest {
                 () -> breederService.login(loginRequest));
 
         assertEquals("Twoje konto oczekuje jeszcze na akceptację administratora.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should block logins for the account marked as BLOCKED")
+    void shouldThrowExceptionWhenLoggingInWithBlockedAccount() {
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        activeBreeder.setStatus(AccountStatus.BLOCKED);
+
+        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
+        when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> breederService.login(loginRequest));
+
+        assertEquals("Twoje konto zostało zablokowane.", ex.getMessage());
     }
 
     @Test

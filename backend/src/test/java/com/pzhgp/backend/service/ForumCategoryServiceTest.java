@@ -56,7 +56,7 @@ class ForumCategoryServiceTest {
 
         moderator = new Breeder();
         moderator.setId(2L);
-        moderator.setEmail("mod@test.pl");
+        moderator.setEmail("moderator@test.pl");
         moderator.setRole(Role.MODERATOR);
 
         breeder = new Breeder();
@@ -93,15 +93,30 @@ class ForumCategoryServiceTest {
     @Test
     @DisplayName("Should return mapped flags canEdit=false, canDelete=false for Moderator viewing Admin's category")
     void getAllCategories_AsModerator_ShouldReturnCorrectFlags() {
-        when(breederRepository.findByEmail("mod@test.pl")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
         when(categoryRepository.findAllByOrderBySortOrderAscNameAsc()).thenReturn(List.of(category));
 
-        List<ForumCategoryDto> result = categoryService.getAllCategories("mod@test.pl");
+        List<ForumCategoryDto> result = categoryService.getAllCategories("moderator@test.pl");
 
         assertFalse(result.isEmpty());
         ForumCategoryDto dto = result.getFirst();
         assertFalse(dto.canEdit());
         assertFalse(dto.canDelete());
+    }
+
+    @Test
+    @DisplayName("Should return mapped flags canEdit=true, canDelete=false for Moderator viewing own category")
+    void getAllCategories_AsModerator_ViewingOwnCategory_ShouldReturnCorrectFlags() {
+        category.setAuthor(moderator);
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        when(categoryRepository.findAllByOrderBySortOrderAscNameAsc()).thenReturn(List.of(category));
+
+        List<ForumCategoryDto> result = categoryService.getAllCategories("moderator@test.pl");
+
+        assertFalse(result.isEmpty());
+        ForumCategoryDto dto = result.getFirst();
+        assertTrue(dto.canEdit());
+        assertFalse(dto.canDelete()); // Moderatorzy nie mogą w ogóle usuwać kategorii
     }
 
     @Test
@@ -138,9 +153,9 @@ class ForumCategoryServiceTest {
     @Test
     @DisplayName("Should save new category when requester is Moderator")
     void createCategory_AsModerator_ShouldSaveToRepository() {
-        when(breederRepository.findByEmail("mod@test.pl")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
-        categoryService.createCategory(request, "mod@test.pl");
+        categoryService.createCategory(request, "moderator@test.pl");
 
         ArgumentCaptor<ForumCategory> captor = ArgumentCaptor.forClass(ForumCategory.class);
         verify(categoryRepository).save(captor.capture());
@@ -189,6 +204,19 @@ class ForumCategoryServiceTest {
     }
 
     @Test
+    @DisplayName("Should update category successfully when Moderator edits their own category")
+    void updateCategory_AsModeratorOnOwnCategory_ShouldUpdate() {
+        category.setAuthor(moderator);
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+
+        categoryService.updateCategory(1L, request, "moderator@test.pl");
+
+        verify(categoryRepository).save(category);
+        assertEquals("Nowa nazwa", category.getName());
+    }
+
+    @Test
     @DisplayName("Should throw IllegalStateException when Admin edits another Admin's category")
     void updateCategory_AdminOnAnotherAdminCategory_ShouldThrowException() {
         Breeder anotherAdmin = new Breeder();
@@ -210,10 +238,10 @@ class ForumCategoryServiceTest {
     @DisplayName("Should throw IllegalStateException when Moderator tries to edit Admin's category")
     void updateCategory_AsModeratorOnAdminCategory_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(breederRepository.findByEmail("mod@test.pl")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
         assertThrows(IllegalStateException.class, () -> {
-            categoryService.updateCategory(1L, request, "mod@test.pl");
+            categoryService.updateCategory(1L, request, "moderator@test.pl");
         });
 
         verify(categoryRepository, never()).save(any());
@@ -226,6 +254,17 @@ class ForumCategoryServiceTest {
 
         assertThrows(EntityNotFoundException.class, () -> {
             categoryService.updateCategory(99L, request, "admin@test.pl");
+        });
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when requester is not found")
+    void updateCategory_WhenRequesterNotFound_ShouldThrowException() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            categoryService.updateCategory(1L, request, "ghost@test.pl");
         });
     }
 
@@ -277,10 +316,10 @@ class ForumCategoryServiceTest {
     @DisplayName("Should throw exception when Moderator tries to delete a category")
     void deleteCategory_AsModerator_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(breederRepository.findByEmail("mod@test.pl")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
         assertThrows(IllegalStateException.class, () -> {
-            categoryService.deleteCategory(1L, "mod@test.pl");
+            categoryService.deleteCategory(1L, "moderator@test.pl");
         });
 
         verify(categoryRepository, never()).delete(any());

@@ -49,7 +49,7 @@ class AnnouncementIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private Breeder admin;
     private Breeder moderator;

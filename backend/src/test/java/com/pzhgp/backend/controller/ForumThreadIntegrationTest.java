@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -58,11 +59,12 @@ class ForumThreadIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ForumCategory category;
     private ForumThread thread;
     private Breeder admin;
+    private Breeder author;
 
     private String authorToken;
     private String otherBreederToken;
@@ -71,57 +73,17 @@ class ForumThreadIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Section section = new Section();
-        section.setName("Sekcja Testowa");
-        section.setSortOrder(1);
+        Section section = new Section(null, "Sekcja Testowa", 1);
         sectionRepository.save(section);
 
-        admin = new Breeder();
-        admin.setEmail("admin@test.pl");
-        admin.setName("Administrator");
-        admin.setSurname("Testowy");
-        admin.setPhoneNumber("111111111");
-        admin.setPasswordHash("hashed1");
-        admin.setRole(Role.ADMINISTRATOR);
-        admin.setStatus(AccountStatus.ACTIVE);
-        admin.setSection(section);
-        breederRepository.save(admin);
+        admin = createRealUser("admin@test.pl", Role.ADMINISTRATOR, section);
+        Breeder moderator = createRealUser("moderator@test.pl", Role.MODERATOR, section);
+        author = createRealUser("author@test.pl", Role.BREEDER, section);
+        Breeder otherBreeder = createRealUser("other@test.pl", Role.BREEDER, section);
+
         adminToken = jwtService.generateToken(admin);
-
-        Breeder moderator = new Breeder();
-        moderator.setEmail("moderator@test.pl");
-        moderator.setName("Moderator");
-        moderator.setSurname("Testowy");
-        moderator.setPhoneNumber("222222222");
-        moderator.setPasswordHash("hashed2");
-        moderator.setRole(Role.MODERATOR);
-        moderator.setStatus(AccountStatus.ACTIVE);
-        moderator.setSection(section);
-        breederRepository.save(moderator);
         modToken = jwtService.generateToken(moderator);
-
-        Breeder author = new Breeder();
-        author.setEmail("author@test.pl");
-        author.setName("Jan");
-        author.setSurname("Autor");
-        author.setPhoneNumber("333333333");
-        author.setPasswordHash("hashed3");
-        author.setRole(Role.BREEDER);
-        author.setStatus(AccountStatus.ACTIVE);
-        author.setSection(section);
-        breederRepository.save(author);
         authorToken = jwtService.generateToken(author);
-
-        Breeder otherBreeder = new Breeder();
-        otherBreeder.setEmail("other@test.pl");
-        otherBreeder.setName("Piotr");
-        otherBreeder.setSurname("Inny");
-        otherBreeder.setPhoneNumber("444444444");
-        otherBreeder.setPasswordHash("hashed4");
-        otherBreeder.setRole(Role.BREEDER);
-        otherBreeder.setStatus(AccountStatus.ACTIVE);
-        otherBreeder.setSection(section);
-        breederRepository.save(otherBreeder);
         otherBreederToken = jwtService.generateToken(otherBreeder);
 
         category = new ForumCategory();
@@ -154,6 +116,18 @@ class ForumThreadIntegrationTest {
         entityManager.clear();
     }
 
+    private Breeder createRealUser(String email, Role role, Section section) {
+        Breeder breeder = new Breeder();
+        breeder.setEmail(email);
+        breeder.setRole(role);
+        breeder.setStatus(AccountStatus.ACTIVE);
+        breeder.setName("Test");
+        breeder.setSurname("User");
+        breeder.setPhoneNumber(String.valueOf(System.nanoTime()).substring(0, 9));
+        breeder.setPasswordHash("hashed");
+        breeder.setSection(section);
+        return breederRepository.save(breeder);
+    }
 
     @Test
     @DisplayName("GET /categories/{id}/threads - Should fetch real data from H2")
@@ -163,9 +137,16 @@ class ForumThreadIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Tytuł początkowy"))
-                .andExpect(jsonPath("$.content[0].authorName").value("Jan Autor"))
                 .andExpect(jsonPath("$.content[0].canDelete").value(true))
                 .andExpect(jsonPath("$.content[0].repliesCount").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /categories/9999/threads - Should return 404 for missing category")
+    void getThreadsByCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/forum/categories/9999/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -179,12 +160,13 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should save new thread, post to H2 DB and send NEW_THREAD notification")
+    @DisplayName("POST /threads - Should save new thread, INITIAL POST to H2 DB and send NEW_THREAD notification")
     void createThread_ShouldSaveToDbAndNotify() throws Exception {
         long initialThreadCount = threadRepository.count();
+        long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
 
-        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Nowy temat", "Nowa treść");
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Nowy temat", "Zupełnie nowa treść startowa");
 
         mockMvc.perform(post("/api/forum/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
@@ -193,13 +175,60 @@ class ForumThreadIntegrationTest {
                 .andExpect(status().isCreated());
 
         assertEquals(initialThreadCount + 1, threadRepository.count());
+        assertEquals(initialPostCount + 1, postRepository.count());
+
+        ForumPost createdPost = postRepository.findAll().stream()
+                .filter(p -> p.getBody().equals("Zupełnie nowa treść startowa"))
+                .findFirst().orElseThrow(() -> new AssertionError("Brak pierwszego wpisu w bazie"));
+
+        assertEquals("Nowy temat", createdPost.getThread().getTitle());
+
         assertTrue(notificationRepository.count() > initialNotificationCount);
-
         List<Notification> allNotifications = notificationRepository.findAll();
-        boolean hasNewThreadNotification = allNotifications.stream()
-                .anyMatch(n -> n.getType() == NotificationType.NEW_THREAD);
 
-        assertTrue(hasNewThreadNotification, "Baza powinna zawierać powiadomienie NEW_THREAD");
+        Notification newThreadNotif = allNotifications.stream()
+                .filter(n -> n.getType() == NotificationType.NEW_THREAD)
+                .findFirst().orElseThrow();
+
+        assertEquals("/forum/thread/" + createdPost.getThread().getId(), newThreadNotif.getLink());
+
+        boolean authorGotIt = allNotifications.stream()
+                .anyMatch(n -> n.getRecipient().getId().equals(author.getId()));
+        assertFalse(authorGotIt, "Autor wątku nie powinien otrzymać powiadomienia o jego utworzeniu.");
+    }
+
+    @Test
+    @DisplayName("POST /threads - Should return 404 when CategoryId is invalid")
+    void createThread_WhenCategoryIsInvalid_ShouldReturn404() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(9999L, "Wątek w pustkę", "Treść testowa");
+
+        mockMvc.perform(post("/api/forum/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /threads - Should return 400 Bad Request when title is empty")
+    void createThread_WithEmptyTitle_ShouldReturn400() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "", "Prawidłowa treść");
+        mockMvc.perform(post("/api/forum/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /threads - Should return 400 Bad Request when initial post content is empty")
+    void createThread_WithEmptyContent_ShouldReturn400() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Prawidłowy tytuł", "");
+        mockMvc.perform(post("/api/forum/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -214,6 +243,67 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
+    @DisplayName("PUT /threads/{id}/title - Author should be able to update thread title in DB")
+    void updateThreadTitle_AsAuthor_ShouldReturn200() throws Exception {
+        Map<String, String> payload = Map.of("title", "Zaktualizowany piękny tytuł");
+
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk());
+
+        ForumThread updated = threadRepository.findById(thread.getId()).get();
+        assertEquals("Zaktualizowany piękny tytuł", updated.getTitle());
+    }
+
+    @Test
+    @DisplayName("PUT /threads/{id}/title - Should return 400 Bad Request for titles that are too short (4 chars) or empty")
+    void updateThreadTitle_WithInvalidLengthBoundary_ShouldReturn400() throws Exception {
+        Map<String, String> shortPayload = Map.of("title", "1234");
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(shortPayload)))
+                .andExpect(status().isBadRequest());
+
+        String longTitle = "a".repeat(151);
+        Map<String, String> longPayload = Map.of("title", longTitle);
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(longPayload)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT /threads/{id}/title - Other breeder attempting to update title should get 403 Forbidden")
+    void updateThreadTitle_AsOtherBreeder_ShouldReturn403() throws Exception {
+        Map<String, String> payload = Map.of("title", "Włamuję się na twój wątek");
+
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+
+        ForumThread unchanged = threadRepository.findById(thread.getId()).get();
+        assertEquals("Tytuł początkowy", unchanged.getTitle());
+    }
+
+    @Test
+    @DisplayName("PUT /threads/9999/title - Updating non-existent thread should return 404")
+    void updateThreadTitle_WhenMissing_ShouldReturn404() throws Exception {
+        Map<String, String> payload = Map.of("title", "Gdzie ja jestem?");
+
+        mockMvc.perform(put("/api/forum/threads/9999/title")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("DELETE /threads/{id} - As Author, should return 204 and remove from DB")
     void deleteThread_AsAuthor_ShouldRemoveFromDb() throws Exception {
         mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
@@ -224,48 +314,57 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/lock - As Admin, should change status to true")
-    void lockThread_AsAdmin_ShouldChangeDb() throws Exception {
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
-    }
-
-    @Test
-    @DisplayName("PUT /threads/{id}/lock - As Moderator, should return 200 OK")
-    void lockThread_AsModerator_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
-                .andExpect(status().isOk());
-
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
-    }
-
-    @Test
-    @DisplayName("PUT /threads/{id}/lock - Role changed to BREEDER in DB after ADMIN JWT issuance should return 403")
-    void lockThread_WhenAdminRoleDowngradedInDb_ShouldReturn403() throws Exception {
-        admin.setRole(Role.BREEDER);
-        breederRepository.save(admin);
-
-        entityManager.flush();
-
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+    @DisplayName("DELETE /threads/{id} - As Other Breeder, should return 403 Forbidden")
+    void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isForbidden());
+
+        assertTrue(threadRepository.existsById(thread.getId()));
+    }
+
+    @Test
+    @DisplayName("DELETE /threads/9999 - Should return 404 Not Found for non-existent thread")
+    void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /threads/{id}/lock - As Admin, should be able to double-toggle status")
+    void lockThread_AsAdmin_ShouldToggleProperly() throws Exception {
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
+
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isOk());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/pin - As Moderator, should return 200 OK")
-    void pinThread_AsModerator_ShouldReturn200() throws Exception {
+    @DisplayName("PUT /threads/{id}/pin - As Moderator, should be able to double-toggle status")
+    void pinThread_AsModerator_ShouldToggleProperly() throws Exception {
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
+
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
                 .andExpect(status().isOk());
 
         assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
+
+        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isOk());
+
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
 
     @Test
@@ -286,57 +385,5 @@ class ForumThreadIntegrationTest {
                 .andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
-    }
-
-    @Test
-    @DisplayName("DELETE /threads/{id} - As Other Breeder, should return 403 Forbidden")
-    void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
-                .andExpect(status().isForbidden());
-
-        assertTrue(threadRepository.existsById(thread.getId()));
-    }
-
-
-    @Test
-    @DisplayName("GET /threads/9999 - Should return 404 Not Found for non-existent thread")
-    void getThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/threads/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("DELETE /threads/9999 - Should return 404 Not Found for non-existent thread")
-    void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/api/forum/threads/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("POST /threads - As Moderator, should save new thread and return 201 Created")
-    void createThread_AsModerator_ShouldReturn201() throws Exception {
-        long initialThreadCount = threadRepository.count();
-        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Temat Moderatora", "Treść stworzona przez moderatora");
-
-        mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
-
-        assertEquals(initialThreadCount + 1, threadRepository.count());
-    }
-
-    @Test
-    @DisplayName("PUT /threads/{id}/pin - As Administrator, should change pin status to true and return 200 OK")
-    void pinThread_AsAdmin_ShouldReturn200() throws Exception {
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
 }

@@ -6,13 +6,14 @@ import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-class AuthControllerIntegrationTest {
+class AuthIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -36,7 +38,7 @@ class AuthControllerIntegrationTest {
     @Autowired
     private BreederRepository breederRepository;
 
-    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private RegistrationRequest validRequest;
 
@@ -111,7 +113,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return a 401 Unauthorized status when attempting to log in with incorrect data")
+    @DisplayName("Should return 401 Unauthorized status when attempting to log in with missing email in DB")
     void shouldReturnUnauthorizedOnInvalidLogin() throws Exception {
         LoginRequest invalidLogin = new LoginRequest("doesntexist@test.pl", "BadPassword123");
 
@@ -122,20 +124,56 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should successfully log in the active user and return a JWT token")
+    @DisplayName("Should return 401 Unauthorized status when existing user provides wrong password")
+    void shouldReturnUnauthorizedOnWrongPasswordForExistingUser() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isCreated());
+
+        Breeder savedBreeder = breederRepository.findByEmail(validRequest.email()).get();
+        savedBreeder.setStatus(AccountStatus.ACTIVE);
+        breederRepository.save(savedBreeder);
+
+        LoginRequest wrongPassLogin = new LoginRequest(validRequest.email(), "ZleHaslo999!");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(wrongPassLogin)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Nieprawidłowy adres e-mail lub hasło."));
+    }
+
+    @Test
+    @DisplayName("Should return 403 Forbidden status when logging into PENDING account")
+    void shouldReturnForbiddenWhenLoggingInWithPendingAccount() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isCreated());
+
+        LoginRequest loginRequest = new LoginRequest(validRequest.email(), validRequest.password());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("Twoje konto oczekuje jeszcze na akceptację administratora."));
+    }
+
+    @Test
+    @DisplayName("Should successfully log in the active user, return a JWT token and pass Security Filter to reach protected endpoint")
     void shouldLoginSuccessfullyAndReturnJwtIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated());
 
-        Breeder savedBreeder = breederRepository.findByEmail(validRequest.email())
-                .orElseThrow(() -> new RuntimeException("Nie znaleziono użytkownika po rejestracji"));
+        Breeder savedBreeder = breederRepository.findByEmail(validRequest.email()).get();
         savedBreeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(savedBreeder);
 
         LoginRequest loginRequest = new LoginRequest(validRequest.email(), validRequest.password());
-
         org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
@@ -144,5 +182,9 @@ class AuthControllerIntegrationTest {
 
         String jwtToken = result.getResponse().getContentAsString();
         org.junit.jupiter.api.Assertions.assertFalse(jwtToken.isEmpty(), "Zwrócony token JWT nie powinien być pusty");
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken))
+                .andExpect(status().isOk());
     }
 }
