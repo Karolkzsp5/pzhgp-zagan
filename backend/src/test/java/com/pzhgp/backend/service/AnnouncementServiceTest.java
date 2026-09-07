@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -95,17 +96,29 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should save announcement and send notifications (excluding author) when the author is an administrator")
+    @DisplayName("Should save announcement, verify its fields with captor and send bulk notifications excluding author")
     void createAnnouncement_ShouldSaveAndNotify_WhenUserIsAdmin() {
         AnnouncementRequestDto request = new AnnouncementRequestDto("Ważny lot", "Szczegóły", true);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(admin1, standardBreeder));
+
+        Breeder anotherActiveBreeder = new Breeder();
+        anotherActiveBreeder.setId(5L);
+
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(admin1, standardBreeder, anotherActiveBreeder));
 
         announcementService.createAnnouncement(request, admin1.getEmail());
 
-        verify(announcementRepository, times(1)).save(any(Announcement.class));
+        ArgumentCaptor<Announcement> captor = ArgumentCaptor.forClass(Announcement.class);
+        verify(announcementRepository, times(1)).save(captor.capture());
+
+        Announcement savedAnnouncement = captor.getValue();
+        assertEquals("Ważny lot", savedAnnouncement.getTitle());
+        assertEquals("Szczegóły", savedAnnouncement.getContent());
+        assertTrue(savedAnnouncement.isPinned());
+        assertEquals(admin1, savedAnnouncement.getAuthor());
+
         verify(notificationService, times(1)).createBulkNotifications(
-                argThat(list -> list.size() == 1 && list.contains(standardBreeder)),
+                argThat(list -> list.size() == 2 && !list.contains(admin1) && list.contains(standardBreeder) && list.contains(anotherActiveBreeder)),
                 eq("Jan Kowalski dodał/a ogłoszenie na stronie głównej"),
                 eq("/"),
                 eq(NotificationType.NEW_ANNOUNCEMENT)
@@ -139,6 +152,29 @@ class AnnouncementServiceTest {
         assertEquals("Nowa treść", announcement.getContent());
         assertTrue(announcement.isPinned());
         verify(announcementRepository, times(1)).save(announcement);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when ordinary breeder tries to update an announcement")
+    void updateAnnouncement_ShouldThrowException_WhenBreederUpdatesPost() {
+        AnnouncementRequestDto request = new AnnouncementRequestDto("X", "Y", false);
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
+
+        assertThrows(IllegalStateException.class, () ->
+                announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail())
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when updating non-existent announcement")
+    void updateAnnouncement_ShouldThrowException_WhenAnnouncementNotFound() {
+        AnnouncementRequestDto request = new AnnouncementRequestDto("X", "Y", false);
+        when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () ->
+                announcementService.updateAnnouncement(99L, request, admin1.getEmail())
+        );
     }
 
     @Test
@@ -185,6 +221,34 @@ class AnnouncementServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw exception when Moderator tries to delete another Moderator's announcement")
+    void deleteAnnouncement_ShouldThrowException_WhenModeratorDeletesOtherModeratorPost() {
+        Breeder anotherModerator = new Breeder();
+        anotherModerator.setId(99L);
+        anotherModerator.setRole(Role.MODERATOR);
+        announcement.setAuthor(anotherModerator);
+
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                announcementService.deleteAnnouncement(announcement.getId(), moderator.getEmail())
+        );
+        assertEquals("Brak uprawnień do usunięcia tego ogłoszenia.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when ordinary breeder tries to delete an announcement")
+    void deleteAnnouncement_ShouldThrowException_WhenBreederDeletesPost() {
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
+
+        assertThrows(IllegalStateException.class, () ->
+                announcementService.deleteAnnouncement(announcement.getId(), standardBreeder.getEmail())
+        );
+    }
+
+    @Test
     @DisplayName("Should throw exception when administrator tries to delete another administrator's announcement")
     void deleteAnnouncement_ShouldThrowException_WhenAdminDeletesAdminPost() {
         announcement.setAuthor(admin1);
@@ -196,6 +260,16 @@ class AnnouncementServiceTest {
         );
         assertEquals("Administrator nie może usuwać ogłoszeń należących do innych administratorów.", exception.getMessage());
         verify(announcementRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when deleting non-existent announcement")
+    void deleteAnnouncement_ShouldThrowException_WhenAnnouncementNotFound() {
+        when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () ->
+                announcementService.deleteAnnouncement(99L, admin1.getEmail())
+        );
     }
 
     @Test

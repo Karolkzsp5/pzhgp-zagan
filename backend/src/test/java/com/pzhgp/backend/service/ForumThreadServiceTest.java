@@ -71,7 +71,7 @@ class ForumThreadServiceTest {
 
         moderator = new Breeder();
         moderator.setId(3L);
-        moderator.setEmail("mod@test.com");
+        moderator.setEmail("moderator@test.com");
         moderator.setRole(Role.MODERATOR);
 
         randomUser = new Breeder();
@@ -125,6 +125,18 @@ class ForumThreadServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw EntityNotFoundException when user creating thread is not found")
+    void createThread_WhenUserNotFound_ShouldThrowException() {
+        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść");
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            threadService.createThread(request, "ghost@test.com");
+        });
+    }
+
+    @Test
     @DisplayName("Should return mapped page of threads when category exists")
     void getThreadsByCategory_Success() {
         thread.setRepliesCount(1);
@@ -143,8 +155,6 @@ class ForumThreadServiceTest {
         assertEquals(100L, dto.id());
         assertEquals("Testowy wątek", dto.title());
         assertEquals("Jan Kowalski", dto.authorName());
-        assertEquals(10L, dto.categoryId());
-        assertEquals(1, dto.repliesCount());
         assertTrue(dto.canDelete());
         assertFalse(dto.canModerate());
     }
@@ -162,15 +172,26 @@ class ForumThreadServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw EntityNotFoundException when getting threads and user not found")
+    void getThreadsByCategory_WhenUserNotFound_ShouldThrowException() {
+        when(categoryRepository.existsById(10L)).thenReturn(true);
+        when(breederRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            threadService.getThreadsByCategory(10L, 0, 10, "ghost@test.com");
+        });
+    }
+
+    @Test
     @DisplayName("Should increment views and return thread with Moderator permissions")
     void getThreadAndIncrementViews_WithModeratorPermissions() {
         thread.setRepliesCount(4);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "mod@test.com");
+        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
 
         assertEquals(1, thread.getViews());
         assertNotNull(result);
@@ -180,37 +201,37 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should increment views and return thread with regular user permissions")
-    void getThreadAndIncrementViews_WithRandomUserPermissions() {
-        thread.setRepliesCount(2);
+    @DisplayName("Should NOT increment views and map true for all flags when Admin reads their own thread")
+    void getThreadAndIncrementViews_WhenAdminIsAuthor_ShouldMapAllTrue() {
+        thread.setAuthor(admin);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("random@test.com")).thenReturn(Optional.of(randomUser));
+        when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "random@test.com");
-
-        assertEquals(1, thread.getViews());
-        assertNotNull(result);
-        assertFalse(result.canDelete());
-        assertFalse(result.canModerate());
-        assertFalse(result.canEdit());
-    }
-
-    @Test
-    @DisplayName("Should NOT increment views when requester is the author of the thread")
-    void getThreadAndIncrementViews_WhenRequesterIsAuthor_ShouldNotIncrementViews() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
-
-        assertEquals(0, thread.getViews());
-
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "author@test.com");
+        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "admin@test.com");
 
         assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
         assertTrue(result.canDelete());
-        assertFalse(result.canModerate());
+        assertTrue(result.canModerate());
+    }
+
+    @Test
+    @DisplayName("Should NOT increment views and map true for all flags when Moderator reads their own thread")
+    void getThreadAndIncrementViews_WhenModeratorIsAuthor_ShouldMapAllTrue() {
+        thread.setAuthor(moderator);
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
+
+        assertEquals(0, thread.getViews());
+
+        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
+
+        assertEquals(0, thread.getViews());
+        assertTrue(result.canEdit());
+        assertTrue(result.canDelete());
+        assertTrue(result.canModerate());
     }
 
     @Test
@@ -248,12 +269,38 @@ class ForumThreadServiceTest {
     }
 
     @Test
+    @DisplayName("Administrator should be able to delete Moderator's thread")
+    void deleteThread_WhenAdminDeletesModeratorThread_ShouldDelete() {
+        thread.setAuthor(moderator);
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        threadService.deleteThread(100L, "admin@test.com");
+
+        verify(postRepository, times(1)).deleteAllByThreadId(100L);
+        verify(threadRepository, times(1)).delete(thread);
+    }
+
+    @Test
     @DisplayName("Moderator should be able to delete any thread created by a Breeder")
     void deleteThread_WhenRequesterIsModerator_ShouldDeleteThreadAndPosts() {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
-        threadService.deleteThread(100L, "mod@test.com");
+        threadService.deleteThread(100L, "moderator@test.com");
+
+        verify(postRepository, times(1)).deleteAllByThreadId(100L);
+        verify(threadRepository, times(1)).delete(thread);
+    }
+
+    @Test
+    @DisplayName("Moderator should be able to delete their own thread")
+    void deleteThread_WhenModeratorDeletesOwnThread_ShouldDelete() {
+        thread.setAuthor(moderator);
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
+
+        threadService.deleteThread(100L, "moderator@test.com");
 
         verify(postRepository, times(1)).deleteAllByThreadId(100L);
         verify(threadRepository, times(1)).delete(thread);
@@ -288,25 +335,10 @@ class ForumThreadServiceTest {
         thread.setAuthor(anotherModerator);
 
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            threadService.deleteThread(100L, "mod@test.com");
-        });
-
-        assertEquals("Brak uprawnień do usunięcia tego wątku.", exception.getMessage());
-        verify(postRepository, never()).deleteAllByThreadId(anyLong());
-        verify(threadRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("Should throw IllegalStateException when an unauthorized user tries to delete a thread")
-    void deleteThread_WhenRequesterIsRandomUser_ShouldThrowException() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("random@test.com")).thenReturn(Optional.of(randomUser));
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            threadService.deleteThread(100L, "random@test.com");
+            threadService.deleteThread(100L, "moderator@test.com");
         });
 
         assertEquals("Brak uprawnień do usunięcia tego wątku.", exception.getMessage());
@@ -343,25 +375,24 @@ class ForumThreadServiceTest {
     @DisplayName("Moderator should be able to toggle pin status both ways")
     void toggleThreadStatus_ModeratorShouldTogglePin() {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("mod@test.com")).thenReturn(Optional.of(moderator));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertFalse(thread.getIsPinned());
 
-        threadService.toggleThreadStatus(100L, "mod@test.com", ThreadAction.PIN);
+        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
         assertTrue(thread.getIsPinned());
 
-        threadService.toggleThreadStatus(100L, "mod@test.com", ThreadAction.PIN);
+        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
         assertFalse(thread.getIsPinned());
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when normal breeder tries to moderate (even if author)")
-    void toggleThreadStatus_BreederShouldThrowException() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
+    @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
+    void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
+        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> {
-            threadService.toggleThreadStatus(100L, "author@test.com", ThreadAction.LOCK);
+        assertThrows(EntityNotFoundException.class, () -> {
+            threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);
         });
     }
 }

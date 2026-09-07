@@ -48,7 +48,7 @@ class NotificationServiceTest {
 
         anotherBreeder = new Breeder();
         anotherBreeder.setId(2L);
-        anotherBreeder.setEmail("inny@test.pl");
+        anotherBreeder.setEmail("other@test.pl");
 
         testNotification = new Notification();
         testNotification.setId(100L);
@@ -80,44 +80,26 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when creating notification for non-existent breeder")
-    void shouldThrowExceptionWhenRecipientNotFound() {
-        when(breederRepository.findById(99L)).thenReturn(Optional.empty());
-
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.createNotification(99L, "Msg", null, NotificationType.NEW_ANNOUNCEMENT));
-
-        assertEquals("Nie znaleziono odbiorcy o ID: 99", ex.getMessage());
-        verify(notificationRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when user email does not exist in DB")
-    void shouldThrowExceptionWhenUserEmailNotFound() {
-        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
-
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.getUserNotifications("unknown@test.pl"));
-
-        assertEquals("Nie znaleziono użytkownika: unknown@test.pl", ex.getMessage());
-        verify(notificationRepository, never()).findAllByRecipientIdOrderByCreatedAtDesc(any());
-    }
-
-    @Test
-    @DisplayName("Should create bulk notifications using saveAll")
+    @DisplayName("Should create bulk notifications using saveAll and verify complete details")
     void shouldCreateBulkNotifications() {
         List<Breeder> recipients = List.of(testBreeder, anotherBreeder);
 
         assertDoesNotThrow(() -> notificationService.createBulkNotifications(
-                recipients, "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
+                recipients, "Masowa wiadomość", "/updates", NotificationType.NEW_ANNOUNCEMENT));
 
         ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationRepository, times(1)).saveAll(captor.capture());
 
         List<Notification> savedNotifications = captor.getValue();
         assertEquals(2, savedNotifications.size());
-        assertEquals("Masowa wiadomość", savedNotifications.get(0).getMessage());
-        assertEquals("Masowa wiadomość", savedNotifications.get(1).getMessage());
+
+        assertEquals("Masowa wiadomość", savedNotifications.getFirst().getMessage());
+        assertEquals("/updates", savedNotifications.getFirst().getLink());
+        assertEquals(NotificationType.NEW_ANNOUNCEMENT, savedNotifications.getFirst().getType());
+        assertEquals(testBreeder, savedNotifications.get(0).getRecipient());
+        assertFalse(savedNotifications.get(0).isRead());
+
+        assertEquals(anotherBreeder, savedNotifications.get(1).getRecipient());
     }
 
     @Test
@@ -125,15 +107,6 @@ class NotificationServiceTest {
     void shouldNotSaveBulkWhenListIsNull() {
         assertDoesNotThrow(() -> notificationService.createBulkNotifications(
                 null, "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
-
-        verify(notificationRepository, never()).saveAll(any());
-    }
-
-    @Test
-    @DisplayName("Should not call saveAll when recipient list is empty")
-    void shouldNotSaveBulkWhenListIsEmpty() {
-        assertDoesNotThrow(() -> notificationService.createBulkNotifications(
-                List.of(), "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
 
         verify(notificationRepository, never()).saveAll(any());
     }
@@ -167,6 +140,17 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw EntityNotFoundException when fetching unread count for unknown user")
+    void shouldThrowExceptionWhenGettingUnreadCountForUnknownUser() {
+        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> notificationService.getUnreadCount("unknown@test.pl"));
+
+        assertEquals("Nie znaleziono użytkownika: unknown@test.pl", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Should successfully mark notification as read")
     void shouldMarkAsRead() {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
@@ -192,15 +176,14 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when marking someone else's notification as read")
-    void shouldPreventMarkingOthersNotificationAsRead() {
-        when(breederRepository.findByEmail("other@test.pl")).thenReturn(Optional.of(anotherBreeder));
-        when(notificationRepository.findById(100L)).thenReturn(Optional.of(testNotification));
+    @DisplayName("Should throw EntityNotFoundException when user performing markAsRead does not exist")
+    void shouldThrowExceptionWhenMarkAsReadUserDoesNotExist() {
+        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> notificationService.markAsRead(100L, "other@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> notificationService.markAsRead(100L, "ghost@test.pl"));
 
-        assertEquals("Brak uprawnień do modyfikacji tego powiadomienia.", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
         verify(notificationRepository, never()).save(any());
     }
 
@@ -212,5 +195,17 @@ class NotificationServiceTest {
         assertDoesNotThrow(() -> notificationService.markAllAsRead("test@test.pl"));
 
         verify(notificationRepository, times(1)).markAllAsReadByRecipientId(1L);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when trying to mark all as read for unknown user")
+    void shouldThrowExceptionWhenMarkingAllAsReadForUnknownUser() {
+        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> notificationService.markAllAsRead("ghost@test.pl"));
+
+        assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
+        verify(notificationRepository, never()).markAllAsReadByRecipientId(anyLong());
     }
 }

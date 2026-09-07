@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
+import com.pzhgp.backend.repository.ForumThreadRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +40,9 @@ class ForumCategoryIntegrationTest {
     private ForumCategoryRepository categoryRepository;
 
     @Autowired
+    private ForumThreadRepository threadRepository;
+
+    @Autowired
     private BreederRepository breederRepository;
 
     @Autowired
@@ -46,12 +51,13 @@ class ForumCategoryIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ForumCategory adminCategory;
     private ForumCategory modCategory;
     private ForumCategory anotherAdminCategory;
 
+    private Breeder admin;
     private String adminToken;
     private String modToken;
     private String breederToken;
@@ -59,12 +65,10 @@ class ForumCategoryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Section section = new Section();
-        section.setName("Sekcja Testowa");
-        section.setSortOrder(1);
+        Section section = new Section(null, "Sekcja Testowa", 1);
         sectionRepository.save(section);
 
-        Breeder admin = new Breeder();
+        admin = new Breeder();
         admin.setEmail("admin@test.pl");
         admin.setName("Administrator");
         admin.setSurname("Testowy");
@@ -148,10 +152,31 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /categories - Admin can create category")
+    @DisplayName("GET /categories/{id} - Should return existing category")
+    void getCategoryById_ShouldReturn200() throws Exception {
+        mockMvc.perform(get("/api/forum/categories/" + adminCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Wystawy i loty"));
+    }
+
+    @Test
+    @DisplayName("GET /categories/{id} - Should return 404 for non-existing category")
+    void getCategoryById_WhenMissing_ShouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/forum/categories/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /categories - Admin can create category and data is saved correctly in DB")
     void createCategory_AsAdmin_ShouldReturn201() throws Exception {
         long initialCount = categoryRepository.count();
-        Map<String, String> request = Map.of("name", "Nowy Dział");
+        Map<String, Object> request = Map.of(
+                "name", "Nowy Dział",
+                "description", "Opis testowy",
+                "sortOrder", 99
+        );
 
         mockMvc.perform(post("/api/forum/categories")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
@@ -160,6 +185,26 @@ class ForumCategoryIntegrationTest {
                 .andExpect(status().isCreated());
 
         assertEquals(initialCount + 1, categoryRepository.count());
+
+        ForumCategory saved = categoryRepository.findAll().stream()
+                .filter(c -> c.getName().equals("Nowy Dział"))
+                .findFirst().get();
+
+        assertEquals("Opis testowy", saved.getDescription());
+        assertEquals(99, saved.getSortOrder());
+        assertEquals(admin.getId(), saved.getAuthor().getId());
+    }
+
+    @Test
+    @DisplayName("POST /categories - Should return 400 Bad Request on invalid empty data")
+    void createCategory_WithInvalidData_ShouldReturn400() throws Exception {
+        Map<String, Object> request = Map.of("name", "", "sortOrder", 1);
+
+        mockMvc.perform(post("/api/forum/categories")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -188,7 +233,6 @@ class ForumCategoryIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
-
 
     @Test
     @DisplayName("PUT /categories/{id} - Moderator can update THEIR OWN category")
@@ -260,15 +304,43 @@ class ForumCategoryIntegrationTest {
         assertEquals("Wystawy i loty", categoryRepository.findById(adminCategory.getId()).get().getName());
     }
 
+    @Test
+    @DisplayName("PUT /categories/9999 - Should return 404 Not Found")
+    void updateCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
+        Map<String, String> request = Map.of("name", "Test");
+
+        mockMvc.perform(put("/api/forum/categories/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Admin can delete category")
+    @DisplayName("DELETE /categories/{id} - Admin can delete empty category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
         assertTrue(categoryRepository.findById(adminCategory.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("DELETE /categories/{id} - Should return 403 Forbidden when attempting to delete category that contains threads")
+    void deleteCategory_WhenThreadsExist_ShouldReturn403() throws Exception {
+        ForumThread thread = new ForumThread();
+        thread.setCategory(adminCategory);
+        thread.setAuthor(admin);
+        thread.setTitle("Wątek blokujący");
+        threadRepository.save(thread);
+
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("Nie można usunąć kategorii, która zawiera wątki."));
+
+        assertTrue(categoryRepository.existsById(adminCategory.getId()));
     }
 
     @Test
@@ -287,17 +359,5 @@ class ForumCategoryIntegrationTest {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("PUT /categories/9999 - Should return 404 Not Found")
-    void updateCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
-        Map<String, String> request = Map.of("name", "Test");
-
-        mockMvc.perform(put("/api/forum/categories/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
     }
 }

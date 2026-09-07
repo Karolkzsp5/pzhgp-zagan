@@ -4,12 +4,14 @@ import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
+import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +23,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,17 +42,19 @@ class NotificationIntegrationTest {
     @Autowired
     private SectionRepository sectionRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
     private Breeder testBreeder;
     private Breeder anotherBreeder;
     private Notification unreadNotification;
     private Notification readNotification;
 
+    private String testBreederToken;
+    private String anotherBreederToken;
+
     @BeforeEach
     void setUp() {
-        notificationRepository.deleteAll();
-        breederRepository.deleteAll();
-        sectionRepository.deleteAll();
-
         Section section = new Section(null, "Test Section", 1);
         section = sectionRepository.save(section);
 
@@ -68,6 +71,8 @@ class NotificationIntegrationTest {
         testBreeder.setCreatedAt(LocalDateTime.now());
         testBreeder = breederRepository.save(testBreeder);
 
+        testBreederToken = jwtService.generateToken(testBreeder);
+
         anotherBreeder = new Breeder();
         anotherBreeder.setEmail("inny@test.pl");
         anotherBreeder.setPasswordHash("$2a$12$R1NIIhVVnGXVo5KH0hKSze1J.d5OI5sHAd0to9..rzta3I.OrwmZW");
@@ -79,7 +84,9 @@ class NotificationIntegrationTest {
         anotherBreeder.setStatus(AccountStatus.ACTIVE);
         anotherBreeder.setRole(Role.BREEDER);
         anotherBreeder.setCreatedAt(LocalDateTime.now());
-        breederRepository.save(anotherBreeder);
+        anotherBreeder = breederRepository.save(anotherBreeder);
+
+        anotherBreederToken = jwtService.generateToken(anotherBreeder);
 
         unreadNotification = new Notification();
         unreadNotification.setRecipient(testBreeder);
@@ -105,10 +112,10 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return user notifications mapped to DTOs with all fields")
+    @DisplayName("Should return user notifications mapped to DTOs with all fields using real JWT")
     void shouldReturnUserNotifications() throws Exception {
         mockMvc.perform(get("/api/notifications")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[?(@.message == 'Nowa nieprzeczytana wiadomość')].link").value("/link-1"))
@@ -120,30 +127,30 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return correct unread count")
+    @DisplayName("Should return correct unread count using real JWT")
     void shouldReturnUnreadCount() throws Exception {
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk())
                 .andExpect(content().string("1"));
     }
 
     @Test
-    @DisplayName("Should successfully mark notification as read and decrease unread count")
+    @DisplayName("Should successfully mark notification as read and decrease unread count using real JWT")
     void shouldMarkNotificationAsReadAndDecreaseCount() throws Exception {
         Long notificationId = unreadNotification.getId();
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk())
                 .andExpect(content().string("1"));
 
         mockMvc.perform(put("/api/notifications/" + notificationId + "/read")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk())
                 .andExpect(content().string("0"));
 
@@ -162,7 +169,7 @@ class NotificationIntegrationTest {
         notificationRepository.save(extraUnread);
 
         mockMvc.perform(put("/api/notifications/read-all")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk());
 
         List<Notification> allNotifications = notificationRepository.findAll();
@@ -177,7 +184,7 @@ class NotificationIntegrationTest {
         Long othersNotificationId = unreadNotification.getId();
 
         mockMvc.perform(put("/api/notifications/" + othersNotificationId + "/read")
-                        .with(user("inny@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
                 .andExpect(status().isForbidden());
     }
 
@@ -187,7 +194,7 @@ class NotificationIntegrationTest {
         Long nonExistentId = 999999L;
 
         mockMvc.perform(put("/api/notifications/" + nonExistentId + "/read")
-                        .with(user("test@test.pl")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isNotFound());
     }
 }

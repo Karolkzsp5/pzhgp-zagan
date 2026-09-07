@@ -150,21 +150,6 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when user does not exist on addPost")
-    void addPost_WhenUserNotFound_ShouldThrowException() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
-
-        ForumPostRequest request = new ForumPostRequest("Odpowiedź widmo");
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            postService.addPost(100L, request, "unknown@test.pl");
-        });
-
-        verify(postRepository, never()).save(any());
-    }
-
-    @Test
     @DisplayName("Author should be able to edit their own post")
     void updatePost_WhenRequesterIsAuthor_ShouldUpdateBody() {
         ForumPostRequest request = new ForumPostRequest("Nowa, zedytowana treść");
@@ -208,6 +193,45 @@ class ForumPostServiceTest {
     }
 
     @Test
+    @DisplayName("Moderator should be able to delete their own post")
+    void deletePost_WhenRequesterIsModeratorOnOwnPost_ShouldDelete() {
+        post.setAuthor(moderator);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+
+        postService.deletePost(500L, "moderator@test.pl");
+
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Administrator should be able to delete Moderator's post")
+    void deletePost_WhenRequesterIsAdminOnModeratorPost_ShouldDelete() {
+        post.setAuthor(moderator);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
+        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+
+        postService.deletePost(500L, "admin@test.pl");
+
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Administrator should be able to delete their own post")
+    void deletePost_WhenRequesterIsAdminOnOwnPost_ShouldDelete() {
+        post.setAuthor(admin);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
+        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+
+        postService.deletePost(500L, "admin@test.pl");
+
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
     @DisplayName("Should throw exception when Moderator tries to delete Admin's post")
     void deletePost_WhenModeratorTriesToDeleteAdminPost_ShouldThrowException() {
         post.setAuthor(admin);
@@ -222,15 +246,37 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Author should be able to delete their own post")
-    void deletePost_WhenRequesterIsAuthor_ShouldDelete() {
+    @DisplayName("Should throw exception when regular Breeder tries to delete another Breeder's post")
+    void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
 
-        postService.deletePost(500L, "post.author@test.pl");
+        assertThrows(IllegalStateException.class, () -> {
+            postService.deletePost(500L, "thread.author@test.pl");
+        });
 
-        verify(postRepository, times(1)).delete(post);
+        verify(postRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when deleting non-existent post")
+    void deletePost_WhenPostNotFound_ShouldThrowException() {
+        when(postRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            postService.deletePost(999L, "admin@test.pl");
+        });
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when user performing delete is not found")
+    void deletePost_WhenUserNotFound_ShouldThrowException() {
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            postService.deletePost(500L, "ghost@test.pl");
+        });
     }
 
     @Test

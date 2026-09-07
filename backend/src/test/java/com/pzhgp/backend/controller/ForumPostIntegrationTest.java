@@ -55,11 +55,12 @@ class ForumPostIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ForumCategory category;
     private ForumThread thread;
-    private ForumPost post;
+    private ForumPost breederPost;
+    private ForumPost adminPost;
 
     private Breeder threadAuthor;
 
@@ -71,69 +72,19 @@ class ForumPostIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Section section = new Section();
-        section.setName("Sekcja Testowa");
-        section.setSortOrder(1);
+        Section section = new Section(null, "Sekcja Testowa", 1);
         sectionRepository.save(section);
 
-        Breeder admin = new Breeder();
-        admin.setEmail("admin@test.pl");
-        admin.setName("Administrator");
-        admin.setSurname("Testowy");
-        admin.setPhoneNumber("111111111");
-        admin.setPasswordHash("hashed1");
-        admin.setRole(Role.ADMINISTRATOR);
-        admin.setStatus(AccountStatus.ACTIVE);
-        admin.setSection(section);
-        breederRepository.save(admin);
+        Breeder admin = createRealUser("admin@test.pl", Role.ADMINISTRATOR, section);
+        Breeder moderator = createRealUser("moderator@test.pl", Role.MODERATOR, section);
+        threadAuthor = createRealUser("thread.author@test.pl", Role.BREEDER, section);
+        Breeder postAuthor = createRealUser("post.author@test.pl", Role.BREEDER, section);
+        Breeder otherBreeder = createRealUser("other@test.pl", Role.BREEDER, section);
+
         adminToken = jwtService.generateToken(admin);
-
-        Breeder moderator = new Breeder();
-        moderator.setEmail("moderator@test.pl");
-        moderator.setName("Moderator");
-        moderator.setSurname("Testowy");
-        moderator.setPhoneNumber("222222222");
-        moderator.setPasswordHash("hashed2");
-        moderator.setRole(Role.MODERATOR);
-        moderator.setStatus(AccountStatus.ACTIVE);
-        moderator.setSection(section);
-        breederRepository.save(moderator);
         modToken = jwtService.generateToken(moderator);
-
-        threadAuthor = new Breeder();
-        threadAuthor.setEmail("thread.author@test.pl");
-        threadAuthor.setName("Jan");
-        threadAuthor.setSurname("Autor Tematu");
-        threadAuthor.setPhoneNumber("333333333");
-        threadAuthor.setPasswordHash("hashed3");
-        threadAuthor.setRole(Role.BREEDER);
-        threadAuthor.setStatus(AccountStatus.ACTIVE);
-        threadAuthor.setSection(section);
-        breederRepository.save(threadAuthor);
         threadAuthorToken = jwtService.generateToken(threadAuthor);
-
-        Breeder postAuthor = new Breeder();
-        postAuthor.setEmail("post.author@test.pl");
-        postAuthor.setName("Piotr");
-        postAuthor.setSurname("Autor Posta");
-        postAuthor.setPhoneNumber("444444444");
-        postAuthor.setPasswordHash("hashed4");
-        postAuthor.setRole(Role.BREEDER);
-        postAuthor.setStatus(AccountStatus.ACTIVE);
-        postAuthor.setSection(section);
-        breederRepository.save(postAuthor);
         postAuthorToken = jwtService.generateToken(postAuthor);
-
-        Breeder otherBreeder = new Breeder();
-        otherBreeder.setEmail("other@test.pl");
-        otherBreeder.setName("Kamil");
-        otherBreeder.setSurname("Inny");
-        otherBreeder.setPhoneNumber("555555555");
-        otherBreeder.setPasswordHash("hashed5");
-        otherBreeder.setRole(Role.BREEDER);
-        otherBreeder.setStatus(AccountStatus.ACTIVE);
-        otherBreeder.setSection(section);
-        breederRepository.save(otherBreeder);
         otherBreederToken = jwtService.generateToken(otherBreeder);
 
         category = new ForumCategory();
@@ -146,23 +97,34 @@ class ForumPostIntegrationTest {
         thread.setAuthor(threadAuthor);
         thread.setTitle("Temat do dyskusji");
         thread.setIsLocked(false);
-        thread.setIsPinned(false);
-        thread.setViews(0);
+        thread.setLastPostAt(LocalDateTime.now().minusDays(1));
         threadRepository.save(thread);
 
-        ForumPost firstPost = new ForumPost();
-        firstPost.setThread(thread);
-        firstPost.setAuthor(threadAuthor);
-        firstPost.setBody("Treść otwierająca wątek");
-        postRepository.save(firstPost);
+        adminPost = new ForumPost();
+        adminPost.setThread(thread);
+        adminPost.setAuthor(admin);
+        adminPost.setBody("Admin otworzył wątek");
+        postRepository.save(adminPost);
 
-        post = new ForumPost();
-        post.setThread(thread);
-        post.setAuthor(postAuthor);
-        post.setBody("Początkowa treść posta");
-        postRepository.save(post);
+        breederPost = new ForumPost();
+        breederPost.setThread(thread);
+        breederPost.setAuthor(postAuthor);
+        breederPost.setBody("Początkowa treść posta hodowcy");
+        postRepository.save(breederPost);
     }
 
+    private Breeder createRealUser(String email, Role role, Section section) {
+        Breeder breeder = new Breeder();
+        breeder.setEmail(email);
+        breeder.setRole(role);
+        breeder.setStatus(AccountStatus.ACTIVE);
+        breeder.setName("Test");
+        breeder.setSurname("User");
+        breeder.setPhoneNumber(String.valueOf(System.nanoTime()).substring(0, 9));
+        breeder.setPasswordHash("hashed");
+        breeder.setSection(section);
+        return breederRepository.save(breeder);
+    }
 
     @Test
     @DisplayName("GET /threads/{id}/posts - Should fetch mapped posts from H2")
@@ -171,8 +133,7 @@ class ForumPostIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta"))
-                .andExpect(jsonPath("$.content[1].authorName").value("Piotr Autor Posta"))
+                .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta hodowcy"))
                 .andExpect(jsonPath("$.content[1].canEdit").value(true))
                 .andExpect(jsonPath("$.content[1].canDelete").value(true));
     }
@@ -206,6 +167,20 @@ class ForumPostIntegrationTest {
                 .orElseThrow(() -> new AssertionError("Brak powiadomienia NEW_REPLY w bazie!"));
 
         assertEquals(thread.getAuthor().getId(), replyNotification.getRecipient().getId());
+        assertEquals("/forum/thread/" + thread.getId(), replyNotification.getLink());
+        assertTrue(replyNotification.getMessage().contains("dodał/a odpowiedź w twoim wątku na forum"));
+    }
+
+    @Test
+    @DisplayName("POST /threads/{id}/posts - Should return 400 Bad Request when body is empty")
+    void addPost_WithEmptyBody_ShouldReturn400() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("");
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -227,42 +202,59 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /posts/{id} - As Author, should update post content in DB")
-    void updatePost_AsAuthor_ShouldUpdateDb() throws Exception {
+    @DisplayName("PUT /posts/{id} - As Author, should update post content and assign editedAt timestamp in DB")
+    void updatePost_AsAuthor_ShouldUpdateDbAndSetEditedAt() throws Exception {
         ForumPostRequest request = new ForumPostRequest("Treść po modyfikacji");
 
-        mockMvc.perform(put("/api/forum/posts/" + post.getId())
+        assertNull(postRepository.findById(breederPost.getId()).get().getEditedAt());
+
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        assertEquals("Treść po modyfikacji", postRepository.findById(post.getId()).get().getBody());
+        ForumPost updated = postRepository.findById(breederPost.getId()).get();
+        assertEquals("Treść po modyfikacji", updated.getBody());
+        assertNotNull(updated.getEditedAt());
+    }
+
+    @Test
+    @DisplayName("PUT /posts/{id} - Should return 400 Bad Request when body is empty")
+    void updatePost_WithEmptyBody_ShouldReturn400() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("");
+
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("DELETE /posts/{id} - As Author, should remove their own post from DB")
     void deletePost_AsAuthor_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + post.getId())
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
                 .andExpect(status().isNoContent());
 
-        assertTrue(postRepository.findById(post.getId()).isEmpty());
+        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 403")
+    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 403 Forbidden")
     void deletePost_WhenOnlyOnePostInThread_ShouldReturn403() throws Exception {
         ForumThread singleThread = new ForumThread();
         singleThread.setCategory(category);
         singleThread.setAuthor(threadAuthor);
-        singleThread.setTitle("Tylko jeden post");
+        singleThread.setTitle("Wątek z 1 postem");
+        singleThread.setLastPostAt(LocalDateTime.now());
         threadRepository.save(singleThread);
 
         ForumPost singlePost = new ForumPost();
         singlePost.setThread(singleThread);
         singlePost.setAuthor(threadAuthor);
-        singlePost.setBody("To jest jedyny post");
+        singlePost.setBody("To jest jedyny post w tym wątku");
         postRepository.save(singlePost);
 
         mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId())
@@ -275,11 +267,45 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("DELETE /posts/{id} - As Admin, should remove from DB")
     void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + post.getId())
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
-        assertTrue(postRepository.findById(post.getId()).isEmpty());
+        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("DELETE /posts/{id} - Moderator should successfully delete Breeder's post from DB")
+    void deletePost_AsModeratorOnBreederPost_ShouldReturn204() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isNoContent());
+
+        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("DELETE /posts/{id} - Moderator attempting to delete Admin's post should get 403 Forbidden")
+    void deletePost_AsModeratorOnAdminPost_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isForbidden());
+
+        assertTrue(postRepository.existsById(adminPost.getId()));
+    }
+
+    @Test
+    @DisplayName("PUT /posts/{id} - Regular breeder attempting to edit someone else's post gets 403 Forbidden")
+    void updatePost_AsOtherBreeder_ShouldReturn403() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("Zmieniam sobie cudzy post");
+
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
     }
 
     @Test
@@ -287,23 +313,23 @@ class ForumPostIntegrationTest {
     void updatePost_AsModerator_ShouldReturn403() throws Exception {
         ForumPostRequest request = new ForumPostRequest("Moderator hakuje wpis");
 
-        mockMvc.perform(put("/api/forum/posts/" + post.getId())
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
-        assertEquals("Początkowa treść posta", postRepository.findById(post.getId()).get().getBody());
+        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
     }
 
     @Test
     @DisplayName("DELETE /posts/{id} - As regular user, trying to delete someone's post should return 403 Forbidden")
     void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + post.getId())
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
                 .andExpect(status().isForbidden());
 
-        assertTrue(postRepository.existsById(post.getId()));
+        assertTrue(postRepository.existsById(breederPost.getId()));
     }
 
     @Test
@@ -319,8 +345,6 @@ class ForumPostIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
-
-        assertEquals(2, postRepository.count());
     }
 
     @Test

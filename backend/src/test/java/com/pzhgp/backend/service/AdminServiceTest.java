@@ -138,6 +138,13 @@ class AdminServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw EntityNotFoundException when rejecting non-existent account")
+    void shouldRejectAccount_WhenAccountDoesNotExist() {
+        when(breederRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> adminService.rejectAccount(99L));
+    }
+
+    @Test
     @DisplayName("Should throw IllegalStateException when rejecting non-PENDING account")
     void shouldThrowExceptionWhenRejectingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
@@ -157,6 +164,13 @@ class AdminServiceTest {
 
         assertEquals(AccountStatus.BLOCKED, activeBreeder.getStatus());
         verify(breederRepository, times(1)).save(activeBreeder);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when blocking non-existent account")
+    void shouldBlockAccount_WhenAccountDoesNotExist() {
+        when(breederRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> adminService.blockAccount(99L));
     }
 
     @Test
@@ -191,6 +205,13 @@ class AdminServiceTest {
 
         assertEquals(AccountStatus.ACTIVE, blockedBreeder.getStatus());
         verify(breederRepository, times(1)).save(blockedBreeder);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when unblocking non-existent account")
+    void shouldUnblockAccount_WhenAccountDoesNotExist() {
+        when(breederRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> adminService.unblockAccount(99L));
     }
 
     @Test
@@ -233,6 +254,23 @@ class AdminServiceTest {
 
         assertEquals(Role.BREEDER, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when changing role of non-existent account")
+    void shouldChangeRole_WhenAccountDoesNotExist() {
+        when(breederRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(99L, "MODERATOR", "admin@test.pl"));
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when admin is missing during role change")
+    void shouldChangeRole_WhenAdminIsMissing() {
+        when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(2L, "MODERATOR", "unknown@test.pl"));
+        assertEquals("Nie znaleziono administratora.", ex.getMessage());
     }
 
     @Test
