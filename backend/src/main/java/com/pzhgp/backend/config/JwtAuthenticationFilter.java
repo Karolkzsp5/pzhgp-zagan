@@ -51,25 +51,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (jwtService.isTokenValid(jwt)) {
                 userEmail = jwtService.extractEmail(jwt);
-                String role = jwtService.extractRole(jwt);
 
                 if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     Optional<Breeder> breederOpt = breederRepository.findByEmail(userEmail);
 
                     if (breederOpt.isPresent() && breederOpt.get().getStatus() == AccountStatus.ACTIVE) {
+                        String dbRole = breederOpt.get().getRole().name();
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(dbRole);
 
-                        if (role != null && !role.trim().isEmpty()) {
-                            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userEmail,
+                                null,
+                                Collections.singletonList(authority)
+                        );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                    userEmail,
-                                    null,
-                                    Collections.singletonList(authority)
-                            );
-                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                            SecurityContextHolder.getContext().setAuthentication(authToken);
-                        }
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
                     } else {
                         log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
                     }
