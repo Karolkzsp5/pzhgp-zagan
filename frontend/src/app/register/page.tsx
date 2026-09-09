@@ -73,7 +73,7 @@ export default function RegisterPage() {
 
     const formatPhoneNumber = (val: string) => {
         const digits = val.replace(/\D/g, '').slice(0, 9);
-        return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+        return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3').trim();
     };
 
     const formatPostalCode = (val: string, prevVal: string) => {

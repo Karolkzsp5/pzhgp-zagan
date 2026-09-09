@@ -43,7 +43,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
     const formatPhoneNumber = (val: string) => {
         const digits = val.replace(/\D/g, '').slice(0, 9);
-        return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+        return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3').trim();
     };
 
     const oddzialSortWeights: Record<string, number> = {
@@ -86,6 +86,12 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     }, [managedSectionId, role, breederId, breeders]);
 
     useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
         if (!isOpen) return;
 
         const fetchDictionaries = async () => {
@@ -113,6 +119,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
         };
 
         fetchDictionaries();
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     useEffect(() => {

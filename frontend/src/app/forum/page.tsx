@@ -82,8 +82,8 @@ export default function ForumPage() {
                 <Navbar />
 
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between border-b border-gray-200 pb-5 mb-8">
-                        <div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200 pb-5 mb-8">
+                        <div className="flex-1 pr-2">
                             <h1 className="text-3xl font-bold text-gray-900">Forum Hodowców</h1>
                             <p className="mt-2 text-sm text-gray-600">
                                 Wybierz kategorię, aby przeglądać tematy lub rozpocząć nową dyskusję.
@@ -96,7 +96,7 @@ export default function ForumPage() {
                                     setEditingCategory(null);
                                     setIsCategoryModalOpen(true);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition shrink-0 whitespace-nowrap"
                             >
                                 + Dodaj kategorię
                             </button>
