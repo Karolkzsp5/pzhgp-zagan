@@ -3,7 +3,6 @@ import { BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-// Funkcja pomocnicza do generowania nagłówków
 const getHeaders = () => {
     const token = getAuthToken();
     return {

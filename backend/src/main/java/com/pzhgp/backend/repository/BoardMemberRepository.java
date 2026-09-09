@@ -15,12 +15,18 @@ public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> 
     @Query("SELECT b FROM BoardMember b " +
             "LEFT JOIN FETCH b.managedSection " +
             "LEFT JOIN FETCH b.breeder " +
-            "ORDER BY b.managedSection.id NULLS FIRST, b.sortOrder ASC")
+            "ORDER BY b.managedSection.id NULLS FIRST")
     List<BoardMember> findAllWithDetails();
 
     @Query("SELECT COUNT(b) > 0 FROM BoardMember b WHERE b.role = :role AND b.managedSection.id = :sectionId AND b.id != :excludeId")
     boolean existsConflictForSection(@Param("role") BoardRole role, @Param("sectionId") Long sectionId, @Param("excludeId") Long excludeId);
 
     @Query("SELECT COUNT(b) > 0 FROM BoardMember b WHERE b.role = :role AND b.managedSection IS NULL AND b.id != :excludeId")
-    boolean existsConflictForOddzial(@Param("role") BoardRole role, @Param("excludeId") Long excludeId);
+    boolean existsConflictForBranch(@Param("role") BoardRole role, @Param("excludeId") Long excludeId);
+
+    @Query("SELECT COUNT(b) > 0 FROM BoardMember b WHERE b.breeder.id = :breederId AND b.role = :role AND b.managedSection.id = :sectionId AND b.id != :excludeId")
+    boolean existsByBreederAndRoleForSection(@Param("breederId") Long breederId, @Param("role") BoardRole role, @Param("sectionId") Long sectionId, @Param("excludeId") Long excludeId);
+
+    @Query("SELECT COUNT(b) > 0 FROM BoardMember b WHERE b.breeder.id = :breederId AND b.role = :role AND b.managedSection IS NULL AND b.id != :excludeId")
+    boolean existsByBreederAndRoleForBranch(@Param("breederId") Long breederId, @Param("role") BoardRole role, @Param("excludeId") Long excludeId);
 }

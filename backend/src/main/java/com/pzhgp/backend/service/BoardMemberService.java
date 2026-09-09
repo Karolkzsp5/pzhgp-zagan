@@ -56,7 +56,6 @@ public class BoardMemberService {
 
     private void updateEntityFromRequest(BoardMember member, BoardMemberRequest request) {
         member.setRole(request.role());
-        member.setSortOrder(request.sortOrder());
 
         Section managedSection = null;
         if (request.managedSectionId() != null) {
@@ -64,6 +63,18 @@ public class BoardMemberService {
                     .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.managedSectionId()));
         }
         member.setManagedSection(managedSection);
+
+        if (managedSection != null) {
+            if (request.role() != BoardRole.PREZES &&
+                    request.role() != BoardRole.SKARBNIK &&
+                    request.role() != BoardRole.SEKRETARZ) {
+                throw new IllegalStateException("Dla zarządu sekcji dozwolone są wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz.");
+            }
+        } else {
+            if (request.role() == BoardRole.SKARBNIK) {
+                throw new IllegalStateException("Zarząd Oddziału nie posiada stanowiska Skarbnika.");
+            }
+        }
 
         validateUniqueRole(request.role(), managedSection, member.getId());
 
@@ -75,13 +86,22 @@ public class BoardMemberService {
                 throw new IllegalStateException("Hodowca nie należy do sekcji, w której ma pełnić funkcję.");
             }
 
+            Long safeExcludeId = (member.getId() != null) ? member.getId() : -1L;
+            boolean alreadyHasThisRole = managedSection != null
+                    ? boardMemberRepository.existsByBreederAndRoleForSection(request.breederId(), request.role(), managedSection.getId(), safeExcludeId)
+                    : boardMemberRepository.existsByBreederAndRoleForBranch(request.breederId(), request.role(), safeExcludeId);
+
+            if (alreadyHasThisRole) {
+                throw new IllegalStateException("Ten hodowca pełni już to stanowisko w tym zarządzie.");
+            }
+
             member.setBreeder(breeder);
             member.setCustomName(null);
             member.setCustomSurname(null);
         } else {
             member.setBreeder(null);
-            member.setCustomName(request.customName().trim());
-            member.setCustomSurname(request.customSurname().trim());
+            member.setCustomName(request.customName() != null ? request.customName().trim() : null);
+            member.setCustomSurname(request.customSurname() != null ? request.customSurname().trim() : null);
         }
 
         member.setContactPhone(request.contactPhone() != null && !request.contactPhone().isBlank() ? request.contactPhone().trim() : null);
@@ -96,7 +116,7 @@ public class BoardMemberService {
         if (section != null) {
             existsConflict = boardMemberRepository.existsConflictForSection(role, section.getId(), safeExcludeId);
         } else {
-            existsConflict = boardMemberRepository.existsConflictForOddzial(role, safeExcludeId);
+            existsConflict = boardMemberRepository.existsConflictForBranch(role, safeExcludeId);
         }
 
         if (existsConflict) {
@@ -115,7 +135,6 @@ public class BoardMemberService {
         return new BoardMemberDto(
                 member.getId(),
                 member.getRole(),
-                member.getSortOrder(),
                 sectionId,
                 sectionName,
                 firstName,

@@ -7,10 +7,6 @@ public record BoardMemberRequest(
         @NotNull(message = "Rola jest wymagana")
         BoardRole role,
 
-        @NotNull(message = "Kolejność sortowania jest wymagana")
-        @Min(value = 1, message = "Kolejność musi wynosić minimum 1")
-        Integer sortOrder,
-
         Long managedSectionId,
         Long breederId,
 

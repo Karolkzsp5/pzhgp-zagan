@@ -15,6 +15,7 @@ interface Breeder {
     name: string;
     surname: string;
     status: string;
+    sectionId: number;
 }
 
 interface BoardMemberModalProps {
@@ -26,7 +27,6 @@ interface BoardMemberModalProps {
 
 export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdit }: BoardMemberModalProps) {
     const [role, setRole] = useState<BoardRole>(BoardRole.CZLONEK_ZARZADU);
-    const [sortOrder, setSortOrder] = useState<number>(1);
     const [managedSectionId, setManagedSectionId] = useState<number | null>(null);
 
     const [isRegistered, setIsRegistered] = useState<boolean>(true);
@@ -45,6 +45,45 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
         const digits = val.replace(/\D/g, '').slice(0, 9);
         return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
     };
+
+    const oddzialSortWeights: Record<string, number> = {
+        'PREZES': 1, 'WICEPREZES_DS_LOTOWYCH': 2, 'WICEPREZES_DS_FINANSOWYCH': 3,
+        'WICEPREZES_DS_GOSPODARCZYCH': 4, 'SEKRETARZ': 5, 'CZLONEK_ZARZADU': 6
+    };
+    const sectionSortWeights: Record<string, number> = {
+        'PREZES': 1, 'SKARBNIK': 2, 'SEKRETARZ': 3
+    };
+
+    const allowedRoles = (managedSectionId === 0 || managedSectionId === null)
+        ? Object.entries(BoardRoleTranslations)
+            .filter(([key]) => key !== 'SKARBNIK')
+            .sort((a, b) => (oddzialSortWeights[a[0]] || 99) - (oddzialSortWeights[b[0]] || 99))
+        : Object.entries(BoardRoleTranslations)
+            .filter(([key]) => ['PREZES', 'SKARBNIK', 'SEKRETARZ'].includes(key))
+            .sort((a, b) => (sectionSortWeights[a[0]] || 99) - (sectionSortWeights[b[0]] || 99));
+
+    const availableBreeders = (managedSectionId && managedSectionId !== 0)
+        ? breeders.filter(b => b.sectionId === managedSectionId)
+        : breeders;
+
+    useEffect(() => {
+        if (managedSectionId !== 0 && managedSectionId !== null) {
+            if (!['PREZES', 'SKARBNIK', 'SEKRETARZ'].includes(role)) {
+                setRole(BoardRole.PREZES);
+            }
+
+            if (breederId) {
+                const selectedBreeder = breeders.find(b => b.id === breederId);
+                if (selectedBreeder && selectedBreeder.sectionId !== managedSectionId) {
+                    setBreederId(null);
+                }
+            }
+        } else {
+            if (role === ('SKARBNIK' as BoardRole)) {
+                setRole(BoardRole.PREZES);
+            }
+        }
+    }, [managedSectionId, role, breederId, breeders]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -79,7 +118,6 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     useEffect(() => {
         if (memberToEdit) {
             setRole(memberToEdit.role);
-            setSortOrder(memberToEdit.sortOrder);
             setManagedSectionId(memberToEdit.managedSectionId);
             setContactPhone(memberToEdit.publicPhoneNumber ? formatPhoneNumber(memberToEdit.publicPhoneNumber) : '');
 
@@ -96,7 +134,6 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             }
         } else {
             setRole(BoardRole.CZLONEK_ZARZADU);
-            setSortOrder(1);
             setManagedSectionId(null);
             setIsRegistered(true);
             setBreederId(null);
@@ -122,7 +159,6 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
         const request: BoardMemberRequest = {
             role,
-            sortOrder,
             managedSectionId: managedSectionId === 0 ? null : managedSectionId,
             breederId: isRegistered ? breederId : null,
             customName: !isRegistered ? customName : null,
@@ -155,7 +191,21 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
                 <form onSubmit={handleSubmit} className="space-y-5">
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-800 mb-1">Zarząd (Oddział czy Sekcja)</label>
+                            <select
+                                value={managedSectionId || 0}
+                                onChange={(e) => setManagedSectionId(Number(e.target.value) === 0 ? null : Number(e.target.value))}
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
+                            >
+                                <option value={0}>Zarząd Oddziału</option>
+                                {sections.map(sec => (
+                                    <option key={sec.id} value={sec.id}>Zarząd Sekcji: {sec.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-semibold text-gray-800 mb-1">Stanowisko</label>
                             <select
@@ -164,36 +214,11 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                 onChange={(e) => setRole(e.target.value as BoardRole)}
                                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                             >
-                                {Object.entries(BoardRoleTranslations).map(([key, label]) => (
+                                {allowedRoles.map(([key, label]) => (
                                     <option key={key} value={key}>{label}</option>
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-800 mb-1">Kolejność wyśw.</label>
-                            <input
-                                type="number"
-                                min="1"
-                                required
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(Number(e.target.value))}
-                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-1">Zarząd (Oddział czy Sekcja)</label>
-                        <select
-                            value={managedSectionId || 0}
-                            onChange={(e) => setManagedSectionId(Number(e.target.value) === 0 ? null : Number(e.target.value))}
-                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
-                        >
-                            <option value={0}>Zarząd Oddziału</option>
-                            {sections.map(sec => (
-                                <option key={sec.id} value={sec.id}>Zarząd Sekcji: {sec.name}</option>
-                            ))}
-                        </select>
                     </div>
 
                     <hr className="my-4 border-gray-200" />
@@ -219,7 +244,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     onChange={() => setIsRegistered(false)}
                                     className="text-blue-600 focus:ring-blue-500 w-4 h-4"
                                 />
-                                <span className="text-sm font-medium text-gray-900">Osoba z zewnątrz</span>
+                                <span className="text-sm font-medium text-gray-900">Osoba bez konta</span>
                             </label>
                         </div>
 
@@ -232,9 +257,13 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                                 >
                                     <option value="" disabled hidden>-- Wybierz hodowcę --</option>
-                                    {breeders.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name} {b.surname}</option>
-                                    ))}
+                                    {availableBreeders.length === 0 ? (
+                                        <option value="" disabled>Brak hodowców w tej sekcji</option>
+                                    ) : (
+                                        availableBreeders.map(b => (
+                                            <option key={b.id} value={b.id}>{b.name} {b.surname}</option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
                         ) : (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import {getAuthToken, decodeJwt, isJwtValid} from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
 
 interface NotificationDto {
     id: number;
@@ -155,7 +155,7 @@ export default function Navbar() {
     const navLinks = [
         { name: 'Wyniki lotów', href: '/results', show: true },
         { name: 'Forum', href: '/forum', show: isLoggedIn },
-        { name: 'Kontakt', href: '/contact', show: true },
+        { name: 'Zarząd', href: '/board', show: true },
     ];
 
     return (
@@ -164,7 +164,7 @@ export default function Navbar() {
                 <div className="flex justify-between h-16 items-center">
 
                     <div className="flex items-center flex-1">
-                        <Link href="/" className="flex-shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition">
+                        <Link href="/" className="shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition">
                             PZHGP Żagań
                         </Link>
                     </div>
@@ -199,7 +199,7 @@ export default function Navbar() {
                         ) : (
                             <div className="flex items-center space-x-1 sm:space-x-3">
 
-                                {/* Ikona Powiadomień */}
+                                {/* Notification icon */}
                                 <div className="relative" ref={notificationsRef}>
                                     <button
                                         onClick={() => {
@@ -220,7 +220,7 @@ export default function Navbar() {
                                         )}
                                     </button>
 
-                                    {/* Modal Powiadomień */}
+                                    {/* Notification modal */}
                                     {isNotificationsOpen && (
                                         <div className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
@@ -266,7 +266,7 @@ export default function Navbar() {
                                     )}
                                 </div>
 
-                                {/* Profil Użytkownika */}
+                                {/* User profile */}
                                 <div className="relative" ref={dropdownRef}>
                                     <button
                                         onClick={() => {
