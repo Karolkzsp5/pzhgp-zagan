@@ -5,7 +5,6 @@ import com.pzhgp.backend.entity.BoardRole;
 public record BoardMemberDto(
         Long id,
         BoardRole role,
-        Integer sortOrder,
         Long managedSectionId,
         String managedSectionName,
         String firstName,

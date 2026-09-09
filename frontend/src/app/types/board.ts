@@ -21,7 +21,6 @@ export const BoardRoleTranslations: Record<BoardRole, string> = {
 export interface BoardMemberDto {
     id: number;
     role: BoardRole;
-    sortOrder: number;
     managedSectionId: number | null;
     managedSectionName: string | null;
     firstName: string;
@@ -32,7 +31,6 @@ export interface BoardMemberDto {
 
 export interface BoardMemberRequest {
     role: BoardRole;
-    sortOrder: number;
     managedSectionId?: number | null;
     breederId?: number | null;
     customName?: string | null;

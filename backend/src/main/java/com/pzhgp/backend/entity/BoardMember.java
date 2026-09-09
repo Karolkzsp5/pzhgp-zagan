@@ -22,9 +22,6 @@ public class BoardMember {
     @Column(name = "role", nullable = false, length = 50)
     private BoardRole role;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "managed_section_id")
     private Section managedSection;

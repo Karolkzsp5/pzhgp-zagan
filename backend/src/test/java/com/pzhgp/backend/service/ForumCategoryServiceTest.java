@@ -116,7 +116,7 @@ class ForumCategoryServiceTest {
         assertFalse(result.isEmpty());
         ForumCategoryDto dto = result.getFirst();
         assertTrue(dto.canEdit());
-        assertFalse(dto.canDelete()); // Moderatorzy nie mogą w ogóle usuwać kategorii
+        assertFalse(dto.canDelete());
     }
 
     @Test

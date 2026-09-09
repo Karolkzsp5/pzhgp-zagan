@@ -103,7 +103,41 @@ export default function BoardPage() {
         fetchData();
     };
 
-    const oddzialMembers = members.filter(m => m.managedSectionId === null);
+    const oddzialSortWeights: Record<string, number> = {
+        'PREZES': 1,
+        'WICEPREZES_DS_LOTOWYCH': 2,
+        'WICEPREZES_DS_FINANSOWYCH': 3,
+        'WICEPREZES_DS_GOSPODARCZYCH': 4,
+        'SEKRETARZ': 5,
+        'CZLONEK_ZARZADU': 6
+    };
+
+    const sectionSortWeights: Record<string, number> = {
+        'PREZES': 1,
+        'SKARBNIK': 2,
+        'SEKRETARZ': 3
+    };
+
+    const sortMembers = (membersList: BoardMemberDto[], weights: Record<string, number>) => {
+        return [...membersList].sort((a, b) => {
+            const weightA = weights[a.role] || 99;
+            const weightB = weights[b.role] || 99;
+
+            if (weightA !== weightB) {
+                return weightA - weightB;
+            }
+
+            const lastNameCompare = a.lastName.localeCompare(b.lastName, 'pl');
+            if (lastNameCompare !== 0) return lastNameCompare;
+
+            return a.firstName.localeCompare(b.firstName, 'pl');
+        });
+    };
+
+    const oddzialMembers = sortMembers(
+        members.filter(m => m.managedSectionId === null),
+        oddzialSortWeights
+    );
 
     const MemberCard = ({ member }: { member: BoardMemberDto }) => (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col relative hover:shadow-md transition">
@@ -187,7 +221,7 @@ export default function BoardPage() {
                     <>
                         <section className="mb-12">
                             <h2 className="text-xl font-bold text-gray-900 mb-6">
-                                Zarząd Oddziału
+                                Zarząd Oddziału:
                             </h2>
                             {oddzialMembers.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -203,7 +237,10 @@ export default function BoardPage() {
                         </section>
 
                         {sections.map(section => {
-                            const sectionMembers = members.filter(m => m.managedSectionId === section.id);
+                            const sectionMembers = sortMembers(
+                                members.filter(m => m.managedSectionId === section.id),
+                                sectionSortWeights
+                            );
 
                             return (
                                 <section key={section.id} className="mb-12">
