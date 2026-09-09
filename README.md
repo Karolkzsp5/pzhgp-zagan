@@ -100,15 +100,15 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 - [x] Frontendowy formularz rejestracji z walidacją w czasie rzeczywistym
 - [x] Widok logowania (`/login`) i obsługa sesji klienta w Next.js
 - [x] Panel administratora do zarządzania kontami ze statusem `PENDING`
-- [ ] Centrum powiadomień
-- [ ] Strona główna z ogłoszeniami
+- [x] Centrum powiadomień
+- [x] Strona główna z ogłoszeniami
 - [ ] Podstrona do tworzenia planów lotów
 - [ ] Parser plików `.txt` dla list konkursowych i generator tabel wyników
 - [ ] Zakładka pobierz - repozytorium plików do pobrania
-- [ ] Integracja map interaktywnych i parsowanie tras `.gpx`/`.csv`
+- [ ] Integracja map interaktywnych i parsowanie tras `.gpx`
 - [ ] Forum dyskusyjne, panel zaginionych gołębi oraz galeria multimedialna
 - [ ] Widżet pogodowy
-- [ ] Wyszukiwarka i podstrony: zarząd oddziału i kontakt
+- [x] Podstrona zarząd oddziału
 
 ---
 *Projekt tworzony z pasją do programowania i informatyki*
