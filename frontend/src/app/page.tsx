@@ -133,8 +133,7 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                         Oddział 0369 Żagań
                     </h1>
                     <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-                        Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych. Śledź wyniki, analizuj plany
-                        lotów i bądź na bieżąco z życiem oddziału.
+                        Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych.
                     </p>
 
                     <div className="mt-8 flex justify-center md:hidden relative flex-col items-center"
