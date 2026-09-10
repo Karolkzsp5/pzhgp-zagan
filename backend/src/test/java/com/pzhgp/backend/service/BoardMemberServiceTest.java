@@ -279,7 +279,7 @@ class BoardMemberServiceTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
                 boardMemberService.createBoardMember(request)
         );
-        assertEquals("Ten hodowca pełni już to konkretne stanowisko w tym zarządzie.", exception.getMessage());
+        assertEquals("Ten hodowca pełni już to stanowisko w tym zarządzie.", exception.getMessage());
     }
 
 
