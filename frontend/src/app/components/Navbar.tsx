@@ -155,6 +155,7 @@ export default function Navbar() {
     const navLinks = [
         { name: 'Wyniki lotów', href: '/results', show: true },
         { name: 'Forum', href: '/forum', show: isLoggedIn },
+        { name: 'Pogoda', href: '/weather', show: true },
         { name: 'Zarząd', href: '/board', show: true },
     ];
 

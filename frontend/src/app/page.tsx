@@ -133,8 +133,7 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                         Oddział 0369 Żagań
                     </h1>
                     <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-                        Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych. Śledź wyniki, analizuj plany
-                        lotów i bądź na bieżąco z życiem oddziału.
+                        Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych.
                     </p>
 
                     <div className="mt-8 flex justify-center md:hidden relative flex-col items-center"
@@ -170,6 +169,10 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                         Forum
                                     </Link>
                                 )}
+                                <Link href="/weather"
+                                      className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
+                                    Pogoda
+                                </Link>
                                 <Link href="/board"
                                       className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
                                       Zarząd
@@ -346,12 +349,6 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                 </Link>
                             </li>
                         </ul>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg shadow-sm text-white">
-                        <h3 className="text-lg font-bold mb-2">Warunki lotowe</h3>
-                        <p className="text-blue-100 text-sm mb-4">Integracja z radarem pogodowym wkrótce...</p>
-                        <div className="animate-pulse bg-blue-400 h-24 rounded-md"></div>
                     </div>
                 </aside>
             </main>
