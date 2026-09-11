@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="TestCreator" xmlns="http://www.topografix.com/GPX/1/1">
+    <trk>
+        <name>PL-0208-24-1234</name>
+        <trkseg>
+            <trkpt lat="51.6180000" lon="15.3140000">
+                <ele>120</ele>
+                <time>2026-07-15T06:00:00Z</time>
+            </trkpt>
+            <trkpt lat="51.6280000" lon="15.3240000">
+                <ele>125</ele>
+                <time>2026-07-15T06:10:00Z</time>
+            </trkpt>
+        </trkseg>
+    </trk>
+</gpx>

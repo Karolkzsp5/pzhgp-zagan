@@ -1,0 +1,33 @@
+<gpx>
+    <metadata>
+        <link href="https://www.skyleader.tw/">
+            <text>MX Corp.</text>
+        </link>
+        <time>1980-01-05T23:59:46Z</time>
+    </metadata>
+    <trk>
+        <name>Ring-8414</name>
+        <trkseg>
+            <trkpt lat="52.0000000" lon="15.0000000">
+                <ele>100</ele>
+                <time>2026-08-30T05:00:00</time>
+            </trkpt>
+            <trkpt lat="52.0000500" lon="15.0000500">
+                <ele>101</ele>
+                <time>2026-08-30T05:00:05</time>
+            </trkpt>
+            <trkpt lat="52.0100000" lon="15.0000000">
+                <ele>150</ele>
+                <time>2026-08-30T05:01:00</time>
+            </trkpt>
+            <trkpt lat="52.0200000" lon="15.0000000">
+                <ele>150</ele>
+                <time>2026-08-30T05:02:00</time>
+            </trkpt>
+            <trkpt lat="52.0300000" lon="15.0000000">
+                <ele>150</ele>
+                <time>2026-08-30T05:03:00</time>
+            </trkpt>
+        </trkseg>
+    </trk>
+</gpx>
