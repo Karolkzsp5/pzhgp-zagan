@@ -18,6 +18,7 @@ public record FlightSummaryDto(
         double averageSpeedKmh,
         double racingVelocityMetersPerMinute,
         int totalPoints,
+        boolean timestampsAvailable,
         Instant uploadedAt,
         boolean canDelete
 ) {

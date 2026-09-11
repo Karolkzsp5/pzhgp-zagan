@@ -303,6 +303,7 @@ public class PigeonFlightService {
                 round(flight.getAverageSpeedKmh(), 1),
                 round(flight.getRacingVelocityMetersPerMinute(), 0),
                 flight.getTotalPoints(),
+                flight.isTimestampsAvailable(),
                 flight.getUploadedAt(),
                 canDelete(flight, viewer)
         );
