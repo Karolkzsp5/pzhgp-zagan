@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpx [<!ENTITY hasło SYSTEM "file:///etc/passwd">]>
+<gpx>
+    <trk>
+        <name>&hasło;</name>
+        <trkseg>
+            <trkpt lat="51.0" lon="15.0"><ele>10</ele></trkpt>
+            <trkpt lat="51.1" lon="15.1"><ele>20</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

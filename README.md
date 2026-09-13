@@ -105,7 +105,7 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 - [ ] Podstrona do tworzenia planów lotów
 - [ ] Parser plików `.txt` dla list konkursowych i generator tabel wyników
 - [ ] Zakładka pobierz - repozytorium plików do pobrania
-- [ ] Integracja map interaktywnych i parsowanie tras `.gpx`
+- [x] Integracja map interaktywnych i parsowanie tras `.gpx` (moduł *Mapy lotów*: parser GPX, wykrywanie fazy lotu, statystyki, mapa OpenStreetMap)
 - [ ] Forum dyskusyjne, panel zaginionych gołębi oraz galeria multimedialna
 - [ ] Widżet pogodowy
 - [x] Podstrona zarząd oddziału
