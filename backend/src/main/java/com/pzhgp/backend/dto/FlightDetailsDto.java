@@ -6,8 +6,8 @@ import java.util.List;
 /**
  * Pełne dane lotu wraz z trasą — podstawa widoku mapy.
  *
- * @param trackPoints      punkty trasy (opcjonalnie uproszczone algorytmem RDP)
- * @param returnedPoints   liczba punktów faktycznie zwróconych po uproszczeniu
+ * @param trackPoints    punkty trasy (opcjonalnie uproszczone algorytmem RDP)
+ * @param returnedPoints liczba punktów faktycznie zwróconych po uproszczeniu
  */
 public record FlightDetailsDto(
         Long id,
@@ -16,14 +16,12 @@ public record FlightDetailsDto(
         String releaseSite,
         String ownerName,
         String originalFileName,
-        Instant releaseTime,
-        Instant arrivalTime,
-        Instant trackStartTime,
-        Instant trackEndTime,
-        double releaseLatitude,
-        double releaseLongitude,
-        double arrivalLatitude,
-        double arrivalLongitude,
+        Instant startTime,
+        Instant endTime,
+        double startLatitude,
+        double startLongitude,
+        double endLatitude,
+        double endLongitude,
         FlightStatisticsDto statistics,
         List<FlightTrackPointDto> trackPoints,
         int returnedPoints,

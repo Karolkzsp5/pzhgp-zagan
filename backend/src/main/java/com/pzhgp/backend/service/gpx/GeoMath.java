@@ -31,21 +31,6 @@ public final class GeoMath {
     }
 
     /**
-     * Azymut początkowy z punktu 1 do punktu 2, w stopniach (0 = północ, rosnąco zgodnie
-     * z ruchem wskazówek zegara).
-     */
-    public static double bearing(double lat1, double lon1, double lat2, double lon2) {
-        double phi1 = Math.toRadians(lat1);
-        double phi2 = Math.toRadians(lat2);
-        double deltaLambda = Math.toRadians(lon2 - lon1);
-
-        double y = Math.sin(deltaLambda) * Math.cos(phi2);
-        double x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
-
-        return (Math.toDegrees(Math.atan2(y, x)) + 360) % 360;
-    }
-
-    /**
      * Odległość punktu od odcinka łączącego dwa inne punkty, w metrach.
      * <p>
      * Wykorzystywana przez algorytm Ramera–Douglasa–Peuckera. Współrzędne rzutowane są

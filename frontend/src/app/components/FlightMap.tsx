@@ -7,10 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import { FlightDetailsDto, formatTime } from '@/app/types/flight';
 import {
     SPEED_RAMP,
-    STATIONARY_COLOR,
     REFERENCE_COLOR,
     CURSOR_COLOR,
-    createFlightPhasePredicate,
     computeSpeedThresholds,
     speedBucket
 } from '@/utils/flightScale';
@@ -19,10 +17,9 @@ type LatLng = [number, number];
 
 interface FlightMapProps {
     flight: FlightDetailsDto;
-    /** Indeks punktu wskazywanego przez odtwarzacz trasy. */
+    /** Indeks punktu wskazywanego na trasie. */
     activeIndex: number | null;
     showStraightLine: boolean;
-    showStationary: boolean;
 }
 
 /** Dopasowuje widok mapy do zasięgu trasy przy pierwszym renderze i zmianie lotu. */
@@ -60,58 +57,34 @@ const pinIcon = (background: string, glyph: string) =>
         popupAnchor: [0, -30]
     });
 
-export default function FlightMap({ flight, activeIndex, showStraightLine, showStationary }: FlightMapProps) {
+export default function FlightMap({ flight, activeIndex, showStraightLine }: FlightMapProps) {
     const points = flight.trackPoints;
 
-    /** Podział trasy na fazę lotu i fazy postoju wyznaczone przez serwer. */
-    const isInFlight = useMemo(
-        () => createFlightPhasePredicate(points, flight.releaseTime, flight.arrivalTime),
-        [points, flight.releaseTime, flight.arrivalTime]
-    );
-
-    const speedThresholds = useMemo(
-        () => computeSpeedThresholds(points, isInFlight),
-        [points, isInFlight]
-    );
-
-    const bucketOf = useMemo(
-        () => (speed: number | null) => speedBucket(speed, speedThresholds),
-        [speedThresholds]
-    );
+    const speedThresholds = useMemo(() => computeSpeedThresholds(points), [points]);
 
     /**
      * Trasa dzielona jest na ciągłe odcinki o jednakowym przedziale prędkości.
      * Renderowanie jednej polilinii na przedział zamiast jednej na punkt utrzymuje
      * liczbę warstw Leaflet na poziomie kilku, a nie kilkuset.
      */
-    const { flightRuns, stationaryRuns } = useMemo(() => {
-        const flightBuckets: LatLng[][][] = SPEED_RAMP.map(() => []);
-        const stationary: LatLng[][] = [];
+    const runsByBucket = useMemo(() => {
+        const buckets: LatLng[][][] = SPEED_RAMP.map(() => []);
 
         let currentBucket = -1;
         let currentRun: LatLng[] = [];
-        let currentIsFlight = false;
 
         const flush = () => {
-            if (currentRun.length < 2) {
-                currentRun = [];
-                return;
-            }
-            if (currentIsFlight) {
-                flightBuckets[currentBucket].push(currentRun);
-            } else {
-                stationary.push(currentRun);
+            if (currentRun.length >= 2) {
+                buckets[currentBucket].push(currentRun);
             }
             currentRun = [];
         };
 
         for (let i = 1; i < points.length; i++) {
-            const segmentInFlight = isInFlight(i - 1) && isInFlight(i);
-            const bucket = segmentInFlight ? bucketOf(points[i].speedKmh) : -1;
+            const bucket = speedBucket(points[i].speedMetersPerMinute, speedThresholds);
 
-            if (segmentInFlight !== currentIsFlight || bucket !== currentBucket) {
+            if (bucket !== currentBucket) {
                 flush();
-                currentIsFlight = segmentInFlight;
                 currentBucket = bucket;
                 currentRun = [[points[i - 1].latitude, points[i - 1].longitude]];
             }
@@ -119,8 +92,8 @@ export default function FlightMap({ flight, activeIndex, showStraightLine, showS
         }
         flush();
 
-        return { flightRuns: flightBuckets, stationaryRuns: stationary };
-    }, [points, isInFlight, bucketOf]);
+        return buckets;
+    }, [points, speedThresholds]);
 
     const bounds = useMemo<L.LatLngBoundsExpression | null>(() => {
         if (points.length === 0) return null;
@@ -129,8 +102,8 @@ export default function FlightMap({ flight, activeIndex, showStraightLine, showS
 
     const activePoint = activeIndex !== null ? points[activeIndex] : null;
 
-    const releaseIcon = useMemo(() => pinIcon('#1baf7a', '🏁'), []);
-    const loftIcon = useMemo(() => pinIcon('#e34948', '🏠'), []);
+    const startIcon = useMemo(() => pinIcon('#1baf7a', '🏁'), []);
+    const endIcon = useMemo(() => pinIcon('#e34948', '🏠'), []);
 
     if (points.length === 0) {
         return (
@@ -142,7 +115,7 @@ export default function FlightMap({ flight, activeIndex, showStraightLine, showS
 
     return (
         <MapContainer
-            center={[flight.releaseLatitude, flight.releaseLongitude]}
+            center={[flight.startLatitude, flight.startLongitude]}
             zoom={9}
             scrollWheelZoom
             className="h-full w-full"
@@ -155,32 +128,24 @@ export default function FlightMap({ flight, activeIndex, showStraightLine, showS
 
             <FitToTrack bounds={bounds} />
 
-            {/* Linia odniesienia: najkrótsza droga z miejsca wypuszczenia do gołębnika. */}
+            {/* Linia odniesienia: najkrótsza droga z początku na koniec trasy. */}
             {showStraightLine && (
                 <Polyline
                     positions={[
-                        [flight.releaseLatitude, flight.releaseLongitude],
-                        [flight.arrivalLatitude, flight.arrivalLongitude]
+                        [flight.startLatitude, flight.startLongitude],
+                        [flight.endLatitude, flight.endLongitude]
                     ]}
                     pathOptions={{ color: REFERENCE_COLOR, weight: 2, dashArray: '6 8', opacity: 0.75 }}
                 />
             )}
 
-            {/* Fragmenty zarejestrowane przed wypuszczeniem i po przylocie. */}
-            {showStationary && stationaryRuns.length > 0 && (
-                <Polyline
-                    positions={stationaryRuns}
-                    pathOptions={{ color: STATIONARY_COLOR, weight: 3, opacity: 0.8 }}
-                />
-            )}
-
             {/* Biała otoczka pod trasą — utrzymuje czytelność linii na kolorowych kafelkach mapy. */}
             <Polyline
-                positions={flightRuns.flat()}
+                positions={runsByBucket.flat()}
                 pathOptions={{ color: '#ffffff', weight: 7, opacity: 0.9, lineCap: 'round' }}
             />
 
-            {flightRuns.map((runs, bucket) =>
+            {runsByBucket.map((runs, bucket) =>
                 runs.length > 0 ? (
                     <Polyline
                         key={`bucket-${bucket}`}
@@ -190,21 +155,21 @@ export default function FlightMap({ flight, activeIndex, showStraightLine, showS
                 ) : null
             )}
 
-            <Marker position={[flight.releaseLatitude, flight.releaseLongitude]} icon={releaseIcon}>
+            <Marker position={[flight.startLatitude, flight.startLongitude]} icon={startIcon}>
                 <Popup>
-                    <strong>Miejsce wypuszczenia</strong>
+                    <strong>Początek trasy</strong>
                     <br />
-                    {flight.releaseSite ?? 'Nazwa nie została podana'}
+                    {flight.releaseSite ?? 'Nazwa miejsca nie została podana'}
                     <br />
-                    Godzina: {formatTime(flight.releaseTime)}
+                    Godzina: {formatTime(flight.startTime)}
                 </Popup>
             </Marker>
 
-            <Marker position={[flight.arrivalLatitude, flight.arrivalLongitude]} icon={loftIcon}>
+            <Marker position={[flight.endLatitude, flight.endLongitude]} icon={endIcon}>
                 <Popup>
-                    <strong>Gołębnik</strong>
+                    <strong>Koniec trasy</strong>
                     <br />
-                    Przylot: {formatTime(flight.arrivalTime)}
+                    Godzina: {formatTime(flight.endTime)}
                 </Popup>
             </Marker>
 

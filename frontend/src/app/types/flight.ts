@@ -4,29 +4,22 @@ export interface FlightTrackPointDto {
     elevation: number | null;
     /** Znacznik czasu w UTC (ISO-8601) — konwersja na czas lokalny odbywa się w przeglądarce. */
     time: string | null;
-    speedKmh: number | null;
+    /** Prędkość chwilowa w metrach na minutę. */
+    speedMetersPerMinute: number | null;
 }
 
 export interface FlightStatisticsDto {
     straightLineDistanceKm: number;
     trackDistanceKm: number;
-    rawTrackDistanceKm: number;
-    flightDurationSeconds: number;
-    totalDurationSeconds: number;
-    averageSpeedKmh: number;
-    /** Prędkość konkursowa w m/min — jednostka używana w regulaminach lotowych PZHGP. */
-    racingVelocityMetersPerMinute: number;
-    maxSpeedKmh: number;
-    straightnessRatio: number;
-    detourPercent: number;
-    courseDegrees: number;
+    durationSeconds: number;
+    /** Prędkość średnia po trasie, w m/min — jednostka używana na listach konkursowych PZHGP. */
+    averageSpeedMetersPerMinute: number;
+    /** Prędkość liczona po linii prostej, w m/min. */
+    straightLineSpeedMetersPerMinute: number;
+    maxSpeedMetersPerMinute: number;
     minElevationMeters: number | null;
     maxElevationMeters: number | null;
     elevationGainMeters: number | null;
-    /** Droga "przebyta" wyłącznie przez dryf GPS w spoczynku. */
-    stationaryNoiseKm: number;
-    preFlightDurationSeconds: number;
-    postFlightDurationSeconds: number;
     totalPoints: number;
     timestampsAvailable: boolean;
 }
@@ -37,12 +30,11 @@ export interface FlightSummaryDto {
     ringNumber: string | null;
     releaseSite: string | null;
     ownerName: string;
-    releaseTime: string | null;
-    arrivalTime: string | null;
+    startTime: string | null;
+    endTime: string | null;
     straightLineDistanceKm: number;
-    flightDurationSeconds: number;
-    averageSpeedKmh: number;
-    racingVelocityMetersPerMinute: number;
+    durationSeconds: number;
+    averageSpeedMetersPerMinute: number;
     totalPoints: number;
     timestampsAvailable: boolean;
     uploadedAt: string;
@@ -56,14 +48,12 @@ export interface FlightDetailsDto {
     releaseSite: string | null;
     ownerName: string;
     originalFileName: string;
-    releaseTime: string | null;
-    arrivalTime: string | null;
-    trackStartTime: string | null;
-    trackEndTime: string | null;
-    releaseLatitude: number;
-    releaseLongitude: number;
-    arrivalLatitude: number;
-    arrivalLongitude: number;
+    startTime: string | null;
+    endTime: string | null;
+    startLatitude: number;
+    startLongitude: number;
+    endLatitude: number;
+    endLongitude: number;
     statistics: FlightStatisticsDto;
     trackPoints: FlightTrackPointDto[];
     returnedPoints: number;
@@ -98,6 +88,13 @@ export const formatDuration = (seconds: number): string => {
     return `${rest} s`;
 };
 
+/** Formatuje prędkość w metrach na minutę, np. "1 378 m/min". */
+export const formatSpeed = (metersPerMinute: number | null): string => {
+    if (metersPerMinute === null || !Number.isFinite(metersPerMinute) || metersPerMinute <= 0) return '—';
+
+    return `${Math.round(metersPerMinute).toLocaleString('pl-PL')} m/min`;
+};
+
 /**
  * Formatuje znacznik czasu UTC jako czas lokalny hodowcy.
  * Pliki z obrączek zapisują czas w UTC, a hodowca oczekuje godziny "z zegarka".
@@ -123,16 +120,4 @@ export const formatTime = (isoTime: string | null): string => {
         minute: '2-digit',
         second: '2-digit'
     });
-};
-
-/** Zamienia azymut w stopniach na nazwę kierunku świata. */
-export const formatCourse = (degrees: number): string => {
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const names: Record<string, string> = {
-        N: 'północ', NE: 'północny wschód', E: 'wschód', SE: 'południowy wschód',
-        S: 'południe', SW: 'południowy zachód', W: 'zachód', NW: 'północny zachód'
-    };
-
-    const index = Math.round(degrees / 45) % 8;
-    return `${Math.round(degrees)}° (${names[directions[index]]})`;
 };

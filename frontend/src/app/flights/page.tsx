@@ -8,7 +8,7 @@ import Footer from '@/app/components/Footer';
 import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import { flightService } from '@/app/services/flightService';
-import { FlightSummaryDto, formatDateTime, formatDuration } from '@/app/types/flight';
+import { FlightSummaryDto, formatDateTime, formatDuration, formatSpeed } from '@/app/types/flight';
 
 const PAGE_SIZE = 10;
 
@@ -168,8 +168,10 @@ export default function FlightsPage() {
 
                             {selectedFile ? (
                                 <>
-                                    <span className="text-sm font-semibold text-gray-900">{selectedFile.name}</span>
-                                    <span className="text-xs text-gray-500 mt-1">
+                                    <span className="text-sm font-semibold text-gray-900 text-center max-w-full [overflow-wrap:anywhere]">
+                                        {selectedFile.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500 mt-1 text-center">
                                         {(selectedFile.size / 1024).toFixed(0)} kB — kliknij, aby wybrać inny plik
                                     </span>
                                 </>
@@ -282,7 +284,7 @@ export default function FlightsPage() {
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Lot</th>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Obrączka</th>
                                             <th className="px-4 py-3 text-right font-semibold text-gray-700">Dystans</th>
-                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Czas lotu</th>
+                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Czas nagrania</th>
                                             <th className="px-4 py-3 text-right font-semibold text-gray-700">Prędkość</th>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Wgrano</th>
                                             <th className="px-4 py-3"></th>
@@ -291,15 +293,15 @@ export default function FlightsPage() {
                                     <tbody className="divide-y divide-gray-100">
                                         {flights.map(flight => (
                                             <tr key={flight.id} className="hover:bg-blue-50/40 transition">
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 max-w-[22rem]">
                                                     <Link
                                                         href={`/flights/${flight.id}`}
-                                                        className="font-semibold text-blue-700 hover:text-blue-900 hover:underline"
+                                                        className="font-semibold text-blue-700 hover:text-blue-900 hover:underline [overflow-wrap:anywhere] line-clamp-2"
                                                     >
                                                         {flight.name}
                                                     </Link>
                                                     {flight.releaseSite && (
-                                                        <span className="block text-xs text-gray-500">
+                                                        <span className="block text-xs text-gray-500 [overflow-wrap:anywhere]">
                                                             Wypuszczenie: {flight.releaseSite}
                                                         </span>
                                                     )}
@@ -309,18 +311,13 @@ export default function FlightsPage() {
                                                     {flight.straightLineDistanceKm.toFixed(2)} km
                                                 </td>
                                                 <td className="px-4 py-3 text-right text-gray-900 whitespace-nowrap">
-                                                    {formatDuration(flight.flightDurationSeconds)}
+                                                    {formatDuration(flight.durationSeconds)}
                                                 </td>
                                                 <td className="px-4 py-3 text-right whitespace-nowrap">
                                                     {flight.timestampsAvailable ? (
-                                                        <>
-                                                            <span className="text-gray-900 font-semibold">
-                                                                {Math.round(flight.racingVelocityMetersPerMinute)} m/min
-                                                            </span>
-                                                            <span className="block text-xs text-gray-500">
-                                                                {flight.averageSpeedKmh.toFixed(1)} km/h
-                                                            </span>
-                                                        </>
+                                                        <span className="text-gray-900 font-semibold">
+                                                            {formatSpeed(flight.averageSpeedMetersPerMinute)}
+                                                        </span>
                                                     ) : (
                                                         <span className="text-gray-400" title="Plik nie zawiera znaczników czasu">
                                                             —

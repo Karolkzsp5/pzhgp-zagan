@@ -165,18 +165,18 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
 
-                    <div className="flex items-center flex-1">
-                        <Link href="/" className="shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition">
+                    <div className="flex items-center flex-1 min-w-0">
+                        <Link href="/" className="shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition whitespace-nowrap">
                             PZHGP Żagań
                         </Link>
                     </div>
 
-                    <div className="hidden md:flex flex-1 justify-center space-x-8">
+                    <div className="hidden md:flex flex-1 justify-center gap-4 lg:gap-8">
                         {navLinks.filter(link => link.show).map((link) => (
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className={`text-sm font-medium transition-all duration-200 py-1 ${
+                                className={`text-sm font-medium transition-all duration-200 py-1 whitespace-nowrap ${
                                     isActive(link.href)
                                         ? 'border-b-2 border-white text-white'
                                         : 'text-blue-100 hover:text-white border-b-2 border-transparent hover:border-blue-300'

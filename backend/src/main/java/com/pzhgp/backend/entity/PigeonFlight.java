@@ -13,7 +13,8 @@ import java.util.List;
  * Lot gołębia wgrany przez hodowcę w postaci pliku GPX wraz z wyliczonymi statystykami.
  * <p>
  * Statystyki są utrwalane razem z lotem, dzięki czemu lista lotów nie wymaga ponownego
- * przeliczania tysięcy punktów trasy przy każdym wyświetleniu.
+ * przeliczania tysięcy punktów trasy przy każdym wyświetleniu. Prędkości zapisywane są
+ * w metrach na minutę — w jednostce używanej na listach konkursowych PZHGP.
  */
 @Entity
 @Table(name = "pigeon_flights")
@@ -42,64 +43,46 @@ public class PigeonFlight {
     @Column(name = "original_file_name", nullable = false, length = 255)
     private String originalFileName;
 
-    @Column(name = "track_start_time")
-    private Instant trackStartTime;
+    @Column(name = "start_time")
+    private Instant startTime;
 
-    @Column(name = "track_end_time")
-    private Instant trackEndTime;
+    @Column(name = "end_time")
+    private Instant endTime;
 
-    @Column(name = "release_time")
-    private Instant releaseTime;
+    @Column(name = "start_latitude", nullable = false)
+    private double startLatitude;
 
-    @Column(name = "arrival_time")
-    private Instant arrivalTime;
+    @Column(name = "start_longitude", nullable = false)
+    private double startLongitude;
 
-    @Column(name = "release_latitude", nullable = false)
-    private double releaseLatitude;
+    @Column(name = "end_latitude", nullable = false)
+    private double endLatitude;
 
-    @Column(name = "release_longitude", nullable = false)
-    private double releaseLongitude;
+    @Column(name = "end_longitude", nullable = false)
+    private double endLongitude;
 
-    @Column(name = "arrival_latitude", nullable = false)
-    private double arrivalLatitude;
-
-    @Column(name = "arrival_longitude", nullable = false)
-    private double arrivalLongitude;
-
-    /** Odległość w linii prostej z miejsca wypuszczenia do gołębnika, w metrach. */
+    /** Odległość w linii prostej z początku na koniec trasy, w metrach. */
     @Column(name = "straight_line_distance_meters", nullable = false)
     private double straightLineDistanceMeters;
 
-    /** Droga faktycznie pokonana wzdłuż trasy w fazie lotu, w metrach. */
+    /** Droga pokonana wzdłuż całej zarejestrowanej trasy, w metrach. */
     @Column(name = "track_distance_meters", nullable = false)
     private double trackDistanceMeters;
 
-    /** Suma odcinków całego pliku — razem z szumem GPS w spoczynku, w metrach. */
-    @Column(name = "raw_track_distance_meters", nullable = false)
-    private double rawTrackDistanceMeters;
+    @Column(name = "duration_seconds", nullable = false)
+    private long durationSeconds;
 
-    @Column(name = "flight_duration_seconds", nullable = false)
-    private long flightDurationSeconds;
+    /** Prędkość średnia liczona po trasie, w metrach na minutę. */
+    @Column(name = "average_speed_m_per_min", nullable = false)
+    private double averageSpeedMetersPerMinute;
 
-    @Column(name = "total_duration_seconds", nullable = false)
-    private long totalDurationSeconds;
+    /** Prędkość liczona po linii prostej, w metrach na minutę. */
+    @Column(name = "straight_line_speed_m_per_min", nullable = false)
+    private double straightLineSpeedMetersPerMinute;
 
-    @Column(name = "average_speed_kmh", nullable = false)
-    private double averageSpeedKmh;
-
-    /** Prędkość konkursowa w m/min — jednostka używana w regulaminach lotowych PZHGP. */
-    @Column(name = "racing_velocity_m_per_min", nullable = false)
-    private double racingVelocityMetersPerMinute;
-
-    @Column(name = "max_speed_kmh", nullable = false)
-    private double maxSpeedKmh;
-
-    /** Iloraz drogi po trasie i linii prostej: 1,0 oznacza lot idealnie prosty. */
-    @Column(name = "straightness_ratio", nullable = false)
-    private double straightnessRatio;
-
-    @Column(name = "course_degrees", nullable = false)
-    private double courseDegrees;
+    /** Prędkość maksymalna utrzymana w oknie czasowym, w metrach na minutę. */
+    @Column(name = "max_speed_m_per_min", nullable = false)
+    private double maxSpeedMetersPerMinute;
 
     @Column(name = "min_elevation_meters")
     private Double minElevationMeters;
@@ -109,16 +92,6 @@ public class PigeonFlight {
 
     @Column(name = "elevation_gain_meters")
     private Double elevationGainMeters;
-
-    /** Droga "przebyta" wyłącznie przez dryf GPS przed startem i po przylocie, w metrach. */
-    @Column(name = "stationary_noise_meters", nullable = false)
-    private double stationaryNoiseMeters;
-
-    @Column(name = "pre_flight_duration_seconds", nullable = false)
-    private long preFlightDurationSeconds;
-
-    @Column(name = "post_flight_duration_seconds", nullable = false)
-    private long postFlightDurationSeconds;
 
     @Column(name = "timestamps_available", nullable = false)
     private boolean timestampsAvailable;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from 'react';
-import { FlightTrackPointDto, formatTime } from '@/app/types/flight';
-import { CURSOR_COLOR } from '@/utils/flightScale';
+import { FlightTrackPointDto, formatSpeed, formatTime } from '@/app/types/flight';
+import { CURSOR_COLOR, smoothElevations } from '@/utils/flightScale';
 
 const CHART_WIDTH = 800;
 const PANEL_HEIGHT = 96;
@@ -24,7 +24,10 @@ interface FlightProfileChartProps {
     /** Indeksy punktów w oryginalnej tablicy trasy — używane przy podświetlaniu pozycji na mapie. */
     originalIndexes: number[];
     activeIndex: number | null;
+    /** Podgląd punktu przy przesuwaniu kursora nad wykresem. */
     onHover: (originalIndex: number | null) => void;
+    /** Wybór punktu kliknięciem — ustawia pozycję również na pasku odtwarzania. */
+    onSelect: (originalIndex: number | null) => void;
 }
 
 interface Panel {
@@ -46,13 +49,19 @@ export default function FlightProfileChart({
     points,
     originalIndexes,
     activeIndex,
-    onHover
+    onHover,
+    onSelect
 }: FlightProfileChartProps) {
     const svgRef = useRef<SVGSVGElement>(null);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-    const elevations = useMemo(() => points.map(point => point.elevation), [points]);
-    const speeds = useMemo(() => points.map(point => point.speedKmh), [points]);
+    // Wysokość wygładzana medianą — pojedynczy błędny odczyt potrafiłby rozciągnąć oś
+    // wykresu tak, że cały przebieg spłaszczyłby się do linii.
+    const elevations = useMemo(
+        () => smoothElevations(points.map(point => point.elevation)),
+        [points]
+    );
+    const speeds = useMemo(() => points.map(point => point.speedMetersPerMinute), [points]);
 
     /**
      * Panel powstaje tylko dla wielkości faktycznie obecnych w pliku — trasy bez zapisu
@@ -65,7 +74,7 @@ export default function FlightProfileChart({
             available.push({ title: 'Wysokość n.p.m.', unit: 'm', values: elevations });
         }
         if (speeds.some(value => value !== null)) {
-            available.push({ title: 'Prędkość', unit: 'km/h', values: speeds });
+            available.push({ title: 'Prędkość', unit: 'm/min', values: speeds });
         }
 
         return available.map((panel, index) => ({
@@ -183,6 +192,25 @@ export default function FlightProfileChart({
         return found >= 0 ? found : null;
     }, [hoverIndex, activeIndex, originalIndexes]);
 
+    /** Kliknięcie utrwala wskazany punkt, więc zostaje on widoczny po zjechaniu kursorem z wykresu. */
+    const handleClick = (event: React.MouseEvent<SVGSVGElement>) => {
+        const index = nearestIndexAt(event.clientX);
+        if (index !== null) {
+            onSelect(originalIndexes[index]);
+        }
+    };
+
+    /** Obsługa klawiatury: strzałkami można przesuwać wskazany punkt wzdłuż trasy. */
+    const handleKeyDown = (event: React.KeyboardEvent<SVGSVGElement>) => {
+        const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+        if (step === 0) return;
+
+        event.preventDefault();
+        const current = highlightedIndex ?? 0;
+        const next = Math.max(0, Math.min(points.length - 1, current + step));
+        onSelect(originalIndexes[next]);
+    };
+
     if (panels.length === 0 || points.length < 2) {
         return (
             <p className="text-sm text-gray-500">
@@ -206,11 +234,14 @@ export default function FlightProfileChart({
             <svg
                 ref={svgRef}
                 viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-                className="w-full h-auto touch-none min-w-[560px]"
+                className="w-full h-auto touch-none min-w-[560px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                 role="img"
-                aria-label="Profile wysokości i prędkości wzdłuż trasy lotu"
+                tabIndex={0}
+                aria-label="Profile wysokości i prędkości wzdłuż trasy lotu. Kliknij, aby wybrać punkt; strzałkami przesuniesz wybór."
                 onPointerMove={handlePointerMove}
                 onPointerLeave={handlePointerLeave}
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}
             >
                 {panels.map(panel => {
                     const { line, area, min, max, dataMin, dataMax } = buildPath(panel);
@@ -321,9 +352,10 @@ export default function FlightProfileChart({
                     <span>
                         Godzina: <strong className="text-gray-900">{formatTime(highlighted.time)}</strong>
                     </span>
-                    {highlighted.speedKmh !== null && (
+                    {highlighted.speedMetersPerMinute !== null && (
                         <span>
-                            Prędkość: <strong className="text-gray-900">{highlighted.speedKmh.toFixed(1)} km/h</strong>
+                            Prędkość:{' '}
+                            <strong className="text-gray-900">{formatSpeed(highlighted.speedMetersPerMinute)}</strong>
                         </span>
                     )}
                     {highlighted.elevation !== null && (

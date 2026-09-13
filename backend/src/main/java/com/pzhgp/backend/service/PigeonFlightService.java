@@ -62,6 +62,7 @@ public class PigeonFlightService {
         Breeder owner = requireBreeder(userEmail);
         validateFile(file);
 
+
         if (flightRepository.countByOwner(owner) >= MAX_FLIGHTS_PER_BREEDER) {
             throw new IllegalStateException("Osiągnięto limit " + MAX_FLIGHTS_PER_BREEDER
                     + " zapisanych lotów. Usuń starsze loty, aby wgrać kolejny.");
@@ -96,7 +97,7 @@ public class PigeonFlightService {
         log.info("Hodowca {} wgrał lot '{}' ({} punktów, dystans {} km, prędkość {} m/min).",
                 userEmail, saved.getName(), analysis.totalPoints(),
                 Math.round(analysis.straightLineDistanceMeters() / 1000),
-                Math.round(analysis.racingVelocityMetersPerMinute()));
+                Math.round(analysis.averageSpeedMetersPerMinute()));
 
         return saved.getId();
     }
@@ -140,14 +141,12 @@ public class PigeonFlightService {
                 flight.getReleaseSite(),
                 fullName(flight.getOwner()),
                 flight.getOriginalFileName(),
-                flight.getReleaseTime(),
-                flight.getArrivalTime(),
-                flight.getTrackStartTime(),
-                flight.getTrackEndTime(),
-                flight.getReleaseLatitude(),
-                flight.getReleaseLongitude(),
-                flight.getArrivalLatitude(),
-                flight.getArrivalLongitude(),
+                flight.getStartTime(),
+                flight.getEndTime(),
+                flight.getStartLatitude(),
+                flight.getStartLongitude(),
+                flight.getEndLatitude(),
+                flight.getEndLongitude(),
                 toStatistics(flight),
                 trackPoints,
                 trackPoints.size(),
@@ -176,30 +175,21 @@ public class PigeonFlightService {
      * Przepisuje wynik analizy na pola encji lotu.
      */
     private void applyAnalysis(PigeonFlight flight, FlightAnalysis analysis) {
-        flight.setTrackStartTime(analysis.trackStartTime());
-        flight.setTrackEndTime(analysis.trackEndTime());
-        flight.setReleaseTime(analysis.releaseTime());
-        flight.setArrivalTime(analysis.arrivalTime());
-        flight.setReleaseLatitude(analysis.releaseLatitude());
-        flight.setReleaseLongitude(analysis.releaseLongitude());
-        flight.setArrivalLatitude(analysis.arrivalLatitude());
-        flight.setArrivalLongitude(analysis.arrivalLongitude());
+        flight.setStartTime(analysis.startTime());
+        flight.setEndTime(analysis.endTime());
+        flight.setStartLatitude(analysis.startLatitude());
+        flight.setStartLongitude(analysis.startLongitude());
+        flight.setEndLatitude(analysis.endLatitude());
+        flight.setEndLongitude(analysis.endLongitude());
         flight.setStraightLineDistanceMeters(analysis.straightLineDistanceMeters());
         flight.setTrackDistanceMeters(analysis.trackDistanceMeters());
-        flight.setRawTrackDistanceMeters(analysis.rawTrackDistanceMeters());
-        flight.setFlightDurationSeconds(analysis.flightDurationSeconds());
-        flight.setTotalDurationSeconds(analysis.totalDurationSeconds());
-        flight.setAverageSpeedKmh(analysis.averageSpeedKmh());
-        flight.setRacingVelocityMetersPerMinute(analysis.racingVelocityMetersPerMinute());
-        flight.setMaxSpeedKmh(analysis.maxSpeedKmh());
-        flight.setStraightnessRatio(analysis.straightnessRatio());
-        flight.setCourseDegrees(analysis.courseDegrees());
+        flight.setDurationSeconds(analysis.durationSeconds());
+        flight.setAverageSpeedMetersPerMinute(analysis.averageSpeedMetersPerMinute());
+        flight.setStraightLineSpeedMetersPerMinute(analysis.straightLineSpeedMetersPerMinute());
+        flight.setMaxSpeedMetersPerMinute(analysis.maxSpeedMetersPerMinute());
         flight.setMinElevationMeters(analysis.minElevationMeters());
         flight.setMaxElevationMeters(analysis.maxElevationMeters());
         flight.setElevationGainMeters(analysis.elevationGainMeters());
-        flight.setStationaryNoiseMeters(analysis.stationaryNoiseMeters());
-        flight.setPreFlightDurationSeconds(analysis.preFlightDurationSeconds());
-        flight.setPostFlightDurationSeconds(analysis.postFlightDurationSeconds());
         flight.setTimestampsAvailable(analysis.timestampsAvailable());
         flight.setTotalPoints(analysis.totalPoints());
     }
@@ -265,7 +255,7 @@ public class PigeonFlightService {
                     previous.latitude(), previous.longitude(), current.latitude(), current.longitude());
         }
 
-        return round(distance / seconds * 3.6, 2);
+        return round(distance / (seconds / 60.0), 1);
     }
 
     /**
@@ -285,7 +275,7 @@ public class PigeonFlightService {
                         stored.getLongitude(),
                         stored.getElevationMeters(),
                         stored.getRecordedAt(),
-                        stored.getSpeedKmh()))
+                        stored.getSpeedMetersPerMinute()))
                 .toList();
     }
 
@@ -296,12 +286,11 @@ public class PigeonFlightService {
                 flight.getRingNumber(),
                 flight.getReleaseSite(),
                 fullName(flight.getOwner()),
-                flight.getReleaseTime(),
-                flight.getArrivalTime(),
+                flight.getStartTime(),
+                flight.getEndTime(),
                 round(flight.getStraightLineDistanceMeters() / 1000.0, 2),
-                flight.getFlightDurationSeconds(),
-                round(flight.getAverageSpeedKmh(), 1),
-                round(flight.getRacingVelocityMetersPerMinute(), 0),
+                flight.getDurationSeconds(),
+                round(flight.getAverageSpeedMetersPerMinute(), 0),
                 flight.getTotalPoints(),
                 flight.isTimestampsAvailable(),
                 flight.getUploadedAt(),
@@ -310,26 +299,16 @@ public class PigeonFlightService {
     }
 
     private FlightStatisticsDto toStatistics(PigeonFlight flight) {
-        double straightness = flight.getStraightnessRatio();
-
         return new FlightStatisticsDto(
                 round(flight.getStraightLineDistanceMeters() / 1000.0, 2),
                 round(flight.getTrackDistanceMeters() / 1000.0, 2),
-                round(flight.getRawTrackDistanceMeters() / 1000.0, 2),
-                flight.getFlightDurationSeconds(),
-                flight.getTotalDurationSeconds(),
-                round(flight.getAverageSpeedKmh(), 1),
-                round(flight.getRacingVelocityMetersPerMinute(), 0),
-                round(flight.getMaxSpeedKmh(), 1),
-                round(straightness, 3),
-                round(straightness > 0 ? (straightness - 1) * 100 : 0, 1),
-                round(flight.getCourseDegrees(), 0),
+                flight.getDurationSeconds(),
+                round(flight.getAverageSpeedMetersPerMinute(), 0),
+                round(flight.getStraightLineSpeedMetersPerMinute(), 0),
+                round(flight.getMaxSpeedMetersPerMinute(), 0),
                 round(flight.getMinElevationMeters(), 0),
                 round(flight.getMaxElevationMeters(), 0),
                 round(flight.getElevationGainMeters(), 0),
-                round(flight.getStationaryNoiseMeters() / 1000.0, 2),
-                flight.getPreFlightDurationSeconds(),
-                flight.getPostFlightDurationSeconds(),
                 flight.getTotalPoints(),
                 flight.isTimestampsAvailable()
         );

@@ -45,17 +45,17 @@ public class FlightTrackPoint {
     @Column(name = "recorded_at")
     private Instant recordedAt;
 
-    /** Prędkość chwilowa wygładzona oknem czasowym, w km/h — służy do kolorowania trasy na mapie. */
-    @Column(name = "speed_kmh")
-    private Double speedKmh;
+    /** Prędkość chwilowa wygładzona oknem czasowym, w m/min — służy do kolorowania trasy na mapie. */
+    @Column(name = "speed_m_per_min")
+    private Double speedMetersPerMinute;
 
     public FlightTrackPoint(int pointIndex, double latitude, double longitude,
-                            Double elevationMeters, Instant recordedAt, Double speedKmh) {
+                            Double elevationMeters, Instant recordedAt, Double speedMetersPerMinute) {
         this.pointIndex = pointIndex;
         this.latitude = latitude;
         this.longitude = longitude;
         this.elevationMeters = elevationMeters;
         this.recordedAt = recordedAt;
-        this.speedKmh = speedKmh;
+        this.speedMetersPerMinute = speedMetersPerMinute;
     }
 }

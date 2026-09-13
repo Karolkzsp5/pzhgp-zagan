@@ -20,7 +20,8 @@ const readError = async (response: Response, fallback: string): Promise<string> 
 
 export const flightService = {
     /**
-     * Wgrywa plik GPX wraz z opcjonalnymi metadanymi lotu.
+     * Wgrywa plik GPX wraz z metadanymi lotu — w tym obowiązkowymi godzinami
+     * wypuszczenia i przylotu, na podstawie których liczone są statystyki.
      *
      * Metadane przesyłane są jako osobna część żądania o typie application/json,
      * dzięki czemu na serwerze podlegają walidacji adnotacjami Jakarta Validation.
@@ -28,14 +29,10 @@ export const flightService = {
     uploadFlight: async (file: File, metadata: FlightUploadRequest): Promise<number> => {
         const formData = new FormData();
         formData.append('file', file);
-
-        const hasMetadata = Boolean(metadata.name || metadata.ringNumber || metadata.releaseSite);
-        if (hasMetadata) {
-            formData.append(
-                'metadata',
-                new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-            );
-        }
+        formData.append(
+            'metadata',
+            new Blob([JSON.stringify(metadata)], { type: 'application/json' })
+        );
 
         const response = await fetch(`${API_URL}/api/flights`, {
             method: 'POST',

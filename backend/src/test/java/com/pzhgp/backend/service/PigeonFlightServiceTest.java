@@ -108,8 +108,8 @@ class PigeonFlightServiceTest {
         assertEquals(owner, saved.getOwner());
         assertEquals(1230, saved.getTotalPoints());
         assertEquals(1230, saved.getTrackPoints().size());
-        assertEquals(184.0, saved.getStraightLineDistanceMeters() / 1000, 1.0);
-        assertEquals(1378.0, saved.getRacingVelocityMetersPerMinute(), 15.0);
+        assertEquals(184.4, saved.getStraightLineDistanceMeters() / 1000, 1.0);
+        assertEquals(638.0, saved.getAverageSpeedMetersPerMinute(), 20.0);
     }
 
     @Test

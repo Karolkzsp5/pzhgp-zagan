@@ -12,35 +12,11 @@ import { FlightTrackPointDto } from '@/app/types/flight';
  */
 export const SPEED_RAMP = ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281'];
 
-/** Kolor fragmentów zarejestrowanych w spoczynku — neutralny, celowo poza skalą prędkości. */
-export const STATIONARY_COLOR = '#9a9a93';
-
-/** Kolor linii pomocniczej łączącej miejsce wypuszczenia z gołębnikiem. */
+/** Kolor linii pomocniczej łączącej początek trasy z jej końcem. */
 export const REFERENCE_COLOR = '#52514e';
 
-/** Kolor znacznika pozycji na osi czasu (druga barwa palety, poza skalą prędkości). */
+/** Kolor znacznika pozycji na trasie (druga barwa palety, poza skalą prędkości). */
 export const CURSOR_COLOR = '#eb6834';
-
-/**
- * Sprawdza, czy punkt o podanym indeksie należy do fazy lotu wyznaczonej przez serwer.
- * Gdy plik nie zawierał znaczników czasu, cała trasa traktowana jest jako lot.
- */
-export const createFlightPhasePredicate = (
-    points: FlightTrackPointDto[],
-    releaseTime: string | null,
-    arrivalTime: string | null
-): ((index: number) => boolean) => {
-    const releaseMs = releaseTime ? Date.parse(releaseTime) : null;
-    const arrivalMs = arrivalTime ? Date.parse(arrivalTime) : null;
-
-    return (index: number): boolean => {
-        const time = points[index]?.time;
-        if (releaseMs === null || arrivalMs === null || !time) return true;
-
-        const value = Date.parse(time);
-        return value >= releaseMs && value <= arrivalMs;
-    };
-};
 
 /**
  * Wyznacza progi prędkości metodą kwantyli, na podstawie rozkładu w obrębie danego lotu.
@@ -51,13 +27,9 @@ export const createFlightPhasePredicate = (
  * @returns granice przedziałów (o jeden mniej niż kroków skali) albo {@code null},
  *          gdy danych o prędkości jest zbyt mało
  */
-export const computeSpeedThresholds = (
-    points: FlightTrackPointDto[],
-    isInFlight: (index: number) => boolean
-): number[] | null => {
+export const computeSpeedThresholds = (points: FlightTrackPointDto[]): number[] | null => {
     const speeds = points
-        .filter((_, index) => isInFlight(index))
-        .map(point => point.speedKmh)
+        .map(point => point.speedMetersPerMinute)
         .filter((speed): speed is number => speed !== null && Number.isFinite(speed))
         .sort((a, b) => a - b);
 
@@ -79,7 +51,7 @@ export const speedBucket = (speed: number | null, thresholds: number[] | null): 
     return bucket;
 };
 
-/** Buduje opisy przedziałów skali prędkości do legendy, np. "70–85 km/h". */
+/** Buduje opisy przedziałów skali prędkości do legendy, np. "700–900". */
 export const speedLegendLabels = (thresholds: number[] | null): string[] => {
     if (!thresholds) return SPEED_RAMP.map(() => '—');
 
@@ -90,5 +62,33 @@ export const speedLegendLabels = (thresholds: number[] | null): string[] => {
         if (from === null) return `< ${Math.round(to as number)}`;
         if (to === null) return `> ${Math.round(from)}`;
         return `${Math.round(from)}–${Math.round(to)}`;
+    });
+};
+
+/** Szerokość okna mediany wygładzającej wysokość — tyle samo co po stronie serwera. */
+const ELEVATION_MEDIAN_WINDOW = 5;
+
+/**
+ * Wygładza serię wysokości medianą ruchomą.
+ *
+ * Odbiornik w obrączce potrafi w pojedynczym odczycie podać wysokość o kilkaset metrów
+ * zawyżoną. Bez wygładzenia jeden taki punkt rozciąga oś wykresu tak, że reszta przebiegu
+ * spłaszcza się do linii. Serwer stosuje ten sam filtr przy liczeniu statystyk wysokości,
+ * więc wykres i tabela pokazują zgodne wartości.
+ */
+export const smoothElevations = (values: (number | null)[]): (number | null)[] => {
+    if (values.length < ELEVATION_MEDIAN_WINDOW) return values;
+
+    const radius = Math.floor(ELEVATION_MEDIAN_WINDOW / 2);
+
+    return values.map((value, index) => {
+        if (value === null) return null;
+
+        const window = values
+            .slice(Math.max(0, index - radius), index + radius + 1)
+            .filter((candidate): candidate is number => candidate !== null)
+            .sort((a, b) => a - b);
+
+        return window.length > 0 ? window[Math.floor(window.length / 2)] : value;
     });
 };

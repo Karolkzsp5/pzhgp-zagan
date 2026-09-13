@@ -12,18 +12,12 @@ import FlightProfileChart from '@/app/components/FlightProfileChart';
 import { flightService } from '@/app/services/flightService';
 import {
     FlightDetailsDto,
-    formatCourse,
     formatDateTime,
     formatDuration,
+    formatSpeed,
     formatTime
 } from '@/app/types/flight';
-import {
-    SPEED_RAMP,
-    STATIONARY_COLOR,
-    computeSpeedThresholds,
-    createFlightPhasePredicate,
-    speedLegendLabels
-} from '@/utils/flightScale';
+import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/utils/flightScale';
 
 /**
  * Leaflet operuje bezpośrednio na obiekcie window, dlatego mapa ładowana jest wyłącznie
@@ -50,7 +44,7 @@ function StatTile({ label, value, unit, hint }: {
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">
+            <p className="mt-1 text-2xl font-bold text-gray-900 [overflow-wrap:anywhere]">
                 {value}
                 {unit && <span className="text-base font-semibold text-gray-500 ml-1">{unit}</span>}
             </p>
@@ -59,14 +53,38 @@ function StatTile({ label, value, unit, hint }: {
     );
 }
 
-function StatRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
+/**
+ * Wiersz tabeli szczegółów. Wartości liczbowe pozostają w jednej linii, natomiast
+ * {@code wrapValue} pozwala zawinąć długi tekst — na przykład nazwę wgranego pliku,
+ * która potrafi mieć kilkadziesiąt znaków bez spacji.
+ */
+function StatRow({ label, value, hint, wrapValue = false }: {
+    label: string;
+    value: string;
+    hint?: string;
+    wrapValue?: boolean;
+}) {
     return (
-        <div className="flex items-baseline justify-between gap-4 py-2 border-b border-gray-100 last:border-0">
-            <div>
+        <div
+            className={`py-2 border-b border-gray-100 last:border-0 gap-x-4 ${
+                wrapValue
+                    ? 'flex flex-col sm:flex-row sm:items-baseline sm:justify-between'
+                    : 'flex items-baseline justify-between'
+            }`}
+        >
+            <div className="min-w-0">
                 <span className="text-sm text-gray-600">{label}</span>
                 {hint && <span className="block text-xs text-gray-400">{hint}</span>}
             </div>
-            <span className="text-sm font-semibold text-gray-900 text-right whitespace-nowrap">{value}</span>
+            <span
+                className={`text-sm font-semibold text-gray-900 min-w-0 ${
+                    wrapValue
+                        ? '[overflow-wrap:anywhere] sm:text-right'
+                        : 'text-right whitespace-nowrap'
+                }`}
+            >
+                {value}
+            </span>
         </div>
     );
 }
@@ -84,7 +102,6 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     const [error, setError] = useState('');
 
     const [showStraightLine, setShowStraightLine] = useState(true);
-    const [showStationary, setShowStationary] = useState(false);
 
     const [playbackPosition, setPlaybackPosition] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -123,41 +140,25 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
         };
     }, [flightId, isValidId]);
 
-    /** Indeksy punktów należących do fazy lotu — tylko po nich porusza się odtwarzacz. */
-    const flightIndexes = useMemo(() => {
-        if (!flight) return [];
+    /** Odtwarzacz przechodzi przez całą zarejestrowaną trasę. */
+    const trackPoints = useMemo(() => flight?.trackPoints ?? [], [flight]);
 
-        const isInFlight = createFlightPhasePredicate(
-            flight.trackPoints, flight.releaseTime, flight.arrivalTime);
+    const pointIndexes = useMemo(() => trackPoints.map((_, index) => index), [trackPoints]);
 
-        return flight.trackPoints
-            .map((_, index) => index)
-            .filter(index => isInFlight(index));
-    }, [flight]);
-
-    const flightPoints = useMemo(
-        () => (flight ? flightIndexes.map(index => flight.trackPoints[index]) : []),
-        [flight, flightIndexes]
+    const speedLegend = useMemo(
+        () => speedLegendLabels(computeSpeedThresholds(trackPoints)),
+        [trackPoints]
     );
-
-    const speedLegend = useMemo(() => {
-        if (!flight) return [];
-
-        const isInFlight = createFlightPhasePredicate(
-            flight.trackPoints, flight.releaseTime, flight.arrivalTime);
-
-        return speedLegendLabels(computeSpeedThresholds(flight.trackPoints, isInFlight));
-    }, [flight]);
 
     // Odtwarzanie trasy: znacznik przesuwa się po kolejnych punktach fazy lotu.
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
-        if (!isPlaying || flightIndexes.length === 0) return;
+        if (!isPlaying || pointIndexes.length === 0) return;
 
         intervalRef.current = setInterval(() => {
             setPlaybackPosition(previous => {
-                if (previous >= flightIndexes.length - 1) {
+                if (previous >= pointIndexes.length - 1) {
                     setIsPlaying(false);
                     return previous;
                 }
@@ -168,16 +169,31 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isPlaying, playbackSpeed, flightIndexes.length]);
+    }, [isPlaying, playbackSpeed, pointIndexes.length]);
 
     const togglePlayback = useCallback(() => {
         setIsPlaying(previous => {
-            if (!previous && playbackPosition >= flightIndexes.length - 1) {
+            if (!previous && playbackPosition >= pointIndexes.length - 1) {
                 setPlaybackPosition(0);
             }
             return !previous;
         });
-    }, [playbackPosition, flightIndexes.length]);
+    }, [playbackPosition, pointIndexes.length]);
+
+    /**
+     * Kliknięcie w wykres ustawia pozycję na pasku odtwarzania, dzięki czemu oba sposoby
+     * wskazywania punktu trasy — wykres i suwak — działają wymiennie i pozostają zgodne.
+     */
+    const selectPointFromChart = useCallback((originalIndex: number | null) => {
+        if (originalIndex === null) return;
+
+        const position = pointIndexes.indexOf(originalIndex);
+        if (position < 0) return;
+
+        setIsPlaying(false);
+        setPlaybackPosition(position);
+        setHoveredIndex(null);
+    }, [pointIndexes]);
 
     const handleDelete = () => {
         if (!flight) return;
@@ -205,7 +221,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
         });
     };
 
-    const activeIndex = hoveredIndex ?? (flightIndexes.length > 0 ? flightIndexes[playbackPosition] : null);
+    const activeIndex = hoveredIndex ?? (pointIndexes.length > 0 ? pointIndexes[playbackPosition] : null);
     const activePoint = flight && activeIndex !== null ? flight.trackPoints[activeIndex] : null;
 
     if (isLoading) {
@@ -264,9 +280,9 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     </Link>
 
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-gray-200 pb-5 mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{flight.name}</h1>
-                            <p className="mt-2 text-sm text-gray-600">
+                        <div className="min-w-0">
+                            <h1 className="text-3xl font-bold text-gray-900 [overflow-wrap:anywhere]">{flight.name}</h1>
+                            <p className="mt-2 text-sm text-gray-600 [overflow-wrap:anywhere]">
                                 {flight.ringNumber && (
                                     <>Obrączka <strong className="text-gray-900">{flight.ringNumber}</strong> · </>
                                 )}
@@ -291,40 +307,36 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             label="Dystans"
                             value={stats.straightLineDistanceKm.toFixed(2)}
                             unit="km"
-                            hint="w linii prostej do gołębnika"
+                            hint="w linii prostej, start–meta"
                         />
                         <StatTile
-                            label="Czas lotu"
-                            value={stats.timestampsAvailable ? formatDuration(stats.flightDurationSeconds) : '—'}
+                            label="Czas nagrania"
+                            value={stats.timestampsAvailable ? formatDuration(stats.durationSeconds) : '—'}
                             hint={
                                 stats.timestampsAvailable
-                                    ? `${formatTime(flight.releaseTime)} – ${formatTime(flight.arrivalTime)}`
+                                    ? `${formatTime(flight.startTime)} – ${formatTime(flight.endTime)}`
                                     : 'plik bez znaczników czasu'
                             }
                         />
                         <StatTile
-                            label="Prędkość konkursowa"
+                            label="Prędkość średnia"
                             value={
                                 stats.timestampsAvailable
-                                    ? Math.round(stats.racingVelocityMetersPerMinute).toString()
+                                    ? Math.round(stats.averageSpeedMetersPerMinute).toLocaleString('pl-PL')
                                     : '—'
                             }
                             unit={stats.timestampsAvailable ? 'm/min' : undefined}
-                            hint={
-                                stats.timestampsAvailable
-                                    ? 'jednostka regulaminowa PZHGP'
-                                    : 'nie da się wyznaczyć bez czasu'
-                            }
+                            hint="wzdłuż zarejestrowanej trasy"
                         />
                         <StatTile
-                            label="Prędkość średnia"
-                            value={stats.timestampsAvailable ? stats.averageSpeedKmh.toFixed(1) : '—'}
-                            unit={stats.timestampsAvailable ? 'km/h' : undefined}
-                            hint={
+                            label="Prędkość maksymalna"
+                            value={
                                 stats.timestampsAvailable
-                                    ? `maksymalna ${stats.maxSpeedKmh.toFixed(1)} km/h`
-                                    : 'nie da się wyznaczyć bez czasu'
+                                    ? Math.round(stats.maxSpeedMetersPerMinute).toLocaleString('pl-PL')
+                                    : '—'
                             }
+                            unit={stats.timestampsAvailable ? 'm/min' : undefined}
+                            hint="utrzymana przez co najmniej 15 s"
                         />
                     </div>
 
@@ -335,7 +347,6 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                 flight={flight}
                                 activeIndex={activeIndex}
                                 showStraightLine={showStraightLine}
-                                showStationary={showStationary}
                             />
                         </div>
 
@@ -343,7 +354,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         <div className="border-t border-gray-100 p-4 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
                             <div>
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Prędkość na trasie [km/h]
+                                    Prędkość na trasie [m/min]
                                 </p>
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                                     {SPEED_RAMP.map((color, index) => (
@@ -366,29 +377,13 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         onChange={event => setShowStraightLine(event.target.checked)}
                                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    Linia prosta do gołębnika
-                                </label>
-
-                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={showStationary}
-                                        onChange={event => setShowStationary(event.target.checked)}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="flex items-center gap-1.5">
-                                        <span
-                                            className="inline-block w-5 h-2 rounded-sm"
-                                            style={{ backgroundColor: STATIONARY_COLOR }}
-                                        />
-                                        Zapis w spoczynku
-                                    </span>
+                                    Linia prosta start–meta
                                 </label>
                             </div>
                         </div>
 
                         {/* Odtwarzanie trasy */}
-                        {flightIndexes.length > 1 && (
+                        {pointIndexes.length > 1 && (
                             <div className="border-t border-gray-100 p-4 bg-gray-50">
                                 <div className="flex items-center gap-4">
                                     <button
@@ -410,7 +405,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                     <input
                                         type="range"
                                         min={0}
-                                        max={flightIndexes.length - 1}
+                                        max={pointIndexes.length - 1}
                                         value={playbackPosition}
                                         onChange={event => {
                                             setIsPlaying(false);
@@ -439,9 +434,12 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         <span>
                                             Godzina: <strong className="text-gray-900">{formatTime(activePoint.time)}</strong>
                                         </span>
-                                        {activePoint.speedKmh !== null && (
+                                        {activePoint.speedMetersPerMinute !== null && (
                                             <span>
-                                                Prędkość: <strong className="text-gray-900">{activePoint.speedKmh.toFixed(1)} km/h</strong>
+                                                Prędkość:{' '}
+                                                <strong className="text-gray-900">
+                                                    {formatSpeed(activePoint.speedMetersPerMinute)}
+                                                </strong>
                                             </span>
                                         )}
                                         {activePoint.elevation !== null && (
@@ -450,7 +448,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                             </span>
                                         )}
                                         <span className="text-gray-400">
-                                            punkt {playbackPosition + 1} z {flightIndexes.length}
+                                            punkt {playbackPosition + 1} z {pointIndexes.length}
                                         </span>
                                     </div>
                                 )}
@@ -463,14 +461,15 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                             <h2 className="text-lg font-bold text-gray-900 mb-1">Przebieg lotu</h2>
                             <p className="text-xs text-gray-500 mb-4">
-                                Najedź kursorem na wykres, aby zobaczyć odpowiadający punkt na mapie.
+                                Najedź kursorem, aby podejrzeć punkt na mapie. Kliknij, aby go wybrać — zaznaczenie przesunie też suwak nad wykresem i zostanie na mapie.
                             </p>
 
                             <FlightProfileChart
-                                points={flightPoints}
-                                originalIndexes={flightIndexes}
+                                points={trackPoints}
+                                originalIndexes={pointIndexes}
                                 activeIndex={activeIndex}
                                 onHover={setHoveredIndex}
+                                onSelect={selectPointFromChart}
                             />
                         </div>
 
@@ -478,20 +477,20 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                             <h2 className="text-lg font-bold text-gray-900 mb-3">Szczegóły lotu</h2>
 
-                            <StatRow label="Wypuszczenie" value={formatDateTime(flight.releaseTime)} />
-                            <StatRow label="Przylot do gołębnika" value={formatDateTime(flight.arrivalTime)} />
+                            <StatRow label="Początek nagrania" value={formatDateTime(flight.startTime)} />
+                            <StatRow label="Koniec nagrania" value={formatDateTime(flight.endTime)} />
                             <StatRow
                                 label="Droga pokonana"
                                 value={`${stats.trackDistanceKm.toFixed(2)} km`}
                                 hint="wzdłuż zarejestrowanej trasy"
                             />
                             <StatRow
-                                label="Nadkład trasy"
-                                value={`${stats.detourPercent.toFixed(1)} %`}
-                                hint={`współczynnik prostoliniowości ${stats.straightnessRatio.toFixed(3)}`}
+                                label="Prędkość w linii prostej"
+                                value={stats.timestampsAvailable
+                                    ? formatSpeed(stats.straightLineSpeedMetersPerMinute)
+                                    : '—'}
+                                hint="dystans start–meta podzielony przez czas nagrania"
                             />
-                            <StatRow label="Kierunek lotu" value={formatCourse(stats.courseDegrees)} />
-
                             {stats.minElevationMeters !== null && stats.maxElevationMeters !== null && (
                                 <StatRow
                                     label="Wysokość lotu"
@@ -509,39 +508,10 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                 value={`${stats.totalPoints}`}
                                 hint={`na mapie wyświetlono ${flight.returnedPoints}`}
                             />
-                            <StatRow label="Plik źródłowy" value={flight.originalFileName} />
+                            <StatRow label="Plik źródłowy" value={flight.originalFileName} wrapValue />
                         </div>
                     </div>
 
-                    {/* Dlaczego statystyki nie obejmują całego pliku */}
-                    {(stats.preFlightDurationSeconds > 0 || stats.postFlightDurationSeconds > 0) && (
-                        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-5">
-                            <h2 className="text-sm font-bold text-blue-900 mb-2">
-                                Jak liczone są statystyki tego lotu
-                            </h2>
-                            <p className="text-sm text-blue-900/90 leading-relaxed">
-                                Nadajnik w obrączce rejestrował pozycję przez{' '}
-                                <strong>{formatDuration(stats.totalDurationSeconds)}</strong>, ale sam lot trwał{' '}
-                                <strong>{formatDuration(stats.flightDurationSeconds)}</strong>. Pozostały czas gołąb
-                                spędził w miejscu wypuszczenia ({formatDuration(stats.preFlightDurationSeconds)}) oraz
-                                przy gołębniku po powrocie ({formatDuration(stats.postFlightDurationSeconds)}).
-                                W spoczynku odbiornik GPS wciąż notuje drobne odchyłki pozycji, które zsumowały się
-                                w <strong>{stats.stationaryNoiseKm.toFixed(2)} km</strong> nieistniejącej drogi.
-                            </p>
-                            <p className="text-sm text-blue-900/90 leading-relaxed mt-2">
-                                Gdyby prędkość policzyć z całego pliku, wyszłoby{' '}
-                                <strong>
-                                    {stats.totalDurationSeconds > 0
-                                        ? ((stats.rawTrackDistanceKm / (stats.totalDurationSeconds / 3600)).toFixed(1))
-                                        : '—'}{' '}
-                                    km/h
-                                </strong>{' '}
-                                zamiast rzeczywistych <strong>{stats.averageSpeedKmh.toFixed(1)} km/h</strong>.
-                                Dlatego aplikacja najpierw wykrywa moment wypuszczenia i przylotu, a dopiero potem
-                                liczy dystans, czas i prędkości.
-                            </p>
-                        </div>
-                    )}
                 </main>
 
                 <Footer />

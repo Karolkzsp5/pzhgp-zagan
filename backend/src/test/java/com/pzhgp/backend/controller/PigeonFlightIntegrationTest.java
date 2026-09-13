@@ -134,7 +134,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Szczegóły lotu zawierają statystyki liczone na fazie lotu, nie na całym pliku")
+    @DisplayName("Szczegóły lotu zawierają statystyki liczone z całej zarejestrowanej trasy")
     void returnsFlightStatistics() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -146,13 +146,13 @@ class PigeonFlightIntegrationTest {
                 .andExpect(jsonPath("$.statistics.totalPoints").value(1230))
                 .andExpect(jsonPath("$.statistics.timestampsAvailable").value(true))
                 .andExpect(jsonPath("$.statistics.straightLineDistanceKm").value(
-                        org.hamcrest.Matchers.closeTo(184.0, 1.5)))
-                .andExpect(jsonPath("$.statistics.averageSpeedKmh").value(
-                        org.hamcrest.Matchers.closeTo(84.0, 2.0)))
-                .andExpect(jsonPath("$.statistics.racingVelocityMetersPerMinute").value(
-                        org.hamcrest.Matchers.closeTo(1378.0, 20.0)))
-                .andExpect(jsonPath("$.statistics.stationaryNoiseKm").value(
-                        org.hamcrest.Matchers.greaterThan(5.0)));
+                        org.hamcrest.Matchers.closeTo(184.4, 1.5)))
+                .andExpect(jsonPath("$.statistics.trackDistanceKm").value(
+                        org.hamcrest.Matchers.closeTo(195.3, 1.5)))
+                .andExpect(jsonPath("$.statistics.averageSpeedMetersPerMinute").value(
+                        org.hamcrest.Matchers.closeTo(638.0, 20.0)))
+                .andExpect(jsonPath("$.statistics.maxSpeedMetersPerMinute").value(
+                        org.hamcrest.Matchers.closeTo(1754.0, 60.0)));
     }
 
     @Test
