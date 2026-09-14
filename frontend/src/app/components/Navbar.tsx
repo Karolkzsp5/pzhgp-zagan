@@ -22,6 +22,10 @@ export default function Navbar() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+    const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -53,6 +57,14 @@ export default function Navbar() {
             }
             if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
                 setIsNotificationsOpen(false);
+            }
+            if (
+                mobileMenuRef.current &&
+                !mobileMenuRef.current.contains(event.target as Node) &&
+                mobileMenuButtonRef.current &&
+                !mobileMenuButtonRef.current.contains(event.target as Node)
+            ) {
+                setIsMobileMenuOpen(false);
             }
         };
 
@@ -165,8 +177,24 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
 
-                    <div className="flex items-center flex-1 min-w-0">
-                        <Link href="/" className="shrink-0 font-bold text-lg sm:text-xl tracking-wider hover:text-gray-200 transition whitespace-nowrap">
+                    <div className="flex items-center shrink-0">
+                        {/* Mobile menu button */}
+                        <button
+                            ref={mobileMenuButtonRef}
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="md:hidden mr-2 p-1 text-white hover:text-gray-200 focus:outline-none transition"
+                            aria-label="Menu główne"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {isMobileMenuOpen ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                                )}
+                            </svg>
+                        </button>
+
+                        <Link href="/" className="font-bold text-base sm:text-xl tracking-wide sm:tracking-wider hover:text-gray-200 transition whitespace-nowrap">
                             PZHGP Żagań
                         </Link>
                     </div>
@@ -187,8 +215,7 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    {/* Notification and profile */}
-                    <div className="flex items-center justify-end flex-1 space-x-2 sm:space-x-4">
+                    <div className="flex items-center justify-end shrink-0 space-x-2 sm:space-x-4">
                         {!isLoggedIn ? (
                             <>
                                 <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition">
@@ -335,6 +362,31 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile menu */}
+            {isMobileMenuOpen && (
+                <div
+                    ref={mobileMenuRef}
+                    className="md:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
+                >
+                    <div className="flex flex-col">
+                        {navLinks.filter(link => link.show).map((link) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={`block px-5 py-4 text-base font-medium border-b border-blue-700/50 last:border-0 transition ${
+                                    isActive(link.href)
+                                        ? 'bg-blue-900 text-white'
+                                        : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                }`}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }
