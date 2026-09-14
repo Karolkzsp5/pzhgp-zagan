@@ -28,9 +28,6 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
     const [userRole, setUserRole] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-    const mobileNavRef = useRef<HTMLDivElement>(null);
-
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
 
@@ -75,14 +72,6 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
             }
         }
         void fetchAnnouncements(0);
-
-        const handleClickOutside = (event: MouseEvent) => {
-            if (mobileNavRef.current && !mobileNavRef.current.contains(event.target as Node)) {
-                setIsMobileNavOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
@@ -135,52 +124,6 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                     <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
                         Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych.
                     </p>
-
-                    <div className="mt-8 flex justify-center md:hidden relative flex-col items-center"
-                         ref={mobileNavRef}>
-                        <button
-                            onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
-                            className="w-full max-w-xs flex items-center justify-between bg-white border border-gray-300 text-gray-800 px-5 py-3 rounded-md font-bold shadow-sm transition hover:bg-gray-50"
-                        >
-                            <div className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
-                                     viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
-                                </svg>
-                                <span>Menu nawigacji</span>
-                            </div>
-                            <svg
-                                className={`w-5 h-5 text-gray-400 transition-transform ${isMobileNavOpen ? 'rotate-180' : ''}`}
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-
-                        {isMobileNavOpen && (
-                            <div
-                                className="absolute top-14 w-full max-w-xs bg-white rounded-md shadow-xl border border-gray-100 overflow-hidden z-20 text-left animate-fadeIn">
-                                <Link href="/results"
-                                      className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100 transition">
-                                      Wyniki lotów
-                                </Link>
-                                {isAuthenticated && (
-                                    <Link href="/forum"
-                                        className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100 transition">
-                                        Forum
-                                    </Link>
-                                )}
-                                <Link href="/weather"
-                                      className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
-                                    Pogoda
-                                </Link>
-                                <Link href="/board"
-                                      className="block px-5 py-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
-                                      Zarząd
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-
                 </div>
             </header>
 
@@ -229,11 +172,10 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                             <div className="flex items-center gap-2 ml-4">
                                                 {post.isPinned && (
                                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px"
-                                                         viewBox="0 -960 960 960" width="24px" fill="#789DE5"
+                                                         viewBox="0 -960 960 960" width="24px" fill="#2b7fff"
                                                          className="shrink-0"
                                                     >
-                                                        <path
-                                                            d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                                        <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                     </svg>
                                                 )}
                                                 <span

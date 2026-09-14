@@ -293,7 +293,7 @@ export default function FlightsPage() {
                                     <tbody className="divide-y divide-gray-100">
                                         {flights.map(flight => (
                                             <tr key={flight.id} className="hover:bg-blue-50/40 transition">
-                                                <td className="px-4 py-3 max-w-[22rem]">
+                                                <td className="px-4 py-3 min-w-[16rem] max-w-[22rem]">
                                                     <Link
                                                         href={`/flights/${flight.id}`}
                                                         className="font-semibold text-blue-700 hover:text-blue-900 hover:underline [overflow-wrap:anywhere] line-clamp-2"

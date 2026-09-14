@@ -70,11 +70,11 @@ export default function FlightProfileChart({
     const panels = useMemo<Panel[]>(() => {
         const available: Omit<Panel, 'offsetY'>[] = [];
 
-        if (elevations.some(value => value !== null)) {
-            available.push({ title: 'Wysokość n.p.m.', unit: 'm', values: elevations });
-        }
         if (speeds.some(value => value !== null)) {
             available.push({ title: 'Prędkość', unit: 'm/min', values: speeds });
+        }
+        if (elevations.some(value => value !== null)) {
+            available.push({ title: 'Wysokość n.p.m.', unit: 'm', values: elevations });
         }
 
         return available.map((panel, index) => ({
@@ -173,12 +173,16 @@ export default function FlightProfileChart({
     };
 
     const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+        if (event.pointerType === 'touch') return;
+
         const index = nearestIndexAt(event.clientX);
         setHoverIndex(index);
         onHover(index !== null ? originalIndexes[index] : null);
     };
 
-    const handlePointerLeave = () => {
+    const handlePointerLeave = (event: React.PointerEvent<SVGSVGElement>) => {
+        if (event.pointerType === 'touch') return;
+
         setHoverIndex(null);
         onHover(null);
     };
@@ -234,7 +238,7 @@ export default function FlightProfileChart({
             <svg
                 ref={svgRef}
                 viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-                className="w-full h-auto touch-none min-w-[560px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                className="w-full h-auto min-w-[560px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                 role="img"
                 tabIndex={0}
                 aria-label="Profile wysokości i prędkości wzdłuż trasy lotu. Kliknij, aby wybrać punkt; strzałkami przesuniesz wybór."
