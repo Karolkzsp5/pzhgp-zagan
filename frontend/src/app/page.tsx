@@ -172,11 +172,10 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                             <div className="flex items-center gap-2 ml-4">
                                                 {post.isPinned && (
                                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px"
-                                                         viewBox="0 -960 960 960" width="24px" fill="#789DE5"
+                                                         viewBox="0 -960 960 960" width="24px" fill="#2b7fff"
                                                          className="shrink-0"
                                                     >
-                                                        <path
-                                                            d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                                        <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                     </svg>
                                                 )}
                                                 <span

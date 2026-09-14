@@ -174,7 +174,7 @@ export default function Navbar() {
 
     return (
         <nav className="bg-blue-700 text-white shadow-md relative z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto px-2 min-[375px]:px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
 
                     <div className="flex items-center shrink-0">
@@ -182,7 +182,7 @@ export default function Navbar() {
                         <button
                             ref={mobileMenuButtonRef}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden mr-2 p-1 text-white hover:text-gray-200 focus:outline-none transition"
+                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 focus:outline-none transition"
                             aria-label="Menu główne"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,13 +215,13 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    <div className="flex items-center justify-end shrink-0 space-x-2 sm:space-x-4">
+                    <div className="flex items-center justify-end shrink-0 space-x-1 min-[375px]:space-x-2 sm:space-x-4">
                         {!isLoggedIn ? (
                             <>
-                                <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition">
+                                <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-medium transition">
                                     Zaloguj się
                                 </Link>
-                                <Link href="/register" className="whitespace-nowrap bg-white text-blue-700 hover:bg-gray-100 px-2 sm:px-3 py-2 rounded-md text-sm font-bold transition shadow-sm">
+                                <Link href="/register" className="whitespace-nowrap bg-white text-blue-700 hover:bg-gray-100 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-bold transition shadow-sm">
                                     Rejestracja
                                 </Link>
                             </>
