@@ -279,7 +279,7 @@ export default function FlightsPage() {
                         <>
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50">
+                                    <thead className="bg-blue-100">
                                         <tr>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Lot</th>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Obrączka</th>

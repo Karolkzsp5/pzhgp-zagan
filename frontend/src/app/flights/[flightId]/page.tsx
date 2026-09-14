@@ -480,7 +480,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             <StatRow label="Początek nagrania" value={formatDateTime(flight.startTime)} />
                             <StatRow label="Koniec nagrania" value={formatDateTime(flight.endTime)} />
                             <StatRow
-                                label="Droga pokonana"
+                                label="Pokonany dystans"
                                 value={`${stats.trackDistanceKm.toFixed(2)} km`}
                                 hint="wzdłuż zarejestrowanej trasy"
                             />
