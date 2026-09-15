@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
@@ -47,7 +47,8 @@ class AdminIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private String adminToken;
     private String breederToken;
@@ -63,28 +64,28 @@ class AdminIntegrationTest {
         Section section = new Section(null, "Test", 1);
         sectionRepository.save(section);
 
-        Breeder admin = createRealUser("admin@test.pl", Role.ADMINISTRATOR, AccountStatus.ACTIVE, section);
-        Breeder breeder = createRealUser("breeder@test.pl", Role.BREEDER, AccountStatus.ACTIVE, section);
-        Breeder moderator = createRealUser("moderator@test.pl", Role.MODERATOR, AccountStatus.ACTIVE, section);
+        Breeder admin = createRealUser("admin@test.pl", "111111111", Role.ADMINISTRATOR, AccountStatus.ACTIVE, section);
+        Breeder breeder = createRealUser("breeder@test.pl", "222222222", Role.BREEDER, AccountStatus.ACTIVE, section);
+        Breeder moderator = createRealUser("moderator@test.pl", "333333333", Role.MODERATOR, AccountStatus.ACTIVE, section);
 
-        pendingBreeder = createRealUser("pending@test.pl", Role.BREEDER, AccountStatus.PENDING, section);
-        activeBreeder = createRealUser("active@test.pl", Role.BREEDER, AccountStatus.ACTIVE, section);
-        blockedBreeder = createRealUser("blocked@test.pl", Role.BREEDER, AccountStatus.BLOCKED, section);
-        anotherAdmin = createRealUser("admin2@test.pl", Role.ADMINISTRATOR, AccountStatus.ACTIVE, section);
+        pendingBreeder = createRealUser("pending@test.pl", "444444444", Role.BREEDER, AccountStatus.PENDING, section);
+        activeBreeder = createRealUser("active@test.pl", "555555555", Role.BREEDER, AccountStatus.ACTIVE, section);
+        blockedBreeder = createRealUser("blocked@test.pl", "666666666", Role.BREEDER, AccountStatus.BLOCKED, section);
+        anotherAdmin = createRealUser("admin2@test.pl", "777777777", Role.ADMINISTRATOR, AccountStatus.ACTIVE, section);
 
         adminToken = "Bearer " + jwtService.generateToken(admin);
         breederToken = "Bearer " + jwtService.generateToken(breeder);
         moderatorToken = "Bearer " + jwtService.generateToken(moderator);
     }
 
-    private Breeder createRealUser(String email, Role role, AccountStatus status, Section section) {
+    private Breeder createRealUser(String email, String phoneNumber, Role role, AccountStatus status, Section section) {
         Breeder breeder = new Breeder();
         breeder.setEmail(email);
         breeder.setRole(role);
         breeder.setStatus(status);
         breeder.setName("Test");
         breeder.setSurname("User");
-        breeder.setPhoneNumber(String.valueOf(System.nanoTime()).substring(0, 9));
+        breeder.setPhoneNumber(phoneNumber);
         breeder.setPasswordHash("hashed");
         breeder.setSection(section);
         return breederRepository.save(breeder);

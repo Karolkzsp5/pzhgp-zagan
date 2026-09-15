@@ -26,7 +26,7 @@ class FlightAnalyzerTest {
     }
 
     @Nested
-    @DisplayName("Rzeczywisty lot z obrączki Skyleader")
+    @DisplayName("Real Skyleader flight")
     class RealSkyleaderFlight {
 
         private FlightAnalysis analysis;
@@ -40,7 +40,7 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Analizowana jest cała trasa — od pierwszego do ostatniego punktu pliku")
+        @DisplayName("Analyzes the entire track from the first to the last GPX point")
         void analyzesWholeTrack() {
             assertEquals(1230, analysis.totalPoints());
             assertEquals(Instant.parse("2026-08-30T04:12:35Z"), analysis.startTime());
@@ -49,7 +49,7 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Początek i koniec trasy to pierwszy i ostatni punkt pliku")
+        @DisplayName("Uses the first and last GPX points as the route endpoints")
         void usesFirstAndLastPointAsEnds() {
             assertEquals(51.7990426, analysis.startLatitude(), 1e-6);
             assertEquals(12.9314796, analysis.startLongitude(), 1e-6);
@@ -58,51 +58,47 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Dystans w linii prostej wynosi ok. 184 km")
+        @DisplayName("Calculates approximately 184 kilometers of straight-line distance")
         void computesStraightLineDistance() {
-            assertEquals(184.4, analysis.straightLineDistanceMeters() / 1000, 1.0);
+            assertEquals(184.4, analysis.straightLineDistanceMeters() / 1000.0, 1.0);
         }
 
         @Test
-        @DisplayName("Droga po trasie obejmuje cały zapis i wynosi ok. 195 km")
+        @DisplayName("Calculates approximately 195 kilometers along the recorded track")
         void computesTrackDistance() {
-            assertEquals(195.3, analysis.trackDistanceMeters() / 1000, 1.0);
+            assertEquals(195.3, analysis.trackDistanceMeters() / 1000.0, 1.0);
         }
 
         @Test
-        @DisplayName("Prędkości podawane są w metrach na minutę")
+        @DisplayName("Calculates flight speeds in meters per minute")
         void computesSpeedsInMetersPerMinute() {
-            // 195,3 km w ciągu 306 minut to ok. 638 m/min
             assertEquals(638.0, analysis.averageSpeedMetersPerMinute(), 15.0);
             assertEquals(602.0, analysis.straightLineSpeedMetersPerMinute(), 15.0);
             assertTrue(analysis.maxSpeedMetersPerMinute() > analysis.averageSpeedMetersPerMinute());
         }
 
         @Test
-        @DisplayName("Prędkość maksymalna mieści się w zakresie realnym dla gołębia")
+        @DisplayName("Calculated maximum speed remains within a plausible range")
         void computesPlausibleMaxSpeed() {
-            // ok. 105 km/h to ok. 1754 m/min
             assertEquals(1754.0, analysis.maxSpeedMetersPerMinute(), 60.0);
-            assertTrue(analysis.maxSpeedMetersPerMinute() < 3333.0,
-                    "Prędkość maksymalna nie może być artefaktem GPS");
+            assertTrue(analysis.maxSpeedMetersPerMinute() < 3333.0);
         }
 
         @Test
-        @DisplayName("Statystyki wysokości odrzucają pojedynczy skok GPS do 1495 m")
+        @DisplayName("Elevation statistics reject the isolated GPS altitude spike")
         void filtersElevationOutliers() {
             assertNotNull(analysis.maxElevationMeters());
-            assertTrue(analysis.maxElevationMeters() < 500,
-                    "Odczyt 1495 m n.p.m. to błąd GPS, a nie rzeczywisty pułap lotu");
+            assertTrue(analysis.maxElevationMeters() < 500);
             assertNotNull(analysis.elevationGainMeters());
         }
     }
 
     @Nested
-    @DisplayName("Przypadki brzegowe")
+    @DisplayName("Edge cases")
     class EdgeCases {
 
         @Test
-        @DisplayName("Trasa krótsza niż dwa punkty jest odrzucana")
+        @DisplayName("Rejects a track containing fewer than two points")
         void rejectsTooShortTrack() {
             List<GpxPoint> single = List.of(new GpxPoint(51.0, 15.0, 100.0, Instant.now()));
 
@@ -112,7 +108,7 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Trasa bez znaczników czasu daje dystanse, ale nie prędkości")
+        @DisplayName("Track without timestamps keeps distances but has no time-based statistics")
         void handlesTrackWithoutTimestamps() {
             List<GpxPoint> points = List.of(
                     new GpxPoint(51.0, 15.0, null, null),
@@ -124,12 +120,31 @@ class FlightAnalyzerTest {
             assertFalse(analysis.timestampsAvailable());
             assertEquals(0, analysis.durationSeconds());
             assertEquals(0.0, analysis.averageSpeedMetersPerMinute());
+            assertEquals(0.0, analysis.straightLineSpeedMetersPerMinute());
+            assertEquals(0.0, analysis.maxSpeedMetersPerMinute());
             assertTrue(analysis.straightLineDistanceMeters() > 20_000);
             assertNull(analysis.elevationGainMeters());
         }
 
         @Test
-        @DisplayName("Prosty przelot: prędkość średnia równa prędkości po linii prostej")
+        @DisplayName("Non-increasing end time disables time-based statistics")
+        void handlesNonIncreasingEndTime() {
+            Instant base = Instant.parse("2026-08-30T05:00:00Z");
+
+            List<GpxPoint> points = List.of(
+                    new GpxPoint(51.0, 15.0, 100.0, base),
+                    new GpxPoint(51.01, 15.0, 100.0, base.minusSeconds(30)));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertFalse(analysis.timestampsAvailable());
+            assertEquals(0, analysis.durationSeconds());
+            assertEquals(0.0, analysis.averageSpeedMetersPerMinute());
+            assertEquals(0.0, analysis.maxSpeedMetersPerMinute());
+        }
+
+        @Test
+        @DisplayName("Straight flight has equal track and straight-line average speeds")
         void straightFlightHasEqualSpeeds() {
             List<GpxPoint> points = straightLine(51.0, 15.0, 0.01, 20, 60);
 
@@ -140,12 +155,12 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Przelot 1 km w minutę daje 1000 m/min")
+        @DisplayName("One kilometer traveled in one minute produces approximately 1000 meters per minute")
         void computesKnownSpeed() {
             Instant base = Instant.parse("2026-08-30T05:00:00Z");
+
             List<GpxPoint> points = List.of(
                     new GpxPoint(51.0, 15.0, 100.0, base),
-                    // ok. 1000 m na północ
                     new GpxPoint(51.0089932, 15.0, 100.0, base.plusSeconds(60)));
 
             FlightAnalysis analysis = analyzer.analyze(points);
@@ -155,31 +170,126 @@ class FlightAnalyzerTest {
         }
 
         @Test
-        @DisplayName("Pojedynczy skok pozycji nie zawyża prędkości maksymalnej ponad granicę realności")
+        @DisplayName("Sparse samples use segment speed when no sustained-speed window is available")
+        void usesSegmentSpeedFallbackForSparseSamples() {
+            Instant base = Instant.parse("2026-08-30T05:00:00Z");
+
+            List<GpxPoint> points = List.of(
+                    new GpxPoint(51.0, 15.0, 100.0, base),
+                    new GpxPoint(51.0089932, 15.0, 100.0, base.plusSeconds(120)));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertEquals(500.0, analysis.maxSpeedMetersPerMinute(), 5.0);
+        }
+
+        @Test
+        @DisplayName("Missing timestamps inside the track do not prevent analysis when endpoints have valid timestamps")
+        void handlesPartiallyMissingTimestamps() {
+            Instant base = Instant.parse("2026-08-30T05:00:00Z");
+
+            List<GpxPoint> points = List.of(
+                    new GpxPoint(51.0, 15.0, 100.0, base),
+                    new GpxPoint(51.005, 15.0, 100.0, null),
+                    new GpxPoint(51.01, 15.0, 100.0, base.plusSeconds(60)));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertTrue(analysis.timestampsAvailable());
+            assertEquals(60, analysis.durationSeconds());
+            assertTrue(analysis.averageSpeedMetersPerMinute() > 0);
+        }
+
+        @Test
+        @DisplayName("Implausible GPS position spike does not increase maximum speed above the configured limit")
         void rejectsImplausibleSpeedSpike() {
             List<GpxPoint> points = new ArrayList<>(straightLine(51.0, 15.0, 0.005, 10, 30));
             Instant last = points.getLast().time();
 
-            // błędny odczyt: skok o ok. 50 km w 30 sekund
             points.add(new GpxPoint(51.5, 15.0, 120.0, last.plusSeconds(30)));
             points.add(new GpxPoint(51.055, 15.0, 120.0, last.plusSeconds(60)));
 
             FlightAnalysis analysis = analyzer.analyze(points);
 
-            assertTrue(analysis.maxSpeedMetersPerMinute() <= 3333.0,
-                    "Odczyty implikujące ponad 3333 m/min muszą zostać odrzucone, otrzymano "
-                            + analysis.maxSpeedMetersPerMinute());
+            assertTrue(analysis.maxSpeedMetersPerMinute() <= 3333.0);
+        }
+
+        @Test
+        @DisplayName("Median filter removes an isolated elevation spike")
+        void filtersSingleElevationSpike() {
+            List<GpxPoint> points = List.of(
+                    pointWithElevation(51.000, 100.0),
+                    pointWithElevation(51.001, 100.0),
+                    pointWithElevation(51.002, 1500.0),
+                    pointWithElevation(51.003, 100.0),
+                    pointWithElevation(51.004, 100.0));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertEquals(100.0, analysis.minElevationMeters());
+            assertEquals(100.0, analysis.maxElevationMeters());
+            assertEquals(0.0, analysis.elevationGainMeters());
+        }
+
+        @Test
+        @DisplayName("Elevation gain ignores changes below the fifteen-meter hysteresis threshold")
+        void ignoresSmallElevationChanges() {
+            List<GpxPoint> points = List.of(
+                    pointWithElevation(51.000, 100.0),
+                    pointWithElevation(51.001, 105.0),
+                    pointWithElevation(51.002, 110.0),
+                    pointWithElevation(51.003, 112.0));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertEquals(0.0, analysis.elevationGainMeters());
+        }
+
+        @Test
+        @DisplayName("Elevation gain counts climbs exceeding the fifteen-meter hysteresis threshold")
+        void countsSignificantElevationGain() {
+            List<GpxPoint> points = List.of(
+                    pointWithElevation(51.000, 100.0),
+                    pointWithElevation(51.001, 110.0),
+                    pointWithElevation(51.002, 120.0),
+                    pointWithElevation(51.003, 105.0));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertEquals(20.0, analysis.elevationGainMeters());
+        }
+
+        @Test
+        @DisplayName("Non-finite elevation values are ignored")
+        void ignoresNonFiniteElevationValues() {
+            List<GpxPoint> points = List.of(
+                    pointWithElevation(51.000, Double.NaN),
+                    pointWithElevation(51.001, Double.POSITIVE_INFINITY),
+                    pointWithElevation(51.002, 100.0),
+                    pointWithElevation(51.003, 120.0));
+
+            FlightAnalysis analysis = analyzer.analyze(points);
+
+            assertEquals(100.0, analysis.minElevationMeters());
+            assertEquals(120.0, analysis.maxElevationMeters());
+            assertEquals(20.0, analysis.elevationGainMeters());
         }
     }
 
-    /** Generuje prostą trasę na południku, o zadanym kroku i odstępie czasowym. */
-    private List<GpxPoint> straightLine(double startLat, double lon, double latStep, int count, int secondsStep) {
+    private List<GpxPoint> straightLine(double startLat, double longitude, double latitudeStep,
+                                        int count, int secondsStep) {
         List<GpxPoint> points = new ArrayList<>(count);
         Instant base = Instant.parse("2026-08-30T05:00:00Z");
+
         for (int i = 0; i < count; i++) {
-            points.add(new GpxPoint(startLat + i * latStep, lon, 120.0,
+            points.add(new GpxPoint(startLat + i * latitudeStep, longitude, 120.0,
                     base.plus((long) i * secondsStep, ChronoUnit.SECONDS)));
         }
+
         return points;
+    }
+
+    private GpxPoint pointWithElevation(double latitude, Double elevation) {
+        return new GpxPoint(latitude, 15.0, elevation, null);
     }
 }

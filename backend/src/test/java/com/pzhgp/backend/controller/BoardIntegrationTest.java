@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BoardMemberRepository;
@@ -49,7 +49,8 @@ class BoardIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private Section sectionZagan;
     private Section sectionWymiarki;
@@ -70,25 +71,25 @@ class BoardIntegrationTest {
         sectionZagan = existingSections.stream().filter(s -> s.getName().equals("Żagań")).findFirst().orElseThrow();
         sectionWymiarki = existingSections.stream().filter(s -> s.getName().equals("Wymiarki")).findFirst().orElseThrow();
 
-        Breeder admin = createRealUser("admin@test.pl", Role.ADMINISTRATOR, sectionZagan);
-        Breeder moderator = createRealUser("mod@test.pl", Role.MODERATOR, sectionZagan);
+        Breeder admin = createRealUser("admin@test.pl", "111111111", Role.ADMINISTRATOR, sectionZagan);
+        Breeder moderator = createRealUser("mod@test.pl", "222222222", Role.MODERATOR, sectionZagan);
 
-        breederZagan = createRealUser("hodowca_zagan@test.pl", Role.BREEDER, sectionZagan);
-        breederZagan2 = createRealUser("hodowca2_zagan@test.pl", Role.BREEDER, sectionZagan);
-        breederWymiarki = createRealUser("hodowca_wymiarki@test.pl", Role.BREEDER, sectionWymiarki);
+        breederZagan = createRealUser("hodowca_zagan@test.pl", "333333333", Role.BREEDER, sectionZagan);
+        breederZagan2 = createRealUser("hodowca2_zagan@test.pl", "444444444", Role.BREEDER, sectionZagan);
+        breederWymiarki = createRealUser("hodowca_wymiarki@test.pl", "555555555", Role.BREEDER, sectionWymiarki);
 
         adminToken = "Bearer " + jwtService.generateToken(admin);
         modToken = "Bearer " + jwtService.generateToken(moderator);
     }
 
-    private Breeder createRealUser(String email, Role role, Section section) {
+    private Breeder createRealUser(String email, String phoneNumber, Role role, Section section) {
         Breeder breeder = new Breeder();
         breeder.setEmail(email);
         breeder.setRole(role);
         breeder.setStatus(AccountStatus.ACTIVE);
         breeder.setName("Jan");
         breeder.setSurname("Kowalski");
-        breeder.setPhoneNumber(String.valueOf(System.nanoTime()).substring(0, 9));
+        breeder.setPhoneNumber(phoneNumber);
         breeder.setPasswordHash("hashed");
         breeder.setSection(section);
         return breederRepository.save(breeder);

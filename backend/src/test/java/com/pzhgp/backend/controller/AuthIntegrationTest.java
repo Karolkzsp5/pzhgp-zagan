@@ -1,12 +1,11 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.repository.BreederRepository;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,8 @@ class AuthIntegrationTest {
     @Autowired
     private BreederRepository breederRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    @Autowired
+    private JsonMapper objectMapper;
 
     private RegistrationRequest validRequest;
 
