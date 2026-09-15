@@ -99,15 +99,15 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 - [x] Backendowy moduł rejestracji i logowania (Spring Security, JWT, BCrypt, DTO)
 - [x] Frontendowy formularz rejestracji z walidacją w czasie rzeczywistym
 - [x] Widok logowania (`/login`) i obsługa sesji klienta w Next.js
-- [x] Panel administratora do zarządzania kontami ze statusem `PENDING`
+- [x] Panel administratora do zarządzania kontami
 - [x] Centrum powiadomień
 - [x] Strona główna z ogłoszeniami
 - [ ] Podstrona do tworzenia planów lotów
 - [ ] Parser plików `.txt` dla list konkursowych i generator tabel wyników
 - [ ] Zakładka pobierz - repozytorium plików do pobrania
-- [x] Integracja map interaktywnych i parsowanie tras `.gpx` (moduł *Mapy lotów*: parser GPX, wykrywanie fazy lotu, statystyki, mapa OpenStreetMap)
+- [x] Integracja map interaktywnych i parsowanie tras `.gpx` (moduł *Mapy lotów*: parser GPX, statystyki, mapa OpenStreetMap)
 - [ ] Forum dyskusyjne, panel zaginionych gołębi oraz galeria multimedialna
-- [ ] Widżet pogodowy
+- [x] Radar pogodowy
 - [x] Podstrona zarząd oddziału
 
 ---
