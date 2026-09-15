@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
@@ -51,7 +51,8 @@ class ForumCategoryIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private ForumCategory adminCategory;
     private ForumCategory modCategory;
@@ -61,7 +62,6 @@ class ForumCategoryIntegrationTest {
     private String adminToken;
     private String modToken;
     private String breederToken;
-    private String anotherAdminToken;
 
     @BeforeEach
     void setUp() {
@@ -90,7 +90,6 @@ class ForumCategoryIntegrationTest {
         anotherAdmin.setStatus(AccountStatus.ACTIVE);
         anotherAdmin.setSection(section);
         breederRepository.save(anotherAdmin);
-        anotherAdminToken = jwtService.generateToken(anotherAdmin);
 
         Breeder moderator = new Breeder();
         moderator.setEmail("mod@test.pl");

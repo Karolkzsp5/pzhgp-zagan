@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.FlightUploadRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -53,7 +53,8 @@ class PigeonFlightIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private String ownerToken;
     private String otherToken;
@@ -112,7 +113,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Niezalogowany użytkownik nie może wgrać pliku ani obejrzeć lotu")
+    @DisplayName("Unauthenticated user cannot upload a file or view flights")
     void requiresAuthentication() throws Exception {
         mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx")))
@@ -123,7 +124,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Hodowca wgrywa plik GPX i otrzymuje identyfikator zapisanego lotu")
+    @DisplayName("Breeder uploads GPX file and receives saved flight identifier")
     void uploadsFlight() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -134,7 +135,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Szczegóły lotu zawierają statystyki liczone z całej zarejestrowanej trasy")
+    @DisplayName("Flight details contain statistics calculated from the entire recorded track")
     void returnsFlightStatistics() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -156,7 +157,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Domyślnie trasa jest upraszczana, parametr tolerance=0 zwraca wszystkie punkty")
+    @DisplayName("Track is simplified by default and tolerance=0 returns all points")
     void appliesTrackSimplification() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -182,7 +183,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Metadane przesłane przez hodowcę są zapisywane razem z lotem")
+    @DisplayName("User-provided metadata is saved with the flight")
     void savesUserProvidedMetadata() throws Exception {
         MvcResult result = mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
@@ -202,7 +203,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Niepoprawny numer obrączki w metadanych jest odrzucany przez walidację")
+    @DisplayName("Invalid ring number in metadata is rejected by validation")
     void rejectsInvalidMetadata() throws Exception {
         mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
@@ -212,7 +213,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Plik o innym rozszerzeniu niż .gpx jest odrzucany z kodem 400")
+    @DisplayName("File with extension other than .gpx is rejected with 400 Bad Request")
     void rejectsNonGpxUpload() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "zlosliwy.exe",
                 "application/octet-stream", "MZ".getBytes(StandardCharsets.UTF_8));
@@ -224,7 +225,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Uszkodzony plik GPX kończy się kodem 400, a nie błędem serwera")
+    @DisplayName("Malformed GPX file returns 400 Bad Request instead of server error")
     void rejectsMalformedGpx() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "uszkodzony.gpx",
                 "application/gpx+xml", "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
@@ -236,7 +237,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Lista lotów zawiera wyłącznie loty zalogowanego hodowcy")
+    @DisplayName("Flight list contains only flights belonging to authenticated breeder")
     void listsOnlyOwnFlights() throws Exception {
         uploadRealFlight();
 
@@ -251,7 +252,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Inny hodowca nie ma dostępu do cudzego lotu, administrator ma")
+    @DisplayName("Another breeder cannot access someone else's flight, but administrator can")
     void enforcesFlightVisibility() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -264,7 +265,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Właściciel usuwa lot razem z punktami trasy")
+    @DisplayName("Owner deletes flight together with track points")
     void deletesFlightWithTrackPoints() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -279,7 +280,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Nieistniejący lot zwraca kod 404")
+    @DisplayName("Non-existent flight returns 404 Not Found")
     void returnsNotFoundForMissingFlight() throws Exception {
         mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNotFound());

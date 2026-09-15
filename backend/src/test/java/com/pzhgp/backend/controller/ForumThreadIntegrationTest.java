@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.ForumThreadRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.*;
@@ -59,7 +59,8 @@ class ForumThreadIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private ForumCategory category;
     private ForumThread thread;
@@ -76,10 +77,10 @@ class ForumThreadIntegrationTest {
         Section section = new Section(null, "Sekcja Testowa", 1);
         sectionRepository.save(section);
 
-        admin = createRealUser("admin@test.pl", Role.ADMINISTRATOR, section);
-        Breeder moderator = createRealUser("moderator@test.pl", Role.MODERATOR, section);
-        author = createRealUser("author@test.pl", Role.BREEDER, section);
-        Breeder otherBreeder = createRealUser("other@test.pl", Role.BREEDER, section);
+        admin = createRealUser("admin@test.pl", "111111111", Role.ADMINISTRATOR, section);
+        Breeder moderator = createRealUser("moderator@test.pl", "222222222", Role.MODERATOR, section);
+        author = createRealUser("author@test.pl", "333333333", Role.BREEDER, section);
+        Breeder otherBreeder = createRealUser("other@test.pl", "444444444", Role.BREEDER, section);
 
         adminToken = jwtService.generateToken(admin);
         modToken = jwtService.generateToken(moderator);
@@ -116,14 +117,14 @@ class ForumThreadIntegrationTest {
         entityManager.clear();
     }
 
-    private Breeder createRealUser(String email, Role role, Section section) {
+    private Breeder createRealUser(String email, String phoneNumber, Role role, Section section) {
         Breeder breeder = new Breeder();
         breeder.setEmail(email);
         breeder.setRole(role);
         breeder.setStatus(AccountStatus.ACTIVE);
         breeder.setName("Test");
         breeder.setSurname("User");
-        breeder.setPhoneNumber(String.valueOf(System.nanoTime()).substring(0, 9));
+        breeder.setPhoneNumber(phoneNumber);
         breeder.setPasswordHash("hashed");
         breeder.setSection(section);
         return breederRepository.save(breeder);

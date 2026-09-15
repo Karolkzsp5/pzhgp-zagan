@@ -159,23 +159,32 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should trigger custom @Modifying query and mark all as read")
+    @DisplayName("Should mark only current user's notifications as read")
     void shouldMarkAllNotificationsAsRead() throws Exception {
         Notification extraUnread = new Notification();
         extraUnread.setRecipient(testBreeder);
         extraUnread.setMessage("Kolejne nieprzeczytane");
         extraUnread.setType(NotificationType.NEW_ANNOUNCEMENT);
         extraUnread.setRead(false);
-        notificationRepository.save(extraUnread);
+        extraUnread = notificationRepository.save(extraUnread);
+
+        Notification anotherBreederNotification = new Notification();
+        anotherBreederNotification.setRecipient(anotherBreeder);
+        anotherBreederNotification.setMessage("Powiadomienie innego hodowcy");
+        anotherBreederNotification.setType(NotificationType.NEW_ANNOUNCEMENT);
+        anotherBreederNotification.setRead(false);
+        anotherBreederNotification = notificationRepository.save(anotherBreederNotification);
 
         mockMvc.perform(put("/api/notifications/read-all")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk());
 
-        List<Notification> allNotifications = notificationRepository.findAll();
-        for (Notification n : allNotifications) {
-            assertTrue(n.isRead(), "Powiadomienie o ID " + n.getId() + " nie zostało oznaczone jako przeczytane!");
-        }
+        assertTrue(notificationRepository.findById(unreadNotification.getId()).orElseThrow().isRead());
+        assertTrue(notificationRepository.findById(extraUnread.getId()).orElseThrow().isRead());
+        assertTrue(notificationRepository.findById(readNotification.getId()).orElseThrow().isRead());
+
+        Notification untouchedNotification = notificationRepository.findById(anotherBreederNotification.getId()).orElseThrow();
+        assertFalse(untouchedNotification.isRead());
     }
 
     @Test

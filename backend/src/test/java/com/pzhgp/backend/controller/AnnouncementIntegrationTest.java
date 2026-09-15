@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.AnnouncementRequestDto;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.AnnouncementRepository;
@@ -49,7 +49,8 @@ class AnnouncementIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private JsonMapper objectMapper;
 
     private Breeder admin;
     private Breeder moderator;
