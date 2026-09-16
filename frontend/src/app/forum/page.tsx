@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
 import { fetchCategories, deleteCategory, ForumCategoryDto } from '@/app/services/forumService';
 import CategoryModal from '@/app/components/CategoryModal';
 import ForumGuard from '@/app/components/ForumGuard';

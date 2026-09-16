@@ -11,7 +11,7 @@ import {
     CURSOR_COLOR,
     computeSpeedThresholds,
     speedBucket
-} from '@/utils/flightScale';
+} from '@/app/utils/flightScale';
 
 type LatLng = [number, number];
 

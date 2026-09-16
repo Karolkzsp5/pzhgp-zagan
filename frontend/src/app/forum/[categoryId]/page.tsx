@@ -1,5 +1,6 @@
 "use client";
 
+import { formatGlobalDate } from '@/app/utils/formatters';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,12 +53,6 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pl-PL', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
-        });
     };
 
     if (!Number.isInteger(categoryId)) {
@@ -149,7 +144,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                                             {thread.title}
                                                         </span>
                                                         <div className="text-xs text-gray-500 mt-1">
-                                                            Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatDate(thread.createdAt)}
+                                                            Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatGlobalDate(thread.createdAt)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -160,7 +155,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                             </td>
                                             <td className="px-6 py-4 text-right whitespace-nowrap">
                                                 <div className="text-sm text-gray-900 font-medium">
-                                                    {formatDate(thread.lastPostAt)}
+                                                    {formatGlobalDate(thread.lastPostAt)}
                                                 </div>
                                             </td>
                                         </tr>

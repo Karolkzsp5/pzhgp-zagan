@@ -5,7 +5,7 @@ import Navbar from "@/app/components/Navbar";
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 import { boardService } from '@/app/services/boardService';
 import { BoardMemberDto, BoardRoleTranslations } from '@/app/types/board';
 

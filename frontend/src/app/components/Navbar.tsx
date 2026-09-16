@@ -1,9 +1,10 @@
 "use client";
 
+import { formatGlobalDate } from '@/app/utils/formatters';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
 
 interface NotificationDto {
     id: number;
@@ -154,11 +155,6 @@ export default function Navbar() {
         router.push('/');
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-    };
-
     const isActive = (path: string) => {
         if (path === '/') return pathname === '/';
         return pathname.startsWith(path);
@@ -278,7 +274,7 @@ export default function Navbar() {
                                                         >
                                                             <div className="flex justify-between items-start mb-1">
                                                                 <span className="text-[10px] text-gray-400 font-medium">
-                                                                    {formatDate(notif.createdAt)}
+                                                                    {formatGlobalDate(notif.createdAt)}
                                                                 </span>
                                                                 {!notif.isRead && (
                                                                     <span className="h-2 w-2 bg-blue-600 rounded-full"></span>

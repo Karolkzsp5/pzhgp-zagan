@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import RegistrationModal from './components/RegistrationModal';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AnnouncementModal from './components/AnnouncementModal';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 
 interface Announcement {
     id: number;
@@ -75,13 +76,6 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
     }, []);
 
     const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
-
-    const formatDateTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const time = date.toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
-        const day = date.toLocaleDateString('pl-PL', {day: '2-digit', month: '2-digit', year: 'numeric'});
-        return `${time}, ${day}`;
-    };
 
     const confirmDelete = async () => {
         if (!postToDelete) return;
@@ -203,12 +197,12 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                                 </div>
                                                 {post.updatedAt && (
                                                     <div className="text-xs text-gray-400 italic">
-                                                        Edytowano: {formatDateTime(post.updatedAt)}
+                                                        Edytowano: {formatGlobalDate(post.updatedAt)}
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* edit and delete buttons */}
+                                            {/* Edit and delete buttons */}
                                             {(post.canEdit || post.canDelete) && (
                                                 <div className="flex items-center gap-2">
                                                     {post.canEdit && (

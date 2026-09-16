@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import TextEditor from './TextEditor';
-import { getAuthToken } from '@/utils/jwt';
+import { getAuthToken } from '@/app/utils/jwt';
 
 interface Announcement {
     id: number;

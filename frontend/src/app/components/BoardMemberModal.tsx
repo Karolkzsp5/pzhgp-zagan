@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations } from '@/app/types/board';
 import { boardService } from '@/app/services/boardService';
-import { getAuthToken } from '@/utils/jwt';
+import { getAuthToken } from '@/app/utils/jwt';
 
 interface Section {
     id: number;

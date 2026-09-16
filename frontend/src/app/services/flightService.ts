@@ -1,4 +1,4 @@
-import { getAuthToken } from '@/utils/jwt';
+import { fetchWithAuth } from '@/app/utils/apiClient';
 import {
     FlightDetailsDto,
     FlightSummaryDto,
@@ -7,11 +7,6 @@ import {
 } from '@/app/types/flight';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
-const getAuthHeader = (): Record<string, string> => {
-    const token = getAuthToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
 
 const readError = async (response: Response, fallback: string): Promise<string> => {
     const message = await response.text();
@@ -34,10 +29,8 @@ export const flightService = {
             new Blob([JSON.stringify(metadata)], { type: 'application/json' })
         );
 
-        const response = await fetch(`${API_URL}/api/flights`, {
+        const response = await fetchWithAuth(`${API_URL}/api/flights`, {
             method: 'POST',
-            // Content-Type ustawia przeglądarka razem z granicą (boundary) części żądania.
-            headers: getAuthHeader(),
             body: formData
         });
 
@@ -50,9 +43,7 @@ export const flightService = {
     },
 
     getMyFlights: async (page = 0, size = 10): Promise<PageResponse<FlightSummaryDto>> => {
-        const response = await fetch(`${API_URL}/api/flights?page=${page}&size=${size}`, {
-            headers: getAuthHeader()
-        });
+        const response = await fetchWithAuth(`${API_URL}/api/flights?page=${page}&size=${size}`);
 
         if (!response.ok) {
             throw new Error(await readError(response, 'Nie udało się pobrać listy lotów.'));
@@ -68,9 +59,7 @@ export const flightService = {
     getFlight: async (id: number, toleranceMeters?: number): Promise<FlightDetailsDto> => {
         const query = toleranceMeters !== undefined ? `?tolerance=${toleranceMeters}` : '';
 
-        const response = await fetch(`${API_URL}/api/flights/${id}${query}`, {
-            headers: getAuthHeader()
-        });
+        const response = await fetchWithAuth(`${API_URL}/api/flights/${id}${query}`);
 
         if (!response.ok) {
             throw new Error(await readError(response, 'Nie udało się pobrać danych lotu.'));
@@ -79,9 +68,8 @@ export const flightService = {
     },
 
     deleteFlight: async (id: number): Promise<void> => {
-        const response = await fetch(`${API_URL}/api/flights/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeader()
+        const response = await fetchWithAuth(`${API_URL}/api/flights/${id}`, {
+            method: 'DELETE'
         });
 
         if (!response.ok) {

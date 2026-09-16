@@ -1,5 +1,7 @@
 "use client";
 
+import { formatGlobalDate } from '@/app/utils/formatters';
+
 export interface BreederDto {
     id: number;
     name: string;
@@ -78,7 +80,7 @@ export default function BreederDetailsModal({ breeder, onClose }: BreederDetails
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Data rejestracji</p>
                             <p className="text-sm font-medium text-gray-800">
-                                {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                {formatGlobalDate(breeder.createdAt)}
                             </p>
                         </div>
                         <div>

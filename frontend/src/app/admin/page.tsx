@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
 import BreederDetailsModal, { BreederDto } from '@/app/components/BreederDetailsModal';
@@ -204,7 +205,6 @@ export default function AdminPanelPage() {
         <AdminGuard>
             <div className="flex flex-col min-h-screen">
                 <Navbar />
-
                 <main className="flex-grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto space-y-12">
 
@@ -213,7 +213,7 @@ export default function AdminPanelPage() {
                             <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                         </div>
 
-                        {/* Wyszukiwanie i filtrowanie */}
+                        {/* Searching and filtering */}
                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="relative flex-1">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -266,7 +266,7 @@ export default function AdminPanelPage() {
                             </div>
                         ) : (
                             <>
-                                {/* Oczekujące konta */}
+                                {/* Pending accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
                                     <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
@@ -299,7 +299,7 @@ export default function AdminPanelPage() {
                                                             <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            {formatGlobalDate(breeder.createdAt)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                             <button
@@ -340,7 +340,7 @@ export default function AdminPanelPage() {
                                     </div>
                                 </section>
 
-                                {/* Konta hodowców */}
+                                {/* Breeders accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
                                     <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
@@ -391,18 +391,18 @@ export default function AdminPanelPage() {
                                                             {breeder.status === 'ACTIVE' ? (
                                                                 <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                                         Aktywny
-                                                                    </span>
+                                                                </span>
                                                             ) : (
                                                                 <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                                                                         Zablokowany
-                                                                    </span>
+                                                                </span>
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            {formatGlobalDate(breeder.createdAt)}
                                                         </td>
 
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
@@ -503,7 +503,7 @@ export default function AdminPanelPage() {
                 <Footer />
             </div>
 
-            {/* Kompoment: dane hodowcy */}
+            {/* Component: breeder details */}
             {selectedBreeder && (
                 <BreederDetailsModal
                     breeder={selectedBreeder}
@@ -511,7 +511,7 @@ export default function AdminPanelPage() {
                 />
             )}
 
-            {/* Modal: zmiana roli */}
+            {/* Modal: role change */}
             {roleChangeBreeder && (
                 <div data-cy="role-change-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -556,7 +556,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Modal powiadomień i błędów */}
+            {/* Notifications and errors modal */}
             {modalMessage && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -585,7 +585,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Modal potwierdzenia akcji */}
+            {/* Action confirmation modal */}
             {confirmDialog.isOpen && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -622,7 +622,6 @@ export default function AdminPanelPage() {
                     </div>
                 </div>
             )}
-
         </AdminGuard>
     );
 }

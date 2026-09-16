@@ -9,6 +9,7 @@ import TextEditor from '@/app/components/TextEditor';
 import ForumGuard from '@/app/components/ForumGuard';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import {
     fetchThreadById,
     fetchPostsByThread,
@@ -259,12 +260,6 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         });
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pl-PL', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
-        });
-    };
-
     if (!Number.isInteger(threadId)) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -356,7 +351,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     </h1>
                                 )}
                                 <div className="mt-2 text-sm text-gray-500">
-                                    Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatDate(thread.createdAt)}
+                                    Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatGlobalDate(thread.createdAt)}
                                 </div>
                             </div>
 
@@ -422,9 +417,9 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                         <div className="p-4 sm:p-6 grow flex flex-col min-w-0">
                                             <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100 flex justify-between">
-                                                <span>Napisano: {formatDate(post.createdAt)}</span>
+                                                <span>Napisano: {formatGlobalDate(post.createdAt)}</span>
                                                 {post.editedAt && (
-                                                    <span className="italic" title={formatDate(post.editedAt)}>
+                                                    <span className="italic" title={formatGlobalDate(post.editedAt)}>
                                                         (Edytowano)
                                                     </span>
                                                 )}

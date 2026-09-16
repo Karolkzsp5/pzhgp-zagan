@@ -17,7 +17,7 @@ import {
     formatSpeed,
     formatTime
 } from '@/app/types/flight';
-import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/utils/flightScale';
+import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
 
 /**
  * Leaflet operuje bezpośrednio na obiekcie window, dlatego mapa ładowana jest wyłącznie
