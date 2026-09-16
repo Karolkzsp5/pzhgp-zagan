@@ -1,4 +1,4 @@
-import { fetchWithAuth } from '@/app/utils/apiClient';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 export interface ForumCategoryDto {
     id: number;
@@ -44,116 +44,109 @@ export interface PageResponse<T> {
     number: number;
 }
 
+const ensureOk = async (response: Response, fallback: string): Promise<void> => {
+    if (!response.ok) throw new Error(await readApiError(response, fallback));
+};
+
 export const fetchCategories = async (): Promise<ForumCategoryDto[]> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`);
-    if (!response.ok) throw new Error('Błąd pobierania kategorii');
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories`);
+    await ensureOk(response, 'Nie udało się pobrać kategorii.');
     return response.json();
 };
 
 export const fetchCategoryById = async (categoryId: number): Promise<ForumCategoryDto> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryId}`);
-    if (!response.ok) throw new Error('Nie udało się pobrać kategorii');
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${categoryId}`);
+    await ensureOk(response, 'Nie udało się pobrać kategorii.');
     return response.json();
 };
 
 export const createCategory = async (name: string, description: string, sortOrder: number): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, sortOrder })
     });
-
-    if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Nie udało się utworzyć kategorii.');
-    }
+    await ensureOk(response, 'Nie udało się utworzyć kategorii.');
 };
 
 export const updateCategory = async (id: number, name: string, description: string, sortOrder: number): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${id}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, sortOrder })
     });
-
-    if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Nie udało się zaktualizować kategorii.');
-    }
+    await ensureOk(response, 'Nie udało się zaktualizować kategorii.');
 };
 
 export const deleteCategory = async (id: number): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${id}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${id}`, {
         method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Nie udało się usunąć kategorii. Upewnij się, że nie ma w niej wątków.');
+    await ensureOk(response, 'Nie udało się usunąć kategorii. Upewnij się, że nie ma w niej wątków.');
 };
 
 export const fetchThreadsByCategory = async (categoryId: number, page = 0): Promise<PageResponse<ForumThreadDto>> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/categories/${categoryId}/threads?page=${page}&size=15`);
-    if (!response.ok) throw new Error('Błąd pobierania wątków');
+    const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${categoryId}/threads?page=${page}&size=15`);
+    await ensureOk(response, 'Nie udało się pobrać wątków.');
     return response.json();
 };
 
 export const fetchThreadById = async (threadId: number): Promise<ForumThreadDto & { categoryName?: string }> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}`);
-    if (!response.ok) throw new Error('Błąd pobierania wątku');
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}`);
+    await ensureOk(response, 'Nie udało się pobrać wątku.');
     return response.json();
 };
 
 export const updateThreadTitle = async (threadId: number, title: string): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/title`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/title`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
     });
-    if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Nie udało się zaktualizować tytułu wątku.');
-    }
+    await ensureOk(response, 'Nie udało się zaktualizować tytułu wątku.');
 };
 
 export const deleteThread = async (id: number): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${id}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}`, {
         method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Nie udało się usunąć wątku');
+    await ensureOk(response, 'Nie udało się usunąć wątku.');
 };
 
 export const toggleThreadStatus = async (id: number, action: 'LOCK' | 'PIN'): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${id}/${action.toLowerCase()}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}/${action.toLowerCase()}`, {
         method: 'PUT'
     });
-    if (!response.ok) throw new Error(`Nie udało się zmienić statusu wątku (${action})`);
+    await ensureOk(response, `Nie udało się zmienić statusu wątku (${action}).`);
 };
 
 export const fetchPostsByThread = async (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/posts?page=${page}&size=20`);
-    if (!response.ok) throw new Error('Błąd pobierania postów');
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/posts?page=${page}&size=20`);
+    await ensureOk(response, 'Nie udało się pobrać postów.');
     return response.json();
 };
 
 export const createPost = async (threadId: number, body: string): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads/${threadId}/posts`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body })
     });
-    if (!response.ok) throw new Error('Nie udało się dodać odpowiedzi');
+    await ensureOk(response, 'Nie udało się dodać odpowiedzi.');
 };
 
 export const updatePost = async (postId: number, body: string): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/posts/${postId}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/posts/${postId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body })
     });
-    if (!response.ok) throw new Error('Nie udało się zaktualizować wpisu');
+    await ensureOk(response, 'Nie udało się zaktualizować wpisu.');
 };
 
 export const deletePost = async (id: number): Promise<void> => {
-    const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/posts/${id}`, {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/posts/${id}`, {
         method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Nie można usunąć wpisu.');
+    await ensureOk(response, 'Nie można usunąć wpisu.');
 };

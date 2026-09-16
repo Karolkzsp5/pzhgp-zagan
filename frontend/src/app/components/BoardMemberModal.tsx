@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations } from '@/app/types/board';
 import { boardService } from '@/app/services/boardService';
-import { getAuthToken } from '@/app/utils/jwt';
+import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 
 interface Section {
     id: number;
@@ -95,13 +95,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
         if (!isOpen) return;
 
         const fetchDictionaries = async () => {
-            const token = getAuthToken();
             try {
                 const [sectionsRes, breedersRes] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/registered`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
+                    fetch(`${API_URL}/api/sections`),
+                    fetchWithAuth(`${API_URL}/api/admin/registered`)
                 ]);
 
                 if (!sectionsRes.ok || !breedersRes.ok) {

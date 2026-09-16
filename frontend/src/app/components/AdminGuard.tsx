@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserRole, logout } from '@/app/utils/jwt';
+import { getAuthToken, getUserRole, isJwtValid, logout } from '@/app/utils/jwt';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -10,13 +10,19 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
     useEffect(() => {
         const token = getAuthToken();
-        const role = getUserRole(token);
 
-        if (role === 'ADMINISTRATOR') {
-            setIsAuthorized(true);
-        } else {
-            router.replace('/');
+        if (!isJwtValid(token)) {
+            logout();
+            router.replace('/login');
+            return;
         }
+
+        if (getUserRole(token) !== 'ADMINISTRATOR') {
+            router.replace('/');
+            return;
+        }
+
+        setIsAuthorized(true);
     }, [router]);
 
     if (!isAuthorized) {

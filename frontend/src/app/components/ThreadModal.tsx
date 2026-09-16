@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import TextEditor from './TextEditor';
-import { getAuthToken } from '@/app/utils/jwt';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 interface ThreadModalProps {
     isOpen: boolean;
@@ -50,31 +50,23 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         }
 
         setIsLoading(true);
-        const token = getAuthToken();
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads`, {
+            const response = await fetchWithAuth(`${API_URL}/api/forum/threads`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    categoryId: categoryId,
-                    title: cleanTitle,
-                    initialPostContent: content
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryId, title: cleanTitle, initialPostContent: content })
             });
 
-            if (response.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                const errorData = await response.text();
-                setError(errorData || 'Wystąpił błąd podczas tworzenia wątku.');
+            if (!response.ok) {
+                setError(await readApiError(response, 'Wystąpił błąd podczas tworzenia wątku.'));
+                return;
             }
-        } catch (err) {
-            setError('Błąd połączenia z serwerem.');
+
+            onSuccess();
+            onClose();
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Błąd połączenia z serwerem.');
         } finally {
             setIsLoading(false);
         }

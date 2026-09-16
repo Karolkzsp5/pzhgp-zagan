@@ -3,6 +3,7 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/app/utils/apiClient';
 
 interface RegistrationFormData {
     name: string;
@@ -51,12 +52,11 @@ export default function RegisterPage() {
     });
 
     const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
-    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchSections = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`);
+                const response = await fetch(`${API_URL}/api/sections`);
                 if (response.ok) {
                     const data = await response.json();
                     setSections(data);
@@ -92,8 +92,12 @@ export default function RegisterPage() {
         return digits;
     };
 
-    const formatTextOnly = (val: string) => {
-        return val.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]/g, '');
+    const formatPersonOrCityName = (value: string) => {
+        return value.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]/g, '');
+    };
+
+    const formatStreet = (value: string) => {
+        return value.replace(/[^0-9a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s./-]/g, '');
     };
 
     const getPasswordStrength = (pass: string) => {
@@ -140,8 +144,10 @@ export default function RegisterPage() {
             formattedValue = formatPhoneNumber(value);
         } else if (name === 'postalCode') {
             formattedValue = formatPostalCode(value, formData.postalCode);
-        } else if (['name', 'surname', 'city', 'street'].includes(name)) {
-            formattedValue = formatTextOnly(value);
+        } else if (['name', 'surname', 'city'].includes(name)) {
+            formattedValue = formatPersonOrCityName(value);
+        } else if (name === 'street') {
+            formattedValue = formatStreet(value);
         } else if (name === 'sectionId') {
             formattedValue = parseInt(value) || 0;
         } else if (name === 'houseNumber') {
@@ -200,7 +206,7 @@ export default function RegisterPage() {
                 phoneNumber: formData.phoneNumber.replace(/\s+/g, '')
             };
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+            const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -263,8 +269,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
                             <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
                                    maxLength={11}
-                                   onFocus={() => setFocusedField('phoneNumber')}
-                                   onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
@@ -309,8 +313,6 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
                             <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} required
                                    maxLength={6}
-                                   onFocus={() => setFocusedField('postalCode')}
-                                   onBlur={() => setFocusedField(null)}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 

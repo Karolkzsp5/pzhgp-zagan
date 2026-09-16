@@ -1,10 +1,11 @@
 "use client";
 
-import { formatGlobalDate } from '@/app/utils/formatters';
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
+import { usePathname, useRouter } from 'next/navigation';
+import { formatGlobalDate } from '@/app/utils/formatters';
+import { decodeJwt, getAuthToken, isJwtValid, logout } from '@/app/utils/jwt';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 interface NotificationDto {
     id: number;
@@ -19,21 +20,36 @@ export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState('');
-
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const mobileMenuRef = useRef<HTMLDivElement>(null);
-    const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+    const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
     const pathname = usePathname();
+
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const [notifRes, countRes] = await Promise.all([
+                fetchWithAuth(`${API_URL}/api/notifications`),
+                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
+            ]);
+
+            if (!notifRes.ok) throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
+            if (!countRes.ok) throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
+
+            setNotifications(await notifRes.json());
+            setUnreadCount(await countRes.json());
+        } catch (error) {
+            console.error('Błąd pobierania powiadomień:', error);
+        }
+    }, []);
 
     useEffect(() => {
         const token = getAuthToken();
@@ -44,99 +60,43 @@ export default function Navbar() {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
-
-                fetchNotifications(token!);
+                void fetchNotifications();
             }
         } else if (token) {
-            localStorage.removeItem('jwt_token');
-            sessionStorage.removeItem('jwt_token');
+            logout();
         }
 
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-            }
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-                setIsNotificationsOpen(false);
-            }
-            if (
-                mobileMenuRef.current &&
-                !mobileMenuRef.current.contains(event.target as Node) &&
-                mobileMenuButtonRef.current &&
-                !mobileMenuButtonRef.current.contains(event.target as Node)
-            ) {
-                setIsMobileMenuOpen(false);
-            }
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false);
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) setIsNotificationsOpen(false);
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && mobileMenuButtonRef.current && !mobileMenuButtonRef.current.contains(event.target as Node)) setIsMobileMenuOpen(false);
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    const fetchNotifications = async (token: string) => {
-        try {
-            const [notifRes, countRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ]);
-
-            if (notifRes.ok && countRes.ok) {
-                setNotifications(await notifRes.json());
-                setUnreadCount(await countRes.json());
-            }
-        } catch (error) {
-            console.error('Błąd pobierania powiadomień:', error);
-        }
-    };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [fetchNotifications]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
-        const token = getAuthToken();
-        if (!token) return;
-
         if (!notif.isRead) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Nie udało się oznaczyć powiadomienia jako przeczytane.');
-                }
+                const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
+                if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
 
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                console.error('Błąd oznaczania jako przeczytane: ', error);
+                console.error('Błąd oznaczania jako przeczytane:', error);
             }
         }
 
         setIsNotificationsOpen(false);
-
-        if (notif.link) {
-            router.push(notif.link);
-        }
+        if (notif.link) router.push(notif.link);
     };
 
     const handleMarkAllAsRead = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                throw new Error('Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.');
-            }
+            const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
+            if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
@@ -146,12 +106,12 @@ export default function Navbar() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('jwt_token');
-        sessionStorage.removeItem('jwt_token');
+        logout();
         setIsLoggedIn(false);
         setUserName('');
         setUserRole('');
         setIsDropdownOpen(false);
+        setIsNotificationsOpen(false);
         router.push('/');
     };
 
@@ -302,8 +262,7 @@ export default function Navbar() {
                                     >
                                         <span className="hidden sm:inline">Witaj, <strong className="font-semibold">{userName}</strong></span>
                                         <span className="sm:hidden font-semibold">{userName}</span>
-                                        <svg
-                                            className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
+                                        <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"

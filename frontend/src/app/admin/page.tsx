@@ -8,6 +8,7 @@ import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
 import BreederDetailsModal, { BreederDto } from '@/app/components/BreederDetailsModal';
 import Footer from '@/app/components/Footer';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 export default function AdminPanelPage() {
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
@@ -57,13 +58,9 @@ export default function AdminPanelPage() {
 
         try {
             const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/pending`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/registered`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`)
+                fetchWithAuth(`${API_URL}/api/admin/pending`),
+                fetchWithAuth(`${API_URL}/api/admin/registered`),
+                fetch(`${API_URL}/api/sections`)
             ]);
 
             if (pendingRes.ok && registeredRes.ok) {
@@ -90,21 +87,11 @@ export default function AdminPanelPage() {
     };
 
     const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        let method = 'PUT';
-        if (action === 'reject') method = 'DELETE';
-
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/${action}/${id}`;
+        const method = action === 'reject' ? 'DELETE' : 'PUT';
+        const url = `${API_URL}/api/admin/${action}/${id}`;
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetchWithAuth(url, { method });
 
             if (response.ok) {
                 if (action === 'approve') {
@@ -125,8 +112,7 @@ export default function AdminPanelPage() {
                     );
                 }
             } else {
-                const errorData = await response.text();
-                setModalMessage(`Błąd: ${errorData}`);
+                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
             }
         } catch (err) {
             setModalMessage('Błąd połączenia z serwerem podczas wykonywania akcji.');
@@ -135,16 +121,11 @@ export default function AdminPanelPage() {
 
     const submitRoleChange = async () => {
         if (!roleChangeBreeder) return;
-        const token = getAuthToken();
-        if (!token) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
+            const response = await fetchWithAuth(`${API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: newRole })
             });
 
@@ -154,8 +135,7 @@ export default function AdminPanelPage() {
                 );
                 setRoleChangeBreeder(null);
             } else {
-                const errorData = await response.text();
-                setModalMessage(`Błąd: ${errorData}`);
+                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się zmienić roli.')}`);
             }
         } catch (err) {
             setModalMessage('Błąd połączenia z serwerem podczas zmiany roli.');
@@ -391,11 +371,11 @@ export default function AdminPanelPage() {
                                                             {breeder.status === 'ACTIVE' ? (
                                                                 <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                                         Aktywny
-                                                                </span>
+                                                                    </span>
                                                             ) : (
                                                                 <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                                                                         Zablokowany
-                                                                </span>
+                                                                    </span>
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -503,7 +483,7 @@ export default function AdminPanelPage() {
                 <Footer />
             </div>
 
-            {/* Component: breeder details */}
+            {/* Breeder details component */}
             {selectedBreeder && (
                 <BreederDetailsModal
                     breeder={selectedBreeder}
@@ -511,7 +491,7 @@ export default function AdminPanelPage() {
                 />
             )}
 
-            {/* Modal: role change */}
+            {/* role change modal */}
             {roleChangeBreeder && (
                 <div data-cy="role-change-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -556,7 +536,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Notifications and errors modal */}
+            {/* Notifications and error modal */}
             {modalMessage && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -585,7 +565,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Action confirmation modal */}
+            {/* Action confirm modal */}
             {confirmDialog.isOpen && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -622,6 +602,7 @@ export default function AdminPanelPage() {
                     </div>
                 </div>
             )}
+
         </AdminGuard>
     );
 }
