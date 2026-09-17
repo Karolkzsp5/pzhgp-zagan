@@ -138,8 +138,10 @@ export default function Navbar() {
                         <button
                             ref={mobileMenuButtonRef}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 focus:outline-none transition"
+                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
                             aria-label="Menu główne"
+                            aria-expanded={isMobileMenuOpen}
+                            aria-controls="mobile-navigation"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {isMobileMenuOpen ? (
@@ -191,8 +193,10 @@ export default function Navbar() {
                                             setIsNotificationsOpen(!isNotificationsOpen);
                                             setIsDropdownOpen(false);
                                         }}
-                                        className="p-2 rounded-full hover:bg-blue-800 transition relative focus:outline-none"
+                                        className="p-2 rounded-full hover:bg-blue-800 transition relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         aria-label="Powiadomienia"
+                                        aria-expanded={isNotificationsOpen}
+                                        aria-controls="notifications-panel"
                                     >
                                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -207,7 +211,7 @@ export default function Navbar() {
 
                                     {/* Notification modal */}
                                     {isNotificationsOpen && (
-                                        <div className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
+                                        <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                 <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                 {unreadCount > 0 && (
@@ -227,23 +231,19 @@ export default function Navbar() {
                                                     </div>
                                                 ) : (
                                                     notifications.map((notif) => (
-                                                        <div
+                                                        <button
                                                             key={notif.id}
-                                                            onClick={() => handleNotificationClick(notif)}
-                                                            className={`px-4 py-3 border-b border-gray-50 cursor-pointer transition hover:bg-gray-50 ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}
-                                                        >
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <span className="text-[10px] text-gray-400 font-medium">
-                                                                    {formatGlobalDate(notif.createdAt)}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                void handleNotificationClick(notif)}
+                                                            className={`block w-full text-left px-4 py-3 border-b border-gray-50 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 
+                                                            ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}>
+                                                                <span className="flex justify-between items-start mb-1">
+                                                                    <span className="text-[10px] text-gray-400 font-medium">{formatGlobalDate(notif.createdAt)}</span>
+                                                                    {!notif.isRead && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
                                                                 </span>
-                                                                {!notif.isRead && (
-                                                                    <span className="h-2 w-2 bg-blue-600 rounded-full"></span>
-                                                                )}
-                                                            </div>
-                                                            <p className={`text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                                                                {notif.message}
-                                                            </p>
-                                                        </div>
+                                                            <span className={`block text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>{notif.message}</span>
+                                                        </button>
                                                     ))
                                                 )}
                                             </div>
@@ -258,8 +258,10 @@ export default function Navbar() {
                                             setIsDropdownOpen(!isDropdownOpen);
                                             setIsNotificationsOpen(false);
                                         }}
-                                        className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-900 border border-blue-600 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition focus:outline-none"
-                                    >
+                                        className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-900 border border-blue-600 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                        aria-expanded={isDropdownOpen}
+                                        aria-controls="profile-dropdown">
+
                                         <span className="hidden sm:inline">Witaj, <strong className="font-semibold">{userName}</strong></span>
                                         <span className="sm:hidden font-semibold">{userName}</span>
                                         <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
@@ -272,7 +274,7 @@ export default function Navbar() {
                                     </button>
 
                                     {isDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
+                                        <div id="profile-dropdown" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
                                             {userRole === 'ADMINISTRATOR' && (
                                                 <Link
                                                     href="/admin"
@@ -321,6 +323,7 @@ export default function Navbar() {
             {/* Mobile menu */}
             {isMobileMenuOpen && (
                 <div
+                    id="mobile-navigation"
                     ref={mobileMenuRef}
                     className="md:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
                 >

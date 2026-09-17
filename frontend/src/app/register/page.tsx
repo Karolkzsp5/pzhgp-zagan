@@ -4,6 +4,7 @@ import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { API_URL } from '@/app/utils/apiClient';
+import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface RegistrationFormData {
     name: string;
@@ -35,6 +36,7 @@ export default function RegisterPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [sections, setSections] = useState<SectionDto[]>([]);
+    const [sectionsError, setSectionsError] = useState('');
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -55,20 +57,23 @@ export default function RegisterPage() {
 
     useEffect(() => {
         const fetchSections = async () => {
+            setSectionsError('');
+
             try {
                 const response = await fetch(`${API_URL}/api/sections`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setSections(data);
-                } else {
-                    console.error('Nie udało się pobrać listy sekcji z serwera.');
+
+                if (!response.ok) {
+                    setSectionsError('Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.');
+                    return;
                 }
-            } catch (error) {
-                console.error('Błąd połączenia podczas pobierania sekcji:', error);
+
+                setSections(await response.json());
+            } catch {
+                setSectionsError('Brak połączenia z serwerem podczas pobierania sekcji.');
             }
         };
 
-        fetchSections();
+        void fetchSections();
     }, []);
 
     const formatPhoneNumber = (val: string) => {
@@ -141,7 +146,7 @@ export default function RegisterPage() {
         let formattedValue: string | number = value;
 
         if (name === 'phoneNumber') {
-            formattedValue = formatPhoneNumber(value);
+            formattedValue = formatPhoneInput(value);
         } else if (name === 'postalCode') {
             formattedValue = formatPostalCode(value, formData.postalCode);
         } else if (['name', 'surname', 'city'].includes(name)) {
@@ -234,47 +239,48 @@ export default function RegisterPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Rejestracja Hodowcy PZHGP Żagań</h1>
+                {sectionsError && <div className="mb-4 p-3 rounded bg-red-100 text-red-700 text-sm">{sectionsError}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Imię</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} required
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Imię</label>
+                            <input id="name" type="text" name="name" autoComplete="given-name" value={formData.name} onChange={handleChange} required
                                    maxLength={32}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
-                            <input type="text" name="surname" value={formData.surname} onChange={handleChange} required
+                            <label htmlFor="surname" className="block text-sm font-medium text-gray-700">Nazwisko</label>
+                            <input id="surname" type="text" name="surname" autoComplete="family-name" value={formData.surname} onChange={handleChange} required
                                    maxLength={64}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Data urodzenia</label>
-                            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required
+                            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">Data urodzenia</label>
+                            <input id="dateOfBirth" type="date" name="dateOfBirth" autoComplete="bday" value={formData.dateOfBirth} onChange={handleChange} required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Adres E-mail</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange} required
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Adres e-mail</label>
+                            <input id="email" type="email" name="email" autoComplete="email" value={formData.email} onChange={handleChange} required
                                    maxLength={320}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Numer telefonu</label>
-                            <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required
+                            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Numer telefonu</label>
+                            <input id="phoneNumber" type="tel" name="phoneNumber" autoComplete="tel" inputMode="tel" value={formData.phoneNumber} onChange={handleChange} required
                                    maxLength={11}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Hasło</label>
-                            <input type="password" name="password" value={formData.password} onChange={handleChange} required
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Hasło</label>
+                            <input id="password" type="password" name="password" autoComplete="new-password" value={formData.password} onChange={handleChange} required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
 
                             {formData.password.length > 0 && (
@@ -291,15 +297,15 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Powtórz hasło</label>
-                            <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required
+                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Powtórz hasło</label>
+                            <input id="confirmPassword" type="password" name="confirmPassword" autoComplete="new-password" value={formData.confirmPassword} onChange={handleChange} required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Wybierz sekcję do której chcesz należeć</label>
-                            <select name="sectionId" value={formData.sectionId} onChange={handleChange} required
-                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <label htmlFor="sectionId" className="block text-sm font-medium text-gray-700">Wybierz sekcję, do której chcesz należeć</label>
+                            <select id="sectionId" name="sectionId" value={formData.sectionId} onChange={handleChange} required disabled={sections.length === 0}
+                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100">
                                 <option value={0}>Wybierz</option>
                                 {sections.map((section) => (
                                     <option key={section.id} value={section.id}>
@@ -310,29 +316,29 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
-                            <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} required
+                            <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
+                            <input id="postalCode" type="text" name="postalCode" autoComplete="postal-code" value={formData.postalCode} onChange={handleChange} required
                                    maxLength={6}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Miejscowość</label>
-                            <input type="text" name="city" value={formData.city} onChange={handleChange} required
+                            <label htmlFor="city" className="block text-sm font-medium text-gray-700">Miejscowość</label>
+                            <input id="city" type="text" name="city" autoComplete="address-level2" value={formData.city} onChange={handleChange} required
                                    maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Ulica</label>
-                            <input type="text" name="street" value={formData.street} onChange={handleChange} required
+                            <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulica</label>
+                            <input id="street" type="text" name="street" autoComplete="address-line1" value={formData.street} onChange={handleChange} required
                                    maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Numer domu/lokalu</label>
-                            <input type="text" name="houseNumber" value={formData.houseNumber} onChange={handleChange} required
+                            <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700">Numer domu/lokalu</label>
+                            <input id="houseNumber" type="text" name="houseNumber" autoComplete="address-line2" value={formData.houseNumber} onChange={handleChange} required
                                    maxLength={10}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
@@ -351,7 +357,7 @@ export default function RegisterPage() {
 
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || sections.length === 0}
                         className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center"
                     >
                         {isLoading ? (

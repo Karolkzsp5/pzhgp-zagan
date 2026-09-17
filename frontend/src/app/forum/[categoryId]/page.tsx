@@ -3,7 +3,6 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import { useRouter } from 'next/navigation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import ThreadModal from '@/app/components/ThreadModal';
@@ -13,7 +12,6 @@ import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThrea
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const resolvedParams = use(params);
     const categoryId = Number(resolvedParams.categoryId);
-    const router = useRouter();
 
     const [category, setCategory] = useState<ForumCategoryDto | null>(null);
     const [threads, setThreads] = useState<ForumThreadDto[]>([]);
@@ -122,11 +120,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                     {threads.map((thread) => (
-                                        <tr
-                                            key={thread.id}
-                                            onClick={() => router.push(`/forum/thread/${thread.id}`)}
-                                            className="hover:bg-blue-50/50 transition group cursor-pointer"
-                                        >
+                                        <tr key={thread.id} className="hover:bg-blue-50/50 transition group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
                                                     {thread.isPinned && (
@@ -140,9 +134,10 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                                         </svg>
                                                     )}
                                                     <div>
-                                                        <span className="text-base font-bold text-blue-700 group-hover:underline">
+                                                        <Link href={`/forum/thread/${thread.id}`}
+                                                            className="text-base font-bold text-blue-700 hover:text-blue-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">
                                                             {thread.title}
-                                                        </span>
+                                                        </Link>
                                                         <div className="text-xs text-gray-500 mt-1">
                                                             Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatGlobalDate(thread.createdAt)}
                                                         </div>

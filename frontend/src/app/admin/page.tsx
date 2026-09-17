@@ -511,8 +511,8 @@ export default function AdminPanelPage() {
                                 onChange={(e) => setNewRole(e.target.value)}
                                 className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
                             >
-                                <option value="BREEDER">Hodowca (Podstawowy dostęp)</option>
-                                <option value="MODERATOR">Moderator (Zarządzanie lotami)</option>
+                                <option value="BREEDER">Hodowca</option>
+                                <option value="MODERATOR">Moderator</option>
                             </select>
                         </div>
 

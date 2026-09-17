@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -10,6 +10,7 @@ import TextAlign from '@tiptap/extension-text-align';
 interface TextEditorProps {
     content: string;
     onChange: (content: string) => void;
+    ariaLabel?: string;
 }
 
 const HIGHLIGHT_COLORS = [
@@ -21,27 +22,35 @@ const HIGHLIGHT_COLORS = [
     { color: '#e9d5ff', name: 'Fioletowy' },
 ];
 
-const ToolbarButton = ({ onClick, isActive = false, disabled = false, children, title }: any) => (
+interface ToolbarButtonProps {
+    onClick: () => void;
+    isActive?: boolean;
+    disabled?: boolean;
+    children: ReactNode;
+    title: string;
+}
+
+const ToolbarButton = ({ onClick, isActive, disabled = false, children, title }: ToolbarButtonProps) => (
     <button
         type="button"
         onMouseDown={(e) => {
             e.preventDefault();
-            if (onClick) onClick();
+            if (!disabled) onClick();
         }}
         disabled={disabled}
         title={title}
-        className={`p-1.5 rounded-md flex items-center justify-center transition-colors
-            ${isActive ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}
-            ${disabled ? 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-500' : ''}
-        `}
-    >
-        {children}
+        aria-label={title}
+        aria-pressed={isActive === undefined ? undefined : isActive}
+        className={`p-1.5 rounded-md flex items-center justify-center transition-colors 
+        ${isActive ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'} 
+        ${disabled ? 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-500' : ''}`
+    }>{children}
     </button>
 );
 
 const Divider = () => <div className="w-px h-5 bg-gray-300 mx-1 self-center"></div>;
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor }: { editor: Editor | null }) => {
     const [, setUpdateCount] = useState(0);
 
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
@@ -141,6 +150,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
                                     `}
                                     style={{ backgroundColor: color }}
                                     title={`${name} (kliknij aby ${isActive ? 'odznaczyć' : 'wybrać'})`}
+                                    aria-label={`${name}: ${isActive ? 'usuń zaznaczenie' : 'ustaw zaznaczenie'}`}
+                                    aria-pressed={isActive}
                                 />
                             );
                         })}
@@ -208,7 +219,7 @@ const editorExtensions = [
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
 ];
 
-export default function TextEditor({ content, onChange }: TextEditorProps) {
+export default function TextEditor({ content, onChange, ariaLabel = 'Edytor tekstu' }: TextEditorProps) {
     const editor = useEditor({
         extensions: editorExtensions,
         content: content,
@@ -216,6 +227,9 @@ export default function TextEditor({ content, onChange }: TextEditorProps) {
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose-base prose-p:m-0 max-w-none focus:outline-none min-h-[200px] p-4',
+                role: 'textbox',
+                'aria-multiline': 'true',
+                'aria-label': ariaLabel
             },
         },
         onUpdate: ({ editor }) => {

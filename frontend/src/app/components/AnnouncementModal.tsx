@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import TextEditor from './TextEditor';
 import Modal from './Modal';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { isHtmlEmpty } from '@/app/utils/richText';
 
 interface Announcement {
     id: number;
@@ -53,7 +54,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             return;
         }
 
-        if (!content || content === '<p></p>') {
+        if (isHtmlEmpty(content)) {
             setError('Treść ogłoszenia nie może być pusta.');
             return;
         }
@@ -94,7 +95,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Treść ogłoszenia</label>
-                        <TextEditor content={content} onChange={setContent} />
+                        <TextEditor content={content} onChange={setContent} ariaLabel="Treść ogłoszenia" />
                     </div>
 
                     <div className="flex items-center mt-2">

@@ -10,6 +10,7 @@ import ForumGuard from '@/app/components/ForumGuard';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import { formatGlobalDate } from '@/app/utils/formatters';
+import { isHtmlEmpty } from '@/app/utils/richText';
 import {
     fetchThreadById,
     fetchPostsByThread,
@@ -117,18 +118,12 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         }
     };
 
-    const isHtmlEmpty = (html: string) => {
-        if (!html) return true;
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
-    };
-
     const handleReplySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setReplyError('');
 
         if (isHtmlEmpty(replyContent)) {
-            setReplyError('Treść odpowiedzi nie może być pusta.');
+            setError('Treść ogłoszenia nie może być pusta.');
             return;
         }
 
@@ -427,7 +422,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                             {editingPostId === post.id ? (
                                                 <div className="mt-4">
-                                                    <TextEditor content={editContent} onChange={setEditContent} />
+                                                    <TextEditor content={editContent} onChange={setEditContent} ariaLabel="Edytowana treść wpisu" />
 
                                                     {editError && (
                                                         <div className="mt-3 bg-red-50 text-red-600 p-2 rounded text-sm border border-red-100">
@@ -523,7 +518,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                             <form onSubmit={handleReplySubmit} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Dodaj odpowiedź</h3>
 
-                                <TextEditor content={replyContent} onChange={setReplyContent} />
+                                <TextEditor content={replyContent} onChange={setReplyContent} ariaLabel="Treść odpowiedzi" />
 
                                 {replyError && (
                                     <div className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">

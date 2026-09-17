@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations } from '@/app/types/board';
+import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER, SECTION_ROLES } from '@/app/types/board';
 import { boardService } from '@/app/services/boardService';
 import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
+import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface Section {
     id: number;
@@ -39,28 +40,17 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [breeders, setBreeders] = useState<Breeder[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const formatPhoneNumber = (val: string) => {
-        const digits = val.replace(/\D/g, '').slice(0, 9);
-        return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3').trim();
-    };
-
-    const oddzialSortWeights: Record<string, number> = {
-        'PREZES': 1, 'WICEPREZES_DS_LOTOWYCH': 2, 'WICEPREZES_DS_FINANSOWYCH': 3,
-        'WICEPREZES_DS_GOSPODARCZYCH': 4, 'SEKRETARZ': 5, 'CZLONEK_ZARZADU': 6
-    };
-    const sectionSortWeights: Record<string, number> = {
-        'PREZES': 1, 'SKARBNIK': 2, 'SEKRETARZ': 3
-    };
-
-    const allowedRoles = (managedSectionId === 0 || managedSectionId === null)
+    const allowedRoles = managedSectionId === null
         ? Object.entries(BoardRoleTranslations)
-            .filter(([key]) => key !== 'SKARBNIK')
-            .sort((a, b) => (oddzialSortWeights[a[0]] || 99) - (oddzialSortWeights[b[0]] || 99))
+            .filter(([key]) => key !== BoardRole.SKARBNIK)
+            .sort((a, b) => (BRANCH_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (BRANCH_ROLE_ORDER[b[0] as BoardRole] ?? 99))
         : Object.entries(BoardRoleTranslations)
-            .filter(([key]) => ['PREZES', 'SKARBNIK', 'SEKRETARZ'].includes(key))
-            .sort((a, b) => (sectionSortWeights[a[0]] || 99) - (sectionSortWeights[b[0]] || 99));
+            .filter(([key]) => SECTION_ROLES
+            .includes(key as BoardRole))
+            .sort((a, b) => (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99));
 
     const availableBreeders = (managedSectionId && managedSectionId !== 0)
         ? breeders.filter(b => b.sectionId === managedSectionId)
@@ -68,7 +58,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
     useEffect(() => {
         if (managedSectionId !== 0 && managedSectionId !== null) {
-            if (!['PREZES', 'SKARBNIK', 'SEKRETARZ'].includes(role)) {
+            if (!SECTION_ROLES.includes(role)) {
                 setRole(BoardRole.PREZES);
             }
 
@@ -79,7 +69,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 }
             }
         } else {
-            if (role === ('SKARBNIK' as BoardRole)) {
+            if (role === BoardRole.SKARBNIK) {
                 setRole(BoardRole.PREZES);
             }
         }
@@ -95,6 +85,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
         if (!isOpen) return;
 
         const fetchDictionaries = async () => {
+            setIsDictionaryLoading(true);
+
             try {
                 const [sectionsRes, breedersRes] = await Promise.all([
                     fetch(`${API_URL}/api/sections`),
@@ -113,6 +105,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             } catch (err: any) {
                 setError(err.message || 'Wystąpił problem z połączeniem.');
             }
+            finally {
+                setIsDictionaryLoading(false);
+            }
         };
 
         fetchDictionaries();
@@ -126,7 +121,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
         if (memberToEdit) {
             setRole(memberToEdit.role);
             setManagedSectionId(memberToEdit.managedSectionId);
-            setContactPhone(memberToEdit.publicPhoneNumber ? formatPhoneNumber(memberToEdit.publicPhoneNumber) : '');
+            setContactPhone(memberToEdit.publicPhoneNumber ? formatPhoneInput(memberToEdit.publicPhoneNumber) : '');
 
             if (memberToEdit.breederId) {
                 setIsRegistered(true);
@@ -192,6 +187,11 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     return (
         <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity overflow-y-auto">
             <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                {isDictionaryLoading && (
+                    <div className="absolute inset-0 z-20 bg-white/80 flex items-center justify-center rounded-lg">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-700"></div>
+                    </div>
+                )}
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">
                     {memberToEdit ? 'Edytuj członka zarządu' : 'Dodaj członka zarządu'}
                 </h3>
@@ -313,7 +313,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                             placeholder="np. 123 456 789"
                             maxLength={11}
                             value={contactPhone}
-                            onChange={(e) => setContactPhone(formatPhoneNumber(e.target.value))}
+                            onChange={(e) => setContactPhone(formatPhoneInput(e.target.value))}
                             className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                         />
                     </div>

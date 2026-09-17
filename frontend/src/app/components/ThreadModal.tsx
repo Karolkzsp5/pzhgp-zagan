@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import TextEditor from './TextEditor';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { isHtmlEmpty } from '@/app/utils/richText';
 
 interface ThreadModalProps {
     isOpen: boolean;
@@ -41,11 +42,8 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
             return;
         }
 
-        const doc = new DOMParser().parseFromString(content, 'text/html');
-        const isHtmlEmpty = !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
-
-        if (isHtmlEmpty) {
-            setError('Treść wiadomości nie może być pusta.');
+        if (isHtmlEmpty(content)) {
+            setError('Treść ogłoszenia nie może być pusta.');
             return;
         }
 
@@ -100,7 +98,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">Treść pierwszej wiadomości</label>
-                            <TextEditor content={content} onChange={setContent} />
+                            <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości" />
                         </div>
 
                         {error && (
