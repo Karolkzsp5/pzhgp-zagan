@@ -50,7 +50,7 @@ export default function ForumPage() {
         try {
             const data = await fetchCategories();
             setCategories(data);
-        } catch (err) {
+        } catch (error) {
             setError('Nie udało się pobrać danych forum. Sprawdź połączenie.');
         } finally {
             setIsLoading(false);
@@ -69,8 +69,8 @@ export default function ForumPage() {
                 try {
                     await deleteCategory(id);
                     loadCategories();
-                } catch (err: any) {
-                    showAlert('Błąd', err.message || 'Wystąpił błąd podczas usuwania kategorii.');
+                } catch (error: any) {
+                    showAlert('Błąd', error.message || 'Wystąpił błąd podczas usuwania kategorii.');
                 }
             }
         });

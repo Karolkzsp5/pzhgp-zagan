@@ -64,7 +64,7 @@ export default function BoardPage() {
             } else {
                 console.error('Nie udało się pobrać listy sekcji z serwera.');
             }
-        } catch (err) {
+        } catch (error) {
             setError('Błąd połączenia z serwerem podczas pobierania danych.');
         } finally {
             setIsLoading(false);
@@ -82,7 +82,7 @@ export default function BoardPage() {
                 try {
                     await boardService.deleteBoardMember(id);
                     fetchData();
-                } catch (err: any) {
+                } catch (error: any) {
                     showAlert('Błąd', 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
                 }
             }

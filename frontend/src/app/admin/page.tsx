@@ -79,7 +79,7 @@ export default function AdminPanelPage() {
                 setSectionsList(sectionsData);
             }
 
-        } catch (err) {
+        } catch (error) {
             setError('Błąd połączenia z serwerem.');
         } finally {
             setIsLoading(false);
@@ -114,7 +114,7 @@ export default function AdminPanelPage() {
             } else {
                 setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
             }
-        } catch (err) {
+        } catch (error) {
             setModalMessage('Błąd połączenia z serwerem podczas wykonywania akcji.');
         }
     };
@@ -137,7 +137,7 @@ export default function AdminPanelPage() {
             } else {
                 setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się zmienić roli.')}`);
             }
-        } catch (err) {
+        } catch (error) {
             setModalMessage('Błąd połączenia z serwerem podczas zmiany roli.');
         }
     };
@@ -185,7 +185,7 @@ export default function AdminPanelPage() {
         <AdminGuard>
             <div className="flex flex-col min-h-screen">
                 <Navbar />
-                <main className="flex-grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+                <main className="grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto space-y-12">
 
                         <div>
@@ -541,7 +541,7 @@ export default function AdminPanelPage() {
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
                         <div className="flex items-center space-x-3 mb-4">
-                            <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
+                            <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
                                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>

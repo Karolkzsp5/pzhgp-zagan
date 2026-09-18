@@ -111,7 +111,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
             cancelEditing();
 
-        } catch (err) {
+        } catch (error) {
             setError('Nie udało się pobrać dyskusji. Sprawdź połączenie.');
         } finally {
             setIsLoading(false);
@@ -144,7 +144,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 await loadThreadData();
             }
 
-        } catch (err) {
+        } catch (error) {
             setReplyError('Wystąpił błąd podczas publikowania odpowiedzi.');
         } finally {
             setIsReplying(false);
@@ -162,8 +162,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 try {
                     await deleteThread(threadId);
                     router.push(thread?.categoryId ? `/forum/${thread.categoryId}` : '/forum');
-                } catch (err: any) {
-                    showAlert('Błąd', err.message || 'Wystąpił błąd podczas usuwania wątku.');
+                } catch (error: any) {
+                    showAlert('Błąd', error.message || 'Wystąpił błąd podczas usuwania wątku.');
                 }
             }
         });
@@ -180,8 +180,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     isPinned: action === 'PIN' ? !prev.isPinned : prev.isPinned
                 };
             });
-        } catch (err: any) {
-            showAlert('Błąd', err.message || `Wystąpił błąd (${action}).`);
+        } catch (error: any) {
+            showAlert('Błąd', error.message || `Wystąpił błąd (${action}).`);
         }
     };
 
@@ -198,8 +198,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await updateThreadTitle(threadId, cleanTitle);
             setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
-        } catch (err: any) {
-            showAlert('Błąd edycji', err.message || 'Wystąpił błąd podczas zapisywania tytułu.');
+        } catch (error: any) {
+            showAlert('Błąd edycji', error.message || 'Wystąpił błąd podczas zapisywania tytułu.');
         } finally {
             setIsTitleSubmitting(false);
         }
@@ -230,8 +230,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await updatePost(postId, editContent);
             cancelEditing();
             await loadThreadData();
-        } catch (err: any) {
-            setEditError(err.message || 'Wystąpił błąd podczas zapisywania wpisu.');
+        } catch (error: any) {
+            setEditError(error.message || 'Wystąpił błąd podczas zapisywania wpisu.');
         } finally {
             setIsEditSubmitting(false);
         }
@@ -248,8 +248,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 try {
                     await deletePost(postId);
                     loadThreadData();
-                } catch (err: any) {
-                    showAlert('Nie można usunąć', err.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
+                } catch (error: any) {
+                    showAlert('Nie można usunąć', error.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
                 }
             }
         });

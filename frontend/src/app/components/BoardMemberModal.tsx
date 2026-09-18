@@ -102,8 +102,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 const allBreeders: Breeder[] = await breedersRes.json();
                 setBreeders(allBreeders.filter(b => b.status === 'ACTIVE'));
 
-            } catch (err: any) {
-                setError(err.message || 'Wystąpił problem z połączeniem.');
+            } catch (error: any) {
+                setError(error.message || 'Wystąpił problem z połączeniem.');
             }
             finally {
                 setIsDictionaryLoading(false);
@@ -175,8 +175,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 await boardService.createBoardMember(request);
             }
             onSaved();
-        } catch (err: any) {
-            setError(err.message || 'Wystąpił błąd podczas zapisywania');
+        } catch (error: any) {
+            setError(error.message || 'Wystąpił błąd podczas zapisywania');
         } finally {
             setIsLoading(false);
         }

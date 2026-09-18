@@ -46,7 +46,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                 setCurrentPage(currentPage - 1);
             }
 
-        } catch (err) {
+        } catch (error) {
             setError('Nie udało się pobrać danych. Sprawdź połączenie z serwerem.');
         } finally {
             setIsLoading(false);

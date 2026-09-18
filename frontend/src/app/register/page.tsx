@@ -76,11 +76,6 @@ export default function RegisterPage() {
         void fetchSections();
     }, []);
 
-    const formatPhoneNumber = (val: string) => {
-        const digits = val.replace(/\D/g, '').slice(0, 9);
-        return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3').trim();
-    };
-
     const formatPostalCode = (val: string, prevVal: string) => {
         if (val.length < prevVal.length) {
             if (val.endsWith('-')) {
@@ -204,12 +199,11 @@ export default function RegisterPage() {
 
         setIsLoading(true);
         try {
-            const { confirmPassword, ...dataToSend } = formData;
-
             const cleanDataToSend = {
-                ...dataToSend,
-                phoneNumber: formData.phoneNumber.replace(/\s+/g, '')
+                ...formData,
+                phoneNumber: rawPhoneNumber
             };
+            delete cleanDataToSend.confirmPassword;
 
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',

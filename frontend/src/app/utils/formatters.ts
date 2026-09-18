@@ -40,9 +40,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-    ACTIVE: 'Aktywne',
-    BLOCKED: 'Zablokowane',
-    PENDING: 'Oczekujące'
+    ACTIVE: 'Aktywny',
+    BLOCKED: 'Zablokowany',
+    PENDING: 'Oczekujący'
 };
 
 export const formatRole = (role: string) => ROLE_LABELS[role] ?? role;

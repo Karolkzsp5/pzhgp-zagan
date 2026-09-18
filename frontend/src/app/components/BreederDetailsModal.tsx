@@ -1,6 +1,5 @@
 "use client";
 
-import { formatGlobalDate } from '@/app/utils/formatters';
 import { formatAccountStatus, formatDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 
 export interface BreederDto {

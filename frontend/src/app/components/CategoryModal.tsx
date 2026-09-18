@@ -70,8 +70,8 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
             }
             onSuccess();
             onClose();
-        } catch (err: any) {
-            setError(err.message || 'Wystąpił błąd podczas zapisywania kategorii.');
+        } catch (error: any) {
+            setError(error.message || 'Wystąpił błąd podczas zapisywania kategorii.');
         } finally {
             setIsLoading(false);
         }
