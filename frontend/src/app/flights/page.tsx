@@ -7,6 +7,9 @@ import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import LoadingState from '@/app/components/LoadingState';
+import ErrorState from '@/app/components/ErrorState';
+import EmptyState from '@/app/components/EmptyState';
 import { flightService } from '@/app/services/flightService';
 import { FlightSummaryDto, formatDateTime, formatDuration, formatSpeed } from '@/app/types/flight';
 
@@ -256,25 +259,11 @@ export default function FlightsPage() {
                     <h2 className="text-lg font-bold text-gray-900 mb-4">Moje loty</h2>
 
                     {isLoading ? (
-                        <div className="flex justify-center py-16">
-                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-700"></div>
-                        </div>
+                        <LoadingState />
                     ) : listError ? (
-                        <div className="bg-white rounded-lg border border-red-200 p-10 text-center">
-                            <p className="text-sm text-red-600">{listError}</p>
-                            <button
-                                onClick={() => fetchFlights(page)}
-                                className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-                            >
-                                Spróbuj ponownie
-                            </button>
-                        </div>
+                        <ErrorState message={listError} onRetry={() => void fetchFlights(page)} />
                     ) : flights.length === 0 ? (
-                        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
-                            <p className="text-sm text-gray-600">
-                                Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.
-                            </p>
-                        </div>
+                        <EmptyState>Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.</EmptyState>
                     ) : (
                         <>
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">

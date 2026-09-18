@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import ThreadModal from '@/app/components/ThreadModal';
@@ -12,7 +12,6 @@ import { fetchCategoryById, fetchThreadsByCategory, ForumCategoryDto, ForumThrea
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const resolvedParams = use(params);
     const categoryId = Number(resolvedParams.categoryId);
-    const router = useRouter();
 
     const [category, setCategory] = useState<ForumCategoryDto | null>(null);
     const [threads, setThreads] = useState<ForumThreadDto[]>([]);
@@ -47,17 +46,11 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                 setCurrentPage(currentPage - 1);
             }
 
-        } catch (err) {
+        } catch (error) {
             setError('Nie udało się pobrać danych. Sprawdź połączenie z serwerem.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pl-PL', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
-        });
     };
 
     if (!Number.isInteger(categoryId)) {
@@ -127,11 +120,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                     {threads.map((thread) => (
-                                        <tr
-                                            key={thread.id}
-                                            onClick={() => router.push(`/forum/thread/${thread.id}`)}
-                                            className="hover:bg-blue-50/50 transition group cursor-pointer"
-                                        >
+                                        <tr key={thread.id} className="hover:bg-blue-50/50 transition group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
                                                     {thread.isPinned && (
@@ -145,11 +134,12 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                                         </svg>
                                                     )}
                                                     <div>
-                                                        <span className="text-base font-bold text-blue-700 group-hover:underline">
+                                                        <Link href={`/forum/thread/${thread.id}`}
+                                                            className="text-base font-bold text-blue-700 hover:text-blue-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">
                                                             {thread.title}
-                                                        </span>
+                                                        </Link>
                                                         <div className="text-xs text-gray-500 mt-1">
-                                                            Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatDate(thread.createdAt)}
+                                                            Autor: <span className="font-medium text-gray-700">{thread.authorName}</span> • {formatGlobalDate(thread.createdAt)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -160,7 +150,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                             </td>
                                             <td className="px-6 py-4 text-right whitespace-nowrap">
                                                 <div className="text-sm text-gray-900 font-medium">
-                                                    {formatDate(thread.lastPostAt)}
+                                                    {formatGlobalDate(thread.lastPostAt)}
                                                 </div>
                                             </td>
                                         </tr>

@@ -56,7 +56,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
 
         const finalSortOrder = Number(sortOrder);
         if (!Number.isInteger(finalSortOrder) || finalSortOrder < 1) {
-            setError('Kolejność sortowania musi być dodatnią liczbą całkowitą (min. 1).');
+            setError('Kolejność wyświetlania musi być dodatnią liczbą całkowitą (min. 1).');
             return;
         }
 
@@ -70,8 +70,8 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
             }
             onSuccess();
             onClose();
-        } catch (err: any) {
-            setError(err.message || 'Wystąpił błąd podczas zapisywania kategorii.');
+        } catch (error: any) {
+            setError(error.message || 'Wystąpił błąd podczas zapisywania kategorii.');
         } finally {
             setIsLoading(false);
         }
@@ -122,7 +122,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">
-                                Kolejność sortowania (Sort Order)
+                                Kolejność wyświetlania
                             </label>
                             <input
                                 type="number"
@@ -133,8 +133,8 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                                 min="1"
                                 required
                             />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Kategorie z mniejszą liczbą będą wyświetlać się wyżej na liście.
+                            <p className="mt-1 text-xs text-gray-500">
+                                Mniejsza liczba oznacza wyższą pozycję kategorii na liście.
                             </p>
                         </div>
 

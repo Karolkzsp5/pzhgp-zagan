@@ -9,6 +9,8 @@ import TextEditor from '@/app/components/TextEditor';
 import ForumGuard from '@/app/components/ForumGuard';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import { formatGlobalDate } from '@/app/utils/formatters';
+import { isHtmlEmpty } from '@/app/utils/richText';
 import {
     fetchThreadById,
     fetchPostsByThread,
@@ -109,17 +111,11 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
             cancelEditing();
 
-        } catch (err) {
+        } catch (error) {
             setError('Nie udało się pobrać dyskusji. Sprawdź połączenie.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const isHtmlEmpty = (html: string) => {
-        if (!html) return true;
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
     };
 
     const handleReplySubmit = async (e: React.FormEvent) => {
@@ -127,7 +123,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setReplyError('');
 
         if (isHtmlEmpty(replyContent)) {
-            setReplyError('Treść odpowiedzi nie może być pusta.');
+            setError('Treść ogłoszenia nie może być pusta.');
             return;
         }
 
@@ -148,7 +144,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 await loadThreadData();
             }
 
-        } catch (err) {
+        } catch (error) {
             setReplyError('Wystąpił błąd podczas publikowania odpowiedzi.');
         } finally {
             setIsReplying(false);
@@ -166,8 +162,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 try {
                     await deleteThread(threadId);
                     router.push(thread?.categoryId ? `/forum/${thread.categoryId}` : '/forum');
-                } catch (err: any) {
-                    showAlert('Błąd', err.message || 'Wystąpił błąd podczas usuwania wątku.');
+                } catch (error: any) {
+                    showAlert('Błąd', error.message || 'Wystąpił błąd podczas usuwania wątku.');
                 }
             }
         });
@@ -184,8 +180,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     isPinned: action === 'PIN' ? !prev.isPinned : prev.isPinned
                 };
             });
-        } catch (err: any) {
-            showAlert('Błąd', err.message || `Wystąpił błąd (${action}).`);
+        } catch (error: any) {
+            showAlert('Błąd', error.message || `Wystąpił błąd (${action}).`);
         }
     };
 
@@ -202,8 +198,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await updateThreadTitle(threadId, cleanTitle);
             setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
-        } catch (err: any) {
-            showAlert('Błąd edycji', err.message || 'Wystąpił błąd podczas zapisywania tytułu.');
+        } catch (error: any) {
+            showAlert('Błąd edycji', error.message || 'Wystąpił błąd podczas zapisywania tytułu.');
         } finally {
             setIsTitleSubmitting(false);
         }
@@ -234,8 +230,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await updatePost(postId, editContent);
             cancelEditing();
             await loadThreadData();
-        } catch (err: any) {
-            setEditError(err.message || 'Wystąpił błąd podczas zapisywania wpisu.');
+        } catch (error: any) {
+            setEditError(error.message || 'Wystąpił błąd podczas zapisywania wpisu.');
         } finally {
             setIsEditSubmitting(false);
         }
@@ -252,16 +248,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 try {
                     await deletePost(postId);
                     loadThreadData();
-                } catch (err: any) {
-                    showAlert('Nie można usunąć', err.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
+                } catch (error: any) {
+                    showAlert('Nie można usunąć', error.message || 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
                 }
             }
-        });
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pl-PL', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'
         });
     };
 
@@ -356,7 +346,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     </h1>
                                 )}
                                 <div className="mt-2 text-sm text-gray-500">
-                                    Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatDate(thread.createdAt)}
+                                    Rozpoczęte przez <span className="font-semibold text-gray-700">{thread.authorName}</span>, {formatGlobalDate(thread.createdAt)}
                                 </div>
                             </div>
 
@@ -422,9 +412,9 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                         <div className="p-4 sm:p-6 grow flex flex-col min-w-0">
                                             <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100 flex justify-between">
-                                                <span>Napisano: {formatDate(post.createdAt)}</span>
+                                                <span>Napisano: {formatGlobalDate(post.createdAt)}</span>
                                                 {post.editedAt && (
-                                                    <span className="italic" title={formatDate(post.editedAt)}>
+                                                    <span className="italic" title={formatGlobalDate(post.editedAt)}>
                                                         (Edytowano)
                                                     </span>
                                                 )}
@@ -432,7 +422,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                             {editingPostId === post.id ? (
                                                 <div className="mt-4">
-                                                    <TextEditor content={editContent} onChange={setEditContent} />
+                                                    <TextEditor content={editContent} onChange={setEditContent} ariaLabel="Edytowana treść wpisu" />
 
                                                     {editError && (
                                                         <div className="mt-3 bg-red-50 text-red-600 p-2 rounded text-sm border border-red-100">
@@ -528,7 +518,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                             <form onSubmit={handleReplySubmit} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Dodaj odpowiedź</h3>
 
-                                <TextEditor content={replyContent} onChange={setReplyContent} />
+                                <TextEditor content={replyContent} onChange={setReplyContent} ariaLabel="Treść odpowiedzi" />
 
                                 {replyError && (
                                     <div className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">

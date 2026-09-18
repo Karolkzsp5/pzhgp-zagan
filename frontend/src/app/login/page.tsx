@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { API_URL } from '@/app/utils/apiClient';
 
 interface LoginFormData {
     email: string;
@@ -15,23 +16,20 @@ interface MessageState {
 }
 
 export default function LoginPage() {
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [sessionExpired, setSessionExpired] = useState(false);
+    const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
+    const [rememberMe, setRememberMe] = useState(false);
+    const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
     const router = useRouter();
 
-    const [formData, setFormData] = useState<LoginFormData>({
-        email: '',
-        password: ''
-    });
-
-    const [rememberMe, setRememberMe] = useState<boolean>(false);
-    const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
+    useEffect(() => {
+        setSessionExpired(new URLSearchParams(window.location.search).get('expired') === 'true');
+    }, []);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -40,12 +38,10 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
             });
 
             const data = await response.text();
@@ -60,13 +56,13 @@ export default function LoginPage() {
                 }
 
                 router.push('/');
-
-            } else {
-                setMessage({ text: data, type: 'error' });
-                setIsLoading(false);
+                return;
             }
-        } catch (error) {
+
+            setMessage({ text: data, type: 'error' });
+        } catch {
             setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
+        } finally {
             setIsLoading(false);
         }
     };
@@ -75,6 +71,12 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie Hodowcy</h1>
+
+                {sessionExpired && !message.text && (
+                    <div className="p-4 mb-4 rounded bg-blue-100 text-blue-700 text-sm">
+                        Twoja sesja wygasła. Zaloguj się ponownie.
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -120,8 +122,8 @@ export default function LoginPage() {
 
                     {message.text && (
                         <div className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
-                            message.type === 'success' ? 'bg-green-100 text-green-700' :
-                                message.type === 'error' ? 'bg-red-100 text-red-700' :
+                            message.type === 'success' ? 'bg-green-100 text-green-700' : 
+                                message.type === 'error' ? 'bg-red-100 text-red-700' : 
                                     'bg-blue-100 text-blue-700'
                         }`}>
                             {message.text}
@@ -133,7 +135,7 @@ export default function LoginPage() {
                         disabled={isLoading}
                         className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center"
                     >
-                        Zaloguj się
+                        {isLoading ? 'Logowanie...' : 'Zaloguj się'}
                     </button>
                 </form>
 

@@ -18,6 +18,24 @@ export const BoardRoleTranslations: Record<BoardRole, string> = {
     [BoardRole.CZLONEK_ZARZADU]: "Członek Zarządu"
 };
 
+export const BRANCH_ROLE_ORDER: Record<BoardRole, number> = {
+    [BoardRole.PREZES]: 1,
+    [BoardRole.WICEPREZES_DS_LOTOWYCH]: 2,
+    [BoardRole.WICEPREZES_DS_FINANSOWYCH]: 3,
+    [BoardRole.WICEPREZES_DS_GOSPODARCZYCH]: 4,
+    [BoardRole.SEKRETARZ]: 5,
+    [BoardRole.CZLONEK_ZARZADU]: 6,
+    [BoardRole.SKARBNIK]: 99
+};
+
+export const SECTION_ROLE_ORDER: Partial<Record<BoardRole, number>> = {
+    [BoardRole.PREZES]: 1,
+    [BoardRole.SKARBNIK]: 2,
+    [BoardRole.SEKRETARZ]: 3
+};
+
+export const SECTION_ROLES: BoardRole[] = [BoardRole.PREZES, BoardRole.SKARBNIK, BoardRole.SEKRETARZ];
+
 export interface BoardMemberDto {
     id: number;
     role: BoardRole;

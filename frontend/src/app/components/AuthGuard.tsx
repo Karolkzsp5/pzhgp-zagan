@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, isJwtValid } from '@/utils/jwt';
+import { getAuthToken, isJwtValid } from '@/app/utils/jwt';
 
 /**
  * Osłona tras dostępnych wyłącznie dla zalogowanych hodowców.

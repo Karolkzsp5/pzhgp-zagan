@@ -26,3 +26,16 @@ export const isJwtValid = (token: string | null): boolean => {
     if (!payload.exp) return true;
     return payload.exp * 1000 > Date.now();
 };
+
+export const logout = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('jwt_token');
+        sessionStorage.removeItem('jwt_token');
+    }
+};
+
+export const getUserRole = (token: string | null): string | null => {
+    if (!isJwtValid(token)) return null;
+    const payload = decodeJwt(token!);
+    return payload?.role || null;
+};

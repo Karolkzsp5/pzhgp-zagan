@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
+import { getAuthToken, getUserRole, isJwtValid, logout } from '@/app/utils/jwt';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -11,25 +11,18 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     useEffect(() => {
         const token = getAuthToken();
 
-        if (!token) {
-            router.push('/login');
+        if (!isJwtValid(token)) {
+            logout();
+            router.replace('/login');
             return;
         }
 
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token);
-            if (payload?.role === 'ADMINISTRATOR') {
-                setIsAuthorized(true);
-            } else {
-                console.error('Brak uprawnień administratora');
-                router.push('/');
-            }
-        } else {
-            console.error('Wygasł token sesji');
-            localStorage.removeItem('jwt_token');
-            sessionStorage.removeItem('jwt_token');
-            router.push('/login');
+        if (getUserRole(token) !== 'ADMINISTRATOR') {
+            router.replace('/');
+            return;
         }
+
+        setIsAuthorized(true);
     }, [router]);
 
     if (!isAuthorized) {

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import TextEditor from './TextEditor';
-import { getAuthToken } from '@/utils/jwt';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { isHtmlEmpty } from '@/app/utils/richText';
 
 interface ThreadModalProps {
     isOpen: boolean;
@@ -41,40 +42,29 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
             return;
         }
 
-        const doc = new DOMParser().parseFromString(content, 'text/html');
-        const isHtmlEmpty = !(doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
-
-        if (isHtmlEmpty) {
-            setError('Treść wiadomości nie może być pusta.');
+        if (isHtmlEmpty(content)) {
+            setError('Treść ogłoszenia nie może być pusta.');
             return;
         }
 
         setIsLoading(true);
-        const token = getAuthToken();
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forum/threads`, {
+            const response = await fetchWithAuth(`${API_URL}/api/forum/threads`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    categoryId: categoryId,
-                    title: cleanTitle,
-                    initialPostContent: content
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryId, title: cleanTitle, initialPostContent: content })
             });
 
-            if (response.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                const errorData = await response.text();
-                setError(errorData || 'Wystąpił błąd podczas tworzenia wątku.');
+            if (!response.ok) {
+                setError(await readApiError(response, 'Wystąpił błąd podczas tworzenia wątku.'));
+                return;
             }
-        } catch (err) {
-            setError('Błąd połączenia z serwerem.');
+
+            onSuccess();
+            onClose();
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Błąd połączenia z serwerem.');
         } finally {
             setIsLoading(false);
         }
@@ -108,7 +98,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">Treść pierwszej wiadomości</label>
-                            <TextEditor content={content} onChange={setContent} />
+                            <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości" />
                         </div>
 
                         {error && (

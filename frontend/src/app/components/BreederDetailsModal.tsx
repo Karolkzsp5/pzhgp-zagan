@@ -1,5 +1,7 @@
 "use client";
 
+import { formatAccountStatus, formatDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
+
 export interface BreederDto {
     id: number;
     name: string;
@@ -53,13 +55,11 @@ export default function BreederDetailsModal({ breeder, onClose }: BreederDetails
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Telefon</p>
-                            <p className="text-sm font-medium text-gray-800">{breeder.phoneNumber}</p>
+                            <p className="text-sm font-medium text-gray-800">{formatPhoneNumber(breeder.phoneNumber)}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Data urodzenia</p>
-                            <p className="text-sm font-medium text-gray-800">
-                                {breeder.dateOfBirth ? breeder.dateOfBirth.split('-').reverse().join('.') : ''}
-                            </p>
+                            <p className="text-sm font-medium text-gray-800">{formatLocalDate(breeder.dateOfBirth)}</p>
                         </div>
 
                         <div>
@@ -77,18 +77,16 @@ export default function BreederDetailsModal({ breeder, onClose }: BreederDetails
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Data rejestracji</p>
-                            <p className="text-sm font-medium text-gray-800">
-                                {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                            </p>
+                            <p className="text-sm font-medium text-gray-800">{formatDate(breeder.createdAt)}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Rola w systemie</p>
-                            <p className="text-sm font-bold text-gray-700">{breeder.role}</p>
+                            <p className="text-sm font-bold text-gray-700">{formatRole(breeder.role)}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Obecny status</p>
                             <p className={`text-sm font-bold ${breeder.status === 'ACTIVE' ? 'text-green-600' : breeder.status === 'BLOCKED' ? 'text-red-600' : 'text-yellow-600'}`}>
-                                {breeder.status}
+                                {formatAccountStatus(breeder.status)}
                             </p>
                         </div>
                     </div>

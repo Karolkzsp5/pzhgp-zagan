@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import RegistrationModal from './components/RegistrationModal';
+import AnnouncementModal from './components/AnnouncementModal';
+import ConfirmModal from "@/app/components/ConfirmModal"
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import AnnouncementModal from './components/AnnouncementModal';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
+import { API_URL } from '@/app/utils/apiClient';
 
 interface Announcement {
     id: number;
@@ -21,15 +24,14 @@ interface Announcement {
     canDelete: boolean;
 }
 
-export default function HomePage({searchParams}: { searchParams: { registered?: string } }) {
+export default function HomePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     const [userRole, setUserRole] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+    const [announcementError, setAnnouncementError] = useState('');
 
     const [postToDelete, setPostToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -39,24 +41,32 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
 
     const fetchAnnouncements = async (page = 0) => {
         setIsLoading(true);
+        setAnnouncementError('');
+
         const token = getAuthToken();
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements?page=${page}&size=10`, {
-                headers: token ? {'Authorization': `Bearer ${token}`} : {}
-            });
+            const response = await fetch(
+                `${API_URL}/api/announcements?page=${page}&size=10`,
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                }
+            );
 
-            if (response.ok) {
-                const data = await response.json();
-                setAnnouncements(data.content);
-
-                setTotalPages(data.totalPages);
-                setCurrentPage(data.number);
-            } else {
-                console.error('Błąd pobierania ogłoszeń');
+            if (!response.ok) {
+                throw new Error('Nie udało się pobrać ogłoszeń.');
             }
+
+            const data = await response.json();
+            setAnnouncements(data.content);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.number);
         } catch (error) {
-            console.error('Błąd połączenia z serwerem', error);
+            setAnnouncementError(
+                error instanceof Error
+                    ? error.message
+                    : 'Błąd połączenia z serwerem.'
+            );
         } finally {
             setIsLoading(false);
         }
@@ -64,24 +74,18 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
 
     useEffect(() => {
         const token = getAuthToken();
-        if (token) {
-            setIsAuthenticated(true);
-            const payload = decodeJwt(token);
-            if (payload) {
-                setUserRole(payload.role || null);
-            }
+
+        if (isJwtValid(token)) {
+            const payload = decodeJwt(token!);
+            setUserRole(payload?.role || null);
+        } else {
+            setUserRole(null);
         }
+
         void fetchAnnouncements(0);
     }, []);
 
     const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
-
-    const formatDateTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const time = date.toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
-        const day = date.toLocaleDateString('pl-PL', {day: '2-digit', month: '2-digit', year: 'numeric'});
-        return `${time}, ${day}`;
-    };
 
     const confirmDelete = async () => {
         if (!postToDelete) return;
@@ -98,8 +102,11 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
             });
 
             if (response.ok) {
-                void fetchAnnouncements(currentPage);
+                const isLastOnPage = announcements.length === 1 && currentPage > 0;
+                const targetPage = isLastOnPage ? currentPage - 1 : currentPage;
+
                 setPostToDelete(null);
+                await fetchAnnouncements(targetPage);
             } else {
                 alert('Wystąpił błąd podczas usuwania ogłoszenia.');
             }
@@ -149,10 +156,22 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
 
                     <div className="space-y-6">
                         {isLoading ? (
-                            <div className="text-center py-12 text-gray-500">Ładowanie ogłoszeń...</div>
+                            <div className="text-center py-12 text-gray-500">
+                                Ładowanie ogłoszeń...
+                            </div>
+                        ) : announcementError ? (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                <p className="text-sm text-red-700">{announcementError}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => void fetchAnnouncements(currentPage)}
+                                    className="mt-4 px-4 py-2 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 transition"
+                                >
+                                    Spróbuj ponownie
+                                </button>
+                            </div>
                         ) : announcements.length === 0 ? (
-                            <div
-                                className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
+                            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
                                 Brak aktualnych ogłoszeń.
                             </div>
                         ) : (
@@ -203,12 +222,12 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                                                 </div>
                                                 {post.updatedAt && (
                                                     <div className="text-xs text-gray-400 italic">
-                                                        Edytowano: {formatDateTime(post.updatedAt)}
+                                                        Edytowano: {formatGlobalDate(post.updatedAt)}
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* edit and delete buttons */}
+                                            {/* Edit and delete buttons */}
                                             {(post.canEdit || post.canDelete) && (
                                                 <div className="flex items-center gap-2">
                                                     {post.canEdit && (
@@ -307,39 +326,20 @@ export default function HomePage({searchParams}: { searchParams: { registered?: 
                 announcementToEdit={editingAnnouncement}
             />
 
-            {postToDelete !== null && (
-                <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4 animate-fadeIn">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6">
-                            <div className="mb-4">
-                                <h3 className="text-xl font-bold text-gray-900">Usuń ogłoszenie</h3>
-                            </div>
-                            <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                                Czy na pewno chcesz trwale usunąć to ogłoszenie? Tej operacji nie można cofnąć.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button
-                                    onClick={() => setPostToDelete(null)}
-                                    disabled={isDeleting}
-                                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-                                >
-                                    Anuluj
-                                </button>
-                                <button
-                                    onClick={confirmDelete}
-                                    disabled={isDeleting}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${
-                                        isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                                    }`}
-                                >
-                                    {isDeleting ? 'Usuwanie...' : 'Usuń'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmModal
+                isOpen={postToDelete !== null}
+                title="Usuń ogłoszenie"
+                message="Czy na pewno chcesz trwale usunąć to ogłoszenie? Tej operacji nie można cofnąć."
+                variant="danger"
+                confirmLabel="Usuń"
+                isLoading={isDeleting}
+                onCancel={() => {
+                    if (!isDeleting) {
+                        setPostToDelete(null);
+                    }
+                }}
+                onConfirm={() => void confirmDelete()}
+            />
         </div>
     );
 }

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { formatGlobalDate } from '@/app/utils/formatters';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/utils/jwt';
+import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
 import BreederDetailsModal, { BreederDto } from '@/app/components/BreederDetailsModal';
 import Footer from '@/app/components/Footer';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 export default function AdminPanelPage() {
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
@@ -56,13 +58,9 @@ export default function AdminPanelPage() {
 
         try {
             const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/pending`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/registered`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`)
+                fetchWithAuth(`${API_URL}/api/admin/pending`),
+                fetchWithAuth(`${API_URL}/api/admin/registered`),
+                fetch(`${API_URL}/api/sections`)
             ]);
 
             if (pendingRes.ok && registeredRes.ok) {
@@ -81,7 +79,7 @@ export default function AdminPanelPage() {
                 setSectionsList(sectionsData);
             }
 
-        } catch (err) {
+        } catch (error) {
             setError('Błąd połączenia z serwerem.');
         } finally {
             setIsLoading(false);
@@ -89,21 +87,11 @@ export default function AdminPanelPage() {
     };
 
     const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        let method = 'PUT';
-        if (action === 'reject') method = 'DELETE';
-
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/${action}/${id}`;
+        const method = action === 'reject' ? 'DELETE' : 'PUT';
+        const url = `${API_URL}/api/admin/${action}/${id}`;
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetchWithAuth(url, { method });
 
             if (response.ok) {
                 if (action === 'approve') {
@@ -124,26 +112,20 @@ export default function AdminPanelPage() {
                     );
                 }
             } else {
-                const errorData = await response.text();
-                setModalMessage(`Błąd: ${errorData}`);
+                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
             }
-        } catch (err) {
+        } catch (error) {
             setModalMessage('Błąd połączenia z serwerem podczas wykonywania akcji.');
         }
     };
 
     const submitRoleChange = async () => {
         if (!roleChangeBreeder) return;
-        const token = getAuthToken();
-        if (!token) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
+            const response = await fetchWithAuth(`${API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: newRole })
             });
 
@@ -153,10 +135,9 @@ export default function AdminPanelPage() {
                 );
                 setRoleChangeBreeder(null);
             } else {
-                const errorData = await response.text();
-                setModalMessage(`Błąd: ${errorData}`);
+                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się zmienić roli.')}`);
             }
-        } catch (err) {
+        } catch (error) {
             setModalMessage('Błąd połączenia z serwerem podczas zmiany roli.');
         }
     };
@@ -204,8 +185,7 @@ export default function AdminPanelPage() {
         <AdminGuard>
             <div className="flex flex-col min-h-screen">
                 <Navbar />
-
-                <main className="flex-grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+                <main className="grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto space-y-12">
 
                         <div>
@@ -213,7 +193,7 @@ export default function AdminPanelPage() {
                             <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                         </div>
 
-                        {/* Wyszukiwanie i filtrowanie */}
+                        {/* Searching and filtering */}
                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="relative flex-1">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -266,7 +246,7 @@ export default function AdminPanelPage() {
                             </div>
                         ) : (
                             <>
-                                {/* Oczekujące konta */}
+                                {/* Pending accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
                                     <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
@@ -299,7 +279,7 @@ export default function AdminPanelPage() {
                                                             <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            {formatGlobalDate(breeder.createdAt)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                             <button
@@ -340,7 +320,7 @@ export default function AdminPanelPage() {
                                     </div>
                                 </section>
 
-                                {/* Konta hodowców */}
+                                {/* Breeders accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
                                     <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
@@ -402,7 +382,7 @@ export default function AdminPanelPage() {
                                                             <div className="text-sm text-gray-500">{breeder.sectionName}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {new Date(breeder.createdAt).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            {formatGlobalDate(breeder.createdAt)}
                                                         </td>
 
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
@@ -503,7 +483,7 @@ export default function AdminPanelPage() {
                 <Footer />
             </div>
 
-            {/* Kompoment: dane hodowcy */}
+            {/* Breeder details component */}
             {selectedBreeder && (
                 <BreederDetailsModal
                     breeder={selectedBreeder}
@@ -511,7 +491,7 @@ export default function AdminPanelPage() {
                 />
             )}
 
-            {/* Modal: zmiana roli */}
+            {/* role change modal */}
             {roleChangeBreeder && (
                 <div data-cy="role-change-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
@@ -531,8 +511,8 @@ export default function AdminPanelPage() {
                                 onChange={(e) => setNewRole(e.target.value)}
                                 className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
                             >
-                                <option value="BREEDER">Hodowca (Podstawowy dostęp)</option>
-                                <option value="MODERATOR">Moderator (Zarządzanie lotami)</option>
+                                <option value="BREEDER">Hodowca</option>
+                                <option value="MODERATOR">Moderator</option>
                             </select>
                         </div>
 
@@ -556,12 +536,12 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Modal powiadomień i błędów */}
+            {/* Notifications and error modal */}
             {modalMessage && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
                         <div className="flex items-center space-x-3 mb-4">
-                            <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
+                            <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
                                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
@@ -585,7 +565,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Modal potwierdzenia akcji */}
+            {/* Action confirm modal */}
             {confirmDialog.isOpen && (
                 <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
                     <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">

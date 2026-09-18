@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/utils/jwt';
+import { usePathname, useRouter } from 'next/navigation';
+import { formatGlobalDate } from '@/app/utils/formatters';
+import { decodeJwt, getAuthToken, isJwtValid, logout } from '@/app/utils/jwt';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 interface NotificationDto {
     id: number;
@@ -18,21 +20,36 @@ export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState('');
-
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const mobileMenuRef = useRef<HTMLDivElement>(null);
-    const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+    const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
     const pathname = usePathname();
+
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const [notifRes, countRes] = await Promise.all([
+                fetchWithAuth(`${API_URL}/api/notifications`),
+                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
+            ]);
+
+            if (!notifRes.ok) throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
+            if (!countRes.ok) throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
+
+            setNotifications(await notifRes.json());
+            setUnreadCount(await countRes.json());
+        } catch (error) {
+            console.error('Błąd pobierania powiadomień:', error);
+        }
+    }, []);
 
     useEffect(() => {
         const token = getAuthToken();
@@ -43,99 +60,43 @@ export default function Navbar() {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
-
-                fetchNotifications(token!);
+                void fetchNotifications();
             }
         } else if (token) {
-            localStorage.removeItem('jwt_token');
-            sessionStorage.removeItem('jwt_token');
+            logout();
         }
 
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-            }
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-                setIsNotificationsOpen(false);
-            }
-            if (
-                mobileMenuRef.current &&
-                !mobileMenuRef.current.contains(event.target as Node) &&
-                mobileMenuButtonRef.current &&
-                !mobileMenuButtonRef.current.contains(event.target as Node)
-            ) {
-                setIsMobileMenuOpen(false);
-            }
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false);
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) setIsNotificationsOpen(false);
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && mobileMenuButtonRef.current && !mobileMenuButtonRef.current.contains(event.target as Node)) setIsMobileMenuOpen(false);
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    const fetchNotifications = async (token: string) => {
-        try {
-            const [notifRes, countRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ]);
-
-            if (notifRes.ok && countRes.ok) {
-                setNotifications(await notifRes.json());
-                setUnreadCount(await countRes.json());
-            }
-        } catch (error) {
-            console.error('Błąd pobierania powiadomień:', error);
-        }
-    };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [fetchNotifications]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
-        const token = getAuthToken();
-        if (!token) return;
-
         if (!notif.isRead) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notif.id}/read`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Nie udało się oznaczyć powiadomienia jako przeczytane.');
-                }
+                const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
+                if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
 
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                console.error('Błąd oznaczania jako przeczytane: ', error);
+                console.error('Błąd oznaczania jako przeczytane:', error);
             }
         }
 
         setIsNotificationsOpen(false);
-
-        if (notif.link) {
-            router.push(notif.link);
-        }
+        if (notif.link) router.push(notif.link);
     };
 
     const handleMarkAllAsRead = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                throw new Error('Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.');
-            }
+            const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
+            if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
@@ -145,18 +106,13 @@ export default function Navbar() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('jwt_token');
-        sessionStorage.removeItem('jwt_token');
+        logout();
         setIsLoggedIn(false);
         setUserName('');
         setUserRole('');
         setIsDropdownOpen(false);
+        setIsNotificationsOpen(false);
         router.push('/');
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
     };
 
     const isActive = (path: string) => {
@@ -182,8 +138,10 @@ export default function Navbar() {
                         <button
                             ref={mobileMenuButtonRef}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 focus:outline-none transition"
+                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
                             aria-label="Menu główne"
+                            aria-expanded={isMobileMenuOpen}
+                            aria-controls="mobile-navigation"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {isMobileMenuOpen ? (
@@ -235,8 +193,10 @@ export default function Navbar() {
                                             setIsNotificationsOpen(!isNotificationsOpen);
                                             setIsDropdownOpen(false);
                                         }}
-                                        className="p-2 rounded-full hover:bg-blue-800 transition relative focus:outline-none"
+                                        className="p-2 rounded-full hover:bg-blue-800 transition relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         aria-label="Powiadomienia"
+                                        aria-expanded={isNotificationsOpen}
+                                        aria-controls="notifications-panel"
                                     >
                                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -251,7 +211,7 @@ export default function Navbar() {
 
                                     {/* Notification modal */}
                                     {isNotificationsOpen && (
-                                        <div className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
+                                        <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                 <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                 {unreadCount > 0 && (
@@ -271,23 +231,19 @@ export default function Navbar() {
                                                     </div>
                                                 ) : (
                                                     notifications.map((notif) => (
-                                                        <div
+                                                        <button
                                                             key={notif.id}
-                                                            onClick={() => handleNotificationClick(notif)}
-                                                            className={`px-4 py-3 border-b border-gray-50 cursor-pointer transition hover:bg-gray-50 ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}
-                                                        >
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <span className="text-[10px] text-gray-400 font-medium">
-                                                                    {formatDate(notif.createdAt)}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                void handleNotificationClick(notif)}
+                                                            className={`block w-full text-left px-4 py-3 border-b border-gray-50 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 
+                                                            ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}>
+                                                                <span className="flex justify-between items-start mb-1">
+                                                                    <span className="text-[10px] text-gray-400 font-medium">{formatGlobalDate(notif.createdAt)}</span>
+                                                                    {!notif.isRead && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
                                                                 </span>
-                                                                {!notif.isRead && (
-                                                                    <span className="h-2 w-2 bg-blue-600 rounded-full"></span>
-                                                                )}
-                                                            </div>
-                                                            <p className={`text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                                                                {notif.message}
-                                                            </p>
-                                                        </div>
+                                                            <span className={`block text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>{notif.message}</span>
+                                                        </button>
                                                     ))
                                                 )}
                                             </div>
@@ -302,12 +258,13 @@ export default function Navbar() {
                                             setIsDropdownOpen(!isDropdownOpen);
                                             setIsNotificationsOpen(false);
                                         }}
-                                        className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-900 border border-blue-600 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition focus:outline-none"
-                                    >
+                                        className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-900 border border-blue-600 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                        aria-expanded={isDropdownOpen}
+                                        aria-controls="profile-dropdown">
+
                                         <span className="hidden sm:inline">Witaj, <strong className="font-semibold">{userName}</strong></span>
                                         <span className="sm:hidden font-semibold">{userName}</span>
-                                        <svg
-                                            className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
+                                        <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -317,7 +274,7 @@ export default function Navbar() {
                                     </button>
 
                                     {isDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
+                                        <div id="profile-dropdown" className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-50 animate-fadeIn">
                                             {userRole === 'ADMINISTRATOR' && (
                                                 <Link
                                                     href="/admin"
@@ -366,6 +323,7 @@ export default function Navbar() {
             {/* Mobile menu */}
             {isMobileMenuOpen && (
                 <div
+                    id="mobile-navigation"
                     ref={mobileMenuRef}
                     className="md:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
                 >

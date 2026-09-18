@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { FlightTrackPointDto, formatSpeed, formatTime } from '@/app/types/flight';
-import { CURSOR_COLOR, smoothElevations } from '@/utils/flightScale';
+import { CURSOR_COLOR, smoothElevations } from '@/app/utils/flightScale';
 
 const CHART_WIDTH = 800;
 const PANEL_HEIGHT = 96;
