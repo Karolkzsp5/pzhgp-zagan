@@ -215,10 +215,18 @@ export default function FlightProfileChart({
         onSelect(originalIndexes[next]);
     };
 
-    if (panels.length === 0 || points.length < 2) {
+    if (panels.length === 0) {
         return (
             <p className="text-sm text-gray-500">
                 Ten lot nie zawiera danych o wysokości ani prędkości.
+            </p>
+        );
+    }
+
+    if (points.length < 2) {
+        return (
+            <p className="text-sm text-gray-500">
+                Lot zawiera zbyt mało punktów, aby wyświetlić profil.
             </p>
         );
     }

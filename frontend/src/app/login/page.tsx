@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { API_URL } from '@/app/utils/apiClient';
+import { API_URL, readApiError } from '@/app/utils/apiClient';
 
 interface LoginFormData {
     email: string;
@@ -44,14 +44,13 @@ export default function LoginPage() {
                 body: JSON.stringify(formData)
             });
 
-            const data = await response.text();
-
             if (response.ok) {
+                const token = await response.text();
                 if (rememberMe) {
-                    localStorage.setItem('jwt_token', data);
+                    localStorage.setItem('jwt_token', token);
                     sessionStorage.removeItem('jwt_token');
                 } else {
-                    sessionStorage.setItem('jwt_token', data);
+                    sessionStorage.setItem('jwt_token', token);
                     localStorage.removeItem('jwt_token');
                 }
 
@@ -59,10 +58,12 @@ export default function LoginPage() {
                 return;
             }
 
-            setMessage({ text: data, type: 'error' });
-        } catch {
+            const errorMessage = await readApiError(response, 'Nie udało się zalogować.');
+            setMessage({ text: errorMessage, type: 'error' });
+            setIsLoading(false);
+
+        } catch (error) {
             setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
-        } finally {
             setIsLoading(false);
         }
     };
@@ -73,33 +74,40 @@ export default function LoginPage() {
                 <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie Hodowcy</h1>
 
                 {sessionExpired && !message.text && (
-                    <div className="p-4 mb-4 rounded bg-blue-100 text-blue-700 text-sm">
-                        Twoja sesja wygasła. Zaloguj się ponownie.
+                    <div role={message.type === 'error' ? 'alert' : 'status'}
+                         className="p-4 mb-4 rounded bg-blue-100 text-blue-700 text-sm">
+                         {message.text}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Adres E-mail</label>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Adres E-mail</label>
                         <input
+                            id="email"
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
+                            autoComplete="email"
                             required
-                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            disabled={isLoading}
+                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Hasło</label>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">Hasło</label>
                         <input
+                            id="password"
                             type="password"
                             name="password"
+                            autoComplete="current-password"
                             value={formData.password}
                             onChange={handleChange}
                             required
-                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            disabled={isLoading}
+                            className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                     </div>
 

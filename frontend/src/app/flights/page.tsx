@@ -14,6 +14,7 @@ import { flightService } from '@/app/services/flightService';
 import { FlightSummaryDto, formatDateTime, formatDuration, formatSpeed } from '@/app/types/flight';
 
 const PAGE_SIZE = 10;
+const MAX_GPX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function FlightsPage() {
     const router = useRouter();
@@ -49,12 +50,13 @@ export default function FlightsPage() {
 
     const fetchFlights = useCallback(async (targetPage: number) => {
         setIsLoading(true);
+        setListError('');
+
         try {
             const result = await flightService.getMyFlights(targetPage, PAGE_SIZE);
             setFlights(result.content);
             setTotalPages(result.totalPages);
             setPage(result.number);
-            setListError('');
         } catch (error) {
             setListError(error instanceof Error ? error.message : 'Nie udało się pobrać listy lotów.');
         } finally {
@@ -63,17 +65,29 @@ export default function FlightsPage() {
     }, []);
 
     useEffect(() => {
-        fetchFlights(0);
+        void fetchFlights(0);
     }, [fetchFlights]);
 
     const selectFile = (file: File | null) => {
         setUploadError('');
 
-        if (file && !file.name.toLowerCase().endsWith('.gpx')) {
+        if (!file) {
+            setSelectedFile(null);
+            return;
+        }
+
+        if (!file.name.toLowerCase().endsWith('.gpx')) {
             setUploadError('Wybierz plik z rozszerzeniem .gpx (eksport z programu obsługującego obrączki).');
             setSelectedFile(null);
             return;
         }
+
+        if (file.size > MAX_GPX_FILE_SIZE) {
+            setUploadError('Plik GPX może mieć maksymalnie 10 MB.');
+            setSelectedFile(null);
+            return;
+        }
+
         setSelectedFile(file);
     };
 
@@ -115,7 +129,7 @@ export default function FlightsPage() {
                 try {
                     await flightService.deleteFlight(flight.id);
                     const isLastOnPage = flights.length === 1 && page > 0;
-                    fetchFlights(isLastOnPage ? page - 1 : page);
+                    await fetchFlights(isLastOnPage ? page - 1 : page);
                 } catch (error) {
                     showAlert('Błąd', error instanceof Error ? error.message : 'Nie udało się usunąć lotu.');
                 }
@@ -161,7 +175,7 @@ export default function FlightsPage() {
                                 ref={fileInputRef}
                                 type="file"
                                 accept=".gpx"
-                                className="hidden"
+                                className="sr-only"
                                 onChange={event => selectFile(event.target.files?.[0] ?? null)}
                             />
 
@@ -236,7 +250,7 @@ export default function FlightsPage() {
                         </div>
 
                         {uploadError && (
-                            <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                            <p role="alert" className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                                 {uploadError}
                             </p>
                         )}
@@ -319,6 +333,7 @@ export default function FlightsPage() {
                                                 <td className="px-4 py-3 text-right">
                                                     {flight.canDelete && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => handleDelete(flight)}
                                                             className="text-gray-400 hover:text-red-600 p-1 transition"
                                                             title="Usuń lot"
@@ -339,7 +354,8 @@ export default function FlightsPage() {
                             {totalPages > 1 && (
                                 <div className="flex items-center justify-center gap-3 mt-6">
                                     <button
-                                        onClick={() => fetchFlights(page - 1)}
+                                        type="button"
+                                        onClick={() => void fetchFlights(page - 1)}
                                         disabled={page === 0}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                     >
@@ -349,7 +365,8 @@ export default function FlightsPage() {
                                         Strona {page + 1} z {totalPages}
                                     </span>
                                     <button
-                                        onClick={() => fetchFlights(page + 1)}
+                                        type="button"
+                                        onClick={() => void fetchFlights(page + 1)}
                                         disabled={page >= totalPages - 1}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                     >

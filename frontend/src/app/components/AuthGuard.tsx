@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, isJwtValid } from '@/app/utils/jwt';
+import { getAuthToken, isJwtValid, logout } from '@/app/utils/jwt';
+import LoadingState from '@/app/components/LoadingState';
 
 /**
- * Osłona tras dostępnych wyłącznie dla zalogowanych hodowców.
- * Przy nieważnym tokenie czyści pamięć przeglądarki i przekierowuje na stronę główną.
+ * Osłona tras dostępnych wyłącznie dla zalogowanych użytkowników.
+ * Przy nieważnym tokenie wylogowuje użytkownika i przekierowuje na stronę logowania.
  */
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -16,9 +17,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         const token = getAuthToken();
 
         if (!isJwtValid(token)) {
-            localStorage.removeItem('jwt_token');
-            sessionStorage.removeItem('jwt_token');
-            router.push('/');
+            logout();
+            router.replace('/login');
             return;
         }
 
@@ -28,7 +28,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!isAuthorized) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+                <LoadingState />
             </div>
         );
     }

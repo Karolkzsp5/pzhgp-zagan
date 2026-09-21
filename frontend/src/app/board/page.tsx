@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Navbar from "@/app/components/Navbar";
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
@@ -9,6 +9,9 @@ import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 import { boardService } from '@/app/services/boardService';
 import { BoardMemberDto, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { formatPhoneNumber } from '@/app/utils/formatters';
+import LoadingState from "@/app/components/LoadingState"
+import ErrorState from "@/app/components/ErrorState"
+import EmptyState from '@/app/components/EmptyState';
 
 interface SectionDto {
     id: number;
@@ -38,38 +41,48 @@ export default function BoardPage() {
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
     };
 
-    useEffect(() => {
-        const token = getAuthToken();
-        if (token) {
-            const payload = decodeJwt(token);
-            if (payload && payload.role === 'ADMINISTRATOR') {
-                setIsAdmin(true);
-            }
-        }
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
+        setError('');
+
         try {
             const [boardData, sectionsResponse] = await Promise.all([
                 boardService.getAllBoardMembers(),
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`)
             ]);
 
-            setMembers(boardData);
-
-            if (sectionsResponse.ok) {
-                setSections(await sectionsResponse.json());
-            } else {
-                console.error('Nie udało się pobrać listy sekcji z serwera.');
+            if (!sectionsResponse.ok) {
+                throw new Error('Nie udało się pobrać listy sekcji.');
             }
+
+            const sectionsData: SectionDto[] = await sectionsResponse.json();
+
+            setMembers(boardData);
+            setSections(sectionsData);
         } catch (error) {
-            setError('Błąd połączenia z serwerem podczas pobierania danych.');
+
+            setError(
+                error instanceof TypeError
+                    ? 'Nie udało połączyć się z serwerem.'
+                    : 'Nie udało się pobrać danych zarządu.'
+            );
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const token = getAuthToken();
+
+        if (token) {
+            const payload = decodeJwt(token);
+            if (payload && payload.role === 'ADMINISTRATOR') {
+                setIsAdmin(true);
+            }
+        }
+
+        void fetchData();
+    }, [fetchData]);
 
     const handleDelete = (id: number) => {
         setModalConfig({
@@ -81,8 +94,8 @@ export default function BoardPage() {
                 closeConfirmModal();
                 try {
                     await boardService.deleteBoardMember(id);
-                    fetchData();
-                } catch (error: any) {
+                    void fetchData();
+                } catch (error) {
                     showAlert('Błąd', 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
                 }
             }
@@ -101,7 +114,7 @@ export default function BoardPage() {
 
     const handleModalSaved = () => {
         setIsModalOpen(false);
-        fetchData();
+        void fetchData();
     };
 
     const sortMembers = (membersList: BoardMemberDto[], weights: Partial<Record<BoardRole, number>>) => {
@@ -127,18 +140,22 @@ export default function BoardPage() {
             {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-2 items-center">
                     <button
+                        type="button"
+                        title="Edytuj"
+                        aria-label={`Edytuj ${member.firstName} ${member.lastName}`}
                         onClick={() => openEditModal(member)}
                         className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
-                        title="Edytuj"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
                             <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z"/>
                         </svg>
                     </button>
                     <button
+                        type="button"
+                        title="Usuń"
+                        aria-label={`Usuń ${member.firstName} ${member.lastName}`}
                         onClick={() => handleDelete(member.id)}
                         className="text-gray-400 hover:text-red-600 p-1 transition-colors"
-                        title="Usuń"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
                             <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
@@ -159,7 +176,7 @@ export default function BoardPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2 shrink-0" viewBox="0 -960 960 960" fill="currentColor">
                         <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
                     </svg>
-                    <a href={`tel:+48${member.publicPhoneNumber}`} className="hover:text-blue-600 transition font-medium">
+                    <a href={`tel:+48${member.publicPhoneNumber.replace(/\D/g, '')}`} className="hover:text-blue-600 transition font-medium">
                         {formatPhoneNumber(member.publicPhoneNumber)}
                     </a>
                 </div>
@@ -181,6 +198,7 @@ export default function BoardPage() {
                     </div>
                     {isAdmin && (
                         <button
+                            type="button"
                             onClick={openAddModal}
                             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition shrink-0 whitespace-nowrap"
                         >
@@ -189,22 +207,17 @@ export default function BoardPage() {
                     )}
                 </div>
 
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                )}
-
                 {isLoading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-                    </div>
+                    <LoadingState />
+                ) : error ? (
+                    <ErrorState message={error} onRetry={fetchData} />
                 ) : (
                     <>
                         <section className="mb-12">
                             <h2 className="text-xl font-bold text-gray-900 mb-6">
                                 Zarząd Oddziału:
                             </h2>
+
                             {oddzialMembers.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {oddzialMembers.map(member => (
@@ -212,22 +225,24 @@ export default function BoardPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
+                                <EmptyState>
                                     Brak dodanych członków zarządu oddziału.
-                                </div>
+                                </EmptyState>
                             )}
                         </section>
 
                         {sections.map(section => {
                             const sectionMembers = sortMembers(
                                 members.filter(m => m.managedSectionId === section.id),
-                                SECTION_ROLE_ORDER);
+                                SECTION_ROLE_ORDER
+                            );
 
                             return (
                                 <section key={section.id} className="mb-12">
                                     <h2 className="text-xl font-bold text-gray-900 mb-6">
                                         Zarząd Sekcji: {section.name}
                                     </h2>
+
                                     {sectionMembers.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                             {sectionMembers.map(member => (
@@ -235,9 +250,9 @@ export default function BoardPage() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
+                                        <EmptyState>
                                             Brak dodanych członków zarządu sekcji.
-                                        </div>
+                                        </EmptyState>
                                     )}
                                 </section>
                             );
