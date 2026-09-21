@@ -8,6 +8,8 @@ import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import LoadingState from '@/app/components/LoadingState';
+import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
 import { flightService } from '@/app/services/flightService';
 import {
@@ -95,7 +97,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     const router = useRouter();
 
     /** Poprawność identyfikatora wynika wprost z adresu, więc nie wymaga stanu komponentu. */
-    const isValidId = Number.isFinite(flightId);
+    const isValidId = Number.isInteger(flightId) && flightId > 0;
 
     const [flight, setFlight] = useState<FlightDetailsDto | null>(null);
     const [isLoading, setIsLoading] = useState(isValidId);
@@ -116,29 +118,52 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
         onConfirm: () => {}
     });
 
+    const loadRequestRef = useRef(0);
     const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+
+    const loadFlight = useCallback(async () => {
+        if (!isValidId) return;
+
+        const requestId = ++loadRequestRef.current;
+
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const data = await flightService.getFlight(flightId);
+
+            if (requestId !== loadRequestRef.current) return;
+
+            setFlight(data);
+            setIsPlaying(false);
+            setPlaybackPosition(0);
+            setHoveredIndex(null);
+        } catch (error) {
+            if (requestId !== loadRequestRef.current) return;
+
+            console.error('Błąd podczas pobierania lotu:', error);
+
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Nie udało się pobrać lotu.'
+            );
+        } finally {
+            if (requestId === loadRequestRef.current) {
+                setIsLoading(false);
+            }
+        }
+    }, [flightId, isValidId]);
 
     useEffect(() => {
         if (!isValidId) return;
 
-        let cancelled = false;
-
-        flightService
-            .getFlight(flightId)
-            .then(data => {
-                if (!cancelled) setFlight(data);
-            })
-            .catch(caught => {
-                if (!cancelled) setError(caught instanceof Error ? caught.message : 'Nie udało się pobrać lotu.');
-            })
-            .finally(() => {
-                if (!cancelled) setIsLoading(false);
-            });
+        void loadFlight();
 
         return () => {
-            cancelled = true;
+            loadRequestRef.current += 1;
         };
-    }, [flightId, isValidId]);
+    }, [isValidId, loadFlight]);
 
     /** Odtwarzacz przechodzi przez całą zarejestrowaną trasę. */
     const trackPoints = useMemo(() => flight?.trackPoints ?? [], [flight]);
@@ -229,32 +254,52 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
             <AuthGuard>
                 <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navbar />
-                    <div className="grow flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-                    </div>
+
+                    <main className="grow max-w-3xl mx-auto w-full py-16 px-4">
+                        <LoadingState />
+                    </main>
+
                     <Footer />
                 </div>
             </AuthGuard>
         );
     }
 
-    if (!isValidId || error || !flight) {
+    if (!isValidId) {
         return (
             <AuthGuard>
                 <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navbar />
+
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4 text-center">
                         <h1 className="text-2xl font-bold text-gray-900 mb-3">Nie udało się otworzyć lotu</h1>
-                        <p className="text-sm text-gray-600 mb-6">
-                            {!isValidId ? 'Nieprawidłowy identyfikator lotu.' : error || 'Lot nie istnieje.'}
-                        </p>
-                        <Link
-                            href="/flights"
+                        <p className="text-sm text-gray-600 mb-6">Nieprawidłowy identyfikator lotu.</p>
+                        <Link href="/flights"
                             className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-bold hover:bg-blue-700 transition"
                         >
                             Wróć do listy lotów
                         </Link>
                     </main>
+
+                    <Footer />
+                </div>
+            </AuthGuard>
+        );
+    }
+
+    if (error || !flight) {
+        return (
+            <AuthGuard>
+                <div className="min-h-screen bg-gray-50 flex flex-col">
+                    <Navbar />
+
+                    <main className="grow max-w-3xl mx-auto w-full py-16 px-4">
+                        <ErrorState
+                            message={error || 'Lot nie istnieje.'}
+                            onRetry={() => void loadFlight()}
+                        />
+                    </main>
+
                     <Footer />
                 </div>
             </AuthGuard>
@@ -293,6 +338,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                         {flight.canDelete && (
                             <button
+                                type="button"
                                 onClick={handleDelete}
                                 className="self-start px-4 py-2 border border-red-200 text-red-700 rounded-md text-sm font-medium hover:bg-red-50 transition whitespace-nowrap"
                             >
@@ -307,7 +353,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             label="Dystans"
                             value={stats.straightLineDistanceKm.toFixed(2)}
                             unit="km"
-                            hint="w linii prostej, start–meta"
+                            hint="w linii prostej, start-meta"
                         />
                         <StatTile
                             label="Czas nagrania"
@@ -387,6 +433,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             <div className="border-t border-gray-100 p-4 bg-gray-50">
                                 <div className="flex items-center gap-4">
                                     <button
+                                        type="button"
                                         onClick={togglePlayback}
                                         className="shrink-0 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition"
                                         aria-label={isPlaying ? 'Zatrzymaj odtwarzanie trasy' : 'Odtwórz trasę'}
@@ -518,6 +565,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     title={modalConfig.title}
                     message={modalConfig.message}
                     isAlert={modalConfig.isAlert}
+                    variant={modalConfig.isAlert ? 'primary' : 'danger'}
                     onConfirm={modalConfig.onConfirm}
                     onCancel={closeModal}
                 />

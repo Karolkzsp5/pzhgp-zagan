@@ -1,19 +1,43 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { formatGlobalDate } from '@/app/utils/formatters';
 import { useRouter } from 'next/navigation';
 import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
 import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
-import BreederDetailsModal, { BreederDto } from '@/app/components/BreederDetailsModal';
 import Footer from '@/app/components/Footer';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import ConfirmModal from '@/app/components/ConfirmModal';
+import { formatAccountStatus, formatDate, formatGlobalDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
+import Modal from '@/app/components/Modal';
+import LoadingState from '@/app/components/LoadingState';
+import ErrorState from '@/app/components/ErrorState';
+import EmptyState from '@/app/components/EmptyState';
+
+type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
+
+interface BreederDto {
+    id: number;
+    name: string;
+    surname: string;
+    email: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+    postalCode: string;
+    city: string;
+    street: string;
+    houseNumber: string;
+    sectionId: number;
+    sectionName: string;
+    status: 'PENDING' | 'ACTIVE' | 'BLOCKED';
+    createdAt: string;
+    role: string;
+}
 
 export default function AdminPanelPage() {
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
-    const [sectionsList, setSectionsList] = useState<{id: number, name: string}[]>([]);
+    const [sectionsList, setSectionsList] = useState<{ id: number; name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [currentUserEmail, setCurrentUserEmail] = useState('');
@@ -32,7 +56,7 @@ export default function AdminPanelPage() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSection, setFilterSection] = useState<string>('ALL');
-    const [sortBy, setSortBy] = useState<'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A'>('NEWEST');
+    const [sortBy, setSortBy] = useState<SortOption>('NEWEST');
 
     const router = useRouter();
 
@@ -45,6 +69,9 @@ export default function AdminPanelPage() {
     }, []);
 
     const fetchAllAccounts = async () => {
+        setIsLoading(true);
+        setError('');
+
         const token = getAuthToken();
         if (!token) {
             router.push('/login');
@@ -63,21 +90,24 @@ export default function AdminPanelPage() {
                 fetch(`${API_URL}/api/sections`)
             ]);
 
-            if (pendingRes.ok && registeredRes.ok) {
-                const pendingData = await pendingRes.json();
-                const registeredData = await registeredRes.json();
-                setPendingBreeders(pendingData);
-                setRegisteredBreeders(registeredData);
-            } else if (pendingRes.status === 401 || pendingRes.status === 403) {
-                setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
-            } else {
-                setError('Wystąpił błąd podczas pobierania danych.');
+            if (!pendingRes.ok || !registeredRes.ok || !sectionsRes.ok) {
+                if (pendingRes.status === 403 || registeredRes.status === 403) {
+                    setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
+                } else {
+                    setError('Wystąpił błąd podczas pobierania danych.');
+                }
+                return;
             }
 
-            if (sectionsRes.ok) {
-                const sectionsData = await sectionsRes.json();
-                setSectionsList(sectionsData);
-            }
+            const [pendingData, registeredData, sectionsData] = await Promise.all([
+                pendingRes.json(),
+                registeredRes.json(),
+                sectionsRes.json()
+            ]);
+
+            setPendingBreeders(pendingData);
+            setRegisteredBreeders(registeredData);
+            setSectionsList(sectionsData);
 
         } catch (error) {
             setError('Błąd połączenia z serwerem.');
@@ -145,12 +175,14 @@ export default function AdminPanelPage() {
     const processBreeders = (breeders: BreederDto[]) => {
         return breeders
             .filter((b) => {
-                const searchLower = searchTerm.toLowerCase();
+                const searchLower = searchTerm.trim().toLowerCase();
+                const normalizedSearch = searchLower.replace(/\s+/g, '');
+
                 const matchesSearch =
                     b.name.toLowerCase().includes(searchLower) ||
                     b.surname.toLowerCase().includes(searchLower) ||
                     b.email.toLowerCase().includes(searchLower) ||
-                    b.phoneNumber.includes(searchLower);
+                    b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
 
                 const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
 
@@ -173,13 +205,16 @@ export default function AdminPanelPage() {
         return processBreeders(registeredBreeders);
     }, [registeredBreeders, searchTerm, filterSection, sortBy]);
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50" data-cy="loading-spinner">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-            </div>
-        );
-    }
+    const closeConfirmDialog = () => setConfirmDialog({ isOpen: false, message: '', action: null, breederId: null });
+
+    const confirmAdminAction = () => {
+        if (confirmDialog.breederId !== null && confirmDialog.action) {
+            void handleAction(confirmDialog.breederId, confirmDialog.action);
+        }
+        closeConfirmDialog();
+    };
+
+    const hasActiveFilters = searchTerm.trim().length > 0 || filterSection !== 'ALL';
 
     return (
         <AdminGuard>
@@ -193,66 +228,73 @@ export default function AdminPanelPage() {
                             <p className="mt-2 text-sm text-gray-600">Zarządzanie kontami hodowców.</p>
                         </div>
 
-                        {/* Searching and filtering */}
-                        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="relative flex-1">
-                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </div>
-                                <input
-                                    data-cy="search-input"
-                                    type="text"
-                                    className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 transition"
-                                    placeholder="Szukaj po imieniu, nazwisku, emailu lub telefonie..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                        {isLoading ? (
+                            <div data-cy="loading-spinner">
+                                <LoadingState />
                             </div>
-
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <select
-                                    data-cy="section-filter"
-                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-                                    value={filterSection}
-                                    onChange={(e) => setFilterSection(e.target.value)}
-                                >
-                                    <option value="ALL">Wszystkie sekcje</option>
-                                    {sectionsList.map((section) => (
-                                        <option key={section.id} value={section.id.toString()}>
-                                            {section.name}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <select
-                                    data-cy="sort-filter"
-                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value as any)}
-                                >
-                                    <option value="NEWEST">Od najnowszego</option>
-                                    <option value="OLDEST">Od najstarszego</option>
-                                    <option value="A_Z">Alfabetycznie (A-Z)</option>
-                                    <option value="Z_A">Alfabetycznie (Z-A)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {error ? (
-                            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6" data-cy="error-message">
-                                <p className="text-sm text-red-700">{error}</p>
+                        ) : error ? (
+                            <div data-cy="error-message">
+                                <ErrorState message={error} onRetry={() => void fetchAllAccounts()} />
                             </div>
                         ) : (
                             <>
+                                {/* Searching and filtering */}
+                                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div className="relative flex-1">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
+                                        <input
+                                            data-cy="search-input"
+                                            type="text"
+                                            className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 transition"
+                                            placeholder="Szukaj po imieniu, nazwisku, emailu lub telefonie..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <select
+                                            data-cy="section-filter"
+                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                                            value={filterSection}
+                                            onChange={(e) => setFilterSection(e.target.value)}
+                                        >
+                                            <option value="ALL">Wszystkie sekcje</option>
+                                            {sectionsList.map((section) => (
+                                                <option key={section.id} value={section.id.toString()}>
+                                                    {section.name}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        <select
+                                            data-cy="sort-filter"
+                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value as SortOption)}
+                                        >
+                                            <option value="NEWEST">Od najnowszego</option>
+                                            <option value="OLDEST">Od najstarszego</option>
+                                            <option value="A_Z">Alfabetycznie (A-Z)</option>
+                                            <option value="Z_A">Alfabetycznie (Z-A)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {/* Pending accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
-                                    <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
                                         {processedPending.length === 0 ? (
-                                            <div className="p-8 text-center text-gray-500" data-cy="no-pending-accounts">
-                                                Brak kont oczekujących na akceptację.
+                                            <div data-cy="no-pending-accounts">
+                                                <EmptyState>
+                                                    {hasActiveFilters
+                                                        ? 'Brak kont oczekujących spełniających podane kryteria.'
+                                                        : 'Brak kont oczekujących na akceptację.'}
+                                                </EmptyState>
                                             </div>
                                         ) : (
                                             <table className="min-w-full divide-y divide-gray-200" data-cy="pending-table">
@@ -273,7 +315,7 @@ export default function AdminPanelPage() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                            <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                            <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-sm text-gray-500">{breeder.sectionName}</div>
@@ -317,16 +359,18 @@ export default function AdminPanelPage() {
                                                 </tbody>
                                             </table>
                                         )}
-                                    </div>
                                 </section>
 
                                 {/* Breeders accounts */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
-                                    <div className="bg-white shadow overflow-x-auto sm:rounded-lg border border-gray-200">
                                         {processedRegistered.length === 0 ? (
-                                            <div className="p-8 text-center text-gray-500" data-cy="no-registered-accounts">
-                                                Brak zarejestrowanych kont w systemie.
+                                            <div data-cy="no-registered-accounts">
+                                                <EmptyState>
+                                                    {hasActiveFilters
+                                                        ? 'Brak kont hodowców spełniających podane kryteria.'
+                                                        : 'Brak zarejestrowanych kont w systemie.'}
+                                                </EmptyState>
                                             </div>
                                         ) : (
                                             <table className="min-w-full divide-y divide-gray-200" data-cy="registered-table">
@@ -365,17 +409,17 @@ export default function AdminPanelPage() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                            <div className="text-sm text-gray-500">Tel: {breeder.phoneNumber}</div>
+                                                            <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             {breeder.status === 'ACTIVE' ? (
                                                                 <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                                        Aktywny
-                                                                    </span>
+                                                                    Aktywny
+                                                                </span>
                                                             ) : (
                                                                 <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                                        Zablokowany
-                                                                    </span>
+                                                                    Zablokowany
+                                                                </span>
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -387,7 +431,11 @@ export default function AdminPanelPage() {
 
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                                                             <button
+                                                                type="button"
                                                                 data-cy={`kebab-menu-btn-${breeder.id}`}
+                                                                aria-label={`Otwórz akcje dla ${breeder.name} ${breeder.surname}`}
+                                                                aria-expanded={openDropdownId === breeder.id}
+                                                                aria-haspopup="menu"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
@@ -436,7 +484,7 @@ export default function AdminPanelPage() {
                                                                                     onClick={() => {
                                                                                         setConfirmDialog({
                                                                                             isOpen: true,
-                                                                                            message: 'Czy na pewno chcesz zablokować tego użytkownika?',
+                                                                                            message: 'Czy na pewno chcesz zablokować to konto?',
                                                                                             action: 'block',
                                                                                             breederId: breeder.id
                                                                                         });
@@ -473,7 +521,6 @@ export default function AdminPanelPage() {
                                                 </tbody>
                                             </table>
                                         )}
-                                    </div>
                                 </section>
                             </>
                         )}
@@ -483,125 +530,135 @@ export default function AdminPanelPage() {
                 <Footer />
             </div>
 
-            {/* Breeder details component */}
+            {/* Breeder details modal */}
             {selectedBreeder && (
-                <BreederDetailsModal
-                    breeder={selectedBreeder}
-                    onClose={() => setSelectedBreeder(null)}
-                />
+                <Modal isOpen title="Dane hodowcy" onClose={() => setSelectedBreeder(null)} maxWidthClass="max-w-md">
+                    <div data-cy="details-modal" className="p-6">
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wider">Imię i nazwisko</p>
+                                <p className="text-lg font-medium text-gray-900">{selectedBreeder.name} {selectedBreeder.surname}</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
+                                    <p className="text-sm font-medium text-gray-800 break-all">{selectedBreeder.email}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Telefon</p>
+                                    <p className="text-sm font-medium text-gray-800">{formatPhoneNumber(selectedBreeder.phoneNumber)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Data urodzenia</p>
+                                    <p className="text-sm font-medium text-gray-800">{formatLocalDate(selectedBreeder.dateOfBirth)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Adres zamieszkania</p>
+                                    <p className="text-sm font-medium text-gray-800">
+                                        ul. {selectedBreeder.street} {selectedBreeder.houseNumber}<br />
+                                        {selectedBreeder.postalCode} {selectedBreeder.city}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Sekcja</p>
+                                    <p className="text-sm font-medium text-gray-800">{selectedBreeder.sectionName}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Data rejestracji</p>
+                                    <p className="text-sm font-medium text-gray-800">{formatDate(selectedBreeder.createdAt)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Rola w systemie</p>
+                                    <p className="text-sm font-bold text-gray-700">{formatRole(selectedBreeder.role)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Obecny status</p>
+                                    <p className={`text-sm font-bold ${selectedBreeder.status === 'ACTIVE' ? 'text-green-600' : selectedBreeder.status === 'BLOCKED' ? 'text-red-600' : 'text-yellow-600'}`}>
+                                        {formatAccountStatus(selectedBreeder.status)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex justify-end">
+                            <button type="button" onClick={() => setSelectedBreeder(null)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition shadow-sm">
+                                Zamknij
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
 
             {/* role change modal */}
             {roleChangeBreeder && (
-                <div data-cy="role-change-modal" className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-                    <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-4">Zmień rolę</h3>
-                        <p className="text-sm text-gray-600 mb-6">
-                            Wybierz nowe uprawnienia dla użytkownika:
-                            <span className="block text-base font-semibold text-gray-900 mt-1">
-                                {roleChangeBreeder.name} {roleChangeBreeder.surname}
-                            </span>
-                        </p>
+                <div data-cy="role-change-modal">
+                    <Modal isOpen title="Zmień rolę" onClose={() => setRoleChangeBreeder(null)} maxWidthClass="max-w-sm">
+                        <div className="p-6">
+                            <p className="text-sm text-gray-600 mb-6">
+                                Wybierz nowe uprawnienia dla użytkownika:
+                                <span className="block text-base font-semibold text-gray-900 mt-1">
+                                    {roleChangeBreeder.name} {roleChangeBreeder.surname}
+                                </span>
+                            </p>
 
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nowa rola w systemie</label>
-                            <select
-                                data-cy="role-select"
-                                value={newRole}
-                                onChange={(e) => setNewRole(e.target.value)}
-                                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
-                            >
-                                <option value="BREEDER">Hodowca</option>
-                                <option value="MODERATOR">Moderator</option>
-                            </select>
-                        </div>
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                data-cy="cancel-role-btn"
-                                onClick={() => setRoleChangeBreeder(null)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm"
-                            >
-                                Anuluj
-                            </button>
-                            <button
-                                data-cy="save-role-btn"
-                                onClick={submitRoleChange}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
-                            >
-                                Zapisz zmiany
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Notifications and error modal */}
-            {modalMessage && (
-                <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-                    <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
-                        <div className="flex items-center space-x-3 mb-4">
-                            <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100 text-red-600">
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
+                            <div className="mb-6">
+                                <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-2">Nowa rola w systemie</label>
+                                <select
+                                    id="role-select"
+                                    data-cy="role-select"
+                                    value={newRole}
+                                    onChange={(e) => setNewRole(e.target.value)}
+                                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
+                                >
+                                    <option value="BREEDER">Hodowca</option>
+                                    <option value="MODERATOR">Moderator</option>
+                                </select>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900">Komunikat systemu</h3>
-                        </div>
 
-                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                            {modalMessage}
-                        </p>
-
-                        <div className="flex justify-end">
-                            <button
-                                onClick={() => setModalMessage(null)}
-                                className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
-                            >
-                                OK
-                            </button>
+                            <div className="flex justify-end space-x-3">
+                                <button data-cy="cancel-role-btn" type="button" onClick={() => setRoleChangeBreeder(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm">
+                                    Anuluj
+                                </button>
+                                <button data-cy="save-role-btn" type="button" onClick={submitRoleChange} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm">
+                                    Zapisz zmiany
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </Modal>
                 </div>
             )}
 
-            {/* Action confirm modal */}
-            {confirmDialog.isOpen && (
-                <div className="fixed inset-0 bg-gray-50/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-                    <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 relative">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Potwierdzenie akcji</h3>
+            {/* Error modal */}
+            <ConfirmModal
+                isOpen={modalMessage !== null}
+                title="Komunikat systemu"
+                message={modalMessage ?? ''}
+                isAlert
+                variant="primary"
+                confirmLabel="OK"
+                onConfirm={() => setModalMessage(null)}
+                onCancel={() => setModalMessage(null)}
+            />
 
-                        <p className="text-sm text-gray-600 mb-8 leading-relaxed">
-                            {confirmDialog.message}
-                        </p>
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setConfirmDialog({ isOpen: false, message: '', action: null, breederId: null })}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm"
-                            >
-                                Anuluj
-                            </button>
-                            <button
-                                data-cy="confirm-dialog-btn"
-                                onClick={() => {
-                                    if (confirmDialog.breederId && confirmDialog.action) {
-                                        handleAction(confirmDialog.breederId, confirmDialog.action);
-                                    }
-                                    setConfirmDialog({ isOpen: false, message: '', action: null, breederId: null });
-                                }}
-                                className={`px-4 py-2 text-sm font-medium text-white rounded-md transition shadow-sm ${
-                                    confirmDialog.action === 'reject' || confirmDialog.action === 'block'
-                                        ? 'bg-red-600 hover:bg-red-700'
-                                        : 'bg-blue-600 hover:bg-blue-700'
-                                }`}
-                            >
-                                Potwierdź
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Block/unblock confirmation modal */}
+            <ConfirmModal
+                isOpen={confirmDialog.isOpen}
+                title="Potwierdzenie akcji"
+                message={confirmDialog.message}
+                variant={confirmDialog.action === 'reject' || confirmDialog.action === 'block' ? 'danger' : 'primary'}
+                confirmLabel="Potwierdź"
+                confirmButtonDataCy="confirm-dialog-btn"
+                onConfirm={confirmAdminAction}
+                onCancel={closeConfirmDialog}
+            />
 
         </AdminGuard>
     );

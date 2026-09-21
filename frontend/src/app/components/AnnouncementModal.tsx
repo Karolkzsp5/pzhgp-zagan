@@ -76,7 +76,13 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Błąd połączenia z serwerem.');
+            setError(
+                error instanceof TypeError
+                    ? 'Nie udało połączyć się z serwerem.'
+                    : error instanceof Error
+                        ? error.message
+                        : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
+            );
         } finally {
             setIsLoading(false);
         }
@@ -87,10 +93,19 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Tytuł ogłoszenia</label>
-                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 focus:outline-none transition-all"
-                               placeholder="Wpisz tytuł (min. 3 znaki)" required />
+                        <label htmlFor="announcement-title" className="block text-sm font-bold text-gray-700 mb-1">Tytuł ogłoszenia</label>
+                        <input
+                            id="announcement-title"
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            minLength={3}
+                            maxLength={150}
+                            disabled={isLoading}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 focus:outline-none transition-all disabled:opacity-50"
+                            placeholder="Wpisz tytuł (min. 3 znaki)"
+                            required
+                        />
                     </div>
 
                     <div>
@@ -99,12 +114,25 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                     </div>
 
                     <div className="flex items-center mt-2">
-                        <input type="checkbox" id="isPinned" checked={isPinned} onChange={(e) => setIsPinned(e.target.checked)}
-                               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
+                        <input
+                            type="checkbox"
+                            id="isPinned"
+                            checked={isPinned}
+                            onChange={(e) => setIsPinned(e.target.checked)}
+                            disabled={isLoading}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                        />
                         <label htmlFor="isPinned" className="ml-2 block text-sm font-medium text-gray-700">Przypnij ogłoszenie</label>
                     </div>
 
-                    {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">{error}</div>}
+                    {error && (
+                        <div
+                            role="alert"
+                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
+                        >
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">

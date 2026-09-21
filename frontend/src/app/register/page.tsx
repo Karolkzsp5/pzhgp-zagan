@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { API_URL } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
+import Modal from '@/app/components/Modal';
 
 interface RegistrationFormData {
     name: string;
@@ -37,6 +38,7 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [sections, setSections] = useState<SectionDto[]>([]);
     const [sectionsError, setSectionsError] = useState('');
+    const [isRegistrationSuccessful, setIsRegistrationSuccessful] = useState(false);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -216,10 +218,11 @@ export default function RegisterPage() {
             const data = await response.text();
 
             if (response.status === 201) {
-                router.push('/?registered=true');
+                setIsRegistrationSuccessful(true);
             } else {
                 setMessage({ text: data, type: 'error' });
             }
+
         } catch (error) {
             setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
         } finally {
@@ -228,6 +231,11 @@ export default function RegisterPage() {
     };
 
     const passwordStrength = getPasswordStrength(formData.password);
+
+    const closeRegistrationModal = () => {
+        setIsRegistrationSuccessful(false);
+        router.push('/');
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
@@ -375,6 +383,25 @@ export default function RegisterPage() {
                     </Link>
                 </div>
             </div>
+            <Modal isOpen={isRegistrationSuccessful} title="Rejestracja przebiegła pomyślnie" onClose={closeRegistrationModal} maxWidthClass="max-w-md">
+                <div className="p-6 text-center">
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                        <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-8 leading-relaxed">
+                        Twoje konto zostało pomyślnie utworzone i oczekuje na akceptację administratora.
+                        Skontaktuj się z zarządem sekcji w celu weryfikacji tożsamości.
+                        Po akceptacji logowanie będzie możliwe.
+                    </p>
+
+                    <button type="button" onClick={closeRegistrationModal} className="w-full px-4 py-3 bg-blue-600 text-base font-bold text-white rounded-md hover:bg-blue-700 transition">
+                        Rozumiem
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 }

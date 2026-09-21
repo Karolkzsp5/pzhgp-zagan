@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import RegistrationModal from './components/RegistrationModal';
 import AnnouncementModal from './components/AnnouncementModal';
 import ConfirmModal from "@/app/components/ConfirmModal"
 import Navbar from './components/Navbar';
@@ -62,10 +61,12 @@ export default function HomePage() {
             setTotalPages(data.totalPages);
             setCurrentPage(data.number);
         } catch (error) {
+            console.error('Błąd pobierania ogłoszeń:', error);
             setAnnouncementError(
-                error instanceof Error
-                    ? error.message
-                    : 'Błąd połączenia z serwerem.'
+                error instanceof TypeError
+                    ? 'Nie udało połączyć się z serwerem'
+                    : error instanceof Error
+                    ? error.message : 'Wystąpił błąd podczas pobierania ogłoszeń'
             );
         } finally {
             setIsLoading(false);
@@ -110,6 +111,7 @@ export default function HomePage() {
             } else {
                 alert('Wystąpił błąd podczas usuwania ogłoszenia.');
             }
+
         } catch (error) {
             console.error('Błąd serwera:', error);
             alert('Brak połączenia z serwerem.');
@@ -120,7 +122,6 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <RegistrationModal/>
             <Navbar/>
 
             <header className="bg-white shadow">

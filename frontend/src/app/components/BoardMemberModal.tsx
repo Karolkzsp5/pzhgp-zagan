@@ -5,6 +5,7 @@ import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, B
 import { boardService } from '@/app/services/boardService';
 import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
+import Modal from '@/app/components/Modal';
 
 interface Section {
     id: number;
@@ -52,44 +53,40 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             .includes(key as BoardRole))
             .sort((a, b) => (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99));
 
-    const availableBreeders = (managedSectionId && managedSectionId !== 0)
+    const availableBreeders = managedSectionId !== null
         ? breeders.filter(b => b.sectionId === managedSectionId)
         : breeders;
 
-    useEffect(() => {
-        if (managedSectionId !== 0 && managedSectionId !== null) {
+    const handleBoardChange = (value: string) => {
+        const newSectionId = Number(value) === 0 ? null : Number(value);
+
+        setManagedSectionId(newSectionId);
+
+        if (newSectionId !== null) {
             if (!SECTION_ROLES.includes(role)) {
                 setRole(BoardRole.PREZES);
             }
 
             if (breederId) {
                 const selectedBreeder = breeders.find(b => b.id === breederId);
-                if (selectedBreeder && selectedBreeder.sectionId !== managedSectionId) {
+
+                if (selectedBreeder && selectedBreeder.sectionId !== newSectionId) {
                     setBreederId(null);
                 }
             }
-        } else {
-            if (role === BoardRole.SKARBNIK) {
-                setRole(BoardRole.PREZES);
-            }
+        } else if (role === BoardRole.SKARBNIK) {
+            setRole(BoardRole.PREZES);
         }
-    }, [managedSectionId, role, breederId, breeders]);
+    };
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        if (!isOpen) return;
 
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);
 
             try {
                 const [sectionsRes, breedersRes] = await Promise.all([
-                    fetch(`${API_URL}/api/sections`),
+                    fetchWithAuth(`${API_URL}/api/sections`),
                     fetchWithAuth(`${API_URL}/api/admin/registered`)
                 ]);
 
@@ -102,19 +99,20 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 const allBreeders: Breeder[] = await breedersRes.json();
                 setBreeders(allBreeders.filter(b => b.status === 'ACTIVE'));
 
-            } catch (error: any) {
-                setError(error.message || 'Wystąpił problem z połączeniem.');
-            }
-            finally {
+            } catch (error) {
+                console.error('Błąd podczas pobierania danych formularza zarządu:', error);
+
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : 'Wystąpił problem z połączeniem.'
+                );
+            } finally {
                 setIsDictionaryLoading(false);
             }
         };
 
-        fetchDictionaries();
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
+        void fetchDictionaries();
     }, [isOpen]);
 
     useEffect(() => {
@@ -161,7 +159,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
         const request: BoardMemberRequest = {
             role,
-            managedSectionId: managedSectionId === 0 ? null : managedSectionId,
+            managedSectionId,
             breederId: isRegistered ? breederId : null,
             customName: !isRegistered ? customName : null,
             customSurname: !isRegistered ? customSurname : null,
@@ -175,8 +173,12 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 await boardService.createBoardMember(request);
             }
             onSaved();
-        } catch (error: any) {
-            setError(error.message || 'Wystąpił błąd podczas zapisywania');
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Wystąpił błąd podczas zapisywania.'
+            );
         } finally {
             setIsLoading(false);
         }
@@ -185,25 +187,28 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
+        <Modal
+            isOpen={isOpen}
+            title={memberToEdit ? 'Edytuj członka zarządu' : 'Dodaj członka zarządu'}
+            onClose={onClose}
+            closeDisabled={isLoading}
+            maxWidthClass="max-w-lg"
+        >
+            <div className="relative">
                 {isDictionaryLoading && (
                     <div className="absolute inset-0 z-20 bg-white/80 flex items-center justify-center rounded-lg">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-700"></div>
                     </div>
                 )}
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">
-                    {memberToEdit ? 'Edytuj członka zarządu' : 'Dodaj członka zarządu'}
-                </h3>
-
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
                     <div className="grid grid-cols-1 gap-4">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-800 mb-1">Zarząd (Oddział czy Sekcja)</label>
+                            <label htmlFor="board-type" className="block text-sm font-semibold text-gray-800 mb-1">Zarząd (Oddział czy Sekcja)</label>
                             <select
+                                id="board-type"
                                 value={managedSectionId || 0}
-                                onChange={(e) => setManagedSectionId(Number(e.target.value) === 0 ? null : Number(e.target.value))}
+                                onChange={(e) => handleBoardChange(e.target.value)}
                                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                             >
                                 <option value={0}>Zarząd Oddziału</option>
@@ -214,8 +219,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-800 mb-1">Stanowisko</label>
+                            <label htmlFor="board-role" className="block text-sm font-semibold text-gray-800 mb-1">Stanowisko</label>
                             <select
+                                id="board-role"
                                 required
                                 value={role}
                                 onChange={(e) => setRole(e.target.value as BoardRole)}
@@ -233,8 +239,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     <div>
                         <label className="block text-sm font-semibold text-gray-800 mb-3">Dane osoby pełniącej funkcję</label>
                         <div className="flex gap-6 mb-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <label htmlFor="board-breeder" className="flex items-center gap-2 cursor-pointer">
                                 <input
+                                    id="board-breeder"
                                     type="radio"
                                     name="personSource"
                                     checked={isRegistered}
@@ -276,8 +283,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         ) : (
                             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md border border-gray-200">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Imię</label>
+                                    <label htmlFor="custom-name" className="block text-sm font-medium text-gray-700 mb-1">Imię</label>
                                     <input
+                                        id="custom-name"
                                         type="text"
                                         maxLength={32}
                                         required={!isRegistered}
@@ -287,8 +295,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nazwisko</label>
+                                    <label htmlFor="custom-surname" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko</label>
                                     <input
+                                        id="custom-surname"
                                         type="text"
                                         maxLength={64}
                                         required={!isRegistered}
@@ -304,11 +313,12 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     <hr className="my-4 border-gray-200" />
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-1">Publiczny nr telefonu (opcjonalny)</label>
+                        <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-800 mb-1">Publiczny nr telefonu (opcjonalny)</label>
                         <p className="text-xs text-gray-600 mb-2">
                             Wypełnienie tego pola sprawi, że numer będzie widoczny na stronie dla wszystkich.
                         </p>
                         <input
+                            id="contact-phone"
                             type="text"
                             placeholder="np. 123 456 789"
                             maxLength={11}
@@ -319,7 +329,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     </div>
 
                     {error && (
-                        <div className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700">
+                        <div role="alert"
+                            className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700"
+                        >
                             {error}
                         </div>
                     )}
@@ -329,20 +341,20 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                             type="button"
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm"
-                            disabled={isLoading}
+                            disabled={isLoading || isDictionaryLoading}
                         >
                             Anuluj
                         </button>
                         <button
                             type="submit"
                             className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm flex items-center"
-                            disabled={isLoading}
+                            disabled={isLoading || isDictionaryLoading}
                         >
                             {isLoading ? 'Zapisywanie...' : 'Zapisz'}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
     );
 }

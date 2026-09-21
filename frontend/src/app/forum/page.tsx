@@ -47,6 +47,8 @@ export default function ForumPage() {
 
     const loadCategories = async () => {
         setIsLoading(true);
+        setError('');
+
         try {
             const data = await fetchCategories();
             setCategories(data);
