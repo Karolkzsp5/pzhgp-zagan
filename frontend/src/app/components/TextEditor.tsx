@@ -226,7 +226,7 @@ export default function TextEditor({ content, onChange, ariaLabel = 'Edytor teks
         immediatelyRender: false,
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base prose-p:m-0 max-w-none focus:outline-none min-h-[200px] p-4',
+                class: 'prose prose-sm sm:prose-base prose-p:m-0 max-w-[820px] w-full focus:outline-none min-h-[200px] p-4',
                 role: 'textbox',
                 'aria-multiline': 'true',
                 'aria-label': ariaLabel

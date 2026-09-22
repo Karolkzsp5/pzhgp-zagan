@@ -9,6 +9,7 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightTrackPointRepository;
 import com.pzhgp.backend.repository.PigeonFlightRepository;
 import com.pzhgp.backend.service.gpx.*;
+import com.pzhgp.backend.utils.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,7 +108,8 @@ public class PigeonFlightService {
     @Transactional(readOnly = true)
     public Page<FlightSummaryDto> getMyFlights(String userEmail, int page, int size) {
         Breeder owner = requireBreeder(userEmail);
-        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        PaginationUtils.validate(page, size, 50);
+        Pageable pageable = PageRequest.of(page, size);
 
         return flightRepository.findByOwnerOrderByUploadedAtDesc(owner, pageable)
                 .map(flight -> toSummary(flight, owner));

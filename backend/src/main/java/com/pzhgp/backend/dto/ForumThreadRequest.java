@@ -9,7 +9,7 @@ public record ForumThreadRequest(
         Long categoryId,
 
         @NotBlank(message = "Tytuł wątku nie może być pusty.")
-        @Size(max = 255, message = "Tytuł może mieć maksymalnie 255 znaków.")
+        @Size(min = 5, max = 150, message = "Tytuł wątku musi mieć od 5 do 150 znaków.")
         String title,
 
         @NotBlank(message = "Treść pierwszej wiadomości nie może być pusta.")

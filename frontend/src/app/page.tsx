@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import { formatGlobalDate } from '@/app/utils/formatters';
 import AnnouncementModal from './components/AnnouncementModal';
@@ -135,11 +134,9 @@ export default function HomePage() {
                 </div>
             </header>
 
-            <main
-                className="flex-grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                <section className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between border-b pb-2">
+            <main className="flex-grow max-w-5xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
+                <section className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                         <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>
 
                         {canAddAnnouncement && (
@@ -210,7 +207,7 @@ export default function HomePage() {
                                         </div>
 
                                         <div
-                                            className="prose prose-sm sm:prose-base max-w-none text-gray-600 mt-3 leading-relaxed"
+                                            className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed"
                                             dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(post.content)}}
                                         />
 
@@ -281,38 +278,6 @@ export default function HomePage() {
                         )}
                     </div>
                 </section>
-
-                <aside className="space-y-6">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Szybki dostęp</h3>
-                        <ul className="space-y-3">
-                            <li>
-                                <Link href="/flight-plan"
-                                      className="flex items-center text-gray-600 hover:text-blue-600 group transition">
-                                    <span
-                                        className="w-2 h-2 bg-blue-500 rounded-full mr-3 group-hover:scale-150 transition-transform"></span>
-                                    Plan lotów
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/download"
-                                      className="flex items-center text-gray-600 hover:text-blue-600 group transition">
-                                    <span
-                                        className="w-2 h-2 bg-blue-500 rounded-full mr-3 group-hover:scale-150 transition-transform"></span>
-                                    Dokumenty do pobrania
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/sections"
-                                      className="flex items-center text-gray-600 hover:text-blue-600 group transition">
-                                    <span
-                                        className="w-2 h-2 bg-blue-500 rounded-full mr-3 group-hover:scale-150 transition-transform"></span>
-                                    Wykaz sekcji
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                </aside>
             </main>
 
             <Footer/>

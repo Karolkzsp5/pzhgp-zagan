@@ -5,6 +5,7 @@ import com.pzhgp.backend.dto.AnnouncementResponseDto;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.utils.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -121,6 +122,7 @@ public class AnnouncementService {
         }
 
         Breeder finalCurrentUser = currentUser;
+        PaginationUtils.validate(page, size, 100);
         Pageable pageable = PageRequest.of(page, size);
 
         return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable)

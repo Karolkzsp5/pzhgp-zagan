@@ -28,7 +28,7 @@ public class ForumThread {
     @JoinColumn(name = "breeder_id", nullable = false)
     private Breeder author;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 150)
     private String title;
 
     @Column(name = "is_locked")

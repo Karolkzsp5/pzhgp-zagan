@@ -5,9 +5,11 @@ import java.time.LocalDate;
 
 public record RegistrationRequest(
         @NotBlank(message = "Imię nie może być puste")
+        @Size(max = 32, message = "Imię może mieć maksymalnie 32 znaki")
         String name,
 
         @NotBlank(message = "Nazwisko nie może być puste")
+        @Size(max = 64, message = "Nazwisko może mieć maksymalnie 64 znaki")
         String surname,
 
         @NotNull(message = "Data urodzenia nie może być pusta")
@@ -19,20 +21,25 @@ public record RegistrationRequest(
         String postalCode,
 
         @NotBlank(message = "Miejscowość nie może być pusta")
+        @Size(max = 100, message = "Miejscowość może mieć maksymalnie 100 znaków")
         String city,
 
         @NotBlank(message = "Ulica nie może być pusta")
+        @Size(max = 100, message = "Ulica może mieć maksymalnie 100 znaków")
         String street,
 
         @NotBlank(message = "Numer domu/lokalu nie może być pusty")
+        @Size(max = 10, message = "Numer domu/lokalu może mieć maksymalnie 10 znaków")
         @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$",
-                message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
+                 message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
         String houseNumber,
 
         @NotNull(message = "ID sekcji nie może być puste")
+        @Positive(message = "ID sekcji musi być liczbą dodatnią")
         Integer sectionId,
 
         @NotBlank(message = "Adres e-mail nie może być pusty")
+        @Size(max = 320, message = "Adres e-mail może mieć maksymalnie 320 znaków")
         @Email(message = "Niepoprawny format adresu e-mail")
         @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
                 message = "Wymagany poprawny adres e-mail z domeną")
