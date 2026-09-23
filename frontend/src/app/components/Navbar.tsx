@@ -140,6 +140,7 @@ export default function Navbar() {
         { name: 'Wyniki lotów', href: '/results', show: true },
         { name: 'Mapy lotów', href: '/flights', show: isLoggedIn },
         { name: 'Forum', href: '/forum', show: isLoggedIn },
+        { name: 'Znalezione gołębie', href: '/found-pigeons', show: true },
         { name: 'Pogoda', href: '/weather', show: true },
         { name: 'Zarząd', href: '/board', show: true },
     ];

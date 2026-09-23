@@ -8,5 +8,6 @@ public enum NotificationType {
     NEW_THREAD,
     NEW_REPLY,
     NEW_FLIGHT_PLAN,
-    NEW_FLIGHT_RESULT
+    NEW_FLIGHT_RESULT,
+    NEW_FOUND_PIGEON_REPORT
 }
