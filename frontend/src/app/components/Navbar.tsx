@@ -156,7 +156,7 @@ export default function Navbar() {
                             type="button"
                             ref={mobileMenuButtonRef}
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+                            className="lg:hidden mr-1 min-[375px]:mr-2 p-1 text-white hover:text-gray-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
                             aria-label="Menu główne"
                             aria-expanded={isMobileMenuOpen}
                             aria-controls="mobile-navigation"
@@ -175,7 +175,7 @@ export default function Navbar() {
                         </Link>
                     </div>
 
-                    <div className="hidden md:flex flex-1 justify-center gap-4 lg:gap-8">
+                    <div className="hidden lg:flex flex-1 justify-center gap-4 xl:gap-8">
                         {navLinks.filter(link => link.show).map((link) => (
                             <Link
                                 key={link.name}
@@ -350,7 +350,7 @@ export default function Navbar() {
                 <div
                     id="mobile-navigation"
                     ref={mobileMenuRef}
-                    className="md:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
+                    className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
                 >
                     <div className="flex flex-col">
                         {navLinks.filter(link => link.show).map((link) => (

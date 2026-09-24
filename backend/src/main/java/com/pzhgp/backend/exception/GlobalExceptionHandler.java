@@ -60,6 +60,16 @@ public class GlobalExceptionHandler {
                 .body("Przesłany plik jest za duży. Maksymalny rozmiar pliku GPX to 10 MB.");
     }
 
+    @ExceptionHandler(SubmissionRateLimitException.class)
+    public ResponseEntity<String> handleSubmissionRateLimit(SubmissionRateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity<String> handleInvalidStatusTransition(InvalidStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleAllUnhandledExceptions(Exception ex) {
         log.error("Nieoczekiwany błąd serwera: ", ex);
@@ -80,6 +90,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nieprawidłowy typ parametru (oczekiwano liczby).");
+        Class<?> requiredType = ex.getRequiredType();
+
+        if (requiredType != null && requiredType.isEnum()) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Nieprawidłowa wartość parametru \"" + ex.getName() + "\".");
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body("Nieprawidłowy typ parametru \"" + ex.getName() + "\".");
     }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -50,11 +50,16 @@ export default function FoundPigeonsAdminPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
+    const requestControllerRef = useRef<AbortController | null>(null);
 
     const [selected, setSelected] = useState<FoundPigeonDto | null>(null);
     const [noteDraft, setNoteDraft] = useState('');
     const [isSavingNote, setIsSavingNote] = useState(false);
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [detailsError, setDetailsError] = useState('');
+
+    const isMutating = isSavingNote || isChangingStatus || isDeleting;
 
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
@@ -71,31 +76,78 @@ export default function FoundPigeonsAdminPage() {
 
     const fetchReports = useCallback(
         async (targetPage: number, status: FoundPigeonStatus | null, ringNumber: string) => {
+            requestControllerRef.current?.abort();
+
+            const controller = new AbortController();
+            requestControllerRef.current = controller;
+
             setIsLoading(true);
+            setLoadError('');
+
             try {
-                const result = await foundPigeonService.getReports(status, ringNumber, targetPage, PAGE_SIZE);
+                const result = await foundPigeonService.getReports(
+                    status,
+                    ringNumber,
+                    targetPage,
+                    PAGE_SIZE,
+                    controller.signal
+                );
+
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setReports(result.content);
                 setTotalPages(result.totalPages);
                 setTotalElements(result.totalElements);
                 setPage(result.number);
-                setLoadError('');
             } catch (error) {
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setLoadError(error instanceof Error ? error.message : 'Nie udało się pobrać zgłoszeń.');
             } finally {
-                setIsLoading(false);
+                if (requestControllerRef.current === controller) {
+                    requestControllerRef.current = null;
+
+                    if (!controller.signal.aborted) {
+                        setIsLoading(false);
+                    }
+                }
             }
-        },
-        []
+        }, []
     );
 
     useEffect(() => {
         void fetchReports(0, null, '');
+
+        return () => {
+            requestControllerRef.current?.abort();
+        };
     }, [fetchReports]);
 
     const applyFilters = (status: FoundPigeonStatus | null, ringNumber: string) => {
         setStatusFilter(status);
         setAppliedSearch(ringNumber);
+
+        setSelected(null);
+        setNoteDraft('');
+        setDetailsError('');
+
         void fetchReports(0, status, ringNumber);
+    };
+
+    const changePage = (targetPage: number) => {
+        setSelected(null);
+        setNoteDraft('');
+        setDetailsError('');
+
+        void fetchReports(
+            targetPage,
+            statusFilter,
+            appliedSearch
+        );
     };
 
     const openDetails = (report: FoundPigeonDto) => {
@@ -110,18 +162,39 @@ export default function FoundPigeonsAdminPage() {
     };
 
     const handleStatusChange = async (report: FoundPigeonDto, status: FoundPigeonStatus) => {
+        if (isMutating) {
+            return;
+        }
+
+        setIsChangingStatus(true);
         setDetailsError('');
+
         try {
-            applyUpdate(await foundPigeonService.updateStatus(report.id, status));
-            // Lista mogła być filtrowana po statusie — odświeżamy, aby pozostała spójna.
-            void fetchReports(page, statusFilter, appliedSearch);
+            const updated = await foundPigeonService.updateStatus(report.id, status);
+            applyUpdate(updated);
+
+            if (
+                statusFilter !== null &&
+                statusFilter !== updated.status
+            ) {
+                setSelected(null);
+                setNoteDraft('');
+            }
+
+            await fetchReports(
+                page,
+                statusFilter,
+                appliedSearch
+            );
         } catch (error) {
             setDetailsError(error instanceof Error ? error.message : 'Nie udało się zmienić statusu.');
+        } finally {
+            setIsChangingStatus(false);
         }
     };
 
     const handleSaveNote = async () => {
-        if (!selected || isSavingNote) return;
+        if (!selected || isMutating) return;
 
         setIsSavingNote(true);
         setDetailsError('');
@@ -135,6 +208,9 @@ export default function FoundPigeonsAdminPage() {
     };
 
     const handleDelete = (report: FoundPigeonDto) => {
+        if (isMutating) {
+            return;
+        }
         setModalConfig({
             isOpen: true,
             title: 'Usuń zgłoszenie',
@@ -143,13 +219,17 @@ export default function FoundPigeonsAdminPage() {
             isAlert: false,
             onConfirm: async () => {
                 closeModal();
+                setIsDeleting(true);
+
                 try {
                     await foundPigeonService.deleteReport(report.id);
                     setSelected(null);
                     const isLastOnPage = reports.length === 1 && page > 0;
-                    void fetchReports(isLastOnPage ? page - 1 : page, statusFilter, appliedSearch);
+                    await fetchReports(isLastOnPage ? page - 1 : page, statusFilter, appliedSearch);
                 } catch (error) {
                     showAlert('Błąd', error instanceof Error ? error.message : 'Nie udało się usunąć zgłoszenia.');
+                } finally {
+                    setIsDeleting(false);
                 }
             }
         });
@@ -188,9 +268,10 @@ export default function FoundPigeonsAdminPage() {
                                         <button
                                             key={filter.label}
                                             type="button"
+                                            disabled={isMutating}
                                             onClick={() => applyFilters(filter.value, appliedSearch)}
                                             aria-pressed={statusFilter === filter.value}
-                                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition whitespace-nowrap ${
+                                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
                                                 statusFilter === filter.value
                                                     ? 'bg-blue-600 text-white border-blue-600'
                                                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
@@ -218,7 +299,7 @@ export default function FoundPigeonsAdminPage() {
                                         type="search"
                                         value={searchTerm}
                                         onChange={event => setSearchTerm(event.target.value)}
-                                        placeholder="np. PL-0208 lub 0208241234"
+                                        placeholder="np. PL-0369-24 lub 0369241234"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     />
                                 </div>
@@ -255,13 +336,20 @@ export default function FoundPigeonsAdminPage() {
                                             {reports.map(report => (
                                                 <tr
                                                     key={report.id}
-                                                    onClick={() => openDetails(report)}
-                                                    className={`cursor-pointer transition ${
-                                                        selected?.id === report.id ? 'bg-blue-50' : 'hover:bg-blue-50/40'
+                                                    className={`transition ${
+                                                        selected?.id === report.id
+                                                            ? 'bg-blue-50'
+                                                            : 'hover:bg-blue-50/40'
                                                     }`}
                                                 >
-                                                    <td className="px-4 py-3 font-semibold text-gray-900 [overflow-wrap:anywhere]">
-                                                        {report.ringNumber}
+                                                    <td className="px-4 py-3 [overflow-wrap:anywhere]">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openDetails(report)}
+                                                            className="font-semibold text-blue-700 hover:text-blue-900 hover:underline text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                                                        >
+                                                            {report.ringNumber}
+                                                        </button>
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <StatusBadge status={report.status} />
@@ -283,17 +371,17 @@ export default function FoundPigeonsAdminPage() {
                                     {totalPages > 1 && (
                                         <div className="flex items-center gap-3">
                                             <button
-                                                onClick={() => void fetchReports(page - 1, statusFilter, appliedSearch)}
-                                                disabled={page === 0}
-                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                onClick={() => changePage(page - 1)}
+                                                disabled={isMutating || page === 0}
+                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                             >
                                                 Poprzednia
                                             </button>
                                             <span className="text-sm text-gray-600">Strona {page + 1} z {totalPages}</span>
                                             <button
-                                                onClick={() => void fetchReports(page + 1, statusFilter, appliedSearch)}
-                                                disabled={page >= totalPages - 1}
-                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                onClick={() => changePage(page + 1)}
+                                                disabled={isMutating || page >= totalPages - 1}
+                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                             >
                                                 Następna
                                             </button>
@@ -367,8 +455,9 @@ export default function FoundPigeonsAdminPage() {
                                                         <button
                                                             key={status}
                                                             type="button"
+                                                            disabled={isMutating}
                                                             onClick={() => void handleStatusChange(selected, status)}
-                                                            className={`px-3 py-1.5 rounded-md text-sm font-semibold text-white transition ${
+                                                            className={`px-3 py-1.5 rounded-md text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${
                                                                 status === 'REJECTED' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'
                                                             }`}
                                                         >
@@ -401,8 +490,8 @@ export default function FoundPigeonsAdminPage() {
                                             <div className="flex justify-end mt-2">
                                                 <button
                                                     type="button"
+                                                    disabled={isMutating}
                                                     onClick={() => void handleSaveNote()}
-                                                    disabled={isSavingNote}
                                                     className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
                                                 >
                                                     {isSavingNote ? 'Zapisywanie…' : 'Zapisz notatkę'}
@@ -419,8 +508,9 @@ export default function FoundPigeonsAdminPage() {
                                         <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
                                             <button
                                                 type="button"
+                                                disabled={isMutating}
                                                 onClick={() => handleDelete(selected)}
-                                                className="px-4 py-2 border border-red-200 text-red-700 rounded-md text-sm font-medium hover:bg-red-50 transition"
+                                                className="px-4 py-2 border border-red-200 text-red-700 rounded-md text-sm font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Usuń zgłoszenie
                                             </button>

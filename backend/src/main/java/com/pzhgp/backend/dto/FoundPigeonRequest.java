@@ -6,8 +6,9 @@ import jakarta.validation.constraints.*;
 /**
  * Dane wysyłane przez publiczny formularz odnalezienia gołębia.
  * <p>
- * Formularz wypełniają osoby postronne, często z zagranicy, dlatego walidacja musi
- * przyjmować zapisy spoza Polski, a jednocześnie odrzucać wartości ewidentnie błędne.
+ * Formularz może być wypełniany przez osoby z Polski i zagranicy.
+ * Numer obrączki dotyczy gołębi należących do oddziału PZHGP Żagań,
+ * dlatego wymagany jest format PL-0369-RR-NNNN.
  * Wymagany jest numer obrączki oraz co najmniej jedna metoda kontaktu.
  *
  * @param ringNumber        numer odczytany z obrączki gołębia
@@ -21,17 +22,16 @@ import jakarta.validation.constraints.*;
 public record FoundPigeonRequest(
 
         @NotBlank(message = "Podaj numer obrączki gołębia.")
-        @Size(max = 64, message = "Numer obrączki może mieć maksymalnie 64 znaki.")
         @Pattern(
-                regexp = "^[A-Za-z0-9 ./\\-]+$",
-                message = "Numer obrączki może zawierać wyłącznie litery, cyfry, spacje, kropki, kreski i ukośniki."
+                regexp = "^PL-0369-\\d{2}-\\d{4}$",
+                message = "Numer obrączki musi mieć format PL-0369-RR-NNNN, np. PL-0369-24-1234."
         )
         String ringNumber,
 
-        @Size(max = 32, message = "Numer telefonu może mieć maksymalnie 32 znaki.")
+        @Size(max = 15, message = "Numer telefonu może mieć maksymalnie 15 znaków.")
         @Pattern(
-                regexp = "^$|^\\+?[0-9 ()./\\-]+$",
-                message = "Numer telefonu może zawierać wyłącznie cyfry, opcjonalny znak + oraz spacje, nawiasy, kropki i kreski."
+                regexp = "^\\+?[0-9 ()./\\-]+$",
+                message = "Numer telefonu może zawierać wyłącznie cyfry, opcjonalny znak + oraz spacje, nawiasy, kropki, ukośniki i kreski."
         )
         String contactPhone,
 
@@ -51,42 +51,47 @@ public record FoundPigeonRequest(
         ReportLanguage preferredLanguage
 ) {
 
-    /** Najmniejsza liczba cyfr uznawana za numer telefonu. */
     private static final int MIN_PHONE_DIGITS = 6;
-
-    /** Największa liczba cyfr w numerze telefonu wg zalecenia E.164. */
     private static final int MAX_PHONE_DIGITS = 15;
 
-    /**
-     * Zgłoszenie bez żadnej metody kontaktu jest bezużyteczne — administrator nie miałby
-     * jak odpowiedzieć znalazcy. Wystarczy telefon albo e-mail; można podać oba.
-     */
-    @AssertTrue(message = "Podaj numer telefonu lub adres e-mail, aby administrator mógł się z Tobą skontaktować.")
-    public boolean isContactMethodProvided() {
-        return hasText(contactPhone) || hasText(contactEmail);
+    public FoundPigeonRequest {
+        ringNumber = trim(ringNumber);
+        contactPhone = trimToNull(contactPhone);
+        contactEmail = trimToNull(contactEmail);
+        foundLocation = trimToNull(foundLocation);
+        foundCountry = trimToNull(foundCountry);
+        description = trimToNull(description);
     }
 
-    /**
-     * Liczba cyfr sprawdzana jest osobno od dozwolonych znaków, ponieważ separatory
-     * różnią się między krajami, a sama ich obecność nic nie mówi o poprawności numeru.
-     */
+    @AssertTrue(message = "Podaj numer telefonu lub adres e-mail, aby administrator mógł się z Tobą skontaktować.")
+    public boolean isContactMethodProvided() {
+        return contactPhone != null || contactEmail != null;
+    }
+
     @AssertTrue(message = "Numer telefonu musi zawierać od 6 do 15 cyfr.")
     public boolean isPhoneDigitCountValid() {
-        if (!hasText(contactPhone)) {
+        if (contactPhone == null) {
             return true;
         }
 
-        long digits = contactPhone.chars().filter(Character::isDigit).count();
-        return digits >= MIN_PHONE_DIGITS && digits <= MAX_PHONE_DIGITS;
+        long digits = contactPhone.chars()
+                .filter(Character::isDigit)
+                .count();
+
+        return digits >= MIN_PHONE_DIGITS
+                && digits <= MAX_PHONE_DIGITS;
     }
 
-    /** Numer obrączki musi zawierać choć jedną literę lub cyfrę — same separatory to nie numer. */
-    @AssertTrue(message = "Numer obrączki musi zawierać litery lub cyfry.")
-    public boolean isRingNumberMeaningful() {
-        return ringNumber == null || ringNumber.chars().anyMatch(Character::isLetterOrDigit);
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
     }
 
-    private static boolean hasText(String value) {
-        return value != null && !value.isBlank();
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { foundPigeonService } from '@/app/services/foundPigeonService';
+import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
 import { getAuthToken, getUserRole, isJwtValid } from '@/app/utils/jwt';
 import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
+const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
+const MAX_RING_NUMBER_LENGTH = 15;
 const MAX_DESCRIPTION_LENGTH = 1000;
 
 /** Pola formularza obsługiwane przez jeden stan, żeby czyszczenie po wysyłce było proste. */
@@ -57,6 +59,12 @@ export default function FoundPigeonsPage() {
         setSubmitError('');
     };
 
+    const changeLanguage = (code: ReportLanguage) => {
+        setLanguage(code);
+        setErrors({});
+        setSubmitError('');
+    };
+
     const descriptionUsed = useMemo(() => values.description.length, [values.description]);
 
     /**
@@ -66,8 +74,12 @@ export default function FoundPigeonsPage() {
     const validate = (): boolean => {
         const found: Partial<Record<FieldError, string>> = {};
 
-        if (!values.ringNumber.trim()) {
+        const ringNumber = values.ringNumber.trim();
+
+        if (!ringNumber) {
             found.ringNumber = text.errorRingRequired;
+        } else if (!RING_NUMBER_PATTERN.test(ringNumber)) {
+            found.ringNumber = text.errorRingInvalid;
         }
 
         const hasPhone = values.contactPhone.trim().length > 0;
@@ -82,10 +94,16 @@ export default function FoundPigeonsPage() {
         }
 
         if (hasPhone) {
-            const digits = values.contactPhone.replace(/\D/g, '').length;
-            const allowedCharacters = /^\+?[0-9 ()./-]+$/.test(values.contactPhone.trim());
+            const phone = values.contactPhone.trim();
+            const digits = phone.replace(/\D/g, '').length;
+            const allowedCharacters = /^\+?[0-9 ()./-]+$/.test(phone);
 
-            if (!allowedCharacters || digits < 6 || digits > 15) {
+            if (
+                !allowedCharacters ||
+                phone.length > 15 ||
+                digits < 6 ||
+                digits > 15
+            ) {
                 found.contactPhone = text.errorPhoneInvalid;
             }
         }
@@ -121,7 +139,7 @@ export default function FoundPigeonsPage() {
         } catch (error) {
             // Serwer odpowiada po polsku, a formularz może być po angielsku lub niemiecku,
             // dlatego pokazujemy komunikat w języku wybranym przez użytkownika.
-            const isThrottled = error instanceof Error && error.message.includes('Zbyt wiele zgłoszeń');
+            const isThrottled = error instanceof FoundPigeonApiError && error.status === 429;
             setSubmitError(isThrottled ? text.errorTooManyRequests : text.errorSubmitFailed);
         } finally {
             setIsSubmitting(false);
@@ -148,7 +166,7 @@ export default function FoundPigeonsPage() {
                             <button
                                 key={code}
                                 type="button"
-                                onClick={() => setLanguage(code)}
+                                onClick={() => changeLanguage(code)}
                                 aria-pressed={language === code}
                                 className={`px-3 py-1.5 rounded-md text-sm font-semibold border transition ${
                                     language === code
@@ -224,9 +242,9 @@ export default function FoundPigeonsPage() {
                                 <input
                                     id="ring-number"
                                     type="text"
-                                    maxLength={64}
+                                    maxLength={MAX_RING_NUMBER_LENGTH}
                                     value={values.ringNumber}
-                                    onChange={event => setValue('ringNumber', event.target.value)}
+                                    onChange={event => setValue('ringNumber', event.target.value.toUpperCase())}
                                     placeholder={text.ringNumberPlaceholder}
                                     aria-invalid={Boolean(errors.ringNumber)}
                                     aria-describedby="ring-number-hint"
@@ -255,7 +273,7 @@ export default function FoundPigeonsPage() {
                                             id="contact-phone"
                                             type="tel"
                                             inputMode="tel"
-                                            maxLength={32}
+                                            maxLength={15}
                                             value={values.contactPhone}
                                             onChange={event => setValue('contactPhone', event.target.value)}
                                             placeholder={text.phonePlaceholder}

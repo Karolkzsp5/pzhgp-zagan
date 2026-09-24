@@ -18,6 +18,7 @@ export interface FormTranslation {
     ringNumberLabel: string;
     ringNumberHint: string;
     ringNumberPlaceholder: string;
+    errorRingInvalid: string;
     contactSectionTitle: string;
     contactSectionHint: string;
     phoneLabel: string;
@@ -53,7 +54,7 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         languageName: 'Polski',
         pageTitle: 'Znalazłeś gołębia pocztowego?',
         pageLead: 'Jeżeli znalazłeś gołębia z obrączką, wypełnij poniższy formularz. '
-            + 'Zgłoszenie trafi do administratora oddziału PZHGP Żagań, który spróbuje ustalić właściciela ptaka.',
+            + 'Zgłoszenie trafi do administratora oddziału PZHGP Żagań, który spróbuje ustalić jego właściciela.',
         howItWorksTitle: 'Jak to działa',
         howItWorksSteps: [
             'Odczytaj numer z obrączki na nodze gołębia i przepisz go do formularza.',
@@ -64,7 +65,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         formTitle: 'Formularz zgłoszenia',
         ringNumberLabel: 'Numer obrączki',
         ringNumberHint: 'Przepisz cały numer z obrączki, razem z literami i myślnikami.',
-        ringNumberPlaceholder: 'np. PL-0208-24-1234',
+        ringNumberPlaceholder: 'np. PL-0369-24-1234',
+        errorRingInvalid: 'Numer obrączki musi mieć format PL-0369-RR-NNNN, np. PL-0369-24-1234.',
         contactSectionTitle: 'Kontakt do Ciebie',
         contactSectionHint: 'Podaj przynajmniej jeden sposób kontaktu — telefon albo adres e-mail.',
         phoneLabel: 'Telefon',
@@ -82,7 +84,7 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         privacyTitle: 'Co zrobimy z Twoimi danymi',
         privacyBody: 'Twój numer telefonu i adres e-mail służą wyłącznie do obsługi tego zgłoszenia. '
             + 'Widzi je tylko administrator oddziału. Jeżeli uda się ustalić właściciela gołębia, '
-            + 'administrator może przekazać mu Twój kontakt, aby mógł odebrać ptaka. '
+            + 'administrator może przekazać mu Twój kontakt. '
             + 'Zgłoszenia nie są publikowane na stronie.',
         submitButton: 'Wyślij zgłoszenie',
         submittingButton: 'Wysyłanie…',
@@ -96,7 +98,7 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Podaj poprawny numer telefonu (od 6 do 15 cyfr).',
         errorDescriptionTooLong: 'Opis może mieć maksymalnie 1000 znaków.',
         errorSubmitFailed: 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie za chwilę.',
-        errorTooManyRequests: 'Wysłano już kilka zgłoszeń z tego urządzenia. Spróbuj ponownie później.'
+        errorTooManyRequests: 'Wysłano zbyt wiele zgłoszeń. Spróbuj ponownie później.'
     },
 
     EN: {
@@ -114,7 +116,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         formTitle: 'Report form',
         ringNumberLabel: 'Ring number',
         ringNumberHint: 'Copy the whole number from the ring, including letters and dashes.',
-        ringNumberPlaceholder: 'e.g. PL-0208-24-1234',
+        ringNumberPlaceholder: 'e.g. PL-0369-24-1234',
+        errorRingInvalid: 'The ring number must have the format PL-0369-YY-NNNN, e.g. PL-0369-24-1234.',
         contactSectionTitle: 'Your contact details',
         contactSectionHint: 'Provide at least one way to contact you — a phone number or an e-mail address.',
         phoneLabel: 'Phone number',
@@ -146,14 +149,14 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Please enter a valid phone number (6 to 15 digits).',
         errorDescriptionTooLong: 'The description may contain at most 1000 characters.',
         errorSubmitFailed: 'The report could not be sent. Please try again in a moment.',
-        errorTooManyRequests: 'Several reports have already been sent from this device. Please try again later.'
+        errorTooManyRequests: 'Too many reports have been submitted. Please try again later.'
     },
 
     DE: {
         languageName: 'Deutsch',
         pageTitle: 'Haben Sie eine Brieftaube gefunden?',
         pageLead: 'Wenn Sie eine Taube mit einem Ring gefunden haben, füllen Sie bitte das folgende Formular aus. '
-            + 'Ihre Meldung erreicht den Administrator der Abteilung PZHGP Żagań, der den Besitzer ermitteln wird.',
+            + 'Ihre Meldung erreicht den Administrator der Abteilung PZHGP Żagań, der versucht, den Besitzer zu ermitteln.',
         howItWorksTitle: 'So funktioniert es',
         howItWorksSteps: [
             'Lesen Sie die Nummer vom Ring am Bein der Taube ab und tragen Sie sie in das Formular ein.',
@@ -164,7 +167,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         formTitle: 'Meldeformular',
         ringNumberLabel: 'Ringnummer',
         ringNumberHint: 'Übertragen Sie die vollständige Nummer vom Ring, einschließlich Buchstaben und Bindestrichen.',
-        ringNumberPlaceholder: 'z. B. PL-0208-24-1234',
+        ringNumberPlaceholder: 'z. B. PL-0369-24-1234',
+        errorRingInvalid: 'Die Ringnummer muss das Format PL-0369-JJ-NNNN haben, z. B. PL-0369-24-1234.',
         contactSectionTitle: 'Ihre Kontaktdaten',
         contactSectionHint: 'Geben Sie mindestens eine Kontaktmöglichkeit an — Telefon oder E-Mail-Adresse.',
         phoneLabel: 'Telefonnummer',
@@ -196,8 +200,7 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Bitte geben Sie eine gültige Telefonnummer an (6 bis 15 Ziffern).',
         errorDescriptionTooLong: 'Die Beschreibung darf höchstens 1000 Zeichen enthalten.',
         errorSubmitFailed: 'Die Meldung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.',
-        errorTooManyRequests: 'Von diesem Gerät wurden bereits mehrere Meldungen gesendet. '
-            + 'Bitte versuchen Sie es später erneut.'
+        errorTooManyRequests: 'Es wurden zu viele Meldungen gesendet. Bitte versuchen Sie es später erneut.'
     }
 };
 

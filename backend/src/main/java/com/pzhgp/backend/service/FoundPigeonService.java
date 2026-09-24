@@ -7,6 +7,8 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
 import com.pzhgp.backend.utils.RingNumberNormalizer;
+import com.pzhgp.backend.exception.SubmissionRateLimitException;
+import com.pzhgp.backend.exception.InvalidStatusTransitionException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,9 +51,8 @@ public class FoundPigeonService {
     @Transactional
     public Long createReport(FoundPigeonRequest request, String clientKey) {
         if (!rateLimiter.tryAcquire(clientKey)) {
-            // Komunikat celowo ogólny — nie zdradza progu ani długości okna.
-            throw new IllegalStateException(
-                    "Zbyt wiele zgłoszeń z tego urządzenia. Spróbuj ponownie później.");
+            throw new SubmissionRateLimitException(
+                    "Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
         }
 
         FoundPigeonReport report = new FoundPigeonReport();
@@ -113,8 +114,11 @@ public class FoundPigeonService {
         FoundPigeonReport report = findReport(id);
 
         if (!report.getStatus().canTransitionTo(newStatus)) {
-            throw new IllegalStateException(String.format(
-                    "Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
+            throw new InvalidStatusTransitionException(String.format(
+                    "Nie można zmienić statusu z %s na %s.",
+                    report.getStatus(),
+                    newStatus
+            ));
         }
 
         report.setStatus(newStatus);
