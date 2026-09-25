@@ -17,7 +17,7 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<FoundPigeonStatus, FoundPigeonSt
 
 const REPORT_STATUS_LABELS: Record<FoundPigeonStatus, string> = {
     PENDING: 'Oczekujące',
-    APPROVED: 'W obsłudze',
+    APPROVED: 'W trakcie',
     RESOLVED: 'Zakończone',
     REJECTED: 'Odrzucone'
 };

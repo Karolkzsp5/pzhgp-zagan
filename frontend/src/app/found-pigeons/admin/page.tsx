@@ -248,7 +248,7 @@ export default function FoundPigeonsAdminPage() {
                         <svg className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                             <path d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z" />
                         </svg>
-                        Formularz publiczny
+                        Formularz zgłoszeń
                     </Link>
 
                     <div className="border-b border-gray-200 pb-5 mb-6">
@@ -284,7 +284,7 @@ export default function FoundPigeonsAdminPage() {
                             </div>
 
                             <form
-                                className="flex gap-2 lg:w-96"
+                                className="flex items-end gap-2 lg:w-96"
                                 onSubmit={event => {
                                     event.preventDefault();
                                     applyFilters(statusFilter, searchTerm);
@@ -299,13 +299,12 @@ export default function FoundPigeonsAdminPage() {
                                         type="search"
                                         value={searchTerm}
                                         onChange={event => setSearchTerm(event.target.value)}
-                                        placeholder="np. PL-0369-24 lub 0369241234"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     />
                                 </div>
                                 <button
                                     type="submit"
-                                    className="self-end px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition whitespace-nowrap"
+                                    className="h-10 px-4 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition whitespace-nowrap"
                                 >
                                     Szukaj
                                 </button>
@@ -324,7 +323,7 @@ export default function FoundPigeonsAdminPage() {
                             <div className="xl:col-span-3">
                                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                                     <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                        <thead className="bg-gray-50">
+                                        <thead className="bg-blue-100">
                                             <tr>
                                                 <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Obrączka</th>
                                                 <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
@@ -332,14 +331,14 @@ export default function FoundPigeonsAdminPage() {
                                                 <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Zgłoszono</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="bg-white divide-y divide-gray-200">
                                             {reports.map(report => (
                                                 <tr
                                                     key={report.id}
-                                                    className={`transition ${
+                                                    className={`transition duration-150 ${
                                                         selected?.id === report.id
                                                             ? 'bg-blue-50'
-                                                            : 'hover:bg-blue-50/40'
+                                                            : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
                                                     }`}
                                                 >
                                                     <td className="px-4 py-3 [overflow-wrap:anywhere]">
@@ -476,9 +475,6 @@ export default function FoundPigeonsAdminPage() {
                                             <label htmlFor="admin-note" className="block text-sm font-semibold text-gray-700 mb-1">
                                                 Notatka administratora
                                             </label>
-                                            <p className="text-xs text-gray-500 mb-2">
-                                                Widoczna wyłącznie dla administratorów, np. ustalony właściciel lub przyczyna odrzucenia.
-                                            </p>
                                             <textarea
                                                 id="admin-note"
                                                 rows={4}

@@ -182,9 +182,12 @@ export default function FoundPigeonsPage() {
                     {isAdmin && (
                         <Link
                             href="/found-pigeons/admin"
-                            className="sm:ml-auto text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline whitespace-nowrap"
+                            className="sm:ml-auto inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline whitespace-nowrap"
                         >
-                            Panel zgłoszeń →
+                            Panel zgłoszeń
+                            <svg className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                <path d="m560-80-71-71 329-329-329-329 71-71 400 400L560-80Z" />
+                            </svg>
                         </Link>
                     )}
                 </div>
@@ -213,21 +216,6 @@ export default function FoundPigeonsPage() {
                     </div>
                 ) : (
                     <>
-                        {/* Krótkie wyjaśnienie, zanim znalazca zacznie wypełniać pola. */}
-                        <section className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
-                            <h2 className="text-sm font-bold text-gray-900 mb-3">{text.howItWorksTitle}</h2>
-                            <ol className="space-y-2">
-                                {text.howItWorksSteps.map((step, index) => (
-                                    <li key={step} className="flex gap-3 text-sm text-gray-700">
-                                        <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-center">
-                                            {index + 1}
-                                        </span>
-                                        <span className="leading-relaxed">{step}</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        </section>
-
                         <form
                             onSubmit={handleSubmit}
                             noValidate
@@ -247,12 +235,8 @@ export default function FoundPigeonsPage() {
                                     onChange={event => setValue('ringNumber', event.target.value.toUpperCase())}
                                     placeholder={text.ringNumberPlaceholder}
                                     aria-invalid={Boolean(errors.ringNumber)}
-                                    aria-describedby="ring-number-hint"
                                     className={fieldClasses(Boolean(errors.ringNumber))}
                                 />
-                                <p id="ring-number-hint" className="mt-1 text-xs text-gray-500">
-                                    {text.ringNumberHint}
-                                </p>
                                 {errors.ringNumber && (
                                     <p className="mt-1 text-sm text-red-600">{errors.ringNumber}</p>
                                 )}
@@ -260,9 +244,12 @@ export default function FoundPigeonsPage() {
 
                             <fieldset className="mb-6">
                                 <legend className="text-sm font-medium text-gray-700 mb-1">
-                                    {text.contactSectionTitle} <span className="text-red-500">*</span>
+                                    {text.contactSectionTitle}
                                 </legend>
-                                <p className="text-xs text-gray-500 mb-3">{text.contactSectionHint}</p>
+
+                                <p className="text-xs text-gray-500 mb-3">{text.contactSectionHint}{' '}
+                                    <span className="text-red-500">*</span>
+                                </p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
@@ -276,7 +263,6 @@ export default function FoundPigeonsPage() {
                                             maxLength={15}
                                             value={values.contactPhone}
                                             onChange={event => setValue('contactPhone', event.target.value)}
-                                            placeholder={text.phonePlaceholder}
                                             aria-invalid={Boolean(errors.contactPhone || errors.contact)}
                                             className={fieldClasses(Boolean(errors.contactPhone || errors.contact))}
                                         />
@@ -295,7 +281,6 @@ export default function FoundPigeonsPage() {
                                             maxLength={320}
                                             value={values.contactEmail}
                                             onChange={event => setValue('contactEmail', event.target.value)}
-                                            placeholder={text.emailPlaceholder}
                                             aria-invalid={Boolean(errors.contactEmail || errors.contact)}
                                             className={fieldClasses(Boolean(errors.contactEmail || errors.contact))}
                                         />
@@ -313,8 +298,7 @@ export default function FoundPigeonsPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                 <div>
                                     <label htmlFor="found-country" className="block text-sm font-medium text-gray-700 mb-1">
-                                        {text.countryLabel}{' '}
-                                        <span className="text-gray-400 font-normal">({text.optionalSuffix})</span>
+                                        {text.countryLabel}
                                     </label>
                                     <input
                                         id="found-country"
@@ -322,15 +306,13 @@ export default function FoundPigeonsPage() {
                                         maxLength={100}
                                         value={values.foundCountry}
                                         onChange={event => setValue('foundCountry', event.target.value)}
-                                        placeholder={text.countryPlaceholder}
                                         className={fieldClasses(false)}
                                     />
                                 </div>
 
                                 <div>
                                     <label htmlFor="found-location" className="block text-sm font-medium text-gray-700 mb-1">
-                                        {text.locationLabel}{' '}
-                                        <span className="text-gray-400 font-normal">({text.optionalSuffix})</span>
+                                        {text.locationLabel}
                                     </label>
                                     <input
                                         id="found-location"
@@ -338,7 +320,6 @@ export default function FoundPigeonsPage() {
                                         maxLength={150}
                                         value={values.foundLocation}
                                         onChange={event => setValue('foundLocation', event.target.value)}
-                                        placeholder={text.locationPlaceholder}
                                         className={fieldClasses(false)}
                                     />
                                 </div>
@@ -346,8 +327,7 @@ export default function FoundPigeonsPage() {
 
                             <div className="mb-6">
                                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                                    {text.descriptionLabel}{' '}
-                                    <span className="text-gray-400 font-normal">({text.optionalSuffix})</span>
+                                    {text.descriptionLabel}
                                 </label>
                                 <textarea
                                     id="description"
@@ -355,7 +335,6 @@ export default function FoundPigeonsPage() {
                                     maxLength={MAX_DESCRIPTION_LENGTH}
                                     value={values.description}
                                     onChange={event => setValue('description', event.target.value)}
-                                    placeholder={text.descriptionPlaceholder}
                                     aria-invalid={Boolean(errors.description)}
                                     className={`${fieldClasses(Boolean(errors.description))} resize-y`}
                                 />
@@ -367,7 +346,6 @@ export default function FoundPigeonsPage() {
                                 )}
                             </div>
 
-                            {/* Informacja o przetwarzaniu danych kontaktowych — wymóg modułu. */}
                             <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                                 <h3 className="text-sm font-bold text-blue-900 mb-1">{text.privacyTitle}</h3>
                                 <p className="text-sm text-blue-900/90 leading-relaxed">{text.privacyBody}</p>
@@ -382,15 +360,21 @@ export default function FoundPigeonsPage() {
                                 </p>
                             )}
 
-                            <div className="flex justify-end">
+                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p className="text-xs text-gray-500">
+                                    <span className="text-red-500">*</span>{' '}
+                                    {text.requiredFieldsNote}
+                                </p>
+
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-bold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-bold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting && (
-                                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                                     )}
+
                                     {isSubmitting ? text.submittingButton : text.submitButton}
                                 </button>
                             </div>
