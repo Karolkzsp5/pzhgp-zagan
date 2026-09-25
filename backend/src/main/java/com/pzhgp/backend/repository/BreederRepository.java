@@ -2,6 +2,7 @@ package com.pzhgp.backend.repository;
 
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.Role;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,7 @@ public interface BreederRepository extends JpaRepository<Breeder, Long> {
 
     @EntityGraph(attributePaths = {"section"})
     List<Breeder> findByStatusIn(List<AccountStatus> statuses);
+
+    /** Konta o zadanej roli i statusie — wykorzystywane przy powiadamianiu administratorów. */
+    List<Breeder> findByRoleAndStatus(Role role, AccountStatus status);
 }

@@ -50,6 +50,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/forum/categories/**").hasAuthority(Role.ADMINISTRATOR.name())
 
+                        // Zgłoszenie odnalezienia gołębia wysyła osoba postronna, bez konta.
+                        // Publiczny jest wyłącznie zapis — odczyt zgłoszeń obsługuje /api/admin/**.
+                        .requestMatchers(HttpMethod.POST, "/api/found-pigeons").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/board").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/board").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
@@ -67,7 +71,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
