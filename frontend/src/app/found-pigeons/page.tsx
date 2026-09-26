@@ -185,8 +185,8 @@ export default function FoundPigeonsPage() {
                             className="sm:ml-auto inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline whitespace-nowrap"
                         >
                             Panel zgłoszeń
-                            <svg className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                                <path d="m560-80-71-71 329-329-329-329 71-71 400 400L560-80Z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                <path d="m288-96-68-68 316-316-316-316 68-68 384 384L288-96Z" />
                             </svg>
                         </Link>
                     )}
@@ -200,8 +200,8 @@ export default function FoundPigeonsPage() {
                 {isSubmitted ? (
                     <div className="bg-white rounded-lg shadow-sm border border-green-200 p-8 text-center">
                         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                            <svg className="w-7 h-7 text-green-700" viewBox="0 -960 960 960" fill="currentColor">
-                                <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-700" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                <path d="M389-267 195-460l51-52 143 143 325-324 51 51-376 375Z" />
                             </svg>
                         </div>
                         <h2 className="text-xl font-bold text-gray-900">{text.successTitle}</h2>

@@ -377,13 +377,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     ) : (
                                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
                                             {thread.isPinned && (
-                                                <svg className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
                                                     <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                 </svg>
                                             )}
 
                                             {thread.isLocked && (
-                                                <svg className="w-6 h-6 text-amber-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
                                                     <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
                                                 </svg>
                                             )}
@@ -427,8 +427,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                         >
                                             Zarządzaj
 
-                                            <svg className={`w-4 h-4 transition-transform ${isOptionsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 transition-transform duration-200 ${isOptionsOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
                                             </svg>
                                         </button>
 
@@ -609,7 +609,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                             <div className="mt-8 pt-8 border-t border-gray-200">
                                 {thread.isLocked ? (
                                     <div className="bg-amber-50 p-6 rounded-lg text-center border border-amber-200">
-                                        <svg className="w-8 h-8 text-amber-500 mx-auto mb-2" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-amber-500 mx-auto mb-2" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
                                             <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
                                         </svg>
 

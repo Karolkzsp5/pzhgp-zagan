@@ -59,13 +59,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
             onSuccess();
             onClose();
         } catch (error) {
-            setError(
-                error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
-                    : error instanceof Error
-                        ? error.message
-                        : 'Wystąpił błąd podczas tworzenia wątku.'
-            );
+            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' : error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wątku.');
         } finally {
             setIsLoading(false);
         }
@@ -85,11 +79,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                         <label htmlFor="thread-title" className="block text-sm font-bold text-gray-700 mb-1">
                             Tytuł wątku
                         </label>
-                        <input
-                            id="thread-title"
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                        <input id="thread-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
                             minLength={5}
                             maxLength={150}
                             disabled={isLoading}

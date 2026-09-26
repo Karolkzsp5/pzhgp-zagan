@@ -245,9 +245,10 @@ export default function FoundPigeonsAdminPage() {
                         href="/found-pigeons"
                         className="inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline mb-4"
                     >
-                        <svg className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                            <path d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"/>
                         </svg>
+
                         Formularz zgłoszeń
                     </Link>
 

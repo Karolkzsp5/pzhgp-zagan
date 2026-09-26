@@ -16,3 +16,13 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@layer base {
+  button:not(:disabled) {
+    @apply cursor-pointer;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
+}

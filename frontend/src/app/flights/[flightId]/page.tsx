@@ -318,8 +318,8 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         href="/flights"
                         className="inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline mb-4"
                     >
-                        <svg className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor">
-                            <path d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"/>
                         </svg>
                         Wszystkie loty
                     </Link>
@@ -388,7 +388,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                     {/* Mapa trasy */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
-                        <div className="h-[460px] sm:h-[560px]">
+                        <div className="relative z-0 h-[460px] sm:h-[560px]">
                             <FlightMap
                                 flight={flight}
                                 activeIndex={activeIndex}
@@ -439,12 +439,12 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         aria-label={isPlaying ? 'Zatrzymaj odtwarzanie trasy' : 'Odtwórz trasę'}
                                     >
                                         {isPlaying ? (
-                                            <svg className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
-                                                <path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Z"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                <path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Z" />
                                             </svg>
                                         ) : (
-                                            <svg className="w-5 h-5 ml-0.5" viewBox="0 -960 960 960" fill="currentColor">
-                                                <path d="M320-200v-560l440 280-440 280Z"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 ml-0.5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                <path d="M320-200v-560l440 280-440 280Z" />
                                             </svg>
                                         )}
                                     </button>

@@ -242,8 +242,8 @@ export default function AdminPanelPage() {
                                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="relative flex-1">
                                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-500" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                <path d="M765-144 526-383q-30 22-65.79 34.5-35.79 12.5-76.18 12.5Q284-336 214-406t-70-170q0-100 70-170t170-70q100 0 170 70t70 170.03q0 40.39-12.5 76.18Q599-464 577-434l239 239-51 51ZM384-408q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Z" />
                                             </svg>
                                         </div>
                                         <input
@@ -297,67 +297,69 @@ export default function AdminPanelPage() {
                                                 </EmptyState>
                                             </div>
                                         ) : (
-                                            <table className="min-w-full divide-y divide-gray-200" data-cy="pending-table">
-                                                <thead className="bg-blue-100">
-                                                <tr>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                {processedPending.map((breeder) => (
-                                                    <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`pending-row-${breeder.id}`}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                            <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-500">{breeder.sectionName}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {formatGlobalDate(breeder.createdAt)}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                                            <button
-                                                                data-cy={`approve-btn-${breeder.id}`}
-                                                                onClick={() => {
-                                                                    setConfirmDialog({
-                                                                        isOpen: true,
-                                                                        message: 'Czy na pewno chcesz zatwierdzić rejestrację tego konta?',
-                                                                        action: 'approve',
-                                                                        breederId: breeder.id
-                                                                    });
-                                                                    setOpenDropdownId(null);
-                                                                }}
-                                                                className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
-                                                            >
-                                                                Akceptuj
-                                                            </button>
-                                                            <button
-                                                                data-cy={`reject-btn-${breeder.id}`}
-                                                                onClick={() => {
-                                                                    setConfirmDialog({
-                                                                        isOpen: true,
-                                                                        message: 'Czy na pewno chcesz odrzucić i usunąć to konto?',
-                                                                        action: 'reject',
-                                                                        breederId: breeder.id
-                                                                    });
-                                                                }}
-                                                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
-                                                            >
-                                                                Odrzuć
-                                                            </button>
-                                                        </td>
+                                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                                                <table className="min-w-full divide-y divide-gray-200" data-cy="pending-table">
+                                                    <thead className="bg-blue-100">
+                                                    <tr>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sekcja</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Akcje</th>
                                                     </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                    {processedPending.map((breeder) => (
+                                                        <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`pending-row-${breeder.id}`}>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm font-medium text-gray-900">{breeder.name} {breeder.surname}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                                <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm text-gray-500">{breeder.sectionName}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {formatGlobalDate(breeder.createdAt)}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                                                <button
+                                                                    data-cy={`approve-btn-${breeder.id}`}
+                                                                    onClick={() => {
+                                                                        setConfirmDialog({
+                                                                            isOpen: true,
+                                                                            message: 'Czy na pewno chcesz zatwierdzić rejestrację tego konta?',
+                                                                            action: 'approve',
+                                                                            breederId: breeder.id
+                                                                        });
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition mr-3"
+                                                                >
+                                                                    Akceptuj
+                                                                </button>
+                                                                <button
+                                                                    data-cy={`reject-btn-${breeder.id}`}
+                                                                    onClick={() => {
+                                                                        setConfirmDialog({
+                                                                            isOpen: true,
+                                                                            message: 'Czy na pewno chcesz odrzucić i usunąć to konto?',
+                                                                            action: 'reject',
+                                                                            breederId: breeder.id
+                                                                        });
+                                                                    }}
+                                                                    className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
+                                                                >
+                                                                    Odrzuć
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         )}
                                 </section>
 
@@ -373,153 +375,155 @@ export default function AdminPanelPage() {
                                                 </EmptyState>
                                             </div>
                                         ) : (
-                                            <table className="min-w-full divide-y divide-gray-200" data-cy="registered-table">
-                                                <thead className="bg-blue-100">
-                                                <tr>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hodowca</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kontakt</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Sekcja</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
-                                                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Akcje</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                {processedRegistered.map((breeder) => (
-                                                    <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`registered-row-${breeder.id}`}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm font-medium text-gray-900 flex items-center">
-                                                                {breeder.name} {breeder.surname}
-                                                                {breeder.role === 'ADMINISTRATOR' && (
-                                                                    <span data-cy="badge-admin" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                                                                        ADMIN
-                                                                    </span>
-                                                                )}
-                                                                {breeder.role === 'MODERATOR' && (
-                                                                    <span data-cy="badge-moderator" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                                                        MODERATOR
-                                                                    </span>
-                                                                )}
-                                                                {breeder.email === currentUserEmail && (
-                                                                    <span data-cy="badge-you" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                                                                        TO TY
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-900">{breeder.email}</div>
-                                                            <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {breeder.status === 'ACTIVE' ? (
-                                                                <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                                    Aktywny
-                                                                </span>
-                                                            ) : (
-                                                                <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                                    Zablokowany
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-500">{breeder.sectionName}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {formatGlobalDate(breeder.createdAt)}
-                                                        </td>
-
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                                                            <button
-                                                                type="button"
-                                                                data-cy={`kebab-menu-btn-${breeder.id}`}
-                                                                aria-label={`Otwórz akcje dla ${breeder.name} ${breeder.surname}`}
-                                                                aria-expanded={openDropdownId === breeder.id}
-                                                                aria-haspopup="menu"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
-                                                                }}
-                                                                className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition focus:outline-none"
-                                                            >
-                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                                                </svg>
-                                                            </button>
-
-                                                            {openDropdownId === breeder.id && (
-                                                                <div
-                                                                    data-cy={`dropdown-menu-${breeder.id}`}
-                                                                    className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    <button
-                                                                        data-cy="details-option"
-                                                                        onClick={() => {
-                                                                            setSelectedBreeder(breeder);
-                                                                            setOpenDropdownId(null);
-                                                                        }}
-                                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
-                                                                    >
-                                                                        Szczegóły
-                                                                    </button>
-
-                                                                    {breeder.role !== 'ADMINISTRATOR' && (
-                                                                        <>
-                                                                            <button
-                                                                                data-cy="change-role-option"
-                                                                                onClick={() => {
-                                                                                    setRoleChangeBreeder(breeder);
-                                                                                    setNewRole(breeder.role);
-                                                                                    setOpenDropdownId(null);
-                                                                                }}
-                                                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
-                                                                            >
-                                                                                Zmień rolę
-                                                                            </button>
-
-                                                                            {breeder.status === 'ACTIVE' ? (
-                                                                                <button
-                                                                                    data-cy="block-option"
-                                                                                    onClick={() => {
-                                                                                        setConfirmDialog({
-                                                                                            isOpen: true,
-                                                                                            message: 'Czy na pewno chcesz zablokować to konto?',
-                                                                                            action: 'block',
-                                                                                            breederId: breeder.id
-                                                                                        });
-                                                                                        setOpenDropdownId(null);
-                                                                                    }}
-                                                                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
-                                                                                >
-                                                                                    Zablokuj
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    data-cy="unblock-option"
-                                                                                    onClick={() => {
-                                                                                        setConfirmDialog({
-                                                                                            isOpen: true,
-                                                                                            message: 'Czy na pewno chcesz odblokować to konto?',
-                                                                                            action: 'unblock',
-                                                                                            breederId: breeder.id
-                                                                                        });
-                                                                                        setOpenDropdownId(null);
-                                                                                    }}
-                                                                                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition border-t border-gray-50"
-                                                                                >
-                                                                                    Odblokuj
-                                                                                </button>
-                                                                            )}
-                                                                        </>
+                                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                                                <table className="min-w-full divide-y divide-gray-200" data-cy="registered-table">
+                                                    <thead className="bg-blue-100">
+                                                    <tr>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hodowca</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kontakt</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sekcja</th>
+                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data Rejestracji</th>
+                                                        <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Akcje</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                    {processedRegistered.map((breeder) => (
+                                                        <tr key={breeder.id} className="bg-white even:bg-slate-50 transition duration-150" data-cy={`registered-row-${breeder.id}`}>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm font-medium text-gray-900 flex items-center">
+                                                                    {breeder.name} {breeder.surname}
+                                                                    {breeder.role === 'ADMINISTRATOR' && (
+                                                                        <span data-cy="badge-admin" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                                            ADMIN
+                                                                        </span>
+                                                                    )}
+                                                                    {breeder.role === 'MODERATOR' && (
+                                                                        <span data-cy="badge-moderator" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                                            MODERATOR
+                                                                        </span>
+                                                                    )}
+                                                                    {breeder.email === currentUserEmail && (
+                                                                        <span data-cy="badge-you" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                                            TO TY
+                                                                        </span>
                                                                     )}
                                                                 </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm text-gray-900">{breeder.email}</div>
+                                                                <div className="text-sm text-gray-500">Tel: {formatPhoneNumber(breeder.phoneNumber)}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                {breeder.status === 'ACTIVE' ? (
+                                                                    <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                                        Aktywny
+                                                                    </span>
+                                                                ) : (
+                                                                    <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                                        Zablokowany
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm text-gray-500">{breeder.sectionName}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {formatGlobalDate(breeder.createdAt)}
+                                                            </td>
+
+                                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                                                                <button
+                                                                    type="button"
+                                                                    data-cy={`kebab-menu-btn-${breeder.id}`}
+                                                                    aria-label={`Otwórz akcje dla ${breeder.name} ${breeder.surname}`}
+                                                                    aria-expanded={openDropdownId === breeder.id}
+                                                                    aria-haspopup="menu"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
+                                                                    }}
+                                                                    className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition focus:outline-none"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                                        <path d="M479.79-192Q450-192 429-213.21t-21-51Q408-294 429.21-315t51-21Q510-336 531-314.79t21 51Q552-234 530.79-213t-51 21Zm0-216Q450-408 429-429.21t-21-51Q408-510 429.21-531t51-21Q510-552 531-530.79t21 51Q552-450 530.79-429t-51 21Zm0-216Q450-624 429-645.21t-21-51Q408-726 429.21-747t51-21Q510-768 531-746.79t21 51Q552-666 530.79-645t-51 21Z" />
+                                                                    </svg>
+                                                                </button>
+
+                                                                {openDropdownId === breeder.id && (
+                                                                    <div
+                                                                        data-cy={`dropdown-menu-${breeder.id}`}
+                                                                        className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <button
+                                                                            data-cy="details-option"
+                                                                            onClick={() => {
+                                                                                setSelectedBreeder(breeder);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                        >
+                                                                            Szczegóły
+                                                                        </button>
+
+                                                                        {breeder.role !== 'ADMINISTRATOR' && (
+                                                                            <>
+                                                                                <button
+                                                                                    data-cy="change-role-option"
+                                                                                    onClick={() => {
+                                                                                        setRoleChangeBreeder(breeder);
+                                                                                        setNewRole(breeder.role);
+                                                                                        setOpenDropdownId(null);
+                                                                                    }}
+                                                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                                >
+                                                                                    Zmień rolę
+                                                                                </button>
+
+                                                                                {breeder.status === 'ACTIVE' ? (
+                                                                                    <button
+                                                                                        data-cy="block-option"
+                                                                                        onClick={() => {
+                                                                                            setConfirmDialog({
+                                                                                                isOpen: true,
+                                                                                                message: 'Czy na pewno chcesz zablokować to konto?',
+                                                                                                action: 'block',
+                                                                                                breederId: breeder.id
+                                                                                            });
+                                                                                            setOpenDropdownId(null);
+                                                                                        }}
+                                                                                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
+                                                                                    >
+                                                                                        Zablokuj
+                                                                                    </button>
+                                                                                ) : (
+                                                                                    <button
+                                                                                        data-cy="unblock-option"
+                                                                                        onClick={() => {
+                                                                                            setConfirmDialog({
+                                                                                                isOpen: true,
+                                                                                                message: 'Czy na pewno chcesz odblokować to konto?',
+                                                                                                action: 'unblock',
+                                                                                                breederId: breeder.id
+                                                                                            });
+                                                                                            setOpenDropdownId(null);
+                                                                                        }}
+                                                                                        className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition border-t border-gray-50"
+                                                                                    >
+                                                                                        Odblokuj
+                                                                                    </button>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         )}
                                 </section>
                             </>

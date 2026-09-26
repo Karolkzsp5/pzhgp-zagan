@@ -3,7 +3,7 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { API_URL } from '@/app/utils/apiClient';
+import { API_URL, readApiError } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 import Modal from '@/app/components/Modal';
 
@@ -19,13 +19,7 @@ interface RegistrationFormData {
     email: string;
     phoneNumber: string;
     password: string;
-    confirmPassword?: string;
-    [key: string]: string | number | undefined;
-}
-
-interface MessageState {
-    text: string;
-    type: 'success' | 'error' | 'info' | '';
+    confirmPassword: string;
 }
 
 interface SectionDto {
@@ -39,6 +33,7 @@ export default function RegisterPage() {
     const [sections, setSections] = useState<SectionDto[]>([]);
     const [sectionsError, setSectionsError] = useState('');
     const [isRegistrationSuccessful, setIsRegistrationSuccessful] = useState(false);
+    const [error, setError] = useState('');
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -54,8 +49,6 @@ export default function RegisterPage() {
         street: '',
         houseNumber: ''
     });
-
-    const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
 
     useEffect(() => {
         const fetchSections = async () => {
@@ -164,67 +157,76 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setError('');
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(formData.email)) {
-            setMessage({ text: 'Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).', type: 'error' });
+            setError('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).');
             return;
         }
 
         const rawPhoneNumber = formData.phoneNumber.replace(/\s+/g, '');
         if (rawPhoneNumber.length !== 9) {
-            setMessage({ text: 'Numer telefonu musi zawierać dokładnie 9 cyfr.', type: 'error' });
+            setError('Numer telefonu musi zawierać dokładnie 9 cyfr.');
             return;
         }
 
         const passwordError = validateStrongPassword(formData.password);
         if (passwordError) {
-            setMessage({ text: passwordError, type: 'error' });
+            setError(passwordError);
             return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setMessage({ text: 'Podane hasła nie są identyczne.', type: 'error' });
+            setError('Podane hasła nie są identyczne.');
             return;
         }
 
         if (formData.sectionId === 0) {
-            setMessage({ text: 'Proszę wybrać sekcję do której chcesz należeć', type: 'error' });
+            setError('Proszę wybrać sekcję, do której chcesz należeć.');
             return;
         }
 
         const houseNumberRegex = /^[1-9]\d*\s?[a-zA-Z]?(\s?[\/-]\s?[1-9]\d*\s?[a-zA-Z]?)?$/;
         if (!houseNumberRegex.test(formData.houseNumber)) {
-            setMessage({ text: 'Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).', type: 'error' });
+            setError('Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).');
             return;
         }
 
         setIsLoading(true);
         try {
+            const {
+                confirmPassword: _confirmPassword,
+                ...registrationData
+            } = formData;
+
             const cleanDataToSend = {
-                ...formData,
+                ...registrationData,
                 phoneNumber: rawPhoneNumber
             };
-            delete cleanDataToSend.confirmPassword;
 
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(cleanDataToSend),
+                body: JSON.stringify(cleanDataToSend)
             });
-
-            const data = await response.text();
 
             if (response.status === 201) {
                 setIsRegistrationSuccessful(true);
-            } else {
-                setMessage({ text: data, type: 'error' });
+                return;
             }
 
+            setError(
+                await readApiError(
+                    response,
+                    'Nie udało się zarejestrować konta.'
+                )
+            );
+
         } catch (error) {
-            setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
+            setError('Błąd połączenia z serwerem.');
         } finally {
             setIsLoading(false);
         }
@@ -347,32 +349,24 @@ export default function RegisterPage() {
 
                     </div>
 
-                    {message.text && (
-                        <div className={`p-4 my-4 rounded ${
-                            message.type === 'success' ? 'bg-green-100 text-green-700' :
-                                message.type === 'error' ? 'bg-red-100 text-red-700' :
-                                    'bg-blue-100 text-blue-700'
-                        }`}>
-                            {message.text}
+                    {error && (
+                        <div
+                            className="p-4 my-4 rounded bg-red-100 text-red-700"
+                            role="alert"
+                        >
+                            {error}
                         </div>
                     )}
 
                     <button
                         type="submit"
                         disabled={isLoading || sections.length === 0}
-                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center"
+                        className="w-full mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-wait flex justify-center items-center gap-2"
                     >
-                        {isLoading ? (
-                            <>
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Wysyłanie...
-                            </>
-                        ) : (
-                            'Zarejestruj się'
+                        {isLoading && (
+                            <span className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" aria-hidden="true"/>
                         )}
+                        {isLoading ? 'Wysyłanie...' : 'Zarejestruj się'}
                     </button>
                 </form>
 
@@ -386,8 +380,8 @@ export default function RegisterPage() {
             <Modal isOpen={isRegistrationSuccessful} title="Rejestracja przebiegła pomyślnie" onClose={closeRegistrationModal} maxWidthClass="max-w-md">
                 <div className="p-6 text-center">
                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-                        <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <path d="M389-267 195-460l51-52 143 143 325-324 51 51-376 375Z" />
                         </svg>
                     </div>
 

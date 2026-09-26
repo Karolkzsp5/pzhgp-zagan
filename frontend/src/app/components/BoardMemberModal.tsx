@@ -336,7 +336,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         </div>
                     )}
 
-                    <div className="flex justify-end space-x-3 pt-4 border-t mt-6">
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
                         <button
                             type="button"
                             onClick={onClose}
