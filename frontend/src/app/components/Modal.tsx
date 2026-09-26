@@ -94,10 +94,9 @@ export default function Modal({ isOpen, title, children, onClose, closeDisabled 
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 id={titleId} className="text-xl font-bold text-gray-900">{title}</h2>
                     <button type="button" onClick={onClose} disabled={closeDisabled} aria-label="Zamknij okno"
-                            className="p-1 text-gray-400 hover:text-gray-700 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                            className="p-1 text-gray-400 hover:text-gray-700 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
                         </svg>
                     </button>
                 </div>
