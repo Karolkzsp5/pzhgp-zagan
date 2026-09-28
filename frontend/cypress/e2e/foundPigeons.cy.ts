@@ -9,7 +9,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
         content: [
             {
                 id: 1,
-                ringNumber: 'PL-0208-24-1234',
+                ringNumber: 'PL-0369-26-1234',
                 contactPhone: '+49 30 12345678',
                 contactEmail: 'finder@example.de',
                 foundLocation: 'Cottbus',
@@ -23,7 +23,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
             },
             {
                 id: 2,
-                ringNumber: 'PL-0208-24-5678',
+                ringNumber: 'PL-0369-26-5678',
                 contactPhone: null,
                 contactEmail: 'znalazca@example.pl',
                 foundLocation: 'Żagań',
@@ -88,14 +88,14 @@ describe('Znalezione gołębie - Testy E2E', () => {
         });
 
         it('wymaga przynajmniej jednej metody kontaktu', () => {
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.contains('button', 'Wyślij zgłoszenie').click();
 
             cy.contains('Podaj numer telefonu lub adres e-mail.').should('be.visible');
         });
 
         it('odrzuca niepoprawny adres e-mail', () => {
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.get('#contact-email').type('to-nie-jest-email');
             cy.contains('button', 'Wyślij zgłoszenie').click();
 
@@ -103,7 +103,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
         });
 
         it('odrzuca numer telefonu o zbyt małej liczbie cyfr', () => {
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.get('#contact-phone').type('12345');
             cy.contains('button', 'Wyślij zgłoszenie').click();
 
@@ -116,13 +116,13 @@ describe('Znalezione gołębie - Testy E2E', () => {
                 body: { id: 10 }
             }).as('submitReport');
 
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.get('#contact-phone').type('+49 30 12345678');
             cy.get('#found-country').type('Niemcy');
             cy.contains('button', 'Wyślij zgłoszenie').click();
 
             cy.wait('@submitReport').its('request.body').should(body => {
-                expect(body.ringNumber).to.equal('PL-0208-24-1234');
+                expect(body.ringNumber).to.equal('PL-0369-26-1234');
                 expect(body.contactPhone).to.equal('+49 30 12345678');
                 expect(body.preferredLanguage).to.equal('PL');
             });
@@ -137,7 +137,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
             }).as('submitReport');
 
             cy.contains('button', 'Deutsch').click();
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.get('#contact-email').type('hans@example.de');
             cy.contains('button', 'Meldung senden').click();
 
@@ -152,7 +152,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
             }).as('submitReport');
 
             cy.contains('button', 'English').click();
-            cy.get('#ring-number').type('PL-0208-24-1234');
+            cy.get('#ring-number').type('PL-0369-26-1234');
             cy.get('#contact-email').type('finder@example.com');
             cy.contains('button', 'Send report').click();
 
@@ -184,13 +184,13 @@ describe('Znalezione gołębie - Testy E2E', () => {
 
         it('wyświetla listę zgłoszeń ze statusami', () => {
             cy.contains('h1', 'Zgłoszenia znalezionych gołębi').should('be.visible');
-            cy.contains('td', 'PL-0208-24-1234').should('be.visible');
+            cy.contains('td', 'PL-0369-26-1234').should('be.visible');
             cy.contains('Oczekujące').should('be.visible');
             cy.contains('W obsłudze').should('be.visible');
         });
 
         it('po wybraniu zgłoszenia pokazuje dane kontaktowe i język znalazcy', () => {
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
 
             cy.contains('+49 30 12345678').should('be.visible');
             cy.contains('finder@example.de').should('be.visible');
@@ -205,14 +205,14 @@ describe('Znalezione gołębie - Testy E2E', () => {
         });
 
         it('wyszukuje zgłoszenia po numerze obrączki', () => {
-            cy.get('#ring-search').type('PL-0208');
+            cy.get('#ring-search').type('PL-0369');
             cy.contains('button', 'Szukaj').click();
 
-            cy.wait('@getReports').its('request.url').should('include', 'ringNumber=PL-0208');
+            cy.wait('@getReports').its('request.url').should('include', 'ringNumber=PL-0369');
         });
 
         it('pokazuje tylko dozwolone zmiany statusu', () => {
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
 
             // PENDING: można zatwierdzić albo odrzucić, ale nie zakończyć od razu.
             cy.contains('button', 'Zatwierdź').should('be.visible');
@@ -226,7 +226,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
                 body: { ...mockReports.content[0], status: 'APPROVED' }
             }).as('updateStatus');
 
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
             cy.contains('button', 'Zatwierdź').click();
 
             cy.wait('@updateStatus').its('request.body.status').should('equal', 'APPROVED');
@@ -238,7 +238,7 @@ describe('Znalezione gołębie - Testy E2E', () => {
                 body: { ...mockReports.content[0], adminNote: 'Właściciel ustalony.' }
             }).as('updateNote');
 
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
             cy.get('#admin-note').type('Właściciel ustalony.');
             cy.contains('button', 'Zapisz notatkę').click();
 
@@ -258,12 +258,12 @@ describe('Znalezione gołębie - Testy E2E', () => {
             cy.reload();
             cy.wait('@getResolved');
 
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
             cy.contains('Sprawa jest zamknięta').should('be.visible');
         });
 
         it('prosi o potwierdzenie przed usunięciem zgłoszenia', () => {
-            cy.contains('td', 'PL-0208-24-1234').click();
+            cy.contains('td', 'PL-0369-26-1234').click();
             cy.contains('button', 'Usuń zgłoszenie').click();
 
             cy.contains('Czy na pewno chcesz trwale usunąć zgłoszenie').should('be.visible');

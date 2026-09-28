@@ -1,47 +1,49 @@
+import { createFakeToken } from '../support/testUtils';
+
+const mockSections = [
+    { id: 1, name: 'Żagań' },
+    { id: 2, name: 'Wymiarki' },
+    { id: 3, name: 'Chotków' },
+    { id: 4, name: 'Kożuchów' }
+];
+
+const mockPending = [
+    {
+        id: 1, name: 'Jan', surname: 'Nowak', email: 'jan.nowak@test.pl', phoneNumber: '111222333',
+        dateOfBirth: '1990-01-01', postalCode: '68-100', city: 'Żagań', street: 'Długa', houseNumber: '1',
+        sectionId: 1, status: 'PENDING', createdAt: '2026-08-10T10:00:00', role: 'BREEDER', sectionName: 'Żagań'
+    }
+];
+
+const mockRegistered = [
+    {
+        id: 2, name: 'Anna', surname: 'Kowalska', email: 'anna.k@test.pl', phoneNumber: '444555666',
+        dateOfBirth: '1985-05-15', postalCode: '68-113', city: 'Chotków', street: 'Krótka', houseNumber: '5a',
+        sectionId: 3, status: 'ACTIVE', createdAt: '2026-08-01T10:00:00', role: 'BREEDER', sectionName: 'Chotków'
+    },
+    {
+        id: 3, name: 'Michał', surname: 'Admin', email: 'admin@pzhgp.pl', phoneNumber: '000000000',
+        dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '10b/14a',
+        sectionId: 2, status: 'ACTIVE', createdAt: '2026-07-01T10:00:00', role: 'ADMINISTRATOR', sectionName: 'Wymiarki'
+    },
+    {
+        id: 4, name: 'Piotr', surname: 'Moderator', email: 'piotr.m@test.pl', phoneNumber: '123123123',
+        dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '1',
+        sectionId: 4, status: 'ACTIVE', createdAt: '2026-06-13T10:00:00',
+        role: 'MODERATOR', sectionName: 'Kożuchów'
+    }
+];
+
 describe('Panel Administratora - Testy E2E', () => {
-    const mockPending = [
-        {
-            id: 1, name: 'Jan', surname: 'Nowak', email: 'jan.nowak@test.pl', phoneNumber: '111222333',
-            dateOfBirth: '1990-01-01', postalCode: '68-100', city: 'Żagań', street: 'Długa', houseNumber: '1',
-            sectionId: 1, status: 'PENDING', createdAt: '2026-08-10T10:00:00', role: 'BREEDER', sectionName: 'Żagań'
-        }
-    ];
-
-    const mockRegistered = [
-        {
-            id: 2, name: 'Anna', surname: 'Kowalska', email: 'anna.k@test.pl', phoneNumber: '444555666',
-            dateOfBirth: '1985-05-15', postalCode: '68-113', city: 'Chotków', street: 'Krótka', houseNumber: '5a',
-            sectionId: 3, status: 'ACTIVE', createdAt: '2026-08-01T10:00:00', role: 'BREEDER', sectionName: 'Chotków'
-        },
-        {
-            id: 3, name: 'Michał', surname: 'Admin', email: 'admin@pzhgp.pl', phoneNumber: '000000000',
-            dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '10b/14a',
-            sectionId: 2, status: 'ACTIVE', createdAt: '2026-07-01T10:00:00', role: 'ADMINISTRATOR', sectionName: 'Wymiarki'
-        },
-        {
-            id: 4, name: 'Piotr', surname: 'Moderator', email: 'piotr.m@test.pl', phoneNumber: '123123123',
-            dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '1',
-            sectionId: 4, status: 'ACTIVE', createdAt: '2026-06-13T10:00:00',
-            role: 'MODERATOR', sectionName: 'Kożuchów'
-        }
-    ];
-
-    const mockSections = [
-        { id: 1, name: 'Żagań' },
-        { id: 2, name: 'Wymiarki' },
-        { id: 3, name: 'Chotków' },
-        { id: 4, name: 'Kożuchów' }
-    ];
-
-    const fakeToken = "header.eyJzdWIiOiJhZG1pbkBwemhncC5wbCIsInJvbGUiOiJBRE1JTklTVFJBVE9SIiwiZXhwIjo5OTk5OTk5OTk5fQ.signature";
+    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
 
     beforeEach(() => {
-        cy.intercept('GET', 'http://localhost:8080/api/admin/pending', {
+        cy.intercept('GET', '**/api/admin/pending', {
             statusCode: 200,
             body: mockPending
         }).as('getPending');
 
-        cy.intercept('GET', 'http://localhost:8080/api/admin/registered', {
+        cy.intercept('GET', '**/api/admin/registered', {
             statusCode: 200,
             body: mockRegistered
         }).as('getRegistered');
@@ -51,13 +53,25 @@ describe('Panel Administratora - Testy E2E', () => {
             body: mockSections
         }).as('getSections');
 
-        cy.visit('/admin', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', fakeToken);
-            }
-        });
+        cy.intercept('GET', '**/api/notifications', {
+            statusCode: 200,
+            body: []
+        }).as('getNotifications');
 
-        cy.wait(['@getSections', '@getPending', '@getRegistered']);
+        cy.intercept('GET', '**/api/notifications/unread-count', {
+            statusCode: 200,
+            body: 0
+        }).as('getUnreadCount');
+
+        cy.visitWithToken('/admin', adminToken);
+
+        cy.wait([
+            '@getPending',
+            '@getRegistered',
+            '@getSections',
+            '@getNotifications',
+            '@getUnreadCount'
+        ]);
     });
 
     it('Should correctly render the entire admin panel', () => {
@@ -106,7 +120,7 @@ describe('Panel Administratora - Testy E2E', () => {
 
                 cy.get('td').eq(1).within(() => {
                     cy.contains('jan.nowak@test.pl').should('be.visible');
-                    cy.contains('Tel: 111222333').should('be.visible');
+                    cy.contains('Tel: 111 222 333').should('be.visible');
                 });
 
                 cy.get('td').eq(2).within(() => {
@@ -145,7 +159,7 @@ describe('Panel Administratora - Testy E2E', () => {
 
                 cy.get('td').eq(1).within(() => {
                     cy.contains('anna.k@test.pl').should('be.visible');
-                    cy.contains('Tel: 444555666').should('be.visible');
+                    cy.contains('Tel: 444 555 666').should('be.visible');
                 });
 
                 cy.get('td').eq(2).find('[data-cy="status-active"]')
@@ -174,7 +188,7 @@ describe('Panel Administratora - Testy E2E', () => {
 
                 cy.get('td').eq(1).within(() => {
                     cy.contains('admin@pzhgp.pl').should('be.visible');
-                    cy.contains('Tel: 000000000').should('be.visible');
+                    cy.contains('Tel: 000 000 000').should('be.visible');
                 });
 
                 cy.get('td').eq(2).find('[data-cy="status-active"]')
@@ -372,7 +386,7 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should successfully accept the pending account and move it to the breeders table', () => {
-        cy.intercept('PUT', 'http://localhost:8080/api/admin/approve/1', {
+        cy.intercept('PUT', '**/api/admin/approve/1', {
             statusCode: 200,
             body: 'Konto zostało pomyślnie zaakceptowane.'
         }).as('approveAccount');
@@ -380,7 +394,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="approve-btn-1"]').click();
 
-        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.contains('h2', 'Potwierdzenie akcji').should('be.visible');
         cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
 
         cy.wait('@approveAccount');
@@ -399,7 +413,7 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly reject the pending account and remove it from the system', () => {
-        cy.intercept('DELETE', 'http://localhost:8080/api/admin/reject/1', {
+        cy.intercept('DELETE', '**/api/admin/reject/1', {
             statusCode: 200,
             body: 'Konto zostało odrzucone i usunięte.'
         }).as('rejectAccount');
@@ -407,7 +421,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="reject-btn-1"]').click();
 
-        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.contains('h2', 'Potwierdzenie akcji').should('be.visible');
         cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
 
         cy.wait('@rejectAccount');
@@ -427,18 +441,17 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="dropdown-menu-2"]').should('be.visible');
         cy.get('[data-cy="details-option"]').click();
 
+        cy.contains('h2', 'Dane hodowcy').should('be.visible');
         cy.get('[data-cy="details-modal"]').should('be.visible').within(() => {
-            cy.contains('h3', 'Dane hodowcy').should('be.visible');
-
             cy.contains('p', 'Imię i nazwisko').next().should('have.text', 'Anna Kowalska');
             cy.contains('p', 'Email').next().should('have.text', 'anna.k@test.pl');
-            cy.contains('p', 'Telefon').next().should('have.text', '444555666');
+            cy.contains('p', 'Telefon').next().should('have.text', '444 555 666');
             cy.contains('p', 'Data urodzenia').next().should('have.text', '15.05.1985');
             cy.contains('p', 'Adres zamieszkania').next().should('contain.text', 'ul. Krótka 5a').and('contain.text', '68-113 Chotków');
             cy.contains('p', 'Sekcja').next().should('have.text', 'Chotków');
             cy.contains('p', 'Data rejestracji').next().should('contain.text', '01.08.2026');
-            cy.contains('p', 'Rola w systemie').next().should('have.text', 'BREEDER');
-            cy.contains('p', 'Obecny status').next().should('have.text', 'ACTIVE');
+            cy.contains('p', 'Rola w systemie').next().should('have.text', 'Hodowca');
+            cy.contains('p', 'Obecny status').next().should('have.text', 'Aktywny');
 
             cy.contains('button', 'Zamknij').click();
         });
@@ -447,7 +460,7 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly open the role change modal, display the data, and save the new role', () => {
-        cy.intercept('PUT', 'http://localhost:8080/api/admin/2/role', {
+        cy.intercept('PUT', '**/api/admin/2/role', {
             statusCode: 200,
             body: 'Rola została pomyślnie zmieniona'
         }).as('changeRole');
@@ -456,15 +469,15 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="change-role-option"]').click();
 
         cy.get('[data-cy="role-change-modal"]').should('be.visible').within(() => {
-            cy.contains('h3', 'Zmień rolę').should('be.visible');
+            cy.contains('h2', 'Zmień rolę').should('be.visible');
             cy.contains('Wybierz nowe uprawnienia dla użytkownika:').should('be.visible');
             cy.contains('Anna Kowalska').should('be.visible');
             cy.contains('label', 'Nowa rola w systemie').should('be.visible');
 
             cy.get('[data-cy="role-select"]').should('be.visible').within(() => {
                 cy.get('option').should('have.length', 2);
-                cy.get('option').eq(0).should('contain.text', 'Hodowca (Podstawowy dostęp)');
-                cy.get('option').eq(1).should('contain.text', 'Moderator (Zarządzanie lotami)');
+                cy.get('option').eq(0).should('have.text', 'Hodowca');
+                cy.get('option').eq(1).should('have.text', 'Moderator');
             });
 
             cy.get('[data-cy="cancel-role-btn"]').should('be.visible');
@@ -486,14 +499,14 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly block the user and then unblock them', () => {
-        cy.intercept('PUT', 'http://localhost:8080/api/admin/block/2', {
+        cy.intercept('PUT', '**/api/admin/block/2', {
             statusCode: 200,
-            body: 'Konto zostało zablokowane.'
+            body: 'Konto zostało pomyślnie zablokowane.'
         }).as('blockAccount');
 
-        cy.intercept('PUT', 'http://localhost:8080/api/admin/unblock/2', {
+        cy.intercept('PUT', '**/api/admin/unblock/2', {
             statusCode: 200,
-            body: 'Konto zostało odblokowane.'
+            body: 'Konto zostało pomyślnie odblokowane.'
         }).as('unblockAccount');
 
         // =============
@@ -507,7 +520,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
         cy.get('[data-cy="block-option"]').click();
 
-        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.contains('h2', 'Potwierdzenie akcji').should('be.visible');
         cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
 
         cy.wait('@blockAccount');
@@ -524,7 +537,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
         cy.get('[data-cy="unblock-option"]').click();
 
-        cy.contains('h3', 'Potwierdzenie akcji').should('be.visible');
+        cy.contains('h2', 'Potwierdzenie akcji').should('be.visible');
         cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
 
         cy.wait('@unblockAccount');
@@ -533,5 +546,41 @@ describe('Panel Administratora - Testy E2E', () => {
             cy.get('[data-cy="status-active"]').should('be.visible').and('contain.text', 'Aktywny');
             cy.get('[data-cy="status-blocked"]').should('not.exist');
         });
+    });
+});
+
+describe('AdminGuard', () => {
+    it('Should redirect unauthenticated user to the login page', () => {
+        cy.visit('/admin');
+
+        cy.location('pathname').should('eq', '/login');
+    });
+
+    it('Should redirect a non-administrator user to the home page', () => {
+        const breederToken =
+            'header.eyJzdWIiOiJob2Rvd2NhQHRlc3QucGwiLCJyb2xlIjoiQlJFRURFUiIsImV4cCI6OTk5OTk5OTk5OX0.signature';
+
+        cy.intercept('GET', '**/api/admin/pending', {
+            statusCode: 403,
+            body: ''
+        });
+
+        cy.intercept('GET', '**/api/admin/registered', {
+            statusCode: 403,
+            body: ''
+        });
+
+        cy.intercept('GET', '**/api/sections', {
+            statusCode: 200,
+            body: mockSections
+        });
+
+        cy.visit('/admin', {
+            onBeforeLoad: (win) => {
+                win.localStorage.setItem('jwt_token', breederToken);
+            }
+        });
+
+        cy.location('pathname').should('eq', '/');
     });
 });

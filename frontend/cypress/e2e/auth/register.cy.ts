@@ -7,6 +7,27 @@ describe('Breeder Registration Process Test', () => {
         { id: 4, name: 'Kożuchów' }
     ];
 
+    const fillEmail = (email = 'testcypress1@test.com') => {
+        cy.get('input[name="email"]').clear().type(email, { delay: 20 });
+    };
+
+    const fillPhoneNumber = (phoneNumber = '444444444') => {
+        cy.get('input[name="phoneNumber"]').clear().type(phoneNumber, { delay: 20 });
+    };
+
+    const fillPassword = (password = 'Testcypress1@') => {
+        cy.get('input[name="password"]').clear().type(password);
+        cy.get('input[name="confirmPassword"]').clear().type(password);
+    };
+
+    const selectSection = (sectionValue = '1') => {
+        cy.get('select[name="sectionId"]').select(sectionValue);
+    };
+
+    const fillHouseNumber = (houseNumber = '14a') => {
+        cy.get('input[name="houseNumber"]').clear().type(houseNumber, { delay: 20 });
+    };
+
     beforeEach(() => {
         cy.intercept('GET', '**/api/sections', {
             statusCode: 200,
@@ -30,7 +51,7 @@ describe('Breeder Registration Process Test', () => {
         cy.contains('label', 'Data urodzenia').should('be.visible');
         cy.get('input[name="dateOfBirth"]').should('be.visible').and('have.attr', 'required');
 
-        cy.contains('label', 'Adres E-mail').should('be.visible');
+        cy.contains('label', 'Adres e-mail').should('be.visible');
         cy.get('input[name="email"]').should('be.visible').and('have.attr', 'required');
 
         cy.contains('label', 'Numer telefonu').should('be.visible');
@@ -42,7 +63,7 @@ describe('Breeder Registration Process Test', () => {
         cy.contains('label', 'Powtórz hasło').should('be.visible');
         cy.get('input[name="confirmPassword"]').should('be.visible').and('have.attr', 'required');
 
-        cy.contains('label', 'Wybierz sekcję do której chcesz należeć').should('be.visible');
+        cy.contains('label', 'Wybierz sekcję, do której chcesz należeć').should('be.visible');
         cy.get('select[name="sectionId"]').should('be.visible').and('have.attr', 'required');
 
         cy.contains('label', 'Kod pocztowy').should('be.visible');
@@ -60,14 +81,14 @@ describe('Breeder Registration Process Test', () => {
         cy.get('button[type="submit"]').should('be.visible').and('not.be.disabled');
 
         cy.contains('Masz już konto?').should('be.visible');
-        cy.get('a').should('contain.text', 'Zaloguj się tutaj').and('be.visible');
+        cy.contains('a', 'Zaloguj się tutaj').should('be.visible').and('have.attr', 'href', '/login');
     });
 
     ////////////////////////
     ///////Name tests///////
     ////////////////////////
 
-    it('Name test - Should ignore any letters and special characters included in the Name input', () => {
+    it('Name test - Should ignore digits and special characters', () => {
         cy.get('input[name="name"]').clear().type('T1o@m3a$s5z', { delay: 20 }).should('have.value', 'Tomasz');
     });
 
@@ -76,10 +97,10 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    //////Surame tests//////
+    /////Surname tests//////
     ////////////////////////
 
-    it('Surname test - Should ignore any letters and special characters included in the Surname input', () => {
+    it('Surname test - Should ignore digits and special characters', () => {
         cy.get('input[name="surname"]').clear().type('N1o@w3a$k', { delay: 20 }).should('have.value', 'Nowak');
     });
 
@@ -146,10 +167,10 @@ describe('Breeder Registration Process Test', () => {
 
         cy.get('form').invoke('attr', 'novalidate', '');
 
-        cy.fillPhoneNumber();
-        cy.fillPassword();
-        cy.selectSection();
-        cy.fillHouseNumber();
+        fillPhoneNumber();
+        fillPassword();
+        selectSection();
+        fillHouseNumber();
 
         cy.get('input[name="email"]').type('test.cypress0@test.cy');
         cy.get('button[type="submit"]').click();
@@ -175,7 +196,7 @@ describe('Breeder Registration Process Test', () => {
 
     it('Phone number test - Should prevent registration when phone number has less than 9 digits', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
-        cy.fillEmail();
+        fillEmail();
 
         cy.get('input[name="phoneNumber"]').clear().type('123');
         cy.get('button[type="submit"]').click();
@@ -190,11 +211,11 @@ describe('Breeder Registration Process Test', () => {
 
         cy.get('form').invoke('attr', 'novalidate', '');
 
-        cy.fillEmail();
+        fillEmail();
         cy.get('input[name="password"]').type('Testcypress1@', { delay: 20 });
         cy.get('input[name="confirmPassword"]').type('Testcypress1@');
-        cy.selectSection();
-        cy.fillHouseNumber();
+        selectSection();
+        fillHouseNumber();
 
         cy.get('input[name="phoneNumber"]').clear().type('123456789');
         cy.get('button[type="submit"]').click();
@@ -208,8 +229,8 @@ describe('Breeder Registration Process Test', () => {
 
     it('Password test - Should check the strength of the password', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
-        cy.fillEmail();
-        cy.fillPhoneNumber()
+        fillEmail();
+        fillPhoneNumber()
 
         // No capital letter
         cy.get('input[name="password"]').clear().type('testcypress1@');
@@ -244,12 +265,12 @@ describe('Breeder Registration Process Test', () => {
 
     it('Password test - Should return an error if the passwords are not the same', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
-        cy.fillEmail();
-        cy.fillPhoneNumber();
+        fillEmail();
+        fillPhoneNumber();
 
         cy.get('input[name="password"]').clear().type('Testcypress1@', { delay: 20 });
         cy.get('input[name="confirmPassword"]').clear().type('Testcypress');
-        cy.selectSection();
+        selectSection();
 
         cy.get('button[type="submit"]').click();
         cy.contains('Podane hasła nie są identyczne.').should('be.visible');
@@ -262,12 +283,12 @@ describe('Breeder Registration Process Test', () => {
     it('Section test - Should prevent registration when section is not selected', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
 
-        cy.fillEmail();
-        cy.fillPhoneNumber();
-        cy.fillPassword();
+        fillEmail();
+        fillPhoneNumber();
+        fillPassword();
 
         cy.get('button[type="submit"]').click();
-        cy.contains('Proszę wybrać sekcję do której chcesz należeć').should('be.visible');
+        cy.contains('Proszę wybrać sekcję, do której chcesz należeć').should('be.visible');
     });
 
     ////////////////////////
@@ -283,7 +304,7 @@ describe('Breeder Registration Process Test', () => {
     ///////City tests///////
     ////////////////////////
 
-    it('City test - Should ignore any letters and special characters', () => {
+    it('City test - Should ignore digits and special characters', () => {
         cy.get('input[name="city"]').clear().type('D1ł@u3g$i5e', { delay: 20 }).should('have.value', 'Długie');
     });
 
@@ -295,8 +316,8 @@ describe('Breeder Registration Process Test', () => {
     //////Street tests//////
     ////////////////////////
 
-    it('Street test - Should ignore any letters and special characters', () => {
-        cy.get('input[name="street"]').clear().type('P1o@l3n$a', { delay: 20 }).should('have.value', 'Polna');
+    it('Street test - Should ignore unsupported special characters', () => {
+        cy.get('input[name="street"]').clear().type('Polna@$', { delay: 50 }).should('have.value', 'Polna');
     });
 
     it('Street test - Should accept Polish characters', () => {
@@ -308,11 +329,11 @@ describe('Breeder Registration Process Test', () => {
     ////////////////////////
 
     it('House number test - Should ignore any special characters except "/" and "-"', () => {
-        cy.get('input[name="houseNumber"]').clear().type('1@#4a/%8*c', { delay: 20 }).should('have.value', '14a/8c');
+        cy.get('input[name="houseNumber"]').clear().type('1@#4a/%8*c', { delay: 50 }).should('have.value', '14a/8c');
     });
 
     it('House number test - Should ignore Polish characters', () => {
-        cy.get('input[name="houseNumber"]').clear().type('1ąć4a/ó8ńc', { delay: 20 }).should('have.value', '14a/8c');
+        cy.get('input[name="houseNumber"]').clear().type('1ąć4a/ó8ńc', { delay: 50 }).should('have.value', '14a/8c');
     });
 
 
@@ -340,13 +361,26 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="houseNumber"]').type('15b');
 
         cy.get('button[type="submit"]').click();
-        cy.wait('@successfulRegistration');
+        cy.wait('@successfulRegistration').then((interception) => {
+            expect(interception.request.body).to.deep.equal({
+                name: 'Tomasz',
+                surname: 'Nowak',
+                dateOfBirth: '2003-01-12',
+                email: 'testcypress@test.com',
+                phoneNumber: '444444444',
+                password: 'Testcypress1@',
+                sectionId: 1,
+                postalCode: '11-111',
+                city: 'Test',
+                street: 'Testowa',
+                houseNumber: '15b'
+            });
+        });
 
-        cy.location('search').should('include', 'registered=true');
         cy.contains('Rejestracja przebiegła pomyślnie').should('be.visible');
         cy.contains('Twoje konto zostało pomyślnie utworzone i oczekuje na akceptację administratora.').should('be.visible');
 
         cy.contains('button', 'Rozumiem').click();
-        cy.contains('Rejestracja przebiegła pomyślnie').should('not.exist');
+        cy.location('pathname').should('eq', '/');
     });
 });

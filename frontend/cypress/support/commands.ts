@@ -37,31 +37,53 @@
 // }
 declare namespace Cypress {
     interface Chainable {
-        selectSection(sectionValue?: string): Chainable<Element>;
-        fillEmail(email?: string): Chainable<Element>;
-        fillPhoneNumber(phoneNumber?: string): Chainable<Element>;
-        fillPassword(password?: string): Chainable<Element>;
-        fillHouseNumber(houseNumber?: string): Chainable<Element>;
+        checkFooter(): Chainable<void>;
+        checkLoggedInNavbar(userName: string): Chainable<void>;
+        checkLoggedOutNavbar(): Chainable<void>;
+        mockNavbarNotifications(): Chainable<void>;
+        visitWithToken(url: string, token: string): Chainable<void>;
     }
 }
 
-Cypress.Commands.add('fillEmail', (email = 'testcypress1@test.com') => {
-    cy.get('input[name="email"]').clear().type(email, { delay: 20 });
+Cypress.Commands.add('checkFooter', () => {
+    cy.get('[data-cy="footer"]').should('be.visible');
+    cy.get('[data-cy="footer-contact"]').should('be.visible').and('have.attr', 'href', '/contact');
+    cy.get('[data-cy="footer-privacy"]').should('be.visible').and('have.attr', 'href', '/privacy');
+    cy.get('[data-cy="footer-copyright"]').should('be.visible');
 });
 
-Cypress.Commands.add('fillPhoneNumber', (phoneNumber = '444444444') => {
-    cy.get('input[name="phoneNumber"]').clear().type(phoneNumber, { delay: 20 });
+Cypress.Commands.add('checkLoggedInNavbar', (userName: string) => {
+    cy.get('nav[aria-label="Główna nawigacja"]').should('be.visible');
+    cy.contains('a', 'PZHGP Żagań').should('be.visible');
+    cy.contains('Witaj,').should('be.visible');
+    cy.contains('strong', userName).should('be.visible');
+    cy.get('button[aria-label="Powiadomienia"]').should('be.visible');
 });
 
-Cypress.Commands.add('fillPassword', (password = 'Testcypress1@') => {
-    cy.get('input[name="password"]').clear().type(password);
-    cy.get('input[name="confirmPassword"]').clear().type(password);
+Cypress.Commands.add('checkLoggedOutNavbar', () => {
+    cy.get('nav[aria-label="Główna nawigacja"]').should('be.visible');
+    cy.contains('a', 'PZHGP Żagań').should('be.visible');
+    cy.contains('a', 'Zaloguj się').should('be.visible').and('have.attr', 'href', '/login');
+    cy.contains('a', 'Rejestracja').should('be.visible').and('have.attr', 'href', '/register');
 });
 
-Cypress.Commands.add('selectSection', (sectionValue = '1') => {
-    cy.get('select[name="sectionId"]').select(sectionValue);
+Cypress.Commands.add('mockNavbarNotifications', () => {
+    cy.intercept('GET', '**/api/notifications', {
+        statusCode: 200,
+        body: []
+    }).as('getNotifications');
+
+    cy.intercept('GET', '**/api/notifications/unread-count', {
+        statusCode: 200,
+        body: 0
+    }).as('getUnreadCount');
 });
 
-Cypress.Commands.add('fillHouseNumber', (houseNumber = '14a') => {
-    cy.get('input[name="houseNumber"]').clear().type(houseNumber, { delay: 20 });
+Cypress.Commands.add('visitWithToken', (url: string, token: string) => {
+    cy.visit(url, {
+        onBeforeLoad: (win) => {
+            win.localStorage.setItem('jwt_token', token);
+            win.sessionStorage.removeItem('jwt_token');
+        }
+    });
 });
