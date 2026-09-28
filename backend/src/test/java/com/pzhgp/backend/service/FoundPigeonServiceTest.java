@@ -3,6 +3,8 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.FoundPigeonDto;
 import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.InvalidStatusTransitionException;
+import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -93,7 +95,7 @@ class FoundPigeonServiceTest {
                 .thenReturn(List.of(administrator));
 
         Long id = foundPigeonService.createReport(
-                request("PL-0208-24-1234", "+49 30 12345678", null, ReportLanguage.DE), CLIENT_IP);
+                request("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE), CLIENT_IP);
 
         assertEquals(42L, id);
 
@@ -111,13 +113,13 @@ class FoundPigeonServiceTest {
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("pl-0208-24-1234", null, "finder@example.com", ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.PL), CLIENT_IP);
 
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
 
-        assertEquals("pl-0208-24-1234", captor.getValue().getRingNumber());
-        assertEquals("PL0208241234", captor.getValue().getRingNumberNormalized());
+        assertEquals("PL-0369-26-1234", captor.getValue().getRingNumber());
+        assertEquals("PL0369261234", captor.getValue().getRingNumberNormalized());
     }
 
     @Test
@@ -128,7 +130,7 @@ class FoundPigeonServiceTest {
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("PL-0208-24-1234", "601234567", null, null), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, null), CLIENT_IP);
 
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
@@ -145,7 +147,7 @@ class FoundPigeonServiceTest {
                 .thenReturn(List.of(administrator));
 
         foundPigeonService.createReport(
-                request("PL-0208-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
 
         verify(notificationService).createBulkNotifications(
                 eq(List.of(administrator)),
@@ -162,7 +164,7 @@ class FoundPigeonServiceTest {
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of(administrator));
 
         foundPigeonService.createReport(
-                request("PL-0208-24-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL), CLIENT_IP);
 
         ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
         verify(notificationService).createBulkNotifications(any(), message.capture(), any(), any());
@@ -170,7 +172,7 @@ class FoundPigeonServiceTest {
         assertFalse(message.getValue().contains("601"), "The phone number must not leak into the notification");
         assertFalse(message.getValue().contains("finder@example.com"),
                 "The e-mail address must not leak into the notification");
-        assertTrue(message.getValue().contains("PL-0208-24-1234"));
+        assertTrue(message.getValue().contains("PL-0369-26-1234"));
     }
 
     @Test
@@ -181,7 +183,7 @@ class FoundPigeonServiceTest {
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("PL-0208-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
 
         verify(notificationService, never()).createBulkNotifications(any(), any(), any(), any());
     }
@@ -191,9 +193,9 @@ class FoundPigeonServiceTest {
     void rejectsReportOverRateLimit() {
         when(rateLimiter.tryAcquire(CLIENT_IP)).thenReturn(false);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
+        SubmissionRateLimitException exception = assertThrows(SubmissionRateLimitException.class,
                 () -> foundPigeonService.createReport(
-                        request("PL-0208-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP));
+                        request("PL-0369-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP));
 
         assertFalse(exception.getMessage().matches(".*\\d+.*"),
                 "The message must not reveal the configured limit");
@@ -220,7 +222,7 @@ class FoundPigeonServiceTest {
         when(foundPigeonRepository.findById(1L))
                 .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(InvalidStatusTransitionException.class,
                 () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
         verify(foundPigeonRepository, never()).save(any());
     }
@@ -231,13 +233,13 @@ class FoundPigeonServiceTest {
         when(foundPigeonRepository.findById(1L))
                 .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.RESOLVED)));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(InvalidStatusTransitionException.class,
                 () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED));
 
         when(foundPigeonRepository.findById(2L))
                 .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.REJECTED)));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(InvalidStatusTransitionException.class,
                 () -> foundPigeonService.updateStatus(2L, FoundPigeonStatus.APPROVED));
     }
 
@@ -345,8 +347,8 @@ class FoundPigeonServiceTest {
     private FoundPigeonReport reportWithStatus(FoundPigeonStatus status) {
         FoundPigeonReport report = new FoundPigeonReport();
         report.setId(1L);
-        report.setRingNumber("PL-0208-24-1234");
-        report.setRingNumberNormalized("PL0208241234");
+        report.setRingNumber("PL-0369-26-1234");
+        report.setRingNumberNormalized("PL0369261234");
         report.setContactPhone("601234567");
         report.setPreferredLanguage(ReportLanguage.PL);
         report.setStatus(status);
