@@ -115,8 +115,8 @@ class FoundPigeonIntegrationTest {
 
     private Long storeReport(FoundPigeonStatus status) {
         FoundPigeonReport stored = new FoundPigeonReport();
-        stored.setRingNumber("PL-0208-24-1234");
-        stored.setRingNumberNormalized("PL0208241234");
+        stored.setRingNumber("PL-0369-26-1234");
+        stored.setRingNumberNormalized("PL0369261234");
         stored.setContactPhone("+48 601 234 567");
         stored.setContactEmail("finder@example.com");
         stored.setPreferredLanguage(ReportLanguage.PL);
@@ -132,7 +132,7 @@ class FoundPigeonIntegrationTest {
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                report("PL-0208-24-1234", "+49 30 12345678", null, ReportLanguage.DE))))
+                                report("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists());
 
@@ -142,7 +142,7 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("A submitted report receives the PENDING status automatically")
     void newReportIsPending() throws Exception {
-        submitExpectingCreated(report("PL-0208-24-1234", "601234567", null, ReportLanguage.PL));
+        submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         assertEquals(FoundPigeonStatus.PENDING, foundPigeonRepository.findAll().getFirst().getStatus());
     }
@@ -157,10 +157,21 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
+    @DisplayName("Only the PL-0369-RR-NNNN ring number format is accepted")
+    void rejectsInvalidRingNumberFormat() throws Exception {
+        submitExpectingBadRequest(report("PL-0208-24-1234", "601234567", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-2024-1234", "601234567", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-24-123", "601234567", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-24-12345", "601234567", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("pl-0369-24-1234", "601234567", null, ReportLanguage.PL));
+        assertEquals(0, foundPigeonRepository.count());
+    }
+
+    @Test
     @DisplayName("A report without a phone number and without an e-mail address is rejected")
     void requiresAtLeastOneContactMethod() throws Exception {
-        submitExpectingBadRequest(report("PL-0208-24-1234", null, null, ReportLanguage.PL));
-        submitExpectingBadRequest(report("PL-0208-24-1234", "  ", "  ", ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", null, null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", "  ", "  ", ReportLanguage.PL));
 
         assertEquals(0, foundPigeonRepository.count());
     }
@@ -168,7 +179,7 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("A report with only a phone number is accepted")
     void acceptsPhoneOnly() throws Exception {
-        submitExpectingCreated(report("PL-0208-24-1234", "601234567", null, ReportLanguage.PL));
+        submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         assertEquals(1, foundPigeonRepository.count());
     }
@@ -176,7 +187,7 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("A report with only an e-mail address is accepted")
     void acceptsEmailOnly() throws Exception {
-        submitExpectingCreated(report("PL-0208-24-1234", null, "finder@example.com", ReportLanguage.EN));
+        submitExpectingCreated(report("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.EN));
 
         assertEquals(1, foundPigeonRepository.count());
     }
@@ -185,7 +196,7 @@ class FoundPigeonIntegrationTest {
     @DisplayName("A report with both contact methods is accepted")
     void acceptsBothContactMethods() throws Exception {
         submitExpectingCreated(
-                report("PL-0208-24-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
+                report("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
 
         FoundPigeonReport stored = foundPigeonRepository.findAll().getFirst();
         assertEquals("+48 601 234 567", stored.getContactPhone());
@@ -195,27 +206,29 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("An invalid e-mail address is rejected")
     void rejectsInvalidEmail() throws Exception {
-        submitExpectingBadRequest(report("PL-0208-24-1234", null, "not-an-email", ReportLanguage.PL));
-        submitExpectingBadRequest(report("PL-0208-24-1234", null, "finder@", ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", null, "not-an-email", ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", null, "finder@", ReportLanguage.PL));
 
         assertEquals(0, foundPigeonRepository.count());
     }
 
     @Test
-    @DisplayName("Foreign phone numbers are accepted")
+    @DisplayName("Foreign phone numbers in supported notation are accepted")
     void acceptsForeignPhoneNumbers() throws Exception {
         List<String> validNumbers = List.of(
-                "+49 30 12345678",      // Niemcy, z prefiksem międzynarodowym
-                "+49 (0) 30 1234567",   // Niemcy, z nawiasami
-                "030 12345678",         // Niemcy, zapis krajowy
-                "+48 601 234 567",      // Polska
-                "601-234-567",          // Polska, z myślnikami
-                "+31 20 123 4567"       // Holandia
+                "+49 30 12345678",
+                "030 12345678",
+                "+48 601234567",
+                "601-234-567",
+                "+31 20 1234567"
         );
 
         for (String number : validNumbers) {
             rateLimiter.reset();
-            submitExpectingCreated(report("PL-0208-24-1234", number, null, ReportLanguage.PL));
+
+            submitExpectingCreated(
+                    report("PL-0369-24-1234", number, null, ReportLanguage.PL)
+            );
         }
 
         assertEquals(validNumbers.size(), foundPigeonRepository.count());
@@ -224,10 +237,10 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("Clearly malformed phone numbers are rejected")
     void rejectsMalformedPhoneNumbers() throws Exception {
-        submitExpectingBadRequest(report("PL-0208-24-1234", "12345", null, ReportLanguage.PL));
-        submitExpectingBadRequest(report("PL-0208-24-1234", "telefon", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", "12345", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", "telefon", null, ReportLanguage.PL));
         submitExpectingBadRequest(
-                report("PL-0208-24-1234", "+48 601 234 567 890 123 456", null, ReportLanguage.PL));
+                report("PL-0369-26-1234", "+48 601 234 567 890 123 456", null, ReportLanguage.PL));
 
         assertEquals(0, foundPigeonRepository.count());
     }
@@ -235,28 +248,33 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("Field length limits are enforced")
     void enforcesMaximumLengths() throws Exception {
-        submitExpectingBadRequest(new FoundPigeonRequest("P".repeat(65), "601234567", null,
-                null, null, null, ReportLanguage.PL));
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "1234567890123456", null,
+                        null, null, null, ReportLanguage.PL));
 
-        submitExpectingBadRequest(new FoundPigeonRequest("PL-0208-24-1234", "601234567", null,
-                null, null, "x".repeat(1001), ReportLanguage.PL));
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
+                        "x".repeat(151), null, null, ReportLanguage.PL));
 
-        submitExpectingBadRequest(new FoundPigeonRequest("PL-0208-24-1234", "601234567", null,
-                "x".repeat(151), null, null, ReportLanguage.PL));
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
+                        null, "x".repeat(101), null, ReportLanguage.PL));
+
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
+                        null, null, "x".repeat(1001), ReportLanguage.PL));
 
         assertEquals(0, foundPigeonRepository.count());
 
-        // A description exactly at the limit is still accepted.
-        submitExpectingCreated(new FoundPigeonRequest("PL-0208-24-1234", "601234567", null,
-                null, null, "x".repeat(1000), ReportLanguage.PL));
+        submitExpectingCreated(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
+                        null, null, "x".repeat(1000), ReportLanguage.PL));
     }
 
     @Test
     @DisplayName("Polish, English and German are stored as the preferred language")
     void storesAllSupportedLanguages() throws Exception {
+        int pigeonNumber = 1;
+
         for (ReportLanguage language : ReportLanguage.values()) {
             rateLimiter.reset();
-            submitExpectingCreated(report("PL-0208-24-" + language.name(), "601234567", null, language));
+            String ringNumber = String.format("PL-0369-26-%04d", pigeonNumber++);
+            submitExpectingCreated(report(ringNumber, "601234567", null, language));
         }
 
         List<ReportLanguage> stored = foundPigeonRepository.findAll().stream()
@@ -269,7 +287,7 @@ class FoundPigeonIntegrationTest {
     @Test
     @DisplayName("Administrators receive a notification about a new report")
     void notifiesAdministrators() throws Exception {
-        submitExpectingCreated(report("PL-0208-24-1234", "601234567", null, ReportLanguage.PL));
+        submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         List<Notification> notifications = notificationRepository
                 .findAllByRecipientIdOrderByCreatedAtDesc(administrator.getId());
@@ -287,27 +305,27 @@ class FoundPigeonIntegrationTest {
         String response = mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                report("PL-0208-24-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
+                                report("PL-0369-26-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         assertFalse(response.contains("601234567"));
         assertFalse(response.contains("finder@example.com"));
-        assertFalse(response.contains("PL-0208-24-1234"));
+        assertFalse(response.contains("PL-0369-26-1234"));
     }
 
     @Test
     @DisplayName("Repeated submissions from one address are throttled")
     void throttlesRepeatedSubmissions() throws Exception {
         for (int i = 0; i < 5; i++) {
-            submitExpectingCreated(report("PL-0208-24-000" + i, "601234567", null, ReportLanguage.PL));
+            submitExpectingCreated(report("PL-0369-26-000" + i, "601234567", null, ReportLanguage.PL));
         }
 
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                report("PL-0208-24-9999", "601234567", null, ReportLanguage.PL))))
-                .andExpect(status().isForbidden());
+                                report("PL-0369-26-9999", "601234567", null, ReportLanguage.PL))))
+                .andExpect(status().isTooManyRequests());
 
         assertEquals(5, foundPigeonRepository.count());
     }
@@ -360,7 +378,7 @@ class FoundPigeonIntegrationTest {
         mockMvc.perform(get("/api/admin/found-pigeons/" + reportId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.ringNumber").value("PL-0208-24-1234"))
+                .andExpect(jsonPath("$.ringNumber").value("PL-0369-26-1234"))
                 .andExpect(jsonPath("$.contactPhone").value("+48 601 234 567"))
                 .andExpect(jsonPath("$.contactEmail").value("finder@example.com"))
                 .andExpect(jsonPath("$.preferredLanguage").value("PL"))
@@ -381,7 +399,7 @@ class FoundPigeonIntegrationTest {
 
         // The search ignores letter case and separator differences.
         mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("ringNumber", "pl 0208")
+                        .param("ringNumber", "pl 0369")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));
@@ -455,26 +473,24 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Forbidden status transitions are rejected")
+    @DisplayName("Invalid status transitions are rejected with conflict")
     void rejectsForbiddenStatusTransitions() throws Exception {
         Long pendingId = storeReport(FoundPigeonStatus.PENDING);
         Long resolvedId = storeReport(FoundPigeonStatus.RESOLVED);
 
-        // PENDING cannot jump straight to RESOLVED - the report has to be verified first.
         mockMvc.perform(patch("/api/admin/found-pigeons/" + pendingId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new FoundPigeonStatusRequest(FoundPigeonStatus.RESOLVED)))
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
 
-        // A closed report stays closed.
         mockMvc.perform(patch("/api/admin/found-pigeons/" + resolvedId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new FoundPigeonStatusRequest(FoundPigeonStatus.APPROVED)))
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
     }
 
     @Test
