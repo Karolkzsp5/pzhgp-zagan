@@ -73,13 +73,6 @@ export default function LoginPage() {
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Logowanie Hodowcy</h1>
 
-                {sessionExpired && !message.text && (
-                    <div role={message.type === 'error' ? 'alert' : 'status'}
-                         className="p-4 mb-4 rounded bg-blue-100 text-blue-700 text-sm">
-                         {message.text}
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">Adres E-mail</label>
@@ -135,6 +128,12 @@ export default function LoginPage() {
                                     'bg-blue-100 text-blue-700'
                         }`}>
                             {message.text}
+                        </div>
+                    )}
+
+                    {sessionExpired && !message.text && (
+                        <div role="status" className="p-4 mb-4 rounded bg-red-100 text-red-700 text-sm">
+                            Sesja wygasła. Zaloguj się ponownie.
                         </div>
                     )}
 
