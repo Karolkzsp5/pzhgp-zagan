@@ -92,8 +92,6 @@ describe('Home Page - Announcements Tests', () => {
         secondPage = createSecondPage();
         announcementsShouldFail = false;
 
-        cy.viewport(1280, 900);
-
         // ==========================
         // Announcements
         // ==========================
