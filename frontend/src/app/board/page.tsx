@@ -261,12 +261,14 @@ export default function BoardPage() {
                 )}
             </main>
 
-            <BoardMemberModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSaved={handleModalSaved}
-                memberToEdit={memberToEdit}
-            />
+            {isAdmin && (
+                <BoardMemberModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSaved={handleModalSaved}
+                    memberToEdit={memberToEdit}
+                />
+            )}
 
             <ConfirmModal
                 isOpen={modalConfig.isOpen}

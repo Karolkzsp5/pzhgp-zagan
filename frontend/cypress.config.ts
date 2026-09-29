@@ -4,7 +4,7 @@ export default defineConfig({
   allowCypressEnv: false,
   e2e: {
     baseUrl: 'http://localhost:3000',
-    viewportWidth: 1920,
-    viewportHeight: 1080,
+    viewportWidth: 1280,
+    viewportHeight: 720,
   },
 });

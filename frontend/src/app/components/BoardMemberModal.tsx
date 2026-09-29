@@ -80,6 +80,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     };
 
     useEffect(() => {
+        if (!isOpen) return;
 
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);
@@ -100,13 +101,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 setBreeders(allBreeders.filter(b => b.status === 'ACTIVE'));
 
             } catch (error) {
-                console.error('Błąd podczas pobierania danych formularza zarządu:', error);
-
-                setError(
-                    error instanceof Error
-                        ? error.message
-                        : 'Wystąpił problem z połączeniem.'
-                );
+                setError(error instanceof Error ? error.message : 'Wystąpił problem z połączeniem.');
             } finally {
                 setIsDictionaryLoading(false);
             }
