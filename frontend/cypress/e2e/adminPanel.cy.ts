@@ -53,16 +53,7 @@ describe('Panel Administratora - Testy E2E', () => {
             body: mockSections
         }).as('getSections');
 
-        cy.intercept('GET', '**/api/notifications', {
-            statusCode: 200,
-            body: []
-        }).as('getNotifications');
-
-        cy.intercept('GET', '**/api/notifications/unread-count', {
-            statusCode: 200,
-            body: 0
-        }).as('getUnreadCount');
-
+        cy.mockNavbarNotifications();
         cy.visitWithToken('/admin', adminToken);
 
         cy.wait([
@@ -557,8 +548,7 @@ describe('AdminGuard', () => {
     });
 
     it('Should redirect a non-administrator user to the home page', () => {
-        const breederToken =
-            'header.eyJzdWIiOiJob2Rvd2NhQHRlc3QucGwiLCJyb2xlIjoiQlJFRURFUiIsImV4cCI6OTk5OTk5OTk5OX0.signature';
+        const breederToken = createFakeToken('BREEDER', 'hodowca@test.pl', 'Hodowca');
 
         cy.intercept('GET', '**/api/admin/pending', {
             statusCode: 403,
@@ -575,11 +565,19 @@ describe('AdminGuard', () => {
             body: mockSections
         });
 
-        cy.visit('/admin', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', breederToken);
+        cy.intercept('GET', '**/api/announcements*', {
+            statusCode: 200,
+            body: {
+                content: [],
+                totalElements: 0,
+                totalPages: 0,
+                number: 0,
+                size: 10
             }
         });
+
+        cy.mockNavbarNotifications();
+        cy.visitWithToken('/admin', breederToken);
 
         cy.location('pathname').should('eq', '/');
     });
