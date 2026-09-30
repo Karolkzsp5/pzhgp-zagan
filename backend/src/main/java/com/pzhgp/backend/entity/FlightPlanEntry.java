@@ -34,7 +34,7 @@ public class FlightPlanEntry {
     @Column(name = "scheduled_date", nullable = false)
     private LocalDate scheduledDate;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 100)
     private String location;
 
     @Column(name = "distance_km", nullable = false)
