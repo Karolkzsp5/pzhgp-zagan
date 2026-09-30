@@ -476,7 +476,7 @@ class PigeonFlightServiceTest {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.findByOwnerOrderByUploadedAtDesc(eq(owner), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(flight)));
 
-        Page<FlightSummaryDto> result = pigeonFlightService.getMyFlights("jan@example.com", 2, 100);
+        Page<FlightSummaryDto> result = pigeonFlightService.getMyFlights("jan@example.com", 2, 50);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(flightRepository).findByOwnerOrderByUploadedAtDesc(eq(owner), pageableCaptor.capture());

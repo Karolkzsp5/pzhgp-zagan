@@ -210,7 +210,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("POST /categories - Moderator can create category")
     void createCategory_AsModerator_ShouldReturn201() throws Exception {
         long initialCount = categoryRepository.count();
-        Map<String, String> request = Map.of("name", "Dział Moderatora");
+        Map<String, Object> request = Map.of("name", "Dział Moderatora", "sortOrder", 4);
 
         mockMvc.perform(post("/api/forum/categories")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
@@ -224,7 +224,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("POST /categories - Breeder gets 403 Forbidden")
     void createCategory_AsBreeder_ShouldReturn403() throws Exception {
-        Map<String, String> request = Map.of("name", "Próba ataku");
+        Map<String, Object> request = Map.of("name", "Próba ataku", "sortOrder", 4);
 
         mockMvc.perform(post("/api/forum/categories")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
@@ -236,7 +236,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/{id} - Moderator can update THEIR OWN category")
     void updateCategory_AsModeratorOnOwnCategory_ShouldReturn200() throws Exception {
-        Map<String, String> request = Map.of("name", "Zmieniona Nazwa Mod");
+        Map<String, Object> request = Map.of("name", "Zmieniona Nazwa Mod", "sortOrder", 2);
 
         mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
@@ -250,7 +250,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/{id} - Admin can update Moderator's category")
     void updateCategory_AsAdminOnModeratorCategory_ShouldReturn200() throws Exception {
-        Map<String, String> request = Map.of("name", "Zmieniona przez Admina");
+        Map<String, Object> request = Map.of("name", "Zmieniona przez Admina", "sortOrder", 2);
 
         mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
@@ -264,7 +264,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/{id} - Moderator attempting to update Admin's category gets 403 Forbidden")
     void updateCategory_AsModeratorOnAdminCategory_ShouldReturn403() throws Exception {
-        Map<String, String> request = Map.of("name", "Włam Moderatora");
+        Map<String, Object> request = Map.of("name", "Włam Moderatora", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
@@ -278,7 +278,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/{id} - Admin attempting to update ANOTHER Admin's category gets 403 Forbidden")
     void updateCategory_AsAdminOnAnotherAdminCategory_ShouldReturn403() throws Exception {
-        Map<String, String> request = Map.of("name", "Włam Admina");
+        Map<String, Object> request = Map.of("name", "Włam Admina", "sortOrder", 3);
 
         mockMvc.perform(put("/api/forum/categories/" + anotherAdminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
@@ -292,7 +292,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/{id} - Breeder gets 403 Forbidden")
     void updateCategory_AsBreeder_ShouldReturn403() throws Exception {
-        Map<String, String> request = Map.of("name", "Zmieniona Nazwa");
+        Map<String, Object> request = Map.of("name", "Zmieniona Nazwa", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
@@ -306,7 +306,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("PUT /categories/9999 - Should return 404 Not Found")
     void updateCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
-        Map<String, String> request = Map.of("name", "Test");
+        Map<String, Object> request = Map.of("name", "Test", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/9999")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
