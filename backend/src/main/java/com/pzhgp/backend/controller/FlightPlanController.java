@@ -40,8 +40,7 @@ public class FlightPlanController {
     ) {
         Long planId = flightPlanService.createPlan(request, authentication.getName());
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("id", planId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", planId));
     }
 
     @PutMapping("/{year}/notes")
@@ -61,9 +60,7 @@ public class FlightPlanController {
             Authentication authentication
     ) {
         Long entryId = flightPlanService.addEntry(year, request, authentication.getName());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("id", entryId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", entryId));
     }
 
     @PutMapping("/entries/{entryId}")

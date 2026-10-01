@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body("Przesłany plik jest za duży. Maksymalny rozmiar pliku GPX to 10 MB.");
+                .body("Przesłany plik przekracza maksymalny rozmiar dozwolony przez serwer.");
     }
 
     @ExceptionHandler(SubmissionRateLimitException.class)

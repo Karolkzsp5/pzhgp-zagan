@@ -262,8 +262,7 @@ public class FlightPlanService {
                 section != null ? section.getId() : null,
                 section != null ? section.getName() : null,
                 section != null ? section.getSortOrder() : null,
-                result.getOriginalFileName(),
-                result.getActualFlightDate()
+                result.getOriginalFileName()
         );
     }
 

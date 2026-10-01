@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,9 +29,6 @@ public class FlightResult {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id")
     private Section section;
-
-    @Column(name = "actual_flight_date")
-    private LocalDate actualFlightDate;
 
     @Column(name = "original_file_name", nullable = false, length = 255)
     private String originalFileName;
