@@ -2,10 +2,12 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.*;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightPlanRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
+import com.pzhgp.backend.repository.projection.FlightResultSummaryProjection;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,17 +45,47 @@ public class FlightPlanService {
                         "Nie znaleziono planu lotów dla roku " + year + "."
                 ));
 
-        List<FlightPlanEntry> entries =
-                flightPlanEntryRepository.findAllByFlightPlanIdOrderBySortOrderAsc(plan.getId());
+        List<FlightPlanEntry> entries = flightPlanEntryRepository.findAllByFlightPlanIdOrderBySortOrderAsc(plan.getId());
+
+        Map<Long, List<FlightResultSummaryDto>> resultsByEntryId =
+                flightResultRepository.findSummariesByFlightPlanId(plan.getId())
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                FlightResultSummaryProjection::getFlightPlanEntryId,
+                                Collectors.mapping(
+                                        this::mapResultToDto,
+                                        Collectors.toList()
+                                )
+                        ));
+
+        resultsByEntryId.values().forEach(results ->
+                results.sort(
+                        Comparator
+                                .comparingInt((FlightResultSummaryDto result) ->
+                                        result.scope() == FlightResultScope.BRANCH ? 0 : 1
+                                )
+                                .thenComparingInt(result ->
+                                        result.sectionSortOrder() != null
+                                                ? result.sectionSortOrder()
+                                                : 0
+                                )
+                )
+        );
 
         List<FlightPlanEntryDto> adultFlights = entries.stream()
                 .filter(entry -> entry.getPigeonAgeGroup() == PigeonAgeGroup.ADULT)
-                .map(this::mapEntryToDto)
+                .map(entry -> mapEntryToDto(
+                        entry,
+                        resultsByEntryId.getOrDefault(entry.getId(), List.of())
+                ))
                 .toList();
 
         List<FlightPlanEntryDto> youngFlights = entries.stream()
                 .filter(entry -> entry.getPigeonAgeGroup() == PigeonAgeGroup.YOUNG)
-                .map(this::mapEntryToDto)
+                .map(entry -> mapEntryToDto(
+                        entry,
+                        resultsByEntryId.getOrDefault(entry.getId(), List.of())
+                ))
                 .toList();
 
         return new FlightPlanDetailsDto(
@@ -132,7 +166,7 @@ public class FlightPlanService {
                 ));
 
         if (flightResultRepository.existsByFlightPlanEntryId(entryId)) {
-            throw new IllegalStateException(
+            throw new ResourceConflictException(
                     "Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu."
             );
         }
@@ -147,7 +181,7 @@ public class FlightPlanService {
         FlightPlan plan = requirePlanByYear(year);
 
         if (flightPlanEntryRepository.existsByFlightPlanId(plan.getId())) {
-            throw new IllegalStateException(
+            throw new ResourceConflictException(
                     "Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu."
             );
         }
@@ -223,23 +257,10 @@ public class FlightPlanService {
         entry.setSortOrder(request.sortOrder());
     }
 
-    private FlightPlanEntryDto mapEntryToDto(FlightPlanEntry entry) {
-        List<FlightResultSummaryDto> results = entry.getResults()
-                .stream()
-                .sorted(
-                        Comparator
-                                .comparingInt((FlightResult result) ->
-                                        result.getScope() == FlightResultScope.BRANCH ? 0 : 1
-                                )
-                                .thenComparingInt(result ->
-                                        result.getSection() != null
-                                                ? result.getSection().getSortOrder()
-                                                : 0
-                                )
-                )
-                .map(this::mapResultToDto)
-                .toList();
-
+    private FlightPlanEntryDto mapEntryToDto(
+            FlightPlanEntry entry,
+            List<FlightResultSummaryDto> results
+    ) {
         return new FlightPlanEntryDto(
                 entry.getId(),
                 entry.getPigeonAgeGroup(),
@@ -253,15 +274,15 @@ public class FlightPlanService {
         );
     }
 
-    private FlightResultSummaryDto mapResultToDto(FlightResult result) {
-        Section section = result.getSection();
-
+    private FlightResultSummaryDto mapResultToDto(
+            FlightResultSummaryProjection result
+    ) {
         return new FlightResultSummaryDto(
                 result.getId(),
                 result.getScope(),
-                section != null ? section.getId() : null,
-                section != null ? section.getName() : null,
-                section != null ? section.getSortOrder() : null,
+                result.getSectionId(),
+                result.getSectionName(),
+                result.getSectionSortOrder(),
                 result.getOriginalFileName()
         );
     }
