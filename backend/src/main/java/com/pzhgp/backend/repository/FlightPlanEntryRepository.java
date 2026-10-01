@@ -2,7 +2,6 @@ package com.pzhgp.backend.repository;
 
 import com.pzhgp.backend.entity.FlightPlanEntry;
 import com.pzhgp.backend.entity.PigeonAgeGroup;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +10,6 @@ import java.util.List;
 @Repository
 public interface FlightPlanEntryRepository extends JpaRepository<FlightPlanEntry, Long> {
 
-    @EntityGraph(attributePaths = {"results", "results.section"})
     List<FlightPlanEntry> findAllByFlightPlanIdOrderBySortOrderAsc(Long flightPlanId);
 
     boolean existsByFlightPlanId(Long flightPlanId);
