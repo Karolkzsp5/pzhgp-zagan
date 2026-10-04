@@ -45,7 +45,7 @@ public class FlightPlanService {
                         "Nie znaleziono planu lotów dla roku " + year + "."
                 ));
 
-        List<FlightPlanEntry> entries = flightPlanEntryRepository.findAllByFlightPlanIdOrderBySortOrderAsc(plan.getId());
+        List<FlightPlanEntry> entries = flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId());
 
         Map<Long, List<FlightResultSummaryDto>> resultsByEntryId =
                 flightResultRepository.findSummariesByFlightPlanId(plan.getId())
@@ -91,8 +91,6 @@ public class FlightPlanService {
         return new FlightPlanDetailsDto(
                 plan.getId(),
                 plan.getYear(),
-                plan.getAdultNotes(),
-                plan.getYoungNotes(),
                 adultFlights,
                 youngFlights
         );
@@ -100,7 +98,7 @@ public class FlightPlanService {
 
     @Transactional
     public Long createPlan(FlightPlanCreateRequest request, String userEmail) {
-        requirePlanManager(userEmail);
+        requireAdministrator(userEmail);
 
         if (flightPlanRepository.existsByYear(request.year())) {
             throw new IllegalArgumentException(
@@ -115,24 +113,12 @@ public class FlightPlanService {
     }
 
     @Transactional
-    public void updateNotes(Integer year, FlightPlanNotesRequest request, String userEmail) {
-        requirePlanManager(userEmail);
-
-        FlightPlan plan = requirePlanByYear(year);
-
-        plan.setAdultNotes(trimToNull(request.adultNotes()));
-        plan.setYoungNotes(trimToNull(request.youngNotes()));
-
-        flightPlanRepository.save(plan);
-    }
-
-    @Transactional
     public Long addEntry(Integer year, FlightPlanEntryRequest request, String userEmail) {
-        requirePlanManager(userEmail);
+        requireAdministrator(userEmail);
 
         FlightPlan plan = requirePlanByYear(year);
 
-        validateEntryRequest(plan, request, null);
+        validateEntryRequest(plan, request);
 
         FlightPlanEntry entry = new FlightPlanEntry();
         entry.setFlightPlan(plan);
@@ -143,14 +129,14 @@ public class FlightPlanService {
 
     @Transactional
     public void updateEntry(Long entryId, FlightPlanEntryRequest request, String userEmail) {
-        requirePlanManager(userEmail);
+        requireAdministrator(userEmail);
 
         FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Nie znaleziono lotu w planie o ID: " + entryId
                 ));
 
-        validateEntryRequest(entry.getFlightPlan(), request, entryId);
+        validateEntryRequest(entry.getFlightPlan(), request);
         applyEntryRequest(entry, request);
 
         flightPlanEntryRepository.save(entry);
@@ -158,7 +144,7 @@ public class FlightPlanService {
 
     @Transactional
     public void deleteEntry(Long entryId, String userEmail) {
-        requirePlanManager(userEmail);
+        requireAdministrator(userEmail);
 
         FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -176,7 +162,7 @@ public class FlightPlanService {
 
     @Transactional
     public void deletePlan(Integer year, String userEmail) {
-        requirePlanManager(userEmail);
+        requireAdministrator(userEmail);
 
         FlightPlan plan = requirePlanByYear(year);
 
@@ -196,13 +182,16 @@ public class FlightPlanService {
                 ));
     }
 
-    private Breeder requirePlanManager(String userEmail) {
-        Breeder user = breederRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+    private Breeder requireAdministrator(String userEmail) {
+        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Nie znaleziono użytkownika."
+                        )
+                );
 
-        if (user.getRole() != Role.ADMINISTRATOR && user.getRole() != Role.MODERATOR) {
+        if (user.getRole() != Role.ADMINISTRATOR) {
             throw new IllegalStateException(
-                    "Brak uprawnień. Planami lotów mogą zarządzać wyłącznie administratorzy i moderatorzy."
+                    "Brak uprawnień. Planami lotów może zarządzać wyłącznie administrator."
             );
         }
 
@@ -211,38 +200,11 @@ public class FlightPlanService {
 
     private void validateEntryRequest(
             FlightPlan plan,
-            FlightPlanEntryRequest request,
-            Long editedEntryId
+            FlightPlanEntryRequest request
     ) {
         if (request.scheduledDate().getYear() != plan.getYear()) {
             throw new IllegalArgumentException(
                     "Data lotu musi należeć do roku planu: " + plan.getYear() + "."
-            );
-        }
-
-        boolean duplicateSortOrder;
-
-        if (editedEntryId == null) {
-            duplicateSortOrder =
-                    flightPlanEntryRepository.existsByFlightPlanIdAndPigeonAgeGroupAndSortOrder(
-                            plan.getId(),
-                            request.pigeonAgeGroup(),
-                            request.sortOrder()
-                    );
-        } else {
-            duplicateSortOrder =
-                    flightPlanEntryRepository.existsByFlightPlanIdAndPigeonAgeGroupAndSortOrderAndIdNot(
-                            plan.getId(),
-                            request.pigeonAgeGroup(),
-                            request.sortOrder(),
-                            editedEntryId
-                    );
-        }
-
-        if (duplicateSortOrder) {
-            throw new IllegalArgumentException(
-                    "Pozycja o numerze " + request.sortOrder()
-                            + " już istnieje w tym planie dla wybranej grupy gołębi."
             );
         }
     }
@@ -254,7 +216,6 @@ public class FlightPlanService {
         entry.setDistanceKm(request.distanceKm());
         entry.setCategory(trimToNull(request.category()));
         entry.setListType(request.listType().trim());
-        entry.setSortOrder(request.sortOrder());
     }
 
     private FlightPlanEntryDto mapEntryToDto(
@@ -269,7 +230,6 @@ public class FlightPlanService {
                 entry.getDistanceKm(),
                 entry.getCategory(),
                 entry.getListType(),
-                entry.getSortOrder(),
                 results
         );
     }

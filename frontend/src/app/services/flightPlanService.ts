@@ -1,11 +1,5 @@
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import {
-    FlightPlanDetailsDto,
-    FlightPlanEntryRequest,
-    FlightPlanNotesRequest,
-    FlightPlanSummaryDto,
-    FlightResultUploadRequest
-} from '@/app/types/flightPlan';
+import { FlightPlanDetailsDto, FlightPlanEntryRequest, FlightPlanSummaryDto, FlightResultUploadRequest } from '@/app/types/flightPlan';
 
 const ensureOk = async (response: Response, fallback: string): Promise<void> => {
     if (!response.ok) {
@@ -37,16 +31,6 @@ export const flightPlanService = {
 
         const body = await response.json();
         return body.id as number;
-    },
-
-    updateNotes: async (year: number, data: FlightPlanNotesRequest): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/flight-plans/${year}/notes`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        await ensureOk(response, 'Nie udało się zaktualizować uwag do planu.');
     },
 
     addEntry: async (year: number, data: FlightPlanEntryRequest): Promise<number> => {

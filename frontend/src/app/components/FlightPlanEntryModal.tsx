@@ -11,17 +11,15 @@ interface FlightPlanEntryModalProps {
     onSaved: () => void | Promise<void>;
     year: number;
     pigeonAgeGroup: PigeonAgeGroup;
-    defaultSortOrder: number;
     entryToEdit: FlightPlanEntryDto | null;
 }
 
-export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pigeonAgeGroup, defaultSortOrder, entryToEdit}: FlightPlanEntryModalProps) {
+export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pigeonAgeGroup, entryToEdit}: FlightPlanEntryModalProps) {
     const [scheduledDate, setScheduledDate] = useState('');
     const [location, setLocation] = useState('');
     const [distanceKm, setDistanceKm] = useState('');
     const [category, setCategory] = useState('');
     const [listType, setListType] = useState('');
-    const [sortOrder, setSortOrder] = useState('');
 
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
@@ -37,24 +35,21 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
             setDistanceKm(String(entryToEdit.distanceKm));
             setCategory(entryToEdit.category ?? '');
             setListType(entryToEdit.listType);
-            setSortOrder(String(entryToEdit.sortOrder));
         } else {
             setScheduledDate('');
             setLocation('');
             setDistanceKm('');
             setCategory('');
             setListType('');
-            setSortOrder(String(defaultSortOrder));
         }
 
         setError('');
-    }, [isOpen, entryToEdit, defaultSortOrder]);
+    }, [isOpen, entryToEdit]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         const parsedDistance = Number(distanceKm);
-        const parsedSortOrder = Number(sortOrder);
 
         if (!scheduledDate) {
             setError('Data planowanego lotu jest wymagana.');
@@ -76,19 +71,13 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
             return;
         }
 
-        if (!Number.isInteger(parsedSortOrder) || parsedSortOrder < 1) {
-            setError('Kolejność lotu musi wynosić co najmniej 1.');
-            return;
-        }
-
         const request: FlightPlanEntryRequest = {
             pigeonAgeGroup,
             scheduledDate,
             location: location.trim(),
             distanceKm: parsedDistance,
             category: category.trim() || null,
-            listType: listType.trim(),
-            sortOrder: parsedSortOrder
+            listType: listType.trim()
         };
 
         setIsSaving(true);
@@ -131,41 +120,25 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="flight-date" className="block text-sm font-medium text-gray-700 mb-1">
-                            Data
-                        </label>
+                <div>
+                    <label
+                        htmlFor="flight-date"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                        Data
+                    </label>
 
-                        <input
-                            id="flight-date"
-                            type="date"
-                            min={`${year}-01-01`}
-                            max={`${year}-12-31`}
-                            value={scheduledDate}
-                            onChange={event => setScheduledDate(event.target.value)}
-                            disabled={isSaving}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="flight-sort-order" className="block text-sm font-medium text-gray-700 mb-1">
-                            Lp.
-                        </label>
-
-                        <input
-                            id="flight-sort-order"
-                            type="number"
-                            min={1}
-                            value={sortOrder}
-                            onChange={event => setSortOrder(event.target.value)}
-                            disabled={isSaving}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                        />
-                    </div>
+                    <input
+                        id="flight-date"
+                        type="date"
+                        min={`${year}-01-01`}
+                        max={`${year}-12-31`}
+                        value={scheduledDate}
+                        onChange={event => setScheduledDate(event.target.value)}
+                        disabled={isSaving}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                    />
                 </div>
 
                 <div>

@@ -34,8 +34,7 @@ export default function FlightPlansPage() {
         onConfirm: () => {}
     });
 
-    const canManagePlans =
-        userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
+    const isAdministrator = userRole === 'ADMINISTRATOR';
 
     const closeConfirmModal = () => {
         setModalConfig(previous => ({
@@ -163,7 +162,7 @@ export default function FlightPlansPage() {
                             </p>
                         </div>
 
-                        {canManagePlans && (
+                        {isAdministrator && (
                             <button
                                 type="button"
                                 onClick={openCreateModal}
@@ -216,7 +215,7 @@ export default function FlightPlansPage() {
                                         </div>
                                     </Link>
 
-                                    {canManagePlans && (
+                                    {isAdministrator && (
                                         <button
                                             type="button"
                                             onClick={() => handleDeletePlan(plan)}

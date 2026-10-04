@@ -23,12 +23,6 @@ public class FlightPlan {
     @Column(name = "plan_year", nullable = false)
     private Integer year;
 
-    @Column(name = "adult_notes", columnDefinition = "TEXT")
-    private String adultNotes;
-
-    @Column(name = "young_notes", columnDefinition = "TEXT")
-    private String youngNotes;
-
     @OneToMany(mappedBy = "flightPlan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlightPlanEntry> entries = new ArrayList<>();
 

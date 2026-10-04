@@ -24,15 +24,12 @@ export interface FlightPlanEntryDto {
     distanceKm: number;
     category: string | null;
     listType: string;
-    sortOrder: number;
     results: FlightResultSummaryDto[];
 }
 
 export interface FlightPlanDetailsDto {
     id: number;
     year: number;
-    adultNotes: string | null;
-    youngNotes: string | null;
     adultFlights: FlightPlanEntryDto[];
     youngFlights: FlightPlanEntryDto[];
 }
@@ -44,12 +41,6 @@ export interface FlightPlanEntryRequest {
     distanceKm: number;
     category: string | null;
     listType: string;
-    sortOrder: number;
-}
-
-export interface FlightPlanNotesRequest {
-    adultNotes: string | null;
-    youngNotes: string | null;
 }
 
 export interface FlightResultUploadRequest {

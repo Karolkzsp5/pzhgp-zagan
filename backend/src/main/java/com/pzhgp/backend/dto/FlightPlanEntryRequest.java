@@ -27,11 +27,7 @@ public record FlightPlanEntryRequest(
 
         @NotBlank(message = "Rodzaj listy jest wymagany.")
         @Size(max = 100, message = "Rodzaj listy może mieć maksymalnie 100 znaków.")
-        String listType,
-
-        @NotNull(message = "Kolejność lotu jest wymagana.")
-        @Min(value = 1, message = "Kolejność lotu musi wynosić co najmniej 1.")
-        Integer sortOrder
+        String listType
 
 ) {
 }

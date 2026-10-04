@@ -37,7 +37,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [entryAgeGroup, setEntryAgeGroup] = useState<PigeonAgeGroup>('ADULT');
     const [editingEntry, setEditingEntry] = useState<FlightPlanEntryDto | null>(null);
-    const [defaultSortOrder, setDefaultSortOrder] = useState(1);
 
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
@@ -46,9 +45,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
         isAlert: false,
         onConfirm: () => {}
     });
-
-    const canManagePlans =
-        userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
 
     const isAdministrator = userRole === 'ADMINISTRATOR';
 
@@ -133,11 +129,8 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
         }
     };
 
-    const handleAddFlight = (ageGroup: PigeonAgeGroup, flights: FlightPlanEntryDto[]) => {
-        const nextSortOrder = flights.length === 0 ? 1 : Math.max(...flights.map(flight => flight.sortOrder)) + 1;
-
+    const handleAddFlight = (ageGroup: PigeonAgeGroup) => {
         setEntryAgeGroup(ageGroup);
-        setDefaultSortOrder(nextSortOrder);
         setEditingEntry(null);
         setIsEntryModalOpen(true);
     };
@@ -145,7 +138,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     const handleEditFlight = (flight: FlightPlanEntryDto) => {
         setEntryAgeGroup(flight.pigeonAgeGroup);
         setEditingEntry(flight);
-        setDefaultSortOrder(flight.sortOrder);
         setIsEntryModalOpen(true);
     };
 
@@ -162,11 +154,8 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
                 } catch (error) {
-                    showAlert(
-                        'Nie udało się usunąć lotu',
-                        error instanceof Error
-                            ? error.message
-                            : 'Wystąpił błąd podczas usuwania lotu.'
+                    showAlert('Nie udało się usunąć lotu',
+                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.'
                     );
                 }
             }
@@ -217,8 +206,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 title="Gołębie dorosłe"
                                 ageGroup="ADULT"
                                 flights={plan.adultFlights}
-                                notes={plan.adultNotes}
-                                canManagePlans={canManagePlans}
                                 isAdministrator={isAdministrator}
                                 openingResultId={openingResultId}
                                 openActionsId={openActionsId}
@@ -234,8 +221,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 title="Gołębie młode"
                                 ageGroup="YOUNG"
                                 flights={plan.youngFlights}
-                                notes={plan.youngNotes}
-                                canManagePlans={canManagePlans}
                                 isAdministrator={isAdministrator}
                                 openingResultId={openingResultId}
                                 openActionsId={openActionsId}
@@ -261,7 +246,6 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     onSaved={loadPlan}
                     year={year}
                     pigeonAgeGroup={entryAgeGroup}
-                    defaultSortOrder={defaultSortOrder}
                     entryToEdit={editingEntry}
                 />
 
@@ -282,15 +266,13 @@ interface FlightTableSectionProps {
     title: string;
     ageGroup: PigeonAgeGroup;
     flights: FlightPlanEntryDto[];
-    notes: string | null;
-    canManagePlans: boolean;
     isAdministrator: boolean;
     openingResultId: number | null;
     openActionsId: number | null;
     onToggleActions: (flightId: number) => void;
     onCloseActions: () => void;
     onOpenResult: (resultId: number) => Promise<void>;
-    onAddFlight: (ageGroup: PigeonAgeGroup, flights: FlightPlanEntryDto[]) => void;
+    onAddFlight: (ageGroup: PigeonAgeGroup) => void;
     onEditFlight: (flight: FlightPlanEntryDto) => void;
     onDeleteFlight: (flight: FlightPlanEntryDto) => void;
 }
@@ -299,8 +281,6 @@ function FlightTableSection({
                                 title,
                                 ageGroup,
                                 flights,
-                                notes,
-                                canManagePlans,
                                 isAdministrator,
                                 openingResultId,
                                 openActionsId,
@@ -318,10 +298,10 @@ function FlightTableSection({
                     {title}
                 </h2>
 
-                {canManagePlans && (
+                {isAdministrator && (
                     <button
                         type="button"
-                        onClick={() => onAddFlight(ageGroup, flights)}
+                        onClick={() => onAddFlight(ageGroup)}
                         className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition shrink-0"
                     >
                         + Dodaj lot
@@ -346,18 +326,18 @@ function FlightTableSection({
                             <TableHeader>Rodzaj listy</TableHeader>
                             <TableHeader>Wyniki</TableHeader>
 
-                            {canManagePlans && (
+                            {isAdministrator && (
                                 <TableHeader>Akcje</TableHeader>
                             )}
                         </tr>
                         </thead>
 
                         <tbody className="bg-white divide-y divide-gray-200">
-                        {flights.map(flight => (
+                        {flights.map((flight, index) => (
                             <FlightTableRow
                                 key={flight.id}
+                                rowNumber={index + 1}
                                 flight={flight}
-                                canManagePlans={canManagePlans}
                                 isAdministrator={isAdministrator}
                                 openingResultId={openingResultId}
                                 openActionsId={openActionsId}
@@ -370,18 +350,6 @@ function FlightTableSection({
                         ))}
                         </tbody>
                     </table>
-                </div>
-            )}
-
-            {notes && (
-                <div className="mt-4 bg-white border border-gray-200 rounded-lg px-5 py-4 shadow-sm">
-                    <h3 className="text-sm font-bold text-gray-700 mb-2">
-                        Uwagi
-                    </h3>
-
-                    <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-                        {notes}
-                    </p>
                 </div>
             )}
         </section>
@@ -403,8 +371,8 @@ function TableHeader({children, className = ''}: {
 }
 
 interface FlightTableRowProps {
+    rowNumber: number;
     flight: FlightPlanEntryDto;
-    canManagePlans: boolean;
     isAdministrator: boolean;
     openingResultId: number | null;
     openActionsId: number | null;
@@ -416,8 +384,8 @@ interface FlightTableRowProps {
 }
 
 function FlightTableRow({
+                            rowNumber,
                             flight,
-                            canManagePlans,
                             isAdministrator,
                             openingResultId,
                             openActionsId,
@@ -440,7 +408,7 @@ function FlightTableRow({
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">
             <td className="px-6 py-3 text-sm text-gray-500 text-right whitespace-nowrap">
-                {flight.sortOrder}
+                {rowNumber}
             </td>
 
             <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">
@@ -494,7 +462,7 @@ function FlightTableRow({
                 )}
             </td>
 
-            {canManagePlans && (
+            {isAdministrator && (
                 <td className="px-6 py-3 whitespace-nowrap text-center text-sm font-medium">
                     <ActionMenu
                         isOpen={openActionsId === flight.id}
@@ -516,18 +484,16 @@ function FlightTableRow({
                             Edytuj lot
                         </button>
 
-                        {isAdministrator && (
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                    onCloseActions();
-                                }}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
-                            >
-                                Dodaj wyniki
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                                onCloseActions();
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                        >
+                            Dodaj wyniki
+                        </button>
 
                         <button
                             type="button"

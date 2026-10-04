@@ -10,10 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "flight_plan_entries", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_flight_plan_entry_order",
-        columnNames = {"flight_plan_id", "pigeon_age_group", "sort_order"})
-})
+@Table(name = "flight_plan_entries")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,9 +42,6 @@ public class FlightPlanEntry {
 
     @Column(name = "list_type", nullable = false, length = 100)
     private String listType;
-
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
 
     @OneToMany(mappedBy = "flightPlanEntry", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlightResult> results = new ArrayList<>();
