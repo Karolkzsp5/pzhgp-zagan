@@ -102,13 +102,14 @@ Wysoka bezawaryjność systemu w warunkach produkcyjnych (szczególnie w szczyci
 - [x] Panel administratora do zarządzania kontami
 - [x] Centrum powiadomień
 - [x] Strona główna z ogłoszeniami
-- [ ] Podstrona do tworzenia planów lotów
-- [ ] Parser plików `.txt` dla list konkursowych i generator tabel wyników
-- [ ] Zakładka pobierz - repozytorium plików do pobrania
+- [x] plany i wyniki lotów
 - [x] Integracja map interaktywnych i parsowanie tras `.gpx` (moduł *Mapy lotów*: parser GPX, statystyki, mapa OpenStreetMap)
-- [ ] Forum dyskusyjne, panel zaginionych gołębi oraz galeria multimedialna
+- [x] Forum dyskusyjne
+- [x] panel zaginionych gołębi
+- [ ] galeria multimedialna
 - [x] Radar pogodowy
-- [x] Podstrona zarząd oddziału
+- [x] Zarząd oddziału
+- [ ] Zakładka pobierz - repozytorium plików do pobrania
 
 ---
 *Projekt tworzony z pasją do programowania i informatyki*
