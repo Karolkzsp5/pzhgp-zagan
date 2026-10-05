@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from 'react';
+import {use, useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -11,10 +11,11 @@ import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import ActionMenu from '@/app/components/ActionMenu';
 import FlightPlanEntryModal from '@/app/components/FlightPlanEntryModal';
-import { flightPlanService } from '@/app/services/flightPlanService';
-import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
-import { decodeJwt, getAuthToken, isJwtValid } from '@/app/utils/jwt';
-import { formatLocalDate } from '@/app/utils/formatters';
+import FlightResultModal from '@/app/components/FlightResultModal';
+import {flightPlanService} from '@/app/services/flightPlanService';
+import {FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup} from '@/app/types/flightPlan';
+import {decodeJwt, getAuthToken, isJwtValid} from '@/app/utils/jwt';
+import {formatLocalDate} from '@/app/utils/formatters';
 
 interface FlightPlanYearPageProps {
     params: Promise<{
@@ -22,7 +23,7 @@ interface FlightPlanYearPageProps {
     }>;
 }
 
-export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) {
+export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
     const resolvedParams = use(params);
     const year = Number(resolvedParams.year);
 
@@ -37,16 +38,23 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [entryAgeGroup, setEntryAgeGroup] = useState<PigeonAgeGroup>('ADULT');
     const [editingEntry, setEditingEntry] = useState<FlightPlanEntryDto | null>(null);
+    const [resultEntryId, setResultEntryId] = useState<number | null>(null);
 
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
         title: '',
         message: '',
         isAlert: false,
-        onConfirm: () => {}
+        onConfirm: () => {
+        }
     });
 
     const isAdministrator = userRole === 'ADMINISTRATOR';
+
+    const resultEntry = plan
+        ? [...plan.adultFlights, ...plan.youngFlights]
+        .find(flight => flight.id === resultEntryId) ?? null
+        : null;
 
     const closeModal = () => {
         setModalConfig(previous => ({
@@ -141,6 +149,11 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
         setIsEntryModalOpen(true);
     };
 
+    const handleManageResults = (flight: FlightPlanEntryDto) => {
+        setOpenActionsId(null);
+        setResultEntryId(flight.id);
+    };
+
     const handleDeleteFlight = (flight: FlightPlanEntryDto) => {
         setModalConfig({
             isOpen: true,
@@ -165,7 +178,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     return (
         <AuthGuard>
             <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
+                <Navbar/>
 
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
@@ -173,7 +186,8 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                             href="/flight-plans"
                             className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition mb-4"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960"
+                                 fill="currentColor" aria-hidden="true">
                                 <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"></path>
                             </svg>
                             Wróć do planów
@@ -194,7 +208,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     </div>
 
                     {isLoading ? (
-                        <LoadingState />
+                        <LoadingState/>
                     ) : loadError ? (
                         <ErrorState
                             message={loadError}
@@ -212,6 +226,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
                                 onOpenResult={handleOpenResult}
+                                onManageResults={handleManageResults}
                                 onAddFlight={handleAddFlight}
                                 onEditFlight={handleEditFlight}
                                 onDeleteFlight={handleDeleteFlight}
@@ -227,6 +242,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
                                 onOpenResult={handleOpenResult}
+                                onManageResults={handleManageResults}
                                 onAddFlight={handleAddFlight}
                                 onEditFlight={handleEditFlight}
                                 onDeleteFlight={handleDeleteFlight}
@@ -235,7 +251,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     ) : null}
                 </main>
 
-                <Footer />
+                <Footer/>
 
                 <FlightPlanEntryModal
                     isOpen={isEntryModalOpen}
@@ -248,6 +264,15 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     pigeonAgeGroup={entryAgeGroup}
                     entryToEdit={editingEntry}
                 />
+
+                {resultEntry && (
+                    <FlightResultModal
+                        isOpen={resultEntryId !== null}
+                        entry={resultEntry}
+                        onClose={() => setResultEntryId(null)}
+                        onChanged={loadPlan}
+                    />
+                )}
 
                 <ConfirmModal
                     isOpen={modalConfig.isOpen}
@@ -272,6 +297,7 @@ interface FlightTableSectionProps {
     onToggleActions: (flightId: number) => void;
     onCloseActions: () => void;
     onOpenResult: (resultId: number) => Promise<void>;
+    onManageResults: (flight: FlightPlanEntryDto) => void;
     onAddFlight: (ageGroup: PigeonAgeGroup) => void;
     onEditFlight: (flight: FlightPlanEntryDto) => void;
     onDeleteFlight: (flight: FlightPlanEntryDto) => void;
@@ -287,6 +313,7 @@ function FlightTableSection({
                                 onToggleActions,
                                 onCloseActions,
                                 onOpenResult,
+                                onManageResults,
                                 onAddFlight,
                                 onEditFlight,
                                 onDeleteFlight
@@ -344,6 +371,7 @@ function FlightTableSection({
                                 onToggleActions={onToggleActions}
                                 onCloseActions={onCloseActions}
                                 onOpenResult={onOpenResult}
+                                onManageResults={onManageResults}
                                 onEditFlight={onEditFlight}
                                 onDeleteFlight={onDeleteFlight}
                             />
@@ -379,6 +407,7 @@ interface FlightTableRowProps {
     onToggleActions: (flightId: number) => void;
     onCloseActions: () => void;
     onOpenResult: (resultId: number) => Promise<void>;
+    onManageResults: (flight: FlightPlanEntryDto) => void;
     onEditFlight: (flight: FlightPlanEntryDto) => void;
     onDeleteFlight: (flight: FlightPlanEntryDto) => void;
 }
@@ -392,6 +421,7 @@ function FlightTableRow({
                             onToggleActions,
                             onCloseActions,
                             onOpenResult,
+                            onManageResults,
                             onEditFlight,
                             onDeleteFlight
                         }: FlightTableRowProps) {
@@ -404,6 +434,10 @@ function FlightTableRow({
         event.target.value = '';
         void onOpenResult(resultId);
     };
+
+    const isOpeningThisFlight = flight.results.some(
+        result => result.id === openingResultId
+    );
 
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">
@@ -431,7 +465,7 @@ function FlightTableRow({
                 {flight.listType}
             </td>
 
-            <td className="px-6 py-3 min-w-52 text-center">
+            <td className="px-6 py-3 text-center whitespace-nowrap">
                 {flight.results.length === 0 ? (
                     <span className="text-sm text-gray-400">
                         Brak wyników
@@ -440,21 +474,16 @@ function FlightTableRow({
                     <select
                         defaultValue=""
                         onChange={handleResultChange}
-                        disabled={openingResultId !== null}
+                        disabled={isOpeningThisFlight}
                         aria-label={`Wyniki lotu ${flight.location}`}
-                        className="w-full min-w-44 px-3 py-1.5 border border-gray-300 rounded-md text-sm text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="block w-48 max-w-full mx-auto px-3 py-1.5 border border-gray-300 rounded-md text-sm text-left text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
-                        <option value="">
-                            {openingResultId !== null
-                                ? 'Otwieranie...'
-                                : 'Wybierz wyniki'}
+                        <option value="" disabled hidden>
+                            {isOpeningThisFlight ? 'Otwieranie...' : 'Wybierz wyniki'}
                         </option>
 
                         {flight.results.map(result => (
-                            <option
-                                key={result.id}
-                                value={result.id}
-                            >
+                            <option key={result.id} value={result.id}>
                                 {formatResultLabel(result)}
                             </option>
                         ))}
@@ -489,10 +518,11 @@ function FlightTableRow({
                             role="menuitem"
                             onClick={() => {
                                 onCloseActions();
+                                onManageResults(flight);
                             }}
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
                         >
-                            Dodaj wyniki
+                            {flight.results.length === 0 ? 'Dodaj wyniki' : 'Zarządzaj wynikami'}
                         </button>
 
                         <button
@@ -502,7 +532,7 @@ function FlightTableRow({
                                 onCloseActions();
                                 onDeleteFlight(flight);
                             }}
-                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition"
                         >
                             Usuń lot
                         </button>

@@ -144,7 +144,7 @@ export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, childr
                             left: position?.left ?? 0,
                             visibility: position ? 'visible' : 'hidden'
                         }}
-                        className="fixed w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
+                        className="fixed w-48 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col whitespace-nowrap divide-y divide-gray-100"
                     >
                         {children}
                     </div>,

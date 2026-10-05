@@ -489,7 +489,7 @@ export default function AdminPanelPage() {
                                                                                         });
                                                                                         setOpenDropdownId(null);
                                                                                     }}
-                                                                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
+                                                                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition"
                                                                                 >
                                                                                     Zablokuj
                                                                                 </button>
@@ -507,7 +507,7 @@ export default function AdminPanelPage() {
                                                                                         });
                                                                                         setOpenDropdownId(null);
                                                                                     }}
-                                                                                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition border-t border-gray-50"
+                                                                                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition"
                                                                                 >
                                                                                     Odblokuj
                                                                                 </button>
