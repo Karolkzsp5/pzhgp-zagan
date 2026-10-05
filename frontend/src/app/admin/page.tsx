@@ -3,16 +3,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { formatAccountStatus, formatDate, formatGlobalDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 import AdminGuard from '@/app/components/AdminGuard';
 import Navbar from "@/app/components/Navbar";
 import Footer from '@/app/components/Footer';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { formatAccountStatus, formatDate, formatGlobalDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 import Modal from '@/app/components/Modal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import ActionMenu from '@/app/components/ActionMenu';
 
 type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
 
@@ -432,92 +433,88 @@ export default function AdminPanelPage() {
                                                                 {formatGlobalDate(breeder.createdAt)}
                                                             </td>
 
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                                                                <button
-                                                                    type="button"
-                                                                    data-cy={`kebab-menu-btn-${breeder.id}`}
-                                                                    aria-label={`Otwórz akcje dla ${breeder.name} ${breeder.surname}`}
-                                                                    aria-expanded={openDropdownId === breeder.id}
-                                                                    aria-haspopup="menu"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setOpenDropdownId(openDropdownId === breeder.id ? null : breeder.id);
-                                                                    }}
-                                                                    className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition focus:outline-none"
+                                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                <ActionMenu
+                                                                    isOpen={openDropdownId === breeder.id}
+                                                                    onToggle={() =>
+                                                                        setOpenDropdownId(previous =>
+                                                                            previous === breeder.id ? null : breeder.id
+                                                                        )
+                                                                    }
+                                                                    onClose={() => setOpenDropdownId(null)}
+                                                                    ariaLabel={`Otwórz akcje dla ${breeder.name} ${breeder.surname}`}
+                                                                    buttonDataCy={`kebab-menu-btn-${breeder.id}`}
+                                                                    menuDataCy={`dropdown-menu-${breeder.id}`}
                                                                 >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                                                                        <path d="M479.79-192Q450-192 429-213.21t-21-51Q408-294 429.21-315t51-21Q510-336 531-314.79t21 51Q552-234 530.79-213t-51 21Zm0-216Q450-408 429-429.21t-21-51Q408-510 429.21-531t51-21Q510-552 531-530.79t21 51Q552-450 530.79-429t-51 21Zm0-216Q450-624 429-645.21t-21-51Q408-726 429.21-747t51-21Q510-768 531-746.79t21 51Q552-666 530.79-645t-51 21Z" />
-                                                                    </svg>
-                                                                </button>
-
-                                                                {openDropdownId === breeder.id && (
-                                                                    <div
-                                                                        data-cy={`dropdown-menu-${breeder.id}`}
-                                                                        className="absolute right-4 top-12 w-40 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-300 flex flex-col"
-                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    <button
+                                                                        type="button"
+                                                                        role="menuitem"
+                                                                        data-cy="details-option"
+                                                                        onClick={() => {
+                                                                            setSelectedBreeder(breeder);
+                                                                            setOpenDropdownId(null);
+                                                                        }}
+                                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
                                                                     >
-                                                                        <button
-                                                                            data-cy="details-option"
-                                                                            onClick={() => {
-                                                                                setSelectedBreeder(breeder);
-                                                                                setOpenDropdownId(null);
-                                                                            }}
-                                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
-                                                                        >
-                                                                            Szczegóły
-                                                                        </button>
+                                                                        Szczegóły
+                                                                    </button>
 
-                                                                        {breeder.role !== 'ADMINISTRATOR' && (
-                                                                            <>
+                                                                    {breeder.role !== 'ADMINISTRATOR' && (
+                                                                        <>
+                                                                            <button
+                                                                                type="button"
+                                                                                role="menuitem"
+                                                                                data-cy="change-role-option"
+                                                                                onClick={() => {
+                                                                                    setRoleChangeBreeder(breeder);
+                                                                                    setNewRole(breeder.role);
+                                                                                    setOpenDropdownId(null);
+                                                                                }}
+                                                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                            >
+                                                                                Zmień rolę
+                                                                            </button>
+
+                                                                            {breeder.status === 'ACTIVE' ? (
                                                                                 <button
-                                                                                    data-cy="change-role-option"
+                                                                                    type="button"
+                                                                                    role="menuitem"
+                                                                                    data-cy="block-option"
                                                                                     onClick={() => {
-                                                                                        setRoleChangeBreeder(breeder);
-                                                                                        setNewRole(breeder.role);
+                                                                                        setConfirmDialog({
+                                                                                            isOpen: true,
+                                                                                            message: 'Czy na pewno chcesz zablokować to konto?',
+                                                                                            action: 'block',
+                                                                                            breederId: breeder.id
+                                                                                        });
                                                                                         setOpenDropdownId(null);
                                                                                     }}
-                                                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 transition"
+                                                                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition"
                                                                                 >
-                                                                                    Zmień rolę
+                                                                                    Zablokuj
                                                                                 </button>
-
-                                                                                {breeder.status === 'ACTIVE' ? (
-                                                                                    <button
-                                                                                        data-cy="block-option"
-                                                                                        onClick={() => {
-                                                                                            setConfirmDialog({
-                                                                                                isOpen: true,
-                                                                                                message: 'Czy na pewno chcesz zablokować to konto?',
-                                                                                                action: 'block',
-                                                                                                breederId: breeder.id
-                                                                                            });
-                                                                                            setOpenDropdownId(null);
-                                                                                        }}
-                                                                                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-200 transition border-t border-gray-50"
-                                                                                    >
-                                                                                        Zablokuj
-                                                                                    </button>
-                                                                                ) : (
-                                                                                    <button
-                                                                                        data-cy="unblock-option"
-                                                                                        onClick={() => {
-                                                                                            setConfirmDialog({
-                                                                                                isOpen: true,
-                                                                                                message: 'Czy na pewno chcesz odblokować to konto?',
-                                                                                                action: 'unblock',
-                                                                                                breederId: breeder.id
-                                                                                            });
-                                                                                            setOpenDropdownId(null);
-                                                                                        }}
-                                                                                        className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition border-t border-gray-50"
-                                                                                    >
-                                                                                        Odblokuj
-                                                                                    </button>
-                                                                                )}
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                )}
+                                                                            ) : (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    role="menuitem"
+                                                                                    data-cy="unblock-option"
+                                                                                    onClick={() => {
+                                                                                        setConfirmDialog({
+                                                                                            isOpen: true,
+                                                                                            message: 'Czy na pewno chcesz odblokować to konto?',
+                                                                                            action: 'unblock',
+                                                                                            breederId: breeder.id
+                                                                                        });
+                                                                                        setOpenDropdownId(null);
+                                                                                    }}
+                                                                                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition"
+                                                                                >
+                                                                                    Odblokuj
+                                                                                </button>
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                </ActionMenu>
                                                             </td>
                                                         </tr>
                                                     ))}

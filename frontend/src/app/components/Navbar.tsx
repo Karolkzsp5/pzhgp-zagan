@@ -137,7 +137,7 @@ export default function Navbar() {
     };
 
     const navLinks = [
-        { name: 'Wyniki lotów', href: '/results', show: true },
+        { name: 'Plany i wyniki lotów', href: '/flight-plans', show: isLoggedIn },
         { name: 'Mapy lotów', href: '/flights', show: isLoggedIn },
         { name: 'Forum', href: '/forum', show: isLoggedIn },
         { name: 'Znalezione gołębie', href: '/found-pigeons', show: true },

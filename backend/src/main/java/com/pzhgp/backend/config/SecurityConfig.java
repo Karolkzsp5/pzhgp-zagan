@@ -59,9 +59,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
 
-                        .requestMatchers(HttpMethod.POST, "/api/flight-plans", "/api/flight-plans/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/flight-plans/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/flight-plans/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers(HttpMethod.POST, "/api/flight-plans", "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
 
                         .requestMatchers(HttpMethod.POST, "/api/flight-results/**").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/flight-results/**").hasAuthority(Role.ADMINISTRATOR.name())

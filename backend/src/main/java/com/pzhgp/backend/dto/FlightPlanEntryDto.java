@@ -13,7 +13,6 @@ public record FlightPlanEntryDto(
         Integer distanceKm,
         String category,
         String listType,
-        Integer sortOrder,
         List<FlightResultSummaryDto> results
 ) {
 }
