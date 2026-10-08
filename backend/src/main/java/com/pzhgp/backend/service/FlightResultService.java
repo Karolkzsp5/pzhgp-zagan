@@ -8,6 +8,7 @@ import com.pzhgp.backend.entity.FlightResult;
 import com.pzhgp.backend.entity.FlightResultScope;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.entity.Section;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
@@ -41,10 +42,8 @@ public class FlightResultService {
     ) {
         Breeder uploader = requireAdministrator(userEmail);
 
-        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono lotu w planie o ID: " + entryId
-                ));
+        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono lotu w planie o ID: " + entryId));
 
         validateFile(file);
 
@@ -76,25 +75,19 @@ public class FlightResultService {
 
     @Transactional(readOnly = true)
     public FlightResultFileDto getResultFile(Long resultId) {
-        FlightResult result = flightResultRepository.findById(resultId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono wyników lotu o ID: " + resultId
-                ));
+        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId
+        ));
 
-        return new FlightResultFileDto(
-                result.getOriginalFileName(),
-                result.getContent()
-        );
+        return new FlightResultFileDto(result.getOriginalFileName(), result.getContent());
     }
 
     @Transactional
     public void deleteResult(Long resultId, String userEmail) {
         requireAdministrator(userEmail);
 
-        FlightResult result = flightResultRepository.findById(resultId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono wyników lotu o ID: " + resultId
-                ));
+        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
 
         flightResultRepository.delete(result);
     }
@@ -109,7 +102,7 @@ public class FlightResultService {
             }
 
             if (flightResultRepository.existsByFlightPlanEntryIdAndScope(entryId, FlightResultScope.BRANCH)) {
-                throw new IllegalArgumentException("Wyniki oddziałowe dla tego lotu zostały już wgrane.");
+                throw new ResourceConflictException("Wyniki oddziałowe dla tego lotu zostały już wgrane.");
             }
 
             return null;
@@ -119,13 +112,11 @@ public class FlightResultService {
             throw new IllegalArgumentException("Dla wyników sekcyjnych należy wybrać sekcję.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono sekcji o ID: " + request.sectionId()
-                ));
+        Section section = sectionRepository.findById(request.sectionId()).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.sectionId()));
 
         if (flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(entryId, FlightResultScope.SECTION, section.getId())) {
-            throw new IllegalArgumentException("Wyniki tej sekcji dla wybranego lotu zostały już wgrane.");
+            throw new ResourceConflictException("Wyniki tej sekcji dla wybranego lotu zostały już wgrane.");
         }
 
         return section;
@@ -170,10 +161,8 @@ public class FlightResultService {
     }
 
     private Breeder requireAdministrator(String userEmail) {
-        Breeder user = breederRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono użytkownika."
-                ));
+        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (user.getRole() != Role.ADMINISTRATOR) {
             throw new IllegalStateException("Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.");
