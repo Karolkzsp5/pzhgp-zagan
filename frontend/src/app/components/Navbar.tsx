@@ -18,6 +18,7 @@ interface NotificationDto {
 
 export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAuthResolved, setIsAuthResolved] = useState(false);
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -56,20 +57,36 @@ export default function Navbar() {
 
         if (isJwtValid(token)) {
             const payload = decodeJwt(token!);
+
             if (payload) {
                 setIsLoggedIn(true);
                 setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
                 setUserRole(payload.role);
+
                 void fetchNotifications();
             }
-        } else if (token) {
-            logout();
+        } else {
+            if (token) {
+                logout();
+            }
+
+            setIsLoggedIn(false);
+            setUserName('');
+            setUserRole('');
         }
 
+        setIsAuthResolved(true);
+
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false);
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) setIsNotificationsOpen(false);
-            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && mobileMenuButtonRef.current && !mobileMenuButtonRef.current.contains(event.target as Node)) setIsMobileMenuOpen(false);
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+                setIsNotificationsOpen(false);
+            }
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && mobileMenuButtonRef.current && !mobileMenuButtonRef.current.contains(event.target as Node)) {
+                setIsMobileMenuOpen(false);
+            }
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -93,7 +110,9 @@ export default function Navbar() {
         if (!notif.isRead) {
             try {
                 const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
-                if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
+                if (!response.ok) {
+                    throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
+                }
 
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
@@ -103,13 +122,17 @@ export default function Navbar() {
         }
 
         setIsNotificationsOpen(false);
-        if (notif.link) router.push(notif.link);
+        if (notif.link) {
+            router.push(notif.link);
+        }
     };
 
     const handleMarkAllAsRead = async () => {
         try {
             const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
-            if (!response.ok) throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
+            if (!response.ok) {
+                throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
+            }
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
@@ -132,7 +155,9 @@ export default function Navbar() {
     };
 
     const isActive = (path: string) => {
-        if (path === '/') return pathname === '/';
+        if (path === '/') {
+            return pathname === '/';
+        }
         return pathname === path || pathname.startsWith(`${path}/`);
     };
 
@@ -168,7 +193,6 @@ export default function Navbar() {
                                     <path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" />
                                 )}
                             </svg>
-
                         </button>
 
                         <Link href="/" className="font-bold text-base sm:text-xl tracking-wide sm:tracking-wider hover:text-gray-200 transition whitespace-nowrap">
@@ -193,16 +217,18 @@ export default function Navbar() {
                     </div>
 
                     <div className="flex items-center justify-end shrink-0 space-x-1 min-[375px]:space-x-2 sm:space-x-4">
-                        {!isLoggedIn ? (
-                            <>
-                                <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-medium transition">
-                                    Zaloguj się
-                                </Link>
-                                <Link href="/register" className="whitespace-nowrap bg-white text-blue-700 hover:bg-gray-100 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-bold transition shadow-sm">
-                                    Rejestracja
-                                </Link>
-                            </>
-                        ) : (
+                        {isAuthResolved && (
+                            !isLoggedIn ? (
+                                <>
+                                    <Link href="/login" className="whitespace-nowrap hover:bg-blue-600 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-medium transition">
+                                        Zaloguj się
+                                    </Link>
+
+                                    <Link href="/register" className="whitespace-nowrap bg-white text-blue-700 hover:bg-gray-100 px-1.5 min-[375px]:px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs min-[375px]:text-sm font-bold transition shadow-sm">
+                                        Rejestracja
+                                    </Link>
+                                </>
+                            ) : (
                             <div className="flex items-center space-x-1 sm:space-x-3">
 
                                 {/* Notification icon */}
@@ -353,18 +379,14 @@ export default function Navbar() {
                                     )}
                                 </div>
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             </div>
 
             {/* Mobile menu */}
             {isMobileMenuOpen && (
-                <div
-                    id="mobile-navigation"
-                    ref={mobileMenuRef}
-                    className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn"
-                >
+                <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn">
                     <div className="flex flex-col">
                         {navLinks.filter(link => link.show).map((link) => (
                             <Link
@@ -372,9 +394,7 @@ export default function Navbar() {
                                 href={link.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className={`block px-5 py-4 text-base font-medium border-b border-blue-700/50 last:border-0 transition ${
-                                    isActive(link.href)
-                                        ? 'bg-blue-900 text-white'
-                                        : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                    isActive(link.href) ? 'bg-blue-900 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white'
                                 }`}
                             >
                                 {link.name}

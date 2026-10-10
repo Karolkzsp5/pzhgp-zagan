@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { flightPlanService } from '@/app/services/flightPlanService';
-import {FlightPlanEntryDto, FlightPlanEntryRequest, PigeonAgeGroup} from '@/app/types/flightPlan';
+import { FlightPlanEntryDto, FlightPlanEntryRequest, PigeonAgeGroup } from '@/app/types/flightPlan';
 
 interface FlightPlanEntryModalProps {
     isOpen: boolean;

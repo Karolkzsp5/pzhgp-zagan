@@ -13,18 +13,7 @@ import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import { formatGlobalDate, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
-import {
-    fetchThreadById,
-    fetchPostsByThread,
-    createPost,
-    deleteThread,
-    toggleThreadStatus,
-    deletePost,
-    updatePost,
-    updateThreadTitle,
-    ForumThreadDto,
-    ForumPostDto
-} from '@/app/services/forumService';
+import { fetchThreadById, fetchPostsByThread, createPost, deleteThread, toggleThreadStatus, deletePost, updatePost, updateThreadTitle, ForumThreadDto, ForumPostDto} from '@/app/services/forumService';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const resolvedParams = use(params);
@@ -162,11 +151,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 await loadThreadData();
             }
         } catch (error) {
-            setReplyError(
-                error instanceof Error
-                    ? error.message
-                    : 'Wystąpił błąd podczas publikowania odpowiedzi.'
-            );
+            setReplyError(error instanceof Error ? error.message : 'Wystąpił błąd podczas publikowania odpowiedzi.');
         } finally {
             setIsReplying(false);
         }
@@ -185,12 +170,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     await deleteThread(threadId);
                     router.push(thread ? `/forum/${thread.categoryId}` : '/forum');
                 } catch (error) {
-                    showAlert(
-                        'Błąd',
-                        error instanceof Error
-                            ? error.message
-                            : 'Wystąpił błąd podczas usuwania wątku.'
-                    );
+                    showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania wątku.');
                 }
             }
         });
@@ -210,12 +190,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 };
             });
         } catch (error) {
-            showAlert(
-                'Błąd',
-                error instanceof Error
-                    ? error.message
-                    : `Wystąpił błąd (${action}).`
-            );
+            showAlert('Błąd', error instanceof Error ? error.message : `Wystąpił błąd (${action}).`);
         }
     };
 
@@ -234,12 +209,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
         } catch (error) {
-            showAlert(
-                'Błąd edycji',
-                error instanceof Error
-                    ? error.message
-                    : 'Wystąpił błąd podczas zapisywania tytułu.'
-            );
+            showAlert('Błąd edycji', error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania tytułu.');
         } finally {
             setIsTitleSubmitting(false);
         }
@@ -265,11 +235,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             cancelEditing();
             await loadThreadData();
         } catch (error) {
-            setEditError(
-                error instanceof Error
-                    ? error.message
-                    : 'Wystąpił błąd podczas zapisywania wpisu.'
-            );
+            setEditError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania wpisu.');
         } finally {
             setIsEditSubmitting(false);
         }
@@ -288,12 +254,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     await deletePost(postId);
                     await loadThreadData();
                 } catch (error) {
-                    showAlert(
-                        'Nie można usunąć',
-                        error instanceof Error
-                            ? error.message
-                            : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.'
-                    );
+                    showAlert('Nie można usunąć', error instanceof Error ? error.message : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
                 }
             }
         });
@@ -536,9 +497,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                                 onClick={() => void handleEditSubmit(post.id)}
                                                                 disabled={isEditSubmitting}
                                                                 className={`px-4 py-1.5 rounded text-sm font-medium text-white transition shadow-sm ${
-                                                                    isEditSubmitting
-                                                                        ? 'bg-blue-400 cursor-not-allowed'
-                                                                        : 'bg-blue-600 hover:bg-blue-700'
+                                                                    isEditSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                                                                 }`}
                                                             >
                                                                 {isEditSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
@@ -634,10 +593,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                         />
 
                                         {replyError && (
-                                            <div
-                                                className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
-                                                role="alert"
-                                            >
+                                            <div className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100" role="alert">
                                                 {replyError}
                                             </div>
                                         )}

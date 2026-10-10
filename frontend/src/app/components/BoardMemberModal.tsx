@@ -169,11 +169,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             }
             onSaved();
         } catch (error) {
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : 'Wystąpił błąd podczas zapisywania.'
-            );
+            setError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania.');
         } finally {
             setIsLoading(false);
         }
@@ -195,11 +191,13 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-700"></div>
                     </div>
                 )}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div className="grid grid-cols-1 gap-4">
                         <div>
-                            <label htmlFor="board-type" className="block text-sm font-semibold text-gray-800 mb-1">Zarząd (Oddział czy Sekcja)</label>
+                            <label htmlFor="board-type" className="block text-sm font-semibold text-gray-800 mb-1">
+                                Zarząd (Oddział czy Sekcja)
+                            </label>
                             <select
                                 id="board-type"
                                 value={managedSectionId || 0}
@@ -214,7 +212,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         </div>
 
                         <div>
-                            <label htmlFor="board-role" className="block text-sm font-semibold text-gray-800 mb-1">Stanowisko</label>
+                            <label htmlFor="board-role" className="block text-sm font-semibold text-gray-800 mb-1">
+                                Stanowisko
+                            </label>
                             <select
                                 id="board-role"
                                 required
@@ -278,7 +278,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         ) : (
                             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md border border-gray-200">
                                 <div>
-                                    <label htmlFor="custom-name" className="block text-sm font-medium text-gray-700 mb-1">Imię</label>
+                                    <label htmlFor="custom-name" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Imię
+                                    </label>
                                     <input
                                         id="custom-name"
                                         type="text"
@@ -290,7 +292,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="custom-surname" className="block text-sm font-medium text-gray-700 mb-1">Nazwisko</label>
+                                    <label htmlFor="custom-surname" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nazwisko
+                                    </label>
                                     <input
                                         id="custom-surname"
                                         type="text"
@@ -308,7 +312,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     <hr className="my-4 border-gray-200" />
 
                     <div>
-                        <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-800 mb-1">Publiczny nr telefonu (opcjonalny)</label>
+                        <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-800 mb-1">
+                            Publiczny nr telefonu (opcjonalny)
+                        </label>
                         <p className="text-xs text-gray-600 mb-2">
                             Wypełnienie tego pola sprawi, że numer będzie widoczny na stronie dla wszystkich.
                         </p>
@@ -324,9 +330,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     </div>
 
                     {error && (
-                        <div role="alert"
-                            className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700"
-                        >
+                        <div role="alert" className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700">
                             {error}
                         </div>
                     )}

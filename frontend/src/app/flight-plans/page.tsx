@@ -60,9 +60,7 @@ export default function FlightPlansPage() {
         try {
             setPlans(await flightPlanService.getAllPlans());
         } catch (error) {
-            setLoadError(
-                error instanceof Error ? error.message : 'Nie udało się pobrać planów lotów.'
-            );
+            setLoadError(error instanceof Error ? error.message : 'Nie udało się pobrać planów lotów.');
         } finally {
             setIsLoading(false);
         }
@@ -110,9 +108,7 @@ export default function FlightPlansPage() {
             setIsCreateModalOpen(false);
             await loadPlans();
         } catch (error) {
-            setFormError(
-                error instanceof Error ? error.message : 'Nie udało się utworzyć planu lotów.'
-            );
+            setFormError(error instanceof Error ? error.message : 'Nie udało się utworzyć planu lotów.');
         } finally {
             setIsSaving(false);
         }
@@ -131,11 +127,8 @@ export default function FlightPlansPage() {
                     await flightPlanService.deletePlan(plan.year);
                     await loadPlans();
                 } catch (error) {
-                    showAlert(
-                        'Nie udało się usunąć planu',
-                        error instanceof Error
-                            ? error.message
-                            : 'Wystąpił błąd podczas usuwania planu lotów.'
+                    showAlert('Nie udało się usunąć planu',
+                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania planu lotów.'
                     );
                 }
             }
@@ -150,10 +143,7 @@ export default function FlightPlansPage() {
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200 pb-5 mb-8">
                         <div className="flex-1 pr-2">
-                            <h1
-                                className="text-3xl font-bold text-gray-900"
-                                data-cy="flight-plans-title"
-                            >
+                            <h1 className="text-3xl font-bold text-gray-900" data-cy="flight-plans-title">
                                 Plany i wyniki lotów
                             </h1>
 
@@ -196,13 +186,7 @@ export default function FlightPlansPage() {
                                     <Link href={`/flight-plans/${plan.year}`} className="block p-6 pr-16">
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-50 text-blue-700 shrink-0">
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="w-7 h-7"
-                                                    viewBox="0 -960 960 960"
-                                                    fill="currentColor"
-                                                    aria-hidden="true"
-                                                >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                     <path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z" />
                                                 </svg>
                                             </div>
@@ -224,13 +208,7 @@ export default function FlightPlansPage() {
                                             title="Usuń plan"
                                             className="absolute top-5 right-5 text-gray-400 hover:text-red-600 p-1 transition-colors"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5"
-                                                viewBox="0 -960 960 960"
-                                                fill="currentColor"
-                                                aria-hidden="true"
-                                            >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
                                             </svg>
                                         </button>
@@ -249,15 +227,9 @@ export default function FlightPlansPage() {
                     onClose={closeCreateModal}
                     closeDisabled={isSaving}
                 >
-                    <form
-                        onSubmit={handleCreatePlan}
-                        className="p-6 space-y-5"
-                    >
+                    <form onSubmit={handleCreatePlan} className="p-6 space-y-5">
                         <div>
-                            <label
-                                htmlFor="flight-plan-year"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
+                            <label htmlFor="flight-plan-year" className="block text-sm font-medium text-gray-700 mb-1">
                                 Rok
                             </label>
 
@@ -276,11 +248,7 @@ export default function FlightPlansPage() {
                         </div>
 
                         {formError && (
-                            <p
-                                className="text-sm text-red-600"
-                                role="alert"
-                                data-cy="flight-plan-form-error"
-                            >
+                            <p className="text-sm text-red-600" role="alert" data-cy="flight-plan-form-error">
                                 {formError}
                             </p>
                         )}

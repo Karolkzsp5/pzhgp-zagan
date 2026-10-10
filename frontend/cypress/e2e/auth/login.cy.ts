@@ -72,7 +72,7 @@ describe('Breeder Login Process', () => {
         });
     });
 
-    it('Should store the token in sessionStorage when "Remember me" is not selected', () => {
+    it('Should store a session-scoped token when "Remember me" is not selected', () => {
         const mockToken = createFakeToken('BREEDER', 'test.cypress1@test.cy', 'Test');
 
         cy.intercept('POST', '**/api/auth/login', {
@@ -82,17 +82,18 @@ describe('Breeder Login Process', () => {
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');
-
         cy.get('input[name="remember-me"]').should('not.be.checked');
-
         cy.get('button[type="submit"]').click();
 
         cy.wait('@successfulLogin');
 
         cy.window().then((win) => {
-            expect(win.sessionStorage.getItem('jwt_token')).to.eq(mockToken);
-            expect(win.localStorage.getItem('jwt_token')).to.be.null;
+            expect(win.localStorage.getItem('jwt_token')).to.eq(mockToken);
+            expect(win.localStorage.getItem('auth_persistence')).to.eq('session');
+            expect(win.sessionStorage.getItem('jwt_token')).to.be.null;
         });
+
+        cy.getCookie('pzhgp_session').should('have.property', 'value', '1');
     });
 
     it('Should log the user in and redirect them to the home page', () => {
@@ -151,8 +152,12 @@ describe('Breeder Login Process', () => {
 
         cy.window().then((win) => {
             expect(win.localStorage.getItem('jwt_token')).to.eq(mockToken);
+            expect(win.localStorage.getItem('auth_persistence')).to.eq('persistent');
             expect(win.sessionStorage.getItem('jwt_token')).to.be.null;
         });
+
+        cy.getCookie('pzhgp_session').should('be.null');
+
         cy.contains('Witaj, Test');
     });
 

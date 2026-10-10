@@ -44,12 +44,9 @@ export default function HomePage() {
         const token = getAuthToken();
 
         try {
-            const response = await fetch(
-                `${API_URL}/api/announcements?page=${page}&size=10`,
-                {
+            const response = await fetch(`${API_URL}/api/announcements?page=${page}&size=10`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
-                }
-            );
+            });
 
             if (!response.ok) {
                 throw new Error('Nie udało się pobrać ogłoszeń.');
@@ -159,7 +156,9 @@ export default function HomePage() {
                             </div>
                         ) : announcementError ? (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                                <p className="text-sm text-red-700">{announcementError}</p>
+                                <p className="text-sm text-red-700">
+                                    {announcementError}
+                                </p>
                                 <button
                                     type="button"
                                     onClick={() => void fetchAnnouncements(currentPage)}
@@ -188,10 +187,7 @@ export default function HomePage() {
 
                                             <div className="flex items-center gap-2 ml-4">
                                                 {post.isPinned && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px"
-                                                         viewBox="0 -960 960 960" width="24px" fill="#2b7fff"
-                                                         className="shrink-0"
-                                                    >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#2b7fff" className="shrink-0">
                                                         <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                     </svg>
                                                 )}
@@ -206,13 +202,11 @@ export default function HomePage() {
                                             </div>
                                         </div>
 
-                                        <div
-                                            className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed"
+                                        <div className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0"
                                             dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(post.content)}}
                                         />
 
-                                        <div
-                                            className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
+                                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
 
                                             <div className="flex flex-col gap-1">
                                                 <div className="text-sm text-gray-400 font-medium">
@@ -255,8 +249,7 @@ export default function HomePage() {
 
                                 {/* Pagination buttons */}
                                 {totalPages > 1 && (
-                                    <div
-                                        className="flex justify-center items-center space-x-4 mt-8 pt-4 border-t border-gray-200">
+                                    <div className="flex justify-center items-center space-x-4 mt-8 pt-4 border-t border-gray-200">
                                         <button
                                             onClick={() => void fetchAnnouncements(currentPage - 1)}
                                             disabled={currentPage === 0}
@@ -264,7 +257,9 @@ export default function HomePage() {
                                         >
                                             Poprzednia
                                         </button>
-                                        <span className="text-sm text-gray-600 font-medium">Strona {currentPage + 1} z {totalPages}</span>
+                                        <span className="text-sm text-gray-600 font-medium">
+                                            Strona {currentPage + 1} z {totalPages}
+                                        </span>
                                         <button
                                             onClick={() => void fetchAnnouncements(currentPage + 1)}
                                             disabled={currentPage === totalPages - 1}

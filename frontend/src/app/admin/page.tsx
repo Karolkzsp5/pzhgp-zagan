@@ -134,13 +134,9 @@ export default function AdminPanelPage() {
                 } else if (action === 'reject') {
                     setPendingBreeders(prev => prev.filter(b => b.id !== id));
                 } else if (action === 'block') {
-                    setRegisteredBreeders(prev =>
-                        prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b)
-                    );
+                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b));
                 } else if (action === 'unblock') {
-                    setRegisteredBreeders(prev =>
-                        prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b)
-                    );
+                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b));
                 }
             } else {
                 setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
@@ -174,28 +170,26 @@ export default function AdminPanelPage() {
     };
 
     const processBreeders = (breeders: BreederDto[]) => {
-        return breeders
-            .filter((b) => {
-                const searchLower = searchTerm.trim().toLowerCase();
-                const normalizedSearch = searchLower.replace(/\s+/g, '');
+        return breeders.filter((b) => {
+            const searchLower = searchTerm.trim().toLowerCase();
+            const normalizedSearch = searchLower.replace(/\s+/g, '');
 
-                const matchesSearch =
-                    b.name.toLowerCase().includes(searchLower) ||
-                    b.surname.toLowerCase().includes(searchLower) ||
-                    b.email.toLowerCase().includes(searchLower) ||
-                    b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
+            const matchesSearch =
+                b.name.toLowerCase().includes(searchLower) ||
+                b.surname.toLowerCase().includes(searchLower) ||
+                b.email.toLowerCase().includes(searchLower) ||
+                b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
 
-                const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
+            const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
 
-                return matchesSearch && matchesSection;
-            })
-            .sort((a, b) => {
-                if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
-                if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
-                return 0;
-            });
+            return matchesSearch && matchesSection;
+        }).sort((a, b) => {
+            if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
+            if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
+            return 0;
+        });
     };
 
     const processedPending = useMemo(() => {
@@ -370,9 +364,7 @@ export default function AdminPanelPage() {
                                         {processedRegistered.length === 0 ? (
                                             <div data-cy="no-registered-accounts">
                                                 <EmptyState>
-                                                    {hasActiveFilters
-                                                        ? 'Brak kont hodowców spełniających podane kryteria.'
-                                                        : 'Brak zarejestrowanych kont w systemie.'}
+                                                    {hasActiveFilters ? 'Brak kont hodowców spełniających podane kryteria.' : 'Brak zarejestrowanych kont w systemie.'}
                                                 </EmptyState>
                                             </div>
                                         ) : (

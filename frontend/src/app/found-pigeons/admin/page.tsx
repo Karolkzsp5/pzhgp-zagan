@@ -11,15 +11,7 @@ import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import {
-    ALLOWED_STATUS_TRANSITIONS,
-    FoundPigeonDto,
-    FoundPigeonStatus,
-    STATUS_BADGE_CLASSES,
-    formatReportLanguage,
-    formatReportStatus,
-    formatStatusAction
-} from '@/app/types/foundPigeon';
+import { ALLOWED_STATUS_TRANSITIONS, FoundPigeonDto, FoundPigeonStatus, STATUS_BADGE_CLASSES, formatReportLanguage, formatReportStatus, formatStatusAction } from '@/app/types/foundPigeon';
 
 const PAGE_SIZE = 10;
 
@@ -337,9 +329,7 @@ export default function FoundPigeonsAdminPage() {
                                                 <tr
                                                     key={report.id}
                                                     className={`transition duration-150 ${
-                                                        selected?.id === report.id
-                                                            ? 'bg-blue-50'
-                                                            : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
+                                                        selected?.id === report.id ? 'bg-blue-50' : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
                                                     }`}
                                                 >
                                                     <td className="px-4 py-3 [overflow-wrap:anywhere]">

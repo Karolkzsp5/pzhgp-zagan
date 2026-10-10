@@ -60,12 +60,7 @@ export default function BoardPage() {
             setMembers(boardData);
             setSections(sectionsData);
         } catch (error) {
-
-            setError(
-                error instanceof TypeError
-                    ? 'Nie udało połączyć się z serwerem.'
-                    : 'Nie udało się pobrać danych zarządu.'
-            );
+            setError(error instanceof TypeError ? 'Nie udało połączyć się z serwerem.' : 'Nie udało się pobrać danych zarządu.');
         } finally {
             setIsLoading(false);
         }

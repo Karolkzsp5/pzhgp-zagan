@@ -72,26 +72,16 @@ export const flightPlanService = {
         await ensureOk(response, 'Nie udało się usunąć planu lotów.');
     },
 
-    uploadResult: async (
-        entryId: number,
-        file: File,
-        metadata: FlightResultUploadRequest
-    ): Promise<number> => {
+    uploadResult: async (entryId: number, file: File, metadata: FlightResultUploadRequest): Promise<number> => {
         const formData = new FormData();
 
         formData.append('file', file);
-        formData.append(
-            'metadata',
-            new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-        );
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
 
-        const response = await fetchWithAuth(
-            `${API_URL}/api/flight-results/entries/${entryId}`,
-            {
-                method: 'POST',
-                body: formData
-            }
-        );
+        const response = await fetchWithAuth(`${API_URL}/api/flight-results/entries/${entryId}`, {
+            method: 'POST',
+            body: formData
+        });
 
         await ensureOk(response, 'Nie udało się wgrać wyników lotu.');
 
@@ -100,22 +90,16 @@ export const flightPlanService = {
     },
 
     getResultFile: async (resultId: number): Promise<Blob> => {
-        const response = await fetchWithAuth(
-            `${API_URL}/api/flight-results/${resultId}/file`
-        );
-
+        const response = await fetchWithAuth(`${API_URL}/api/flight-results/${resultId}/file`);
         await ensureOk(response, 'Nie udało się pobrać wyników lotu.');
 
         return response.blob();
     },
 
     deleteResult: async (resultId: number): Promise<void> => {
-        const response = await fetchWithAuth(
-            `${API_URL}/api/flight-results/${resultId}`,
-            {
-                method: 'DELETE'
-            }
-        );
+        const response = await fetchWithAuth(`${API_URL}/api/flight-results/${resultId}`, {
+            method: 'DELETE'
+        });
 
         await ensureOk(response, 'Nie udało się usunąć wyników lotu.');
     }

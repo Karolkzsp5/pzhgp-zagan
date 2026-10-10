@@ -11,13 +11,17 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
     const token = getAuthToken();
     const headers = new Headers(options.headers);
 
-    if (token) headers.set('Authorization', `Bearer ${token}`);
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
 
     const response = await fetch(url, { ...options, headers });
 
     if (response.status === 401) {
         logout();
-        if (typeof window !== 'undefined') window.location.href = '/login?expired=true';
+        if (typeof window !== 'undefined') {
+            window.location.href = '/login?expired=true';
+        }
         throw new Error('Sesja wygasła. Zaloguj się ponownie.');
     }
 

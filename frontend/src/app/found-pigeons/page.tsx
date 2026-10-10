@@ -98,12 +98,7 @@ export default function FoundPigeonsPage() {
             const digits = phone.replace(/\D/g, '').length;
             const allowedCharacters = /^\+?[0-9 ()./-]+$/.test(phone);
 
-            if (
-                !allowedCharacters ||
-                phone.length > 15 ||
-                digits < 6 ||
-                digits > 15
-            ) {
+            if (!allowedCharacters || phone.length > 15 || digits < 6 || digits > 15) {
                 found.contactPhone = text.errorPhoneInvalid;
             }
         }
@@ -148,9 +143,7 @@ export default function FoundPigeonsPage() {
 
     const fieldClasses = (hasError: boolean) =>
         `w-full px-3 py-2 border rounded-md text-sm text-gray-900 outline-none transition focus:ring-2 ${
-            hasError
-                ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            hasError ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
         }`;
 
     return (
@@ -169,9 +162,7 @@ export default function FoundPigeonsPage() {
                                 onClick={() => changeLanguage(code)}
                                 aria-pressed={language === code}
                                 className={`px-3 py-1.5 rounded-md text-sm font-semibold border transition ${
-                                    language === code
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                                    language === code ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                                 }`}
                             >
                                 {FORM_TRANSLATIONS[code].languageName}
@@ -352,10 +343,7 @@ export default function FoundPigeonsPage() {
                             </section>
 
                             {submitError && (
-                                <p
-                                    role="alert"
-                                    className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"
-                                >
+                                <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                                     {submitError}
                                 </p>
                             )}

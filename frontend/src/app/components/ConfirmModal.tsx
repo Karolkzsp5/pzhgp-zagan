@@ -33,7 +33,10 @@ export default function ConfirmModal({ isOpen, title, message, onConfirm, onCanc
 
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                 {!isAlert && (
-                    <button type="button" onClick={onCancel} disabled={isLoading}
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={isLoading}
                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
                         Anuluj

@@ -5,13 +5,7 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup, CircleMarker, useMap 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { FlightDetailsDto, formatTime } from '@/app/types/flight';
-import {
-    SPEED_RAMP,
-    REFERENCE_COLOR,
-    CURSOR_COLOR,
-    computeSpeedThresholds,
-    speedBucket
-} from '@/app/utils/flightScale';
+import { SPEED_RAMP, REFERENCE_COLOR, CURSOR_COLOR, computeSpeedThresholds, speedBucket } from '@/app/utils/flightScale';
 
 type LatLng = [number, number];
 

@@ -128,8 +128,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
         } catch (error) {
             resultWindow.close();
 
-            showAlert(
-                'Nie udało się otworzyć wyników',
+            showAlert('Nie udało się otworzyć wyników',
                 error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania wyników lotu.'
             );
         } finally {
@@ -167,9 +166,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
                 } catch (error) {
-                    showAlert('Nie udało się usunąć lotu',
-                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.'
-                    );
+                    showAlert('Nie udało się usunąć lotu', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.');
                 }
             }
         });
@@ -186,18 +183,14 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                             href="/flight-plans"
                             className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition mb-4"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960"
-                                 fill="currentColor" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                 <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"></path>
                             </svg>
                             Wróć do planów
                         </Link>
 
                         <div className="border-b border-gray-200 pb-5">
-                            <h1
-                                className="text-3xl font-bold text-gray-900"
-                                data-cy="flight-plan-year-title"
-                            >
+                            <h1 className="text-3xl font-bold text-gray-900" data-cy="flight-plan-year-title">
                                 Plan lotów {year}
                             </h1>
 
@@ -389,10 +382,7 @@ function TableHeader({children, className = ''}: {
     className?: string;
 }) {
     return (
-        <th
-            scope="col"
-            className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}
-        >
+        <th scope="col" className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}>
             {children}
         </th>
     );
@@ -435,9 +425,7 @@ function FlightTableRow({
         void onOpenResult(resultId);
     };
 
-    const isOpeningThisFlight = flight.results.some(
-        result => result.id === openingResultId
-    );
+    const isOpeningThisFlight = flight.results.some(result => result.id === openingResultId);
 
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">

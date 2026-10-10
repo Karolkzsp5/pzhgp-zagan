@@ -218,11 +218,7 @@ export default function RegisterPage() {
                 return;
             }
 
-            setError(
-                await readApiError(
-                    response,
-                    'Nie udało się zarejestrować konta.'
-                )
+            setError(await readApiError(response, 'Nie udało się zarejestrować konta.')
             );
 
         } catch (error) {
@@ -247,44 +243,80 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
-
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Imię</label>
-                            <input id="name" type="text" name="name" autoComplete="given-name" value={formData.name} onChange={handleChange} required
+                            <input id="name"
+                                   type="text"
+                                   name="name"
+                                   autoComplete="given-name"
+                                   value={formData.name}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={32}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="surname" className="block text-sm font-medium text-gray-700">Nazwisko</label>
-                            <input id="surname" type="text" name="surname" autoComplete="family-name" value={formData.surname} onChange={handleChange} required
+                            <input id="surname"
+                                   type="text"
+                                   name="surname"
+                                   autoComplete="family-name"
+                                   value={formData.surname}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={64}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">Data urodzenia</label>
-                            <input id="dateOfBirth" type="date" name="dateOfBirth" autoComplete="bday" value={formData.dateOfBirth} onChange={handleChange} required
+                            <input id="dateOfBirth"
+                                   type="date"
+                                   name="dateOfBirth"
+                                   autoComplete="bday"
+                                   value={formData.dateOfBirth}
+                                   onChange={handleChange}
+                                   required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Adres e-mail</label>
-                            <input id="email" type="email" name="email" autoComplete="email" value={formData.email} onChange={handleChange} required
+                            <input id="email"
+                                   type="email"
+                                   name="email"
+                                   autoComplete="email"
+                                   value={formData.email}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={320}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Numer telefonu</label>
-                            <input id="phoneNumber" type="tel" name="phoneNumber" autoComplete="tel" inputMode="tel" value={formData.phoneNumber} onChange={handleChange} required
+                            <input id="phoneNumber"
+                                   type="tel"
+                                   name="phoneNumber"
+                                   autoComplete="tel"
+                                   inputMode="tel"
+                                   value={formData.phoneNumber}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={11}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Hasło</label>
-                            <input id="password" type="password" name="password" autoComplete="new-password" value={formData.password} onChange={handleChange} required
+                            <input id="password"
+                                   type="password"
+                                   name="password"
+                                   autoComplete="new-password"
+                                   value={formData.password}
+                                   onChange={handleChange}
+                                   required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
 
                             {formData.password.length > 0 && (
@@ -302,13 +334,24 @@ export default function RegisterPage() {
 
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Powtórz hasło</label>
-                            <input id="confirmPassword" type="password" name="confirmPassword" autoComplete="new-password" value={formData.confirmPassword} onChange={handleChange} required
+                            <input id="confirmPassword"
+                                   type="password"
+                                   name="confirmPassword"
+                                   autoComplete="new-password"
+                                   value={formData.confirmPassword}
+                                   onChange={handleChange}
+                                   required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="sectionId" className="block text-sm font-medium text-gray-700">Wybierz sekcję, do której chcesz należeć</label>
-                            <select id="sectionId" name="sectionId" value={formData.sectionId} onChange={handleChange} required disabled={sections.length === 0}
+                            <select id="sectionId"
+                                    name="sectionId"
+                                    value={formData.sectionId}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={sections.length === 0}
                                     className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100">
                                 <option value={0}>Wybierz</option>
                                 {sections.map((section) => (
@@ -321,28 +364,52 @@ export default function RegisterPage() {
 
                         <div>
                             <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">Kod pocztowy</label>
-                            <input id="postalCode" type="text" name="postalCode" autoComplete="postal-code" value={formData.postalCode} onChange={handleChange} required
+                            <input id="postalCode"
+                                   type="text"
+                                   name="postalCode"
+                                   autoComplete="postal-code"
+                                   value={formData.postalCode}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={6}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="city" className="block text-sm font-medium text-gray-700">Miejscowość</label>
-                            <input id="city" type="text" name="city" autoComplete="address-level2" value={formData.city} onChange={handleChange} required
+                            <input id="city"
+                                   type="text"
+                                   name="city"
+                                   autoComplete="address-level2"
+                                   value={formData.city}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulica</label>
-                            <input id="street" type="text" name="street" autoComplete="address-line1" value={formData.street} onChange={handleChange} required
+                            <input id="street"
+                                   type="text"
+                                   name="street"
+                                   autoComplete="address-line1"
+                                   value={formData.street}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={100}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
 
                         <div>
                             <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700">Numer domu/lokalu</label>
-                            <input id="houseNumber" type="text" name="houseNumber" autoComplete="address-line2" value={formData.houseNumber} onChange={handleChange} required
+                            <input id="houseNumber"
+                                   type="text"
+                                   name="houseNumber"
+                                   autoComplete="address-line2"
+                                   value={formData.houseNumber}
+                                   onChange={handleChange}
+                                   required
                                    maxLength={10}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
@@ -350,10 +417,7 @@ export default function RegisterPage() {
                     </div>
 
                     {error && (
-                        <div
-                            className="p-4 my-4 rounded bg-red-100 text-red-700"
-                            role="alert"
-                        >
+                        <div className="p-4 my-4 rounded bg-red-100 text-red-700" role="alert">
                             {error}
                         </div>
                     )}
@@ -391,7 +455,10 @@ export default function RegisterPage() {
                         Po akceptacji logowanie będzie możliwe.
                     </p>
 
-                    <button type="button" onClick={closeRegistrationModal} className="w-full px-4 py-3 bg-blue-600 text-base font-bold text-white rounded-md hover:bg-blue-700 transition">
+                    <button
+                        type="button"
+                        onClick={closeRegistrationModal}
+                        className="w-full px-4 py-3 bg-blue-600 text-base font-bold text-white rounded-md hover:bg-blue-700 transition">
                         Rozumiem
                     </button>
                 </div>
