@@ -45,7 +45,9 @@ export interface PageResponse<T> {
 }
 
 const ensureOk = async (response: Response, fallback: string): Promise<void> => {
-    if (!response.ok) throw new Error(await readApiError(response, fallback));
+    if (!response.ok) {
+        throw new Error(await readApiError(response, fallback));
+    }
 };
 
 export const fetchCategories = async (): Promise<ForumCategoryDto[]> => {

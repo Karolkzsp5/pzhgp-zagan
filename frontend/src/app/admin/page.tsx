@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { formatAccountStatus, formatDate, formatGlobalDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 import AdminGuard from '@/app/components/AdminGuard';
@@ -36,12 +35,15 @@ interface BreederDto {
 }
 
 export default function AdminPanelPage() {
+    const { user } = useAuth();
+    const currentUserEmail = user?.sub ?? '';
+
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
     const [sectionsList, setSectionsList] = useState<{ id: number; name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [currentUserEmail, setCurrentUserEmail] = useState('');
+
     const [modalMessage, setModalMessage] = useState<string | null>(null);
     const [confirmDialog, setConfirmDialog] = useState<{
         isOpen: boolean;
@@ -59,30 +61,35 @@ export default function AdminPanelPage() {
     const [filterSection, setFilterSection] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<SortOption>('NEWEST');
 
-    const router = useRouter();
+    useEffect(() => {
+        if (user?.role !== 'ADMINISTRATOR') {
+            return;
+        }
+
+        void fetchAllAccounts();
+    }, [user?.role]);
 
     useEffect(() => {
-        fetchAllAccounts();
+        const handleClickOutside = () => {
+            setOpenDropdownId(null);
+        };
 
-        const handleClickOutside = () => setOpenDropdownId(null);
-        window.addEventListener('click', handleClickOutside);
-        return () => window.removeEventListener('click', handleClickOutside);
+        window.addEventListener(
+            'click',
+            handleClickOutside
+        );
+
+        return () => {
+            window.removeEventListener(
+                'click',
+                handleClickOutside
+            );
+        };
     }, []);
 
     const fetchAllAccounts = async () => {
         setIsLoading(true);
         setError('');
-
-        const token = getAuthToken();
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        const payload = decodeJwt(token);
-        if (payload) {
-            setCurrentUserEmail(payload.sub);
-        }
 
         try {
             const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
@@ -134,13 +141,9 @@ export default function AdminPanelPage() {
                 } else if (action === 'reject') {
                     setPendingBreeders(prev => prev.filter(b => b.id !== id));
                 } else if (action === 'block') {
-                    setRegisteredBreeders(prev =>
-                        prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b)
-                    );
+                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b));
                 } else if (action === 'unblock') {
-                    setRegisteredBreeders(prev =>
-                        prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b)
-                    );
+                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b));
                 }
             } else {
                 setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
@@ -174,28 +177,26 @@ export default function AdminPanelPage() {
     };
 
     const processBreeders = (breeders: BreederDto[]) => {
-        return breeders
-            .filter((b) => {
-                const searchLower = searchTerm.trim().toLowerCase();
-                const normalizedSearch = searchLower.replace(/\s+/g, '');
+        return breeders.filter((b) => {
+            const searchLower = searchTerm.trim().toLowerCase();
+            const normalizedSearch = searchLower.replace(/\s+/g, '');
 
-                const matchesSearch =
-                    b.name.toLowerCase().includes(searchLower) ||
-                    b.surname.toLowerCase().includes(searchLower) ||
-                    b.email.toLowerCase().includes(searchLower) ||
-                    b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
+            const matchesSearch =
+                b.name.toLowerCase().includes(searchLower) ||
+                b.surname.toLowerCase().includes(searchLower) ||
+                b.email.toLowerCase().includes(searchLower) ||
+                b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
 
-                const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
+            const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
 
-                return matchesSearch && matchesSection;
-            })
-            .sort((a, b) => {
-                if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
-                if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
-                return 0;
-            });
+            return matchesSearch && matchesSection;
+        }).sort((a, b) => {
+            if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
+            if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
+            return 0;
+        });
     };
 
     const processedPending = useMemo(() => {
@@ -327,6 +328,7 @@ export default function AdminPanelPage() {
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                                 <button
+                                                                    type="button"
                                                                     data-cy={`approve-btn-${breeder.id}`}
                                                                     onClick={() => {
                                                                         setConfirmDialog({
@@ -342,6 +344,7 @@ export default function AdminPanelPage() {
                                                                     Akceptuj
                                                                 </button>
                                                                 <button
+                                                                    type="button"
                                                                     data-cy={`reject-btn-${breeder.id}`}
                                                                     onClick={() => {
                                                                         setConfirmDialog({
@@ -370,9 +373,7 @@ export default function AdminPanelPage() {
                                         {processedRegistered.length === 0 ? (
                                             <div data-cy="no-registered-accounts">
                                                 <EmptyState>
-                                                    {hasActiveFilters
-                                                        ? 'Brak kont hodowców spełniających podane kryteria.'
-                                                        : 'Brak zarejestrowanych kont w systemie.'}
+                                                    {hasActiveFilters ? 'Brak kont hodowców spełniających podane kryteria.' : 'Brak zarejestrowanych kont w systemie.'}
                                                 </EmptyState>
                                             </div>
                                         ) : (
@@ -590,7 +591,10 @@ export default function AdminPanelPage() {
                         </div>
 
                         <div className="mt-8 flex justify-end">
-                            <button type="button" onClick={() => setSelectedBreeder(null)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedBreeder(null)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition shadow-sm">
                                 Zamknij
                             </button>
                         </div>

@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { API_URL, readApiError } from '@/app/utils/apiClient';
+import { saveAuthToken } from '@/app/utils/jwt';
 
 interface LoginFormData {
     email: string;
@@ -46,14 +47,7 @@ export default function LoginPage() {
 
             if (response.ok) {
                 const token = await response.text();
-                if (rememberMe) {
-                    localStorage.setItem('jwt_token', token);
-                    sessionStorage.removeItem('jwt_token');
-                } else {
-                    sessionStorage.setItem('jwt_token', token);
-                    localStorage.removeItem('jwt_token');
-                }
-
+                saveAuthToken(token, rememberMe);
                 router.push('/');
                 return;
             }
@@ -124,8 +118,7 @@ export default function LoginPage() {
                     {message.text && (
                         <div className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
                             message.type === 'success' ? 'bg-green-100 text-green-700' : 
-                                message.type === 'error' ? 'bg-red-100 text-red-700' : 
-                                    'bg-blue-100 text-blue-700'
+                                message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                             {message.text}
                         </div>

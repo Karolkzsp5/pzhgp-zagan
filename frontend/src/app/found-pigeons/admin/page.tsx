@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -9,17 +9,10 @@ import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import { useAuth } from '@/app/components/AuthProvider';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import {
-    ALLOWED_STATUS_TRANSITIONS,
-    FoundPigeonDto,
-    FoundPigeonStatus,
-    STATUS_BADGE_CLASSES,
-    formatReportLanguage,
-    formatReportStatus,
-    formatStatusAction
-} from '@/app/types/foundPigeon';
+import { ALLOWED_STATUS_TRANSITIONS, FoundPigeonDto, FoundPigeonStatus, STATUS_BADGE_CLASSES, formatReportLanguage, formatReportStatus, formatStatusAction } from '@/app/types/foundPigeon';
 
 const PAGE_SIZE = 10;
 
@@ -40,6 +33,7 @@ function StatusBadge({ status }: { status: FoundPigeonStatus }) {
 }
 
 export default function FoundPigeonsAdminPage() {
+    const { user } = useAuth();
     const [reports, setReports] = useState<FoundPigeonDto[]>([]);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -85,13 +79,7 @@ export default function FoundPigeonsAdminPage() {
             setLoadError('');
 
             try {
-                const result = await foundPigeonService.getReports(
-                    status,
-                    ringNumber,
-                    targetPage,
-                    PAGE_SIZE,
-                    controller.signal
-                );
+                const result = await foundPigeonService.getReports(status, ringNumber, targetPage, PAGE_SIZE, controller.signal);
 
                 if (controller.signal.aborted) {
                     return;
@@ -120,12 +108,16 @@ export default function FoundPigeonsAdminPage() {
     );
 
     useEffect(() => {
+        if (user?.role !== 'ADMINISTRATOR') {
+            return;
+        }
+
         void fetchReports(0, null, '');
 
         return () => {
             requestControllerRef.current?.abort();
         };
-    }, [fetchReports]);
+    }, [fetchReports, user?.role]);
 
     const applyFilters = (status: FoundPigeonStatus | null, ringNumber: string) => {
         setStatusFilter(status);
@@ -143,11 +135,7 @@ export default function FoundPigeonsAdminPage() {
         setNoteDraft('');
         setDetailsError('');
 
-        void fetchReports(
-            targetPage,
-            statusFilter,
-            appliedSearch
-        );
+        void fetchReports(targetPage, statusFilter, appliedSearch);
     };
 
     const openDetails = (report: FoundPigeonDto) => {
@@ -173,19 +161,12 @@ export default function FoundPigeonsAdminPage() {
             const updated = await foundPigeonService.updateStatus(report.id, status);
             applyUpdate(updated);
 
-            if (
-                statusFilter !== null &&
-                statusFilter !== updated.status
-            ) {
+            if (statusFilter !== null && statusFilter !== updated.status) {
                 setSelected(null);
                 setNoteDraft('');
             }
 
-            await fetchReports(
-                page,
-                statusFilter,
-                appliedSearch
-            );
+            await fetchReports(page, statusFilter, appliedSearch);
         } catch (error) {
             setDetailsError(error instanceof Error ? error.message : 'Nie udało się zmienić statusu.');
         } finally {
@@ -267,8 +248,8 @@ export default function FoundPigeonsAdminPage() {
                                 <div className="flex flex-wrap gap-2">
                                     {STATUS_FILTERS.map(filter => (
                                         <button
-                                            key={filter.label}
                                             type="button"
+                                            key={filter.label}
                                             disabled={isMutating}
                                             onClick={() => applyFilters(filter.value, appliedSearch)}
                                             aria-pressed={statusFilter === filter.value}
@@ -337,9 +318,7 @@ export default function FoundPigeonsAdminPage() {
                                                 <tr
                                                     key={report.id}
                                                     className={`transition duration-150 ${
-                                                        selected?.id === report.id
-                                                            ? 'bg-blue-50'
-                                                            : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
+                                                        selected?.id === report.id ? 'bg-blue-50' : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
                                                     }`}
                                                 >
                                                     <td className="px-4 py-3 [overflow-wrap:anywhere]">
@@ -371,6 +350,7 @@ export default function FoundPigeonsAdminPage() {
                                     {totalPages > 1 && (
                                         <div className="flex items-center gap-3">
                                             <button
+                                                type="button"
                                                 onClick={() => changePage(page - 1)}
                                                 disabled={isMutating || page === 0}
                                                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -379,6 +359,7 @@ export default function FoundPigeonsAdminPage() {
                                             </button>
                                             <span className="text-sm text-gray-600">Strona {page + 1} z {totalPages}</span>
                                             <button
+                                                type="button"
                                                 onClick={() => changePage(page + 1)}
                                                 disabled={isMutating || page >= totalPages - 1}
                                                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -453,8 +434,8 @@ export default function FoundPigeonsAdminPage() {
                                                 <div className="flex flex-wrap gap-2">
                                                     {ALLOWED_STATUS_TRANSITIONS[selected.status].map(status => (
                                                         <button
-                                                            key={status}
                                                             type="button"
+                                                            key={status}
                                                             disabled={isMutating}
                                                             onClick={() => void handleStatusChange(selected, status)}
                                                             className={`px-3 py-1.5 rounded-md text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${

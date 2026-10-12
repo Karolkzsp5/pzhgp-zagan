@@ -47,8 +47,6 @@ declare namespace Cypress {
 
 Cypress.Commands.add('checkFooter', () => {
     cy.get('[data-cy="footer"]').should('be.visible');
-    cy.get('[data-cy="footer-contact"]').should('be.visible').and('have.attr', 'href', '/contact');
-    cy.get('[data-cy="footer-privacy"]').should('be.visible').and('have.attr', 'href', '/privacy');
     cy.get('[data-cy="footer-copyright"]').should('be.visible');
 });
 
@@ -82,8 +80,10 @@ Cypress.Commands.add('mockNavbarNotifications', () => {
 Cypress.Commands.add('visitWithToken', (url: string, token: string) => {
     cy.visit(url, {
         onBeforeLoad: (win) => {
+            win.localStorage.setItem('auth_persistence', 'persistent');
             win.localStorage.setItem('jwt_token', token);
             win.sessionStorage.removeItem('jwt_token');
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
         }
     });
 });

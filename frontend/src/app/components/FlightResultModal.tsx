@@ -2,10 +2,10 @@
 
 import {FormEvent, useEffect, useRef, useState} from 'react';
 import Modal from '@/app/components/Modal';
-import {flightPlanService} from '@/app/services/flightPlanService';
-import {FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto} from '@/app/types/flightPlan';
-import {API_URL, fetchWithAuth, readApiError} from '@/app/utils/apiClient';
-import {formatLocalDate} from '@/app/utils/formatters';
+import { flightPlanService } from '@/app/services/flightPlanService';
+import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { formatLocalDate } from '@/app/utils/formatters';
 
 interface SectionDto {
     id: number;
@@ -41,8 +41,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     const hasBranchResult = entry.results.some(result => result.scope === 'BRANCH');
 
     const usedSectionIds = new Set(entry.results.filter(result =>
-        result.scope === 'SECTION' && result.sectionId !== null)
-        .map(result => result.sectionId as number)
+        result.scope === 'SECTION' && result.sectionId !== null).map(result => result.sectionId as number)
     );
 
     useEffect(() => {
@@ -69,25 +68,46 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     useEffect(() => {
         if (!isOpen) return;
 
+        const controller =
+            new AbortController();
+
         const loadSections = async () => {
             setIsLoadingSections(true);
+            setSections([]);
+            setError('');
 
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/sections`);
+                const response = await fetchWithAuth(`${API_URL}/api/sections`, {
+                    signal: controller.signal
+                });
 
                 if (!response.ok) {
                     throw new Error(await readApiError(response, 'Nie udało się pobrać listy sekcji.'));
                 }
 
-                setSections(await response.json());
+                const data: SectionDto[] = await response.json();
+
+                if (!controller.signal.aborted) {
+                    setSections(data);
+                }
             } catch (error) {
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setError(error instanceof Error ? error.message : 'Nie udało się pobrać listy sekcji.');
             } finally {
-                setIsLoadingSections(false);
+                if (!controller.signal.aborted) {
+                    setIsLoadingSections(false);
+                }
             }
         };
 
         void loadSections();
+
+        return () => {
+            controller.abort();
+        };
     }, [isOpen]);
 
     const clearMessages = () => {
@@ -242,10 +262,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                     ) : (
                         <div className="border border-gray-200 rounded-md divide-y divide-gray-200">
                             {entry.results.map(result => (
-                                <div
-                                    key={result.id}
-                                    className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                                >
+                                <div key={result.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-gray-800">
                                             {formatResultLabel(result)}
@@ -316,8 +333,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label htmlFor="flight-result-scope"
-                                       className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="flight-result-scope" className="block text-sm font-medium text-gray-700 mb-1">
                                     Rodzaj wyników
                                 </label>
 
@@ -349,8 +365,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
                             {scope === 'SECTION' && (
                                 <div>
-                                    <label htmlFor="flight-result-section"
-                                           className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="flight-result-section" className="block text-sm font-medium text-gray-700 mb-1">
                                         Sekcja
                                     </label>
 
@@ -411,8 +426,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                             selectFile(event.target.files?.[0] ?? null)
                                         }
                                     />
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-400 mb-3"
-                                         viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-400 mb-3" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                         <path d="M240-192q-80 0-136-56.5T48-385q0-76 51.5-131.5T227-576q23.43-85.75 93.7-138.87Q390.98-768 480-768q107 0 185.5 68.5T744-528q70 0 119 49t49 118q0 70.42-49 119.71Q814-192 744-192H516q-29.7 0-50.85-21.15Q444-234.3 444-264v-174l-57 57-51-51 144-144 144 144-51 51-57-57v174h228q40.32 0 68.16-27.77 27.84-27.78 27.84-68Q840-400 812.16-428q-27.84-28-68.16-28h-72v-72q0-73-57.5-120.5t-135-47.5Q402-696 348-639.5T283-504h-43q-49.71 0-84.86 35.2-35.14 35.2-35.14 85t35.14 84.8q35.15 35 84.86 35h132v72H240Zm240-246Z"/>
                                     </svg>
 

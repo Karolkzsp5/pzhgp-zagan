@@ -78,7 +78,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         } catch (error) {
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało połączyć się z serwerem.'
+                    ? 'Nie udało się połączyć z serwerem.'
                     : error instanceof Error
                         ? error.message
                         : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
@@ -126,23 +126,25 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                     </div>
 
                     {error && (
-                        <div
-                            role="alert"
-                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
-                        >
+                        <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">
                             {error}
                         </div>
                     )}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                    <button type="button" onClick={onClose} disabled={isLoading}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50">
                         Anuluj
                     </button>
-                    <button type="submit" disabled={isLoading}
-                            className={`px-6 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                            {isLoading ? 'Zapisywanie...' : announcementToEdit ? 'Zapisz zmiany' : 'Opublikuj'}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className={`px-6 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        {isLoading ? 'Zapisywanie...' : announcementToEdit ? 'Zapisz zmiany' : 'Opublikuj'}
                     </button>
                 </div>
             </form>

@@ -11,14 +11,9 @@ import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
+import { useAuth } from '@/app/components/AuthProvider';
 import { flightService } from '@/app/services/flightService';
-import {
-    FlightDetailsDto,
-    formatDateTime,
-    formatDuration,
-    formatSpeed,
-    formatTime
-} from '@/app/types/flight';
+import { FlightDetailsDto, formatDateTime, formatDuration, formatSpeed, formatTime } from '@/app/types/flight';
 import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
 
 /**
@@ -69,9 +64,7 @@ function StatRow({ label, value, hint, wrapValue = false }: {
     return (
         <div
             className={`py-2 border-b border-gray-100 last:border-0 gap-x-4 ${
-                wrapValue
-                    ? 'flex flex-col sm:flex-row sm:items-baseline sm:justify-between'
-                    : 'flex items-baseline justify-between'
+                wrapValue ? 'flex flex-col sm:flex-row sm:items-baseline sm:justify-between' : 'flex items-baseline justify-between'
             }`}
         >
             <div className="min-w-0">
@@ -80,9 +73,7 @@ function StatRow({ label, value, hint, wrapValue = false }: {
             </div>
             <span
                 className={`text-sm font-semibold text-gray-900 min-w-0 ${
-                    wrapValue
-                        ? '[overflow-wrap:anywhere] sm:text-right'
-                        : 'text-right whitespace-nowrap'
+                    wrapValue ? '[overflow-wrap:anywhere] sm:text-right' : 'text-right whitespace-nowrap'
                 }`}
             >
                 {value}
@@ -92,6 +83,7 @@ function StatRow({ label, value, hint, wrapValue = false }: {
 }
 
 export default function FlightDetailsPage({ params }: { params: Promise<{ flightId: string }> }) {
+    const { isLoggedIn } = useAuth();
     const resolvedParams = use(params);
     const flightId = Number(resolvedParams.flightId);
     const router = useRouter();
@@ -142,12 +134,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
             if (requestId !== loadRequestRef.current) return;
 
             console.error('Błąd podczas pobierania lotu:', error);
-
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : 'Nie udało się pobrać lotu.'
-            );
+            setError(error instanceof Error ? error.message : 'Nie udało się pobrać lotu.');
         } finally {
             if (requestId === loadRequestRef.current) {
                 setIsLoading(false);
@@ -156,14 +143,13 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     }, [flightId, isValidId]);
 
     useEffect(() => {
-        if (!isValidId) return;
-
+        if (!isLoggedIn || !isValidId) return;
         void loadFlight();
 
         return () => {
             loadRequestRef.current += 1;
         };
-    }, [isValidId, loadFlight]);
+    }, [isLoggedIn, isValidId, loadFlight]);
 
     /** Odtwarzacz przechodzi przez całą zarejestrowaną trasę. */
     const trackPoints = useMemo(() => flight?.trackPoints ?? [], [flight]);
@@ -523,11 +509,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                             <StatRow label="Początek nagrania" value={formatDateTime(flight.startTime)} />
                             <StatRow label="Koniec nagrania" value={formatDateTime(flight.endTime)} />
-                            <StatRow
-                                label="Pokonany dystans"
-                                value={`${stats.trackDistanceKm.toFixed(2)} km`}
-                                hint="wzdłuż zarejestrowanej trasy"
-                            />
+                            <StatRow label="Pokonany dystans" value={`${stats.trackDistanceKm.toFixed(2)} km`} hint="wzdłuż zarejestrowanej trasy"/>
                             <StatRow
                                 label="Prędkość w linii prostej"
                                 value={stats.timestampsAvailable

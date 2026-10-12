@@ -1,6 +1,6 @@
 "use client";
 
-import {use, useCallback, useEffect, useState} from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -12,10 +12,10 @@ import EmptyState from '@/app/components/EmptyState';
 import ActionMenu from '@/app/components/ActionMenu';
 import FlightPlanEntryModal from '@/app/components/FlightPlanEntryModal';
 import FlightResultModal from '@/app/components/FlightResultModal';
-import {flightPlanService} from '@/app/services/flightPlanService';
-import {FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup} from '@/app/types/flightPlan';
-import {decodeJwt, getAuthToken, isJwtValid} from '@/app/utils/jwt';
-import {formatLocalDate} from '@/app/utils/formatters';
+import { flightPlanService } from '@/app/services/flightPlanService';
+import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
+import { useAuth } from '@/app/components/AuthProvider';
+import { formatLocalDate } from '@/app/utils/formatters';
 
 interface FlightPlanYearPageProps {
     params: Promise<{
@@ -24,11 +24,10 @@ interface FlightPlanYearPageProps {
 }
 
 export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
+    const { user, isLoggedIn } = useAuth();
     const resolvedParams = use(params);
     const year = Number(resolvedParams.year);
-
     const [plan, setPlan] = useState<FlightPlanDetailsDto | null>(null);
-    const [userRole, setUserRole] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
@@ -49,12 +48,8 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
         }
     });
 
-    const isAdministrator = userRole === 'ADMINISTRATOR';
-
-    const resultEntry = plan
-        ? [...plan.adultFlights, ...plan.youngFlights]
-        .find(flight => flight.id === resultEntryId) ?? null
-        : null;
+    const isAdministrator = user?.role === 'ADMINISTRATOR';
+    const resultEntry = plan ? [...plan.adultFlights, ...plan.youngFlights].find(flight => flight.id === resultEntryId) ?? null : null;
 
     const closeModal = () => {
         setModalConfig(previous => ({
@@ -93,15 +88,10 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
     }, [year]);
 
     useEffect(() => {
-        const token = getAuthToken();
-
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token!);
-            setUserRole(payload?.role ?? null);
-        }
+        if (!isLoggedIn) return;
 
         void loadPlan();
-    }, [loadPlan]);
+    }, [isLoggedIn, loadPlan]);
 
     const handleOpenResult = async (resultId: number) => {
         const resultWindow = window.open('', '_blank');
@@ -128,8 +118,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
         } catch (error) {
             resultWindow.close();
 
-            showAlert(
-                'Nie udało się otworzyć wyników',
+            showAlert('Nie udało się otworzyć wyników',
                 error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania wyników lotu.'
             );
         } finally {
@@ -167,9 +156,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
                 } catch (error) {
-                    showAlert('Nie udało się usunąć lotu',
-                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.'
-                    );
+                    showAlert('Nie udało się usunąć lotu', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.');
                 }
             }
         });
@@ -186,18 +173,14 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                             href="/flight-plans"
                             className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition mb-4"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960"
-                                 fill="currentColor" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                 <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"></path>
                             </svg>
                             Wróć do planów
                         </Link>
 
                         <div className="border-b border-gray-200 pb-5">
-                            <h1
-                                className="text-3xl font-bold text-gray-900"
-                                data-cy="flight-plan-year-title"
-                            >
+                            <h1 className="text-3xl font-bold text-gray-900" data-cy="flight-plan-year-title">
                                 Plan lotów {year}
                             </h1>
 
@@ -389,10 +372,7 @@ function TableHeader({children, className = ''}: {
     className?: string;
 }) {
     return (
-        <th
-            scope="col"
-            className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}
-        >
+        <th scope="col" className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}>
             {children}
         </th>
     );
@@ -435,9 +415,7 @@ function FlightTableRow({
         void onOpenResult(resultId);
     };
 
-    const isOpeningThisFlight = flight.results.some(
-        result => result.id === openingResultId
-    );
+    const isOpeningThisFlight = flight.results.some(result => result.id === openingResultId);
 
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">

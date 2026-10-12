@@ -96,10 +96,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                      </div>
 
                     {error && (
-                        <div
-                            role="alert"
-                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
-                        >
+                        <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">
                             {error}
                         </div>
                     )}

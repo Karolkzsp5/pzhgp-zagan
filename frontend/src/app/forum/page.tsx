@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { fetchCategories, deleteCategory, ForumCategoryDto } from '@/app/services/forumService';
 import CategoryModal from '@/app/components/CategoryModal';
 import ForumGuard from '@/app/components/ForumGuard';
@@ -14,10 +14,10 @@ import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 
 export default function ForumPage() {
+    const { user, isLoggedIn } = useAuth();
     const [categories, setCategories] = useState<ForumCategoryDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [userRole, setUserRole] = useState<string | null>(null);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ForumCategoryDto | null>(null);
 
@@ -34,18 +34,7 @@ export default function ForumPage() {
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
     };
 
-    useEffect(() => {
-        const token = getAuthToken();
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token!);
-            if (payload) {
-                setUserRole(payload.role || null);
-            }
-        }
-        loadCategories();
-    }, []);
-
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         setIsLoading(true);
         setError('');
 
@@ -53,11 +42,17 @@ export default function ForumPage() {
             const data = await fetchCategories();
             setCategories(data);
         } catch (error) {
-            setError('Nie udało się pobrać danych forum. Sprawdź połączenie.');
+            setError(error instanceof Error ? error.message : 'Nie udało się pobrać danych forum.');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
+        void loadCategories();
+    }, [isLoggedIn, loadCategories]);
 
     const handleDeleteCategory = (id: number) => {
 
@@ -70,15 +65,15 @@ export default function ForumPage() {
                 closeConfirmModal();
                 try {
                     await deleteCategory(id);
-                    loadCategories();
-                } catch (error: any) {
-                    showAlert('Błąd', error.message || 'Wystąpił błąd podczas usuwania kategorii.');
+                    void loadCategories();
+                } catch (error) {
+                    showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania kategorii.');
                 }
             }
         });
     };
 
-    const canCreateCategory = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
+    const canCreateCategory = user?.role === 'ADMINISTRATOR' || user?.role === 'MODERATOR';
 
     return (
         <ForumGuard>
@@ -96,6 +91,7 @@ export default function ForumPage() {
 
                         {canCreateCategory && (
                             <button
+                                type="button"
                                 onClick={() => {
                                     setEditingCategory(null);
                                     setIsCategoryModalOpen(true);
@@ -125,16 +121,23 @@ export default function ForumPage() {
                                     {(category.canEdit || category.canDelete) && (
                                         <div className="absolute top-5 right-5 flex gap-2">
                                             {category.canEdit && (
-                                                <button type="button" onClick={() => { setEditingCategory(category); setIsCategoryModalOpen(true); }} aria-label={`Edytuj kategorię ${category.name}`} className="text-gray-400 hover:text-blue-600 p-1 transition-colors">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setEditingCategory(category); setIsCategoryModalOpen(true); }}
+                                                    aria-label={`Edytuj kategorię ${category.name}`}
+                                                    className="text-gray-400 hover:text-blue-600 p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                         <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z"/>
                                                     </svg>
                                                 </button>
                                             )}
 
                                             {category.canDelete && (
-                                                <button type="button" onClick={() => handleDeleteCategory(category.id)} aria-label={`Usuń kategorię ${category.name}`} className="text-gray-400 hover:text-red-600 p-1 transition-colors">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteCategory(category.id)}
+                                                    aria-label={`Usuń kategorię ${category.name}`} className="text-gray-400 hover:text-red-600 p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                         <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
                                                     </svg>
                                                 </button>

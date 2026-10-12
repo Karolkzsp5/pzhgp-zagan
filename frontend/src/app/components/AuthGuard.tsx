@@ -1,31 +1,21 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, isJwtValid, logout } from '@/app/utils/jwt';
 import LoadingState from '@/app/components/LoadingState';
+import { useAuth } from '@/app/components/AuthProvider';
 
-/**
- * Osłona tras dostępnych wyłącznie dla zalogowanych użytkowników.
- * Przy nieważnym tokenie wylogowuje użytkownika i przekierowuje na stronę logowania.
- */
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
-    const [isAuthorized, setIsAuthorized] = useState(false);
+export default function AuthGuard({children}: { children: React.ReactNode; }) {
+    const { isLoggedIn, isAuthResolved } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        const token = getAuthToken();
-
-        if (!isJwtValid(token)) {
-            logout();
+        if (isAuthResolved && !isLoggedIn) {
             router.replace('/login');
-            return;
         }
+    }, [isAuthResolved, isLoggedIn, router]);
 
-        setIsAuthorized(true);
-    }, [router]);
-
-    if (!isAuthorized) {
+    if (!isAuthResolved || !isLoggedIn) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <LoadingState />

@@ -11,7 +11,14 @@ interface ModalProps {
     maxWidthClass?: string;
 }
 
-export default function Modal({ isOpen, title, children, onClose, closeDisabled = false, maxWidthClass = 'max-w-md' }: ModalProps) {
+export default function Modal({
+                                  isOpen,
+                                  title,
+                                  children,
+                                  onClose,
+                                  closeDisabled = false,
+                                  maxWidthClass = 'max-w-md'
+                              }: ModalProps) {
     const titleId = useId();
     const panelRef = useRef<HTMLDivElement>(null);
     const onCloseRef = useRef(onClose);
@@ -82,21 +89,23 @@ export default function Modal({ isOpen, title, children, onClose, closeDisabled 
     if (!isOpen) return null;
 
     return (
-        <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4"
-            onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !closeDisabled) onClose();
-            }}
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4"
+             onMouseDown={(event) => {
+                 if (event.target === event.currentTarget && !closeDisabled) onClose();
+             }}
         >
             <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}
                  className={`bg-white rounded-lg shadow-xl w-full ${maxWidthClass} max-h-[90vh] overflow-y-auto focus:outline-none`}
             >
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 id={titleId} className="text-xl font-bold text-gray-900">{title}</h2>
-                    <button type="button" onClick={onClose} disabled={closeDisabled} aria-label="Zamknij okno"
+                    <button type="button"
+                            onClick={onClose}
+                            disabled={closeDisabled}
+                            aria-label="Zamknij okno"
                             className="p-1 text-gray-400 hover:text-gray-700 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50">
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
+                            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
                         </svg>
                     </button>
                 </div>

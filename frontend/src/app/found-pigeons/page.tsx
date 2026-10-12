@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo,  useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
-import { getAuthToken, getUserRole, isJwtValid } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
@@ -36,22 +36,16 @@ const EMPTY_FORM: FormValues = {
 type FieldError = 'ringNumber' | 'contact' | 'contactEmail' | 'contactPhone' | 'description';
 
 export default function FoundPigeonsPage() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMINISTRATOR';
     const [language, setLanguage] = useState<ReportLanguage>('PL');
     const [values, setValues] = useState<FormValues>(EMPTY_FORM);
     const [errors, setErrors] = useState<Partial<Record<FieldError, string>>>({});
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
 
     const text = FORM_TRANSLATIONS[language];
-
-    useEffect(() => {
-        const token = getAuthToken();
-        if (isJwtValid(token)) {
-            setIsAdmin(getUserRole(token) === 'ADMINISTRATOR');
-        }
-    }, []);
 
     const setValue = (field: keyof FormValues, value: string) => {
         setValues(previous => ({ ...previous, [field]: value }));
@@ -98,12 +92,7 @@ export default function FoundPigeonsPage() {
             const digits = phone.replace(/\D/g, '').length;
             const allowedCharacters = /^\+?[0-9 ()./-]+$/.test(phone);
 
-            if (
-                !allowedCharacters ||
-                phone.length > 15 ||
-                digits < 6 ||
-                digits > 15
-            ) {
+            if (!allowedCharacters || phone.length > 15 || digits < 6 || digits > 15) {
                 found.contactPhone = text.errorPhoneInvalid;
             }
         }
@@ -148,9 +137,7 @@ export default function FoundPigeonsPage() {
 
     const fieldClasses = (hasError: boolean) =>
         `w-full px-3 py-2 border rounded-md text-sm text-gray-900 outline-none transition focus:ring-2 ${
-            hasError
-                ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            hasError ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
         }`;
 
     return (
@@ -169,9 +156,7 @@ export default function FoundPigeonsPage() {
                                 onClick={() => changeLanguage(code)}
                                 aria-pressed={language === code}
                                 className={`px-3 py-1.5 rounded-md text-sm font-semibold border transition ${
-                                    language === code
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                                    language === code ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                                 }`}
                             >
                                 {FORM_TRANSLATIONS[code].languageName}
@@ -352,10 +337,7 @@ export default function FoundPigeonsPage() {
                             </section>
 
                             {submitError && (
-                                <p
-                                    role="alert"
-                                    className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"
-                                >
+                                <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                                     {submitError}
                                 </p>
                             )}
