@@ -68,25 +68,46 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     useEffect(() => {
         if (!isOpen) return;
 
+        const controller =
+            new AbortController();
+
         const loadSections = async () => {
             setIsLoadingSections(true);
+            setSections([]);
+            setError('');
 
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/sections`);
+                const response = await fetchWithAuth(`${API_URL}/api/sections`, {
+                    signal: controller.signal
+                });
 
                 if (!response.ok) {
                     throw new Error(await readApiError(response, 'Nie udało się pobrać listy sekcji.'));
                 }
 
-                setSections(await response.json());
+                const data: SectionDto[] = await response.json();
+
+                if (!controller.signal.aborted) {
+                    setSections(data);
+                }
             } catch (error) {
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setError(error instanceof Error ? error.message : 'Nie udało się pobrać listy sekcji.');
             } finally {
-                setIsLoadingSections(false);
+                if (!controller.signal.aborted) {
+                    setIsLoadingSections(false);
+                }
             }
         };
 
         void loadSections();
+
+        return () => {
+            controller.abort();
+        };
     }, [isOpen]);
 
     const clearMessages = () => {

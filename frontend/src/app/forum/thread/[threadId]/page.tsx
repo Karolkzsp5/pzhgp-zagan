@@ -8,14 +8,18 @@ import Footer from '@/app/components/Footer';
 import TextEditor from '@/app/components/TextEditor';
 import ForumGuard from '@/app/components/ForumGuard';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import { formatGlobalDate, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { fetchThreadById, fetchPostsByThread, createPost, deleteThread, toggleThreadStatus, deletePost, updatePost, updateThreadTitle, ForumThreadDto, ForumPostDto} from '@/app/services/forumService';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
+    const { isLoggedIn } = useAuth();
+    const { beginRequest, isLatestRequest } = useLatestRequest();
     const resolvedParams = use(params);
     const threadId = Number(resolvedParams.threadId);
     const isValidThreadId = Number.isInteger(threadId) && threadId > 0;
@@ -73,14 +77,17 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const loadThreadData = useCallback(async () => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setError('');
 
         try {
-            const [threadData, postsData] = await Promise.all([
-                fetchThreadById(threadId),
-                fetchPostsByThread(threadId, currentPage)
-            ]);
+            const [threadData, postsData] = await Promise.all([fetchThreadById(threadId), fetchPostsByThread(threadId, currentPage)]);
+
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
 
             setThread(threadData);
             setTotalPages(postsData.totalPages);
@@ -95,23 +102,26 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             setEditContent('');
             setEditError('');
         } catch (error) {
-            setError(
-                error instanceof TypeError
-                    ? 'Nie udało połączyć się z serwerem.'
-                    : error instanceof Error
-                        ? error.message
-                        : 'Nie udało się pobrać dyskusji.'
-            );
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
+            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' :
+                error instanceof Error ? error.message : 'Nie udało się pobrać dyskusji.');
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, [threadId, currentPage]);
+    }, [beginRequest, currentPage, isLatestRequest, threadId]);
 
     useEffect(() => {
-        if (isValidThreadId) {
-            void loadThreadData();
+        if (!isLoggedIn || !isValidThreadId) {
+            return;
         }
-    }, [isValidThreadId, loadThreadData]);
+
+        void loadThreadData();
+    }, [isLoggedIn, isValidThreadId, loadThreadData]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -262,11 +272,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     if (!isValidThreadId) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center py-16 text-red-600 font-medium text-xl">
-                    Nieprawidłowy adres URL. Wątek nie istnieje.
+            <ForumGuard>
+                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                    <div className="text-center py-16 text-red-600 font-medium text-xl">
+                        Nieprawidłowy adres URL. Wątek nie istnieje.
+                    </div>
                 </div>
-            </div>
+            </ForumGuard>
         );
     }
 
@@ -546,7 +558,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     <button
                                         type="button"
                                         onClick={() => setCurrentPage(prev => prev - 1)}
-                                        disabled={currentPage === 0}
+                                        disabled={isLoading || currentPage === 0}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                     >
                                         Poprzednia
@@ -557,7 +569,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     <button
                                         type="button"
                                         onClick={() => setCurrentPage(prev => prev + 1)}
-                                        disabled={currentPage === totalPages - 1}
+                                        disabled={isLoading || currentPage === totalPages - 1}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                     >
                                         Następna

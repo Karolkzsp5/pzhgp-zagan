@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import AnnouncementModal from './components/AnnouncementModal';
+import AnnouncementModal from '@/app/components/AnnouncementModal';
 import ConfirmModal from "@/app/components/ConfirmModal"
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import { getAuthToken, decodeJwt, isJwtValid } from '@/app/utils/jwt';
-import { API_URL } from '@/app/utils/apiClient';
+import Navbar from '@/app/components/Navbar';
+import Footer from '@/app/components/Footer';
+import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { useAuth } from '@/app/components/AuthProvider';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 
 interface Announcement {
     id: number;
@@ -23,10 +24,12 @@ interface Announcement {
 }
 
 export default function HomePage() {
+    const { user, isAuthResolved } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
-    const [userRole, setUserRole] = useState<string | null>(null);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
     const [announcementError, setAnnouncementError] = useState('');
@@ -37,80 +40,78 @@ export default function HomePage() {
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    const fetchAnnouncements = async (page = 0) => {
+    const fetchAnnouncements = useCallback(async (page = 0) => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setAnnouncementError('');
 
-        const token = getAuthToken();
-
         try {
-            const response = await fetch(`${API_URL}/api/announcements?page=${page}&size=10`, {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
+            const response = await fetchWithAuth(`${API_URL}/api/announcements?page=${page}&size=10`);
 
             if (!response.ok) {
-                throw new Error('Nie udało się pobrać ogłoszeń.');
+                throw new Error(await readApiError(response, 'Nie udało się pobrać ogłoszeń.'));
             }
 
             const data = await response.json();
+
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
             setAnnouncements(data.content);
             setTotalPages(data.totalPages);
             setCurrentPage(data.number);
         } catch (error) {
-            console.error('Błąd pobierania ogłoszeń:', error);
-            setAnnouncementError(
-                error instanceof TypeError
-                    ? 'Nie udało połączyć się z serwerem'
-                    : error instanceof Error
-                    ? error.message : 'Wystąpił błąd podczas pobierania ogłoszeń'
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const token = getAuthToken();
-
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token!);
-            setUserRole(payload?.role || null);
-        } else {
-            setUserRole(null);
-        }
-
-        void fetchAnnouncements(0);
-    }, []);
-
-    const canAddAnnouncement = userRole === 'ADMINISTRATOR' || userRole === 'MODERATOR';
-
-    const confirmDelete = async () => {
-        if (!postToDelete) return;
-
-        setIsDeleting(true);
-        const token = getAuthToken();
-
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/announcements/${postToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const isLastOnPage = announcements.length === 1 && currentPage > 0;
-                const targetPage = isLastOnPage ? currentPage - 1 : currentPage;
-
-                setPostToDelete(null);
-                await fetchAnnouncements(targetPage);
-            } else {
-                alert('Wystąpił błąd podczas usuwania ogłoszenia.');
+            if (!isLatestRequest(requestId)) {
+                return;
             }
 
+            setAnnouncementError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' :
+                error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania ogłoszeń.'
+            );
+        } finally {
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
+        }
+    }, [beginRequest, isLatestRequest]);
+
+    useEffect(() => {
+        if (!isAuthResolved) return;
+
+        void fetchAnnouncements(0);
+    }, [fetchAnnouncements, isAuthResolved, user?.sub, user?.role]);
+
+    const canAddAnnouncement = user?.role === 'ADMINISTRATOR' || user?.role === 'MODERATOR';
+
+    const confirmDelete = async () => {
+        if (postToDelete === null) return;
+
+        const deletingId = postToDelete;
+        setIsDeleting(true);
+
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/announcements/${deletingId}`, {
+                    method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const message = await readApiError(response, 'Nie udało się usunąć ogłoszenia.');
+
+                setPostToDelete(null);
+                setActionError(message);
+                return;
+            }
+
+            const isLastOnPage = announcements.length === 1 && currentPage > 0;
+            const targetPage = isLastOnPage ? currentPage - 1 : currentPage;
+
+            setPostToDelete(null);
+            await fetchAnnouncements(targetPage);
         } catch (error) {
-            console.error('Błąd serwera:', error);
-            alert('Brak połączenia z serwerem.');
+            setPostToDelete(null);
+            setActionError(error instanceof Error ? error.message : 'Nie udało się usunąć ogłoszenia.');
         } finally {
             setIsDeleting(false);
         }
@@ -138,6 +139,7 @@ export default function HomePage() {
 
                         {canAddAnnouncement && (
                             <button
+                                type="button"
                                 onClick={() => {
                                     setEditingAnnouncement(null);
                                     setIsModalOpen(true);
@@ -187,7 +189,7 @@ export default function HomePage() {
 
                                             <div className="flex items-center gap-2 ml-4">
                                                 {post.isPinned && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#2b7fff" className="shrink-0">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#2b7fff" className="shrink-0" aria-hidden="true">
                                                         <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                     </svg>
                                                 )}
@@ -224,6 +226,7 @@ export default function HomePage() {
                                                 <div className="flex items-center gap-2">
                                                     {post.canEdit && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => {
                                                                 setEditingAnnouncement(post);
                                                                 setIsModalOpen(true);
@@ -235,6 +238,7 @@ export default function HomePage() {
                                                     )}
                                                     {post.canDelete && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => setPostToDelete(post.id)}
                                                             className="text-sm bg-white hover:bg-red-50 text-red-600 px-3 py-1 rounded transition font-medium border border-red-200"
                                                         >
@@ -251,8 +255,9 @@ export default function HomePage() {
                                 {totalPages > 1 && (
                                     <div className="flex justify-center items-center space-x-4 mt-8 pt-4 border-t border-gray-200">
                                         <button
+                                            type="button"
                                             onClick={() => void fetchAnnouncements(currentPage - 1)}
-                                            disabled={currentPage === 0}
+                                            disabled={isLoading || currentPage === 0}
                                             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                         >
                                             Poprzednia
@@ -261,8 +266,9 @@ export default function HomePage() {
                                             Strona {currentPage + 1} z {totalPages}
                                         </span>
                                         <button
+                                            type="button"
                                             onClick={() => void fetchAnnouncements(currentPage + 1)}
-                                            disabled={currentPage === totalPages - 1}
+                                            disabled={isLoading || currentPage === totalPages - 1}
                                             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                         >
                                             Następna
@@ -300,6 +306,17 @@ export default function HomePage() {
                     }
                 }}
                 onConfirm={() => void confirmDelete()}
+            />
+
+            <ConfirmModal
+                isOpen={actionError !== null}
+                title="Nie udało się wykonać operacji"
+                message={actionError ?? ''}
+                isAlert
+                variant="primary"
+                confirmLabel="OK"
+                onConfirm={() => setActionError(null)}
+                onCancel={() => setActionError(null)}
             />
         </div>
     );

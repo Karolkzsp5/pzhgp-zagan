@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import { decodeJwt, getAuthToken, isJwtValid, logout } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 
 interface NotificationDto {
@@ -17,10 +17,10 @@ interface NotificationDto {
 }
 
 export default function Navbar() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isAuthResolved, setIsAuthResolved] = useState(false);
-    const [userName, setUserName] = useState('');
-    const [userRole, setUserRole] = useState('');
+    const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
+    const userName = user?.name || user?.sub?.split('@')[0] || 'Użytkowniku';
+
+    const userRole = user?.role ?? '';
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -53,30 +53,6 @@ export default function Navbar() {
     }, []);
 
     useEffect(() => {
-        const token = getAuthToken();
-
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token!);
-
-            if (payload) {
-                setIsLoggedIn(true);
-                setUserName(payload.name || payload.sub?.split('@')[0] || 'Użytkowniku');
-                setUserRole(payload.role);
-
-                void fetchNotifications();
-            }
-        } else {
-            if (token) {
-                logout();
-            }
-
-            setIsLoggedIn(false);
-            setUserName('');
-            setUserRole('');
-        }
-
-        setIsAuthResolved(true);
-
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
@@ -104,7 +80,18 @@ export default function Navbar() {
             document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [fetchNotifications]);
+    }, []);
+
+    useEffect(() => {
+        if (!isLoggedIn) {
+            setNotifications([]);
+            setUnreadCount(0);
+            setIsNotificationsOpen(false);
+            return;
+        }
+
+        void fetchNotifications();
+    }, [fetchNotifications, isLoggedIn]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
         if (!notif.isRead) {
@@ -142,15 +129,14 @@ export default function Navbar() {
     };
 
     const handleLogout = () => {
-        logout();
-        setIsLoggedIn(false);
-        setUserName('');
-        setUserRole('');
+        signOut();
+
         setNotifications([]);
         setUnreadCount(0);
         setIsDropdownOpen(false);
         setIsNotificationsOpen(false);
         setIsMobileMenuOpen(false);
+
         router.replace('/');
     };
 
@@ -245,7 +231,7 @@ export default function Navbar() {
                                         aria-controls="notifications-panel"
                                         aria-haspopup="true"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" viewBox="0 -960 960 960" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                             <path d="M192-216v-72h48v-240q0-87 53.5-153T432-763v-53q0-20 14-34t34-14q20 0 34 14t14 34v53q85 16 138.5 82T720-528v240h48v72H192Zm288-276Zm-.21 396Q450-96 429-117.15T408-168h144q0 30-21.21 51t-51 21ZM312-288h336v-240q0-70-49-119t-119-49q-70 0-119 49t-49 119v240Z"/>
                                         </svg>
 
@@ -315,11 +301,7 @@ export default function Navbar() {
 
                                         <span className="hidden sm:inline">Witaj, <strong className="font-semibold">{userName}</strong></span>
                                         <span className="sm:hidden font-semibold">{userName}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                                             viewBox="0 -960 960 960"
-                                             fill="currentColor"
-                                             aria-hidden="true"
-                                        >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                             <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
                                         </svg>
                                     </button>
@@ -333,7 +315,9 @@ export default function Navbar() {
                                                         onClick={() => setIsDropdownOpen(false)}
                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-gray-400 shrink-0" viewBox="0 -960 960 960" fill="currentColor"><path d="m438-339 220-221-51-51-169 170-85-85-51 51 136 136Zm42 243q-135-33-223.5-152.84Q168-368.69 168-515v-229l312-120 312 120v229q0 146.31-88.5 266.16Q615-129 480-96Zm0-75q104-32.25 172-129t68-215v-180l-240-92-240 92v180q0 118.25 68 215t172 129Zm0-308Z"/></svg>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-gray-400 shrink-0" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                            <path d="m438-339 220-221-51-51-169 170-85-85-51 51 136 136Zm42 243q-135-33-223.5-152.84Q168-368.69 168-515v-229l312-120 312 120v229q0 146.31-88.5 266.16Q615-129 480-96Zm0-75q104-32.25 172-129t68-215v-180l-240-92-240 92v180q0 118.25 68 215t172 129Zm0-308Z"/>
+                                                        </svg>
 
                                                         Panel administratora
                                                     </Link>
@@ -357,7 +341,7 @@ export default function Navbar() {
                                                 onClick={() => setIsDropdownOpen(false)}
                                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-gray-400 shrink-0" viewBox="0 -960 960 960" fill="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-gray-400 shrink-0" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                     <path d="m403-96-22-114q-23-9-44.5-21T296-259l-110 37-77-133 87-76q-2-12-3-24t-1-25q0-13 1-25t3-24l-87-76 77-133 110 37q19-16 40.5-28t44.5-21l22-114h154l22 114q23 9 44.5 21t40.5 28l110-37 77 133-87 76q2 12 3 24t1 25q0 13-1 25t-3 24l87 76-77 133-110-37q-19 16-40.5 28T579-210L557-96H403Zm59-72h36l19-99q38-7 71-26t57-48l96 32 18-30-76-67q6-17 9.5-35.5T696-480q0-20-3.5-38.5T683-554l76-67-18-30-96 32q-24-29-57-48t-71-26l-19-99h-36l-19 99q-38 7-71 26t-57 48l-96-32-18 30 76 67q-6 17-9.5 35.5T264-480q0 20 3.5 38.5T277-406l-76 67 18 30 96-32q24 29 57 48t71 26l19 99Zm18-168q60 0 102-42t42-102q0-60-42-102t-102-42q-60 0-102 42t-42 102q0 60 42 102t102 42Zm0-144Z"/>
                                                 </svg>
                                                 Ustawienia
@@ -370,7 +354,7 @@ export default function Navbar() {
                                                 onClick={handleLogout}
                                                 className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition text-left"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-red-600 shrink-0" viewBox="0 -960 960 960" fill="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-red-600 shrink-0" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                     <path d="M216-144q-29.7 0-50.85-21.15Q144-186.3 144-216v-528q0-29.7 21.15-50.85Q186.3-816 216-816h264v72H216v528h264v72H216Zm432-168-51-51 81-81H384v-72h294l-81-81 51-51 168 168-168 168Z"/>
                                                 </svg>
                                                 Wyloguj się

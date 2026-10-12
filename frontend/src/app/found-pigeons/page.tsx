@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo,  useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
-import { getAuthToken, getUserRole, isJwtValid } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
@@ -36,22 +36,16 @@ const EMPTY_FORM: FormValues = {
 type FieldError = 'ringNumber' | 'contact' | 'contactEmail' | 'contactPhone' | 'description';
 
 export default function FoundPigeonsPage() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMINISTRATOR';
     const [language, setLanguage] = useState<ReportLanguage>('PL');
     const [values, setValues] = useState<FormValues>(EMPTY_FORM);
     const [errors, setErrors] = useState<Partial<Record<FieldError, string>>>({});
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
 
     const text = FORM_TRANSLATIONS[language];
-
-    useEffect(() => {
-        const token = getAuthToken();
-        if (isJwtValid(token)) {
-            setIsAdmin(getUserRole(token) === 'ADMINISTRATOR');
-        }
-    }, []);
 
     const setValue = (field: keyof FormValues, value: string) => {
         setValues(previous => ({ ...previous, [field]: value }));

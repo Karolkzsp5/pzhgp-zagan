@@ -82,32 +82,55 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     useEffect(() => {
         if (!isOpen) return;
 
+        const controller =
+            new AbortController();
+
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);
+            setSections([]);
+            setBreeders([]);
+            setError(null);
 
             try {
-                const [sectionsRes, breedersRes] = await Promise.all([
-                    fetchWithAuth(`${API_URL}/api/sections`),
-                    fetchWithAuth(`${API_URL}/api/admin/registered`)
+                const [sectionsRes, breedersRes] = await Promise.all([fetchWithAuth(`${API_URL}/api/sections`, {
+                    signal: controller.signal
+                }),
+                    fetchWithAuth(`${API_URL}/api/admin/registered`, {
+                            signal: controller.signal
+                    })
                 ]);
 
                 if (!sectionsRes.ok || !breedersRes.ok) {
                     throw new Error('Nie udało się pobrać danych formularza. Spróbuj ponownie.');
                 }
 
-                setSections(await sectionsRes.json());
-
+                const sectionsData: Section[] = await sectionsRes.json();
                 const allBreeders: Breeder[] = await breedersRes.json();
-                setBreeders(allBreeders.filter(b => b.status === 'ACTIVE'));
 
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                setSections(sectionsData);
+                setBreeders(allBreeders.filter(breeder => breeder.status === 'ACTIVE'));
             } catch (error) {
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setError(error instanceof Error ? error.message : 'Wystąpił problem z połączeniem.');
             } finally {
-                setIsDictionaryLoading(false);
+                if (!controller.signal.aborted) {
+                    setIsDictionaryLoading(false);
+                }
             }
         };
 
         void fetchDictionaries();
+
+        return () => {
+            controller.abort();
+        };
     }, [isOpen]);
 
     useEffect(() => {

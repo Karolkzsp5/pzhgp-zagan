@@ -1,32 +1,30 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserRole, isJwtValid, logout } from '@/app/utils/jwt';
 import LoadingState from '@/app/components/LoadingState';
+import { useAuth } from '@/app/components/AuthProvider';
 
-export default function AdminGuard({ children }: { children: React.ReactNode }) {
-    const [isAuthorized, setIsAuthorized] = useState(false);
+export default function AdminGuard({children}: { children: React.ReactNode; }) {
+    const { user, isLoggedIn, isAuthResolved } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        const token = getAuthToken();
+    const isAdministrator = user?.role === 'ADMINISTRATOR';
 
-        if (!isJwtValid(token)) {
-            logout();
+    useEffect(() => {
+        if (!isAuthResolved) return;
+
+        if (!isLoggedIn) {
             router.replace('/login');
             return;
         }
 
-        if (getUserRole(token) !== 'ADMINISTRATOR') {
+        if (!isAdministrator) {
             router.replace('/');
-            return;
         }
+    }, [isAdministrator, isAuthResolved, isLoggedIn, router]);
 
-        setIsAuthorized(true);
-    }, [router]);
-
-    if (!isAuthorized) {
+    if (!isAuthResolved || !isLoggedIn || !isAdministrator) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <LoadingState />

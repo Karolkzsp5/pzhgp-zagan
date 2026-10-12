@@ -11,6 +11,7 @@ import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
+import { useAuth } from '@/app/components/AuthProvider';
 import { flightService } from '@/app/services/flightService';
 import { FlightDetailsDto, formatDateTime, formatDuration, formatSpeed, formatTime } from '@/app/types/flight';
 import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
@@ -82,6 +83,7 @@ function StatRow({ label, value, hint, wrapValue = false }: {
 }
 
 export default function FlightDetailsPage({ params }: { params: Promise<{ flightId: string }> }) {
+    const { isLoggedIn } = useAuth();
     const resolvedParams = use(params);
     const flightId = Number(resolvedParams.flightId);
     const router = useRouter();
@@ -141,13 +143,13 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     }, [flightId, isValidId]);
 
     useEffect(() => {
-        if (!isValidId) return;
+        if (!isLoggedIn || !isValidId) return;
         void loadFlight();
 
         return () => {
             loadRequestRef.current += 1;
         };
-    }, [isValidId, loadFlight]);
+    }, [isLoggedIn, isValidId, loadFlight]);
 
     /** Odtwarzacz przechodzi przez całą zarejestrowaną trasę. */
     const trackPoints = useMemo(() => flight?.trackPoints ?? [], [flight]);

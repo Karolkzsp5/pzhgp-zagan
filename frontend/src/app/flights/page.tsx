@@ -10,13 +10,16 @@ import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import { useAuth } from '@/app/components/AuthProvider';
 import { flightService } from '@/app/services/flightService';
 import { FlightSummaryDto, formatDateTime, formatDuration, formatSpeed } from '@/app/types/flight';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 
 const PAGE_SIZE = 10;
 const MAX_GPX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function FlightsPage() {
+    const { isLoggedIn } = useAuth();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,30 +46,46 @@ export default function FlightsPage() {
         onConfirm: () => {}
     });
 
+    const {beginRequest, isLatestRequest} = useLatestRequest();
     const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
 
     const showAlert = (title: string, message: string) =>
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeModal });
 
     const fetchFlights = useCallback(async (targetPage: number) => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setListError('');
 
         try {
             const result = await flightService.getMyFlights(targetPage, PAGE_SIZE);
+
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
             setFlights(result.content);
             setTotalPages(result.totalPages);
             setPage(result.number);
         } catch (error) {
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
             setListError(error instanceof Error ? error.message : 'Nie udało się pobrać listy lotów.');
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
+        if (!isLoggedIn) return;
+
         void fetchFlights(0);
-    }, [fetchFlights]);
+    }, [fetchFlights, isLoggedIn]);
 
     const selectFile = (file: File | null) => {
         setUploadError('');
@@ -356,7 +375,7 @@ export default function FlightsPage() {
                                     <button
                                         type="button"
                                         onClick={() => void fetchFlights(page - 1)}
-                                        disabled={page === 0}
+                                        disabled={isLoading || page === 0}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                     >
                                         Poprzednia
@@ -367,7 +386,7 @@ export default function FlightsPage() {
                                     <button
                                         type="button"
                                         onClick={() => void fetchFlights(page + 1)}
-                                        disabled={page >= totalPages - 1}
+                                        disabled={isLoading || page >= totalPages - 1}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                     >
                                         Następna

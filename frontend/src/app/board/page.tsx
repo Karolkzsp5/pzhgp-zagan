@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Navbar from "@/app/components/Navbar";
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
+import { API_URL } from '@/app/utils/apiClient';
+import { useAuth } from '@/app/components/AuthProvider';
 import { boardService } from '@/app/services/boardService';
 import { BoardMemberDto, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { formatPhoneNumber } from '@/app/utils/formatters';
@@ -23,7 +24,8 @@ export default function BoardPage() {
     const [sections, setSections] = useState<SectionDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMINISTRATOR';
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<BoardMemberDto | null>(null);
@@ -48,7 +50,7 @@ export default function BoardPage() {
         try {
             const [boardData, sectionsResponse] = await Promise.all([
                 boardService.getAllBoardMembers(),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sections`)
+                fetch(`${API_URL}/api/sections`)
             ]);
 
             if (!sectionsResponse.ok) {
@@ -60,22 +62,13 @@ export default function BoardPage() {
             setMembers(boardData);
             setSections(sectionsData);
         } catch (error) {
-            setError(error instanceof TypeError ? 'Nie udało połączyć się z serwerem.' : 'Nie udało się pobrać danych zarządu.');
+            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' : 'Nie udało się pobrać danych zarządu.');
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        const token = getAuthToken();
-
-        if (token) {
-            const payload = decodeJwt(token);
-            if (payload && payload.role === 'ADMINISTRATOR') {
-                setIsAdmin(true);
-            }
-        }
-
         void fetchData();
     }, [fetchData]);
 

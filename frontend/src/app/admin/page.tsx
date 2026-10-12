@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { getAuthToken, decodeJwt } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { formatAccountStatus, formatDate, formatGlobalDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 import AdminGuard from '@/app/components/AdminGuard';
@@ -36,12 +35,15 @@ interface BreederDto {
 }
 
 export default function AdminPanelPage() {
+    const { user } = useAuth();
+    const currentUserEmail = user?.sub ?? '';
+
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
     const [sectionsList, setSectionsList] = useState<{ id: number; name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [currentUserEmail, setCurrentUserEmail] = useState('');
+
     const [modalMessage, setModalMessage] = useState<string | null>(null);
     const [confirmDialog, setConfirmDialog] = useState<{
         isOpen: boolean;
@@ -59,30 +61,35 @@ export default function AdminPanelPage() {
     const [filterSection, setFilterSection] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<SortOption>('NEWEST');
 
-    const router = useRouter();
+    useEffect(() => {
+        if (user?.role !== 'ADMINISTRATOR') {
+            return;
+        }
+
+        void fetchAllAccounts();
+    }, [user?.role]);
 
     useEffect(() => {
-        fetchAllAccounts();
+        const handleClickOutside = () => {
+            setOpenDropdownId(null);
+        };
 
-        const handleClickOutside = () => setOpenDropdownId(null);
-        window.addEventListener('click', handleClickOutside);
-        return () => window.removeEventListener('click', handleClickOutside);
+        window.addEventListener(
+            'click',
+            handleClickOutside
+        );
+
+        return () => {
+            window.removeEventListener(
+                'click',
+                handleClickOutside
+            );
+        };
     }, []);
 
     const fetchAllAccounts = async () => {
         setIsLoading(true);
         setError('');
-
-        const token = getAuthToken();
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        const payload = decodeJwt(token);
-        if (payload) {
-            setCurrentUserEmail(payload.sub);
-        }
 
         try {
             const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
@@ -321,6 +328,7 @@ export default function AdminPanelPage() {
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                                 <button
+                                                                    type="button"
                                                                     data-cy={`approve-btn-${breeder.id}`}
                                                                     onClick={() => {
                                                                         setConfirmDialog({
@@ -336,6 +344,7 @@ export default function AdminPanelPage() {
                                                                     Akceptuj
                                                                 </button>
                                                                 <button
+                                                                    type="button"
                                                                     data-cy={`reject-btn-${breeder.id}`}
                                                                     onClick={() => {
                                                                         setConfirmDialog({
@@ -582,7 +591,10 @@ export default function AdminPanelPage() {
                         </div>
 
                         <div className="mt-8 flex justify-end">
-                            <button type="button" onClick={() => setSelectedBreeder(null)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedBreeder(null)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition shadow-sm">
                                 Zamknij
                             </button>
                         </div>

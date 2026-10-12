@@ -12,11 +12,11 @@ import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanSummaryDto } from '@/app/types/flightPlan';
-import { decodeJwt, getAuthToken, isJwtValid } from '@/app/utils/jwt';
+import { useAuth } from '@/app/components/AuthProvider';
 
 export default function FlightPlansPage() {
+    const { user, isLoggedIn } = useAuth();
     const [plans, setPlans] = useState<FlightPlanSummaryDto[]>([]);
-    const [userRole, setUserRole] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
@@ -34,7 +34,7 @@ export default function FlightPlansPage() {
         onConfirm: () => {}
     });
 
-    const isAdministrator = userRole === 'ADMINISTRATOR';
+    const isAdministrator = user?.role === 'ADMINISTRATOR';
 
     const closeConfirmModal = () => {
         setModalConfig(previous => ({
@@ -67,15 +67,10 @@ export default function FlightPlansPage() {
     }, []);
 
     useEffect(() => {
-        const token = getAuthToken();
-
-        if (isJwtValid(token)) {
-            const payload = decodeJwt(token!);
-            setUserRole(payload?.role ?? null);
-        }
+        if (!isLoggedIn) return;
 
         void loadPlans();
-    }, [loadPlans]);
+    }, [isLoggedIn, loadPlans]);
 
     const openCreateModal = () => {
         setNewPlanYear(String(new Date().getFullYear()));

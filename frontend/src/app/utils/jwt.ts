@@ -2,7 +2,26 @@ const TOKEN_KEY = 'jwt_token';
 const AUTH_PERSISTENCE_KEY = 'auth_persistence';
 const SESSION_MARKER_COOKIE = 'pzhgp_session';
 
-type AuthPersistence = 'session' | 'persistent';
+export const AUTH_CHANGED_EVENT = 'pzhgp-auth-changed';
+
+export type AuthPersistence = 'session' | 'persistent';
+export type UserRole = 'BREEDER' | 'MODERATOR' | 'ADMINISTRATOR';
+
+export interface JwtPayload {
+    id?: number;
+    sub?: string;
+    name?: string;
+    role?: UserRole;
+    status?: string;
+    exp?: number;
+    iat?: number;
+}
+
+const notifyAuthChanged = () => {
+    if (typeof window === 'undefined') return;
+
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+};
 
 const hasSessionMarker = (): boolean => {
     if (typeof document === 'undefined') return false;
@@ -24,7 +43,7 @@ const clearSessionMarker = () => {
     document.cookie = `${SESSION_MARKER_COOKIE}=; Path=/; Max-Age=0; SameSite=Strict${secure}`;
 };
 
-const clearAuthStorage = () => {
+const clearAuthStorage = (notify = false) => {
     if (typeof window === 'undefined') return;
 
     localStorage.removeItem(TOKEN_KEY);
@@ -32,30 +51,36 @@ const clearAuthStorage = () => {
     sessionStorage.removeItem(TOKEN_KEY);
 
     clearSessionMarker();
+
+    if (notify) {
+        notifyAuthChanged();
+    }
 };
 
 export const saveAuthToken = (token: string, rememberMe: boolean) => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(TOKEN_KEY, token);
 
     if (rememberMe) {
-        localStorage.setItem(AUTH_PERSISTENCE_KEY, 'persistent');
         clearSessionMarker();
+        localStorage.setItem(AUTH_PERSISTENCE_KEY, 'persistent');
     } else {
-        localStorage.setItem(AUTH_PERSISTENCE_KEY, 'session');
         setSessionMarker();
+        localStorage.setItem(AUTH_PERSISTENCE_KEY, 'session');
     }
 
     sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.setItem(TOKEN_KEY, token);
+
+    notifyAuthChanged();
 };
 
 export const getAuthToken = (): string | null => {
     if (typeof window === 'undefined') return null;
 
     const token = localStorage.getItem(TOKEN_KEY);
-    const persistence = localStorage.getItem(AUTH_PERSISTENCE_KEY) as AuthPersistence | null;
+    const persistence = localStorage.getItem(AUTH_PERSISTENCE_KEY);
 
-    if (!token || !persistence) {
+    if (!token || (persistence !== 'session' && persistence !== 'persistent')) {
         clearAuthStorage();
         return null;
     }
@@ -68,18 +93,28 @@ export const getAuthToken = (): string | null => {
     return token;
 };
 
-export const decodeJwt = (token: string) => {
+export const decodeJwt = (token: string): JwtPayload | null => {
     try {
         const payloadBase64 = token.split('.')[1];
-        const base64 = payloadBase64
-            .replace(/-/g, '+')
-            .replace(/_/g, '/');
 
-        const decodedJson = decodeURIComponent(atob(base64).split('').map(c =>
-            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+        if (!payloadBase64) {
+            return null;
+        }
+
+        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+
+        const decodedJson = decodeURIComponent(
+            atob(paddedBase64).split('').map(char => '%' + ('00' + char.charCodeAt(0).toString(16)).slice(-2)).join('')
         );
 
-        return JSON.parse(decodedJson);
+        const payload: unknown = JSON.parse(decodedJson);
+
+        if (typeof payload !== 'object' || payload === null) {
+            return null;
+        }
+
+        return payload as JwtPayload;
     } catch (error) {
         console.error('Błąd dekodowania tokenu JWT:', error);
         return null;
@@ -88,21 +123,18 @@ export const decodeJwt = (token: string) => {
 
 export const isJwtValid = (token: string | null): boolean => {
     if (!token) return false;
+
     const payload = decodeJwt(token);
 
     if (!payload) return false;
-    if (!payload.exp) return true;
+
+    if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+        return false;
+    }
 
     return payload.exp * 1000 > Date.now();
 };
 
 export const logout = () => {
-    clearAuthStorage();
-};
-
-export const getUserRole = (token: string | null): string | null => {
-    if (!isJwtValid(token)) return null;
-    const payload = decodeJwt(token!);
-
-    return payload?.role || null;
+    clearAuthStorage(true);
 };

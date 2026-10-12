@@ -78,7 +78,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         } catch (error) {
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało połączyć się z serwerem.'
+                    ? 'Nie udało się połączyć z serwerem.'
                     : error instanceof Error
                         ? error.message
                         : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
