@@ -62,11 +62,17 @@ export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, childr
             return;
         }
 
+        let focusFrameId: number | null = null;
         const frameId = requestAnimationFrame(() => {
             updatePosition();
 
-            const firstItem = getMenuItems()[0];
-            firstItem?.focus();
+            focusFrameId = requestAnimationFrame(() => {
+                const firstItem = getMenuItems()[0];
+
+                firstItem?.focus({
+                    preventScroll: true
+                });
+            });
         });
 
         const handleMouseDown = (event: MouseEvent) => {
@@ -129,6 +135,10 @@ export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, childr
 
         return () => {
             cancelAnimationFrame(frameId);
+
+            if (focusFrameId !== null) {
+                cancelAnimationFrame(focusFrameId);
+            }
 
             document.removeEventListener('mousedown', handleMouseDown);
             document.removeEventListener('keydown', handleKeyDown);

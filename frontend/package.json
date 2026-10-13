@@ -6,9 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "lint": "eslint"
   },
   "dependencies": {
     "@tiptap/extension-highlight": "^3.30.5",

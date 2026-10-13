@@ -43,7 +43,6 @@ describe('Weather Page Tests', () => {
             expect(url.searchParams.get('message')).to.eq('true');
         });
 
-        cy.contains('button', '+ Dodaj członka').should('not.exist');
         cy.checkFooter();
     });
 

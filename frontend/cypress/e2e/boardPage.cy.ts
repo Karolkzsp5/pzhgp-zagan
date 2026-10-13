@@ -328,7 +328,9 @@ describe('Board Page Tests', () => {
 
         cy.window().then((win) => {
             win.localStorage.removeItem('jwt_token');
+            win.localStorage.removeItem('auth_persistence');
             win.sessionStorage.removeItem('jwt_token');
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
         });
 
         cy.reload();
@@ -356,8 +358,10 @@ describe('Board Page Tests', () => {
 
     it('Should hide administration controls from a breeder', () => {
         cy.window().then((win) => {
+            win.localStorage.setItem('auth_persistence', 'persistent');
             win.localStorage.setItem('jwt_token', breederToken);
             win.sessionStorage.removeItem('jwt_token');
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
         });
 
         cy.reload();

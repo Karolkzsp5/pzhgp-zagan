@@ -100,7 +100,7 @@ describe('Home Page - Announcements Tests', () => {
             if (announcementsShouldFail) {
                 req.reply({
                     statusCode: 500,
-                    body: 'Internal Server Error'
+                    body: ''
                 });
 
                 return;
@@ -603,15 +603,11 @@ describe('Home Page - Announcements Tests', () => {
     // DELETE ERROR
     // ==========================================
 
-    it('Should display an alert when announcement deletion fails', () => {
+    it('Should display an error modal when announcement deletion fails', () => {
         cy.intercept('DELETE', '**/api/announcements/2', {
             statusCode: 500,
-            body: 'Internal Server Error'
+            body: 'Nie udało się usunąć ogłoszenia testowego.'
         }).as('deleteAnnouncementError');
-
-        cy.window().then((win) => {
-            cy.stub(win, 'alert').as('windowAlert');
-        });
 
         getAnnouncementByTitle('Ogłoszenie moderatora').within(() => {
             cy.contains('button', 'Usuń').click();
@@ -622,9 +618,15 @@ describe('Home Page - Announcements Tests', () => {
         });
 
         cy.wait('@deleteAnnouncementError');
-        cy.get('@windowAlert').should('have.been.calledWith', 'Wystąpił błąd podczas usuwania ogłoszenia.');
+
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Nie udało się wykonać operacji').should('be.visible');
+            cy.contains('Nie udało się usunąć ogłoszenia testowego.').should('be.visible');
+            cy.contains('button', 'OK').click();
+        });
+
+        cy.get('[role="dialog"]').should('not.exist');
         getAnnouncementByTitle('Ogłoszenie moderatora').should('be.visible');
-        cy.get('[role="dialog"]').should('be.visible');
     });
 
     // ==========================================
@@ -705,9 +707,13 @@ describe('Home Page - Announcements Tests', () => {
 
         cy.window().then((win) => {
             win.localStorage.removeItem('jwt_token');
+            win.localStorage.removeItem('auth_persistence');
             win.sessionStorage.removeItem('jwt_token');
 
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+
             expect(win.localStorage.getItem('jwt_token')).to.be.null;
+            expect(win.localStorage.getItem('auth_persistence')).to.be.null;
             expect(win.sessionStorage.getItem('jwt_token')).to.be.null;
         });
 
@@ -741,8 +747,10 @@ describe('Home Page - Announcements Tests', () => {
         };
 
         cy.window().then((win) => {
+            win.localStorage.setItem('auth_persistence', 'persistent');
             win.localStorage.setItem('jwt_token', breederToken);
             win.sessionStorage.removeItem('jwt_token');
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
         });
 
         cy.reload();
@@ -759,8 +767,10 @@ describe('Home Page - Announcements Tests', () => {
 
     it('Should allow a moderator to see the add announcement button', () => {
         cy.window().then((win) => {
+            win.localStorage.setItem('auth_persistence', 'persistent');
             win.localStorage.setItem('jwt_token', moderatorToken);
             win.sessionStorage.removeItem('jwt_token');
+            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
         });
 
         cy.reload();

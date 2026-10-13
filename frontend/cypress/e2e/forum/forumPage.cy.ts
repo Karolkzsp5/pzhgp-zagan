@@ -242,14 +242,25 @@ describe('Forum Page Tests', () => {
         });
 
         it('Should display an API error when category update fails', () => {
-            cy.intercept('PUT', '**/api/forum/categories/1', {
-                statusCode: 403,
-                body: 'Brak uprawnień do edycji tej kategorii.'
+            cy.intercept('PUT', '**/api/forum/categories/1', (req) => {
+                expect(req.body).to.deep.equal({
+                    name: 'Loty konkursowe',
+                    description: 'Zaktualizowany opis kategorii.',
+                    sortOrder: 2
+                });
+
+                req.reply({
+                    statusCode: 403,
+                    body: 'Brak uprawnień do edycji tej kategorii.'
+                });
             }).as('updateCategoryError');
 
             cy.get('button[aria-label="Edytuj kategorię Loty i treningi"]').click();
-            cy.get('#category-name').clear().type('Nowa nazwa');
-            cy.contains('button', 'Zapisz zmiany').click();
+            cy.get('[role="dialog"]').should('be.visible');
+            cy.get('#category-name').should('have.value', 'Loty i treningi').clear().type('Loty konkursowe');
+            cy.get('#category-description').should('have.value', 'Dyskusje o lotach, treningach i przygotowaniu gołębi.').clear().type('Zaktualizowany opis kategorii.');
+            cy.get('#category-sort-order').should('have.value', '1').clear().type('2');
+            cy.get('[role="dialog"]').contains('button', 'Zapisz zmiany').should('not.be.disabled').click();
 
             cy.wait('@updateCategoryError');
 
@@ -340,7 +351,7 @@ describe('Forum Page Tests', () => {
                 if (shouldFail) {
                     req.reply({
                         statusCode: 500,
-                        body: 'Internal Server Error'
+                        body: ''
                     });
                 } else {
                     req.reply({
@@ -353,7 +364,7 @@ describe('Forum Page Tests', () => {
             cy.reload();
             cy.wait('@getCategoriesRetry');
 
-            cy.contains('Nie udało się pobrać danych forum. Sprawdź połączenie.').should('be.visible');
+            cy.contains('Nie udało się pobrać kategorii.').should('be.visible');
             cy.contains('button', 'Spróbuj ponownie').should('be.visible');
 
             cy.then(() => {
@@ -362,6 +373,7 @@ describe('Forum Page Tests', () => {
 
             cy.contains('button', 'Spróbuj ponownie').click();
             cy.wait('@getCategoriesRetry');
+            cy.contains('Nie udało się pobrać kategorii.').should('not.exist');
 
             cy.contains('Nie udało się pobrać danych forum. Sprawdź połączenie.').should('not.exist');
             cy.contains('h2', 'Loty i treningi').should('be.visible');

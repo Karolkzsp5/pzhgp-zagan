@@ -3,6 +3,16 @@ import { createFakeToken } from '../../support/testUtils';
 describe('Breeder Login Process', () => {
     beforeEach(() => {
         cy.visit('/login');
+
+        cy.window().then((win) => {
+            return new Cypress.Promise<void>((resolve) => {
+                win.requestAnimationFrame(() => {
+                    win.requestAnimationFrame(() => {
+                        resolve();
+                    });
+                });
+            });
+        });
     });
 
     it('Should display a login form with the relevant fields', () => {
@@ -57,8 +67,8 @@ describe('Breeder Login Process', () => {
             body: 'Twoje konto zostało zablokowane.'
         }).as('blockedAccountRequest');
 
-        cy.get('input[name="email"]').type('blocked.user@test.cy');
-        cy.get('input[name="password"]').type('ValidPassword1!');
+        cy.get('input[name="email"]').clear().type('blocked.user@test.com');
+        cy.get('input[name="password"]').clear().type('ValidPassword1!');
         cy.get('button[type="submit"]').click();
 
         cy.wait('@blockedAccountRequest');
@@ -80,12 +90,28 @@ describe('Breeder Login Process', () => {
             body: mockToken
         }).as('successfulLogin');
 
+        cy.intercept('GET', '**/api/announcements*', {
+            statusCode: 200,
+            body: {
+                content: [],
+                totalElements: 0,
+                totalPages: 0,
+                number: 0,
+                size: 10
+            }
+        }).as('getHomeAnnouncements');
+
+        cy.mockNavbarNotifications();
+
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');
         cy.get('input[name="remember-me"]').should('not.be.checked');
         cy.get('button[type="submit"]').click();
 
         cy.wait('@successfulLogin');
+
+        cy.location('pathname').should('eq', '/');
+        cy.wait(['@getHomeAnnouncements', '@getNotifications', '@getUnreadCount']);
 
         cy.window().then((win) => {
             expect(win.localStorage.getItem('jwt_token')).to.eq(mockToken);
@@ -116,7 +142,6 @@ describe('Breeder Login Process', () => {
         }).as('successfulLogin');
 
         cy.get('input[name="email"]').clear().type('test.cypress1@test.cy');
-
         cy.get('input[name="password"]').clear().type('Test.cypress1');
         cy.get('input[name="remember-me"]').check();
 
@@ -140,6 +165,8 @@ describe('Breeder Login Process', () => {
                 size: 10
             }
         });
+        cy.mockNavbarNotifications();
+
         cy.get('button[type="submit"]').click();
 
         cy.wait('@successfulLogin').then((interception) => {
@@ -157,14 +184,11 @@ describe('Breeder Login Process', () => {
         });
 
         cy.getCookie('pzhgp_session').should('be.null');
-
         cy.contains('Witaj, Test');
     });
 
     it('Should display a message when the session has expired', () => {
         cy.visit('/login?expired=true');
-
-        cy.contains('Sesja wygasła. Zaloguj się ponownie.')
-            .should('be.visible');
+        cy.contains('Sesja wygasła. Zaloguj się ponownie.').should('be.visible');
     });
 });

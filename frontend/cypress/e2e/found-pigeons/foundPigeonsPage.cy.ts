@@ -6,6 +6,7 @@ describe('Found Pigeons Page Tests', () => {
 
     beforeEach(() => {
         cy.visit('/found-pigeons');
+        cy.checkLoggedOutNavbar();
     });
 
     // ==========================================
