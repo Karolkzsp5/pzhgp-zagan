@@ -455,8 +455,7 @@ describe('Forum Category Page Tests', () => {
 
     describe('Invalid Category ID', () => {
         it('Should display an error for an invalid category identifier', () => {
-            cy.visit('/forum/abc');
-
+            cy.visitWithToken('/forum/abc', breederToken);
             cy.contains('Nieprawidłowy adres URL. Kategoria nie istnieje.').should('be.visible');
         });
     });

@@ -1,4 +1,4 @@
-import {createFakeTokenForUser, TEST_USERS} from '../../support/testUtils';
+import { createFakeTokenForUser, TEST_USERS } from '../../support/testUtils';
 
 type MockPigeonAgeGroup = 'ADULT' | 'YOUNG';
 type MockFlightResultScope = 'BRANCH' | 'SECTION';
@@ -250,18 +250,28 @@ describe('Flight Plan Details Page Tests', () => {
         // ACTION MENU
         // ==========================================
 
-        it('Should correctly render the flight ActionMenu', () => {
+        it('Should correctly render and support keyboard navigation in the flight ActionMenu', () => {
             openFlightActions(101);
 
-            cy.get('[data-cy="flight-actions-menu-101"]').should('have.class', 'w-48')
-                .and('have.class', 'whitespace-nowrap').within(() => {
+            cy.get('[data-cy="flight-actions-menu-101"]').should('have.class', 'w-48').and('have.class', 'whitespace-nowrap').within(() => {
                 cy.contains('button', 'Edytuj lot').should('be.visible');
                 cy.contains('button', 'Zarządzaj wynikami').should('be.visible');
                 cy.contains('button', 'Usuń lot').should('be.visible');
             });
 
-            cy.get('body').type('{esc}');
+            cy.get('[data-cy="flight-actions-menu-101"]').find('[role="menuitem"]').first().should('be.focused').and('contain.text', 'Edytuj lot');
+            cy.focused().type('{downarrow}');
+            cy.focused().should('contain.text', 'Zarządzaj wynikami');
+            cy.focused().type('{uparrow}');
+            cy.focused().should('contain.text', 'Edytuj lot');
+            cy.focused().type('{end}');
+            cy.focused().should('contain.text', 'Usuń lot');
+            cy.focused().type('{home}');
+            cy.focused().should('contain.text', 'Edytuj lot');
+            cy.focused().type('{esc}');
+
             cy.get('[data-cy="flight-actions-menu-101"]').should('not.exist');
+            cy.get('[data-cy="flight-actions-button-101"]').should('be.focused');
 
             openFlightActions(102);
 
@@ -386,16 +396,24 @@ describe('Flight Plan Details Page Tests', () => {
         // ==========================================
 
         it('Should display an API error when adding a flight fails', () => {
-            cy.intercept('POST', '**/api/flight-plans/2026/entries', {
-                statusCode: 400,
-                body: 'Testowy błąd podczas dodawania lotu.'
-            }).as('createFlightError');
+            cy.intercept(
+                'POST',
+                '**/api/flight-plans/2026/entries',
+                (req) => {
+                    req.reply({
+                        statusCode: 400,
+                        body: 'Testowy błąd podczas dodawania lotu.'
+                    });
+                }
+            ).as('createFlightError');
 
             getFlightSection('Gołębie dorosłe').contains('button', '+ Dodaj lot').click();
 
+            cy.get('[role="dialog"]').should('be.visible');
             cy.get('#flight-date').type('2026-05-10');
             cy.get('#flight-location').type('Dessau');
             cy.get('#flight-distance').type('220');
+            cy.get('#flight-category').type('A/B');
             cy.get('#flight-list-type').type('Oddziałowa');
             cy.get('[role="dialog"]').contains('button', 'Dodaj lot').click();
 

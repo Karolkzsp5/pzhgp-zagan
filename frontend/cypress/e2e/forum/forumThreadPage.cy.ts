@@ -936,8 +936,7 @@ describe('Forum Thread Page Tests', () => {
 
     describe('Invalid Thread ID', () => {
         it('Should display an error for an invalid thread identifier', () => {
-            cy.visit('/forum/thread/abc');
-
+            cy.visitWithToken('/forum/thread/abc', breederToken);
             cy.contains('Nieprawidłowy adres URL. Wątek nie istnieje.').should('be.visible');
         });
     });
