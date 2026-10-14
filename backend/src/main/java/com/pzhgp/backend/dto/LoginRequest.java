@@ -3,6 +3,8 @@ package com.pzhgp.backend.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.Locale;
+
 public record LoginRequest(
         @NotBlank(message = "Adres e-mail nie może być pusty")
         @Email(message = "Niepoprawny format adresu e-mail")
@@ -11,4 +13,9 @@ public record LoginRequest(
         @NotBlank(message = "Hasło nie może być puste")
         String password
 ) {
+        public LoginRequest {
+                if (email != null) {
+                        email = email.trim().toLowerCase(Locale.ROOT);
+                }
+        }
 }

@@ -2,6 +2,7 @@ package com.pzhgp.backend.dto;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.Locale;
 
 public record RegistrationRequest(
         @NotBlank(message = "Imię nie może być puste")
@@ -50,10 +51,14 @@ public record RegistrationRequest(
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste")
-        @Pattern(
-                regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
+        @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
                 message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny"
         )
         String password
 ) {
+        public RegistrationRequest {
+                if (email != null) {
+                        email = email.trim().toLowerCase(Locale.ROOT);
+                }
+        }
 }

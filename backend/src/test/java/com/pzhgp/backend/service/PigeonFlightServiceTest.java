@@ -12,6 +12,8 @@ import com.pzhgp.backend.service.gpx.GpxParser;
 import com.pzhgp.backend.service.gpx.GpxParsingException;
 import com.pzhgp.backend.service.gpx.GpxPoint;
 import com.pzhgp.backend.service.gpx.GpxTrack;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -179,13 +181,9 @@ class PigeonFlightServiceTest {
     @DisplayName("Empty GPX file is rejected")
     void rejectsEmptyFile() {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        MockMultipartFile file = new MockMultipartFile("file", "track.gpx", "application/gpx+xml", new byte[0]);
 
-        MockMultipartFile file = new MockMultipartFile("file", "track.gpx",
-                "application/gpx+xml", new byte[0]);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-
+        assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
         verify(flightRepository, never()).save(any());
     }
 
@@ -215,9 +213,7 @@ class PigeonFlightServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "track.gpx",
                 "application/gpx+xml", "this is not XML".getBytes(StandardCharsets.UTF_8));
 
-        assertThrows(GpxParsingException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-
+        assertThrows(GpxParsingException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
         verify(flightRepository, never()).save(any());
     }
 
@@ -247,7 +243,7 @@ class PigeonFlightServiceTest {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(200L);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class,
                 () -> pigeonFlightService.uploadFlight(realGpxFile(), null, "jan@example.com"));
 
         assertTrue(exception.getMessage().contains("limit"));
@@ -357,8 +353,7 @@ class PigeonFlightServiceTest {
         verify(flightRepository).save(captor.capture());
 
         assertFalse(captor.getValue().isTimestampsAvailable());
-        assertTrue(captor.getValue().getTrackPoints().stream()
-                .allMatch(point -> point.getSpeedMetersPerMinute() == null));
+        assertTrue(captor.getValue().getTrackPoints().stream().allMatch(point -> point.getSpeedMetersPerMinute() == null));
     }
 
     @Test
@@ -369,7 +364,7 @@ class PigeonFlightServiceTest {
         when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
         when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class,
                 () -> pigeonFlightService.getFlightDetails(7L, "adam@example.com", null));
 
         assertTrue(exception.getMessage().contains("uprawnień"));
@@ -408,7 +403,6 @@ class PigeonFlightServiceTest {
         when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
 
         pigeonFlightService.deleteFlight(7L, "jan@example.com");
-
         verify(flightRepository).delete(flight);
     }
 
@@ -420,15 +414,11 @@ class PigeonFlightServiceTest {
         when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
         when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
 
-        assertThrows(IllegalStateException.class,
-                () -> pigeonFlightService.deleteFlight(7L, "adam@example.com"));
-
+        assertThrows(ForbiddenOperationException.class, () -> pigeonFlightService.deleteFlight(7L, "adam@example.com"));
         verify(flightRepository, never()).delete(any());
 
         when(breederRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(administrator));
-
         pigeonFlightService.deleteFlight(7L, "admin@example.com");
-
         verify(flightRepository).delete(flight);
     }
 
@@ -506,11 +496,8 @@ class PigeonFlightServiceTest {
     void rejectsInvalidPaginationArguments() {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
 
-        assertThrows(IllegalArgumentException.class,
-                () -> pigeonFlightService.getMyFlights("jan@example.com", -1, 10));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> pigeonFlightService.getMyFlights("jan@example.com", 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.getMyFlights("jan@example.com", -1, 10));
+        assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.getMyFlights("jan@example.com", 0, 0));
 
         verify(flightRepository, never()).findByOwnerOrderByUploadedAtDesc(any(), any());
     }

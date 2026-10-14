@@ -233,18 +233,21 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - As Author, should remove their own post from DB")
+    @DisplayName("DELETE /posts/{id} - As Author, should remove reply and update thread lastPostAt")
     void deletePost_AsAuthor_ShouldRemoveFromDb() throws Exception {
+        LocalDateTime expectedLastPostAt = adminPost.getCreatedAt();
+
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
-                .andExpect(status().isNoContent());
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)).andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
+        ForumThread updatedThread = threadRepository.findById(thread.getId()).orElseThrow();
+        assertEquals(expectedLastPostAt, updatedThread.getLastPostAt());
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 403 Forbidden")
-    void deletePost_WhenOnlyOnePostInThread_ShouldReturn403() throws Exception {
+    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 409 Conflict")
+    void deletePost_WhenOnlyOnePostInThread_ShouldReturn409() throws Exception {
         ForumThread singleThread = new ForumThread();
         singleThread.setCategory(category);
         singleThread.setAuthor(threadAuthor);
@@ -260,7 +263,7 @@ class ForumPostIntegrationTest {
 
         mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + threadAuthorToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
 
         assertTrue(postRepository.existsById(singlePost.getId()));
     }
@@ -327,15 +330,24 @@ class ForumPostIntegrationTest {
     @DisplayName("DELETE /posts/{id} - As regular user, trying to delete someone's post should return 403 Forbidden")
     void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
-                .andExpect(status().isForbidden());
-
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)).andExpect(status().isForbidden());
         assertTrue(postRepository.existsById(breederPost.getId()));
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Adding post to a locked thread should return 403 Forbidden")
-    void addPost_WhenThreadIsLocked_ShouldReturn403() throws Exception {
+    @DisplayName("DELETE /posts/{id} - Opening post cannot be deleted even when thread contains replies")
+    void deletePost_WhenPostIsOpeningPost_ShouldReturn409() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId()).header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu."));
+
+        assertTrue(postRepository.existsById(adminPost.getId()));
+        assertTrue(postRepository.existsById(breederPost.getId()));
+    }
+
+    @Test
+    @DisplayName("POST /threads/{id}/posts - Adding post to a locked thread should return 409 Conflict")
+    void addPost_WhenThreadIsLocked_ShouldReturn409() throws Exception {
         thread.setIsLocked(true);
         threadRepository.save(thread);
 
@@ -345,18 +357,18 @@ class ForumPostIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Unauthenticated user should be rejected (403 Forbidden)")
+    @DisplayName("POST /threads/{id}/posts - Unauthenticated user should receive 401 Unauthorized")
     void addPost_WhenUnauthenticated_ShouldFail() throws Exception {
         ForumPostRequest request = new ForumPostRequest("Anonim pyta");
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

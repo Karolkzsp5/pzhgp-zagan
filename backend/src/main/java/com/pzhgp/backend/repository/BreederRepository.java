@@ -12,10 +12,11 @@ import java.util.Optional;
 
 @Repository
 public interface BreederRepository extends JpaRepository<Breeder, Long> {
-    boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
     boolean existsByPhoneNumber(String phoneNumber);
 
     Optional<Breeder> findByEmail(String email);
+    Optional<Breeder> findByEmailIgnoreCase(String email);
 
     @EntityGraph(attributePaths = {"section"})
     List<Breeder> findByStatus(AccountStatus status);

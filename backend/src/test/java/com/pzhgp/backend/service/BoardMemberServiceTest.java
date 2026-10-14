@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.BoardMemberDto;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BoardMemberRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.SectionRepository;
@@ -146,9 +147,7 @@ class BoardMemberServiceTest {
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
         assertTrue(exception.getMessage().contains("wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz"));
     }
 
@@ -159,9 +158,7 @@ class BoardMemberServiceTest {
                 BoardRole.SKARBNIK, null, 1L, null, null, null
         );
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
         assertTrue(exception.getMessage().contains("Zarząd Oddziału nie posiada stanowiska Skarbnika"));
     }
 
@@ -205,9 +202,7 @@ class BoardMemberServiceTest {
 
         when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
         assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
     }
 
@@ -221,9 +216,7 @@ class BoardMemberServiceTest {
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(boardMemberRepository.existsConflictForSection(eq(BoardRole.SEKRETARZ), eq(1L), any())).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
         assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
     }
 
@@ -259,9 +252,7 @@ class BoardMemberServiceTest {
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
         assertEquals("Hodowca nie należy do sekcji, w której ma pełnić funkcję.", exception.getMessage());
     }
 
@@ -276,9 +267,7 @@ class BoardMemberServiceTest {
         when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
         when(boardMemberRepository.existsByBreederAndRoleForSection(eq(1L), eq(BoardRole.PREZES), eq(1L), any())).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                boardMemberService.createBoardMember(request)
-        );
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
         assertEquals("Ten hodowca pełni już to stanowisko w tym zarządzie.", exception.getMessage());
     }
 

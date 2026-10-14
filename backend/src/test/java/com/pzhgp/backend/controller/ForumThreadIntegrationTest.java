@@ -193,8 +193,7 @@ class ForumThreadIntegrationTest {
 
         assertEquals("/forum/thread/" + createdPost.getThread().getId(), newThreadNotif.getLink());
 
-        boolean authorGotIt = allNotifications.stream()
-                .anyMatch(n -> n.getRecipient().getId().equals(author.getId()));
+        boolean authorGotIt = allNotifications.stream().anyMatch(n -> n.getRecipient().getId().equals(author.getId()));
         assertFalse(authorGotIt, "Autor wątku nie powinien otrzymać powiadomienia o jego utworzeniu.");
     }
 
@@ -233,14 +232,14 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Unauthenticated user should be rejected (403 Forbidden)")
+    @DisplayName("POST /threads - Unauthenticated user should receive 401 Unauthorized")
     void createThread_WhenUnauthenticated_ShouldFail() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Haker", "Próba ataku");
 
         mockMvc.perform(post("/api/forum/threads")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

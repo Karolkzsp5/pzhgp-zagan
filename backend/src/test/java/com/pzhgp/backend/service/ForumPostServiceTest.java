@@ -6,6 +6,8 @@ import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +52,7 @@ class ForumPostServiceTest {
     private Breeder admin;
     private ForumThread thread;
     private ForumPost post;
+    private ForumPost openingPost;
 
     @BeforeEach
     void setUp() {
@@ -59,6 +62,13 @@ class ForumPostServiceTest {
         threadAuthor.setName("Jan");
         threadAuthor.setSurname("Kowalski");
         threadAuthor.setRole(Role.BREEDER);
+
+        openingPost = new ForumPost();
+        openingPost.setId(400L);
+        openingPost.setThread(thread);
+        openingPost.setAuthor(threadAuthor);
+        openingPost.setBody("Pierwszy wpis wątku");
+        openingPost.setCreatedAt(LocalDateTime.now().minusHours(2));
 
         postAuthor = new Breeder();
         postAuthor.setId(2L);
@@ -89,6 +99,12 @@ class ForumPostServiceTest {
         post.setThread(thread);
         post.setAuthor(postAuthor);
         post.setBody("Stara treść posta");
+        post.setCreatedAt(LocalDateTime.now().minusHours(1));
+    }
+
+    private void mockSuccessfulPostDeletion() {
+        when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(openingPost));
+        when(postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(100L, 500L)).thenReturn(Optional.of(openingPost));
     }
 
     @Test
@@ -134,14 +150,14 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to add post to a locked thread")
+    @DisplayName("Should throw ResourceConflictException when trying to add post to a locked thread")
     void addPost_WhenThreadIsLocked_ShouldThrowException() {
         thread.setIsLocked(true);
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
 
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> {
             postService.addPost(100L, request, "post.author@test.pl");
         });
 
@@ -165,14 +181,14 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when someone else tries to edit a post (even Admin)")
+    @DisplayName("Should throw ForbiddenOperationException when someone else tries to edit a post (even Admin)")
     void updatePost_WhenRequesterIsNotAuthor_ShouldThrowException() {
         ForumPostRequest request = new ForumPostRequest("Próba włamania do treści");
 
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             postService.updatePost(500L, request, "admin@test.pl");
         });
 
@@ -185,10 +201,9 @@ class ForumPostServiceTest {
     void deletePost_WhenRequesterIsModeratorOnBreederPost_ShouldDelete() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+        mockSuccessfulPostDeletion();
 
         postService.deletePost(500L, "moderator@test.pl");
-
         verify(postRepository, times(1)).delete(post);
     }
 
@@ -198,10 +213,9 @@ class ForumPostServiceTest {
         post.setAuthor(moderator);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+        mockSuccessfulPostDeletion();
 
         postService.deletePost(500L, "moderator@test.pl");
-
         verify(postRepository, times(1)).delete(post);
     }
 
@@ -211,10 +225,9 @@ class ForumPostServiceTest {
         post.setAuthor(moderator);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
-        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+        mockSuccessfulPostDeletion();
 
         postService.deletePost(500L, "admin@test.pl");
-
         verify(postRepository, times(1)).delete(post);
     }
 
@@ -224,7 +237,7 @@ class ForumPostServiceTest {
         post.setAuthor(admin);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
-        when(postRepository.countByThreadId(100L)).thenReturn(2L);
+        mockSuccessfulPostDeletion();
 
         postService.deletePost(500L, "admin@test.pl");
 
@@ -238,7 +251,7 @@ class ForumPostServiceTest {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             postService.deletePost(500L, "moderator@test.pl");
         });
 
@@ -251,7 +264,7 @@ class ForumPostServiceTest {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             postService.deletePost(500L, "thread.author@test.pl");
         });
 
@@ -280,18 +293,21 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when trying to delete the only post in a thread")
-    void deletePost_WhenOnlyOnePostInThread_ShouldThrowException() {
+    @DisplayName("Should reject deleting the opening post even when replies exist")
+    void deletePost_WhenPostIsOpeningPost_ShouldThrowConflict() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.countByThreadId(100L)).thenReturn(1L);
+        when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(post));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            postService.deletePost(500L, "post.author@test.pl");
-        });
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
+                postService.deletePost(500L, "post.author@test.pl"
+        ));
 
-        assertEquals("Nie można usunąć jedynego wpisu w wątku. Aby to zrobić, usuń cały wątek.", exception.getMessage());
+        assertEquals("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.", exception.getMessage());
+
         verify(postRepository, never()).delete(any());
+        verify(postRepository, never()).findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(anyLong(), anyLong());
+        verify(threadRepository, never()).save(any());
     }
 
     @Test

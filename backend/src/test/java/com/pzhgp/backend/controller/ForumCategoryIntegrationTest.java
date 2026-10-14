@@ -144,10 +144,9 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories - Unauthenticated user gets 403 Forbidden")
-    void getAllCategories_WhenUnauthenticated_ShouldReturn403() throws Exception {
-        mockMvc.perform(get("/api/forum/categories"))
-                .andExpect(status().isForbidden());
+    @DisplayName("GET /categories - Unauthenticated user gets 401 Unauthorized")
+    void getAllCategories_WhenUnauthenticated_ShouldReturn401() throws Exception {
+        mockMvc.perform(get("/api/forum/categories")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -326,8 +325,8 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Should return 403 Forbidden when attempting to delete category that contains threads")
-    void deleteCategory_WhenThreadsExist_ShouldReturn403() throws Exception {
+    @DisplayName("DELETE /categories/{id} - Should return 409 Conflict when attempting to delete category that contains threads")
+    void deleteCategory_WhenThreadsExist_ShouldReturn409() throws Exception {
         ForumThread thread = new ForumThread();
         thread.setCategory(adminCategory);
         thread.setAuthor(admin);
@@ -336,7 +335,7 @@ class ForumCategoryIntegrationTest {
 
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć kategorii, która zawiera wątki."));
 
         assertTrue(categoryRepository.existsById(adminCategory.getId()));

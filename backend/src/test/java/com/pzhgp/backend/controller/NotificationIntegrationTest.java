@@ -106,9 +106,9 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 403 for unauthenticated users")
-    void shouldForbidAccessForUnauthenticatedUsers() throws Exception {
-        mockMvc.perform(get("/api/notifications")).andExpect(status().isForbidden());
+    @DisplayName("Should return 401 for unauthenticated users")
+    void shouldRequireAuthenticationForUnauthenticatedUsers() throws Exception {
+        mockMvc.perform(get("/api/notifications")).andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
@@ -488,7 +489,7 @@ class FlightResultServiceTest {
     void rejectsUploadByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 flightResultService.uploadResult(
                         flight.getId(),
                         textFile("wyniki.txt", "Treść"),
@@ -570,9 +571,7 @@ class FlightResultServiceTest {
         result.setId(500L);
 
         when(flightResultRepository.findById(result.getId())).thenReturn(Optional.of(result));
-
         flightResultService.deleteResult(result.getId(), administrator.getEmail());
-
         verify(flightResultRepository).delete(result);
     }
 
@@ -593,7 +592,7 @@ class FlightResultServiceTest {
     void rejectsDeletingResultByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> flightResultService.deleteResult(500L, moderator.getEmail()));
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> flightResultService.deleteResult(500L, moderator.getEmail()));
         assertEquals("Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.", exception.getMessage());
 
         verify(flightResultRepository, never()).findById(any());

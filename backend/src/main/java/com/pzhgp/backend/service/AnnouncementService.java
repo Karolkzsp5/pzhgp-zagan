@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.AnnouncementRequestDto;
 import com.pzhgp.backend.dto.AnnouncementResponseDto;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
@@ -27,11 +28,10 @@ public class AnnouncementService {
 
     @Transactional
     public void createAnnouncement(AnnouncementRequestDto requestDto, String authorEmail) {
-        Breeder author = breederRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono autora."));
+        Breeder author = breederRepository.findByEmail(authorEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono autora."));
 
         if (author.getRole() == Role.BREEDER) {
-            throw new IllegalStateException("Zwykły hodowca nie może dodawać ogłoszeń.");
+            throw new ForbiddenOperationException("Zwykły hodowca nie może dodawać ogłoszeń.");
         }
 
         Announcement announcement = new Announcement();
@@ -43,31 +43,21 @@ public class AnnouncementService {
         announcementRepository.save(announcement);
 
         List<Breeder> activeBreeders = breederRepository.findByStatus(AccountStatus.ACTIVE);
-        List<Breeder> recipients = activeBreeders.stream()
-                .filter(b -> !b.getId().equals(author.getId()))
-                .collect(Collectors.toList());
+        List<Breeder> recipients = activeBreeders.stream().filter(b -> !b.getId().equals(author.getId())).collect(Collectors.toList());
 
         String authorFullName = author.getName() + " " + author.getSurname();
         String notificationMessage = authorFullName + " dodał/a ogłoszenie na stronie głównej";
 
-        notificationService.createBulkNotifications(
-                recipients,
-                notificationMessage,
-                "/",
-                NotificationType.NEW_ANNOUNCEMENT
-        );
+        notificationService.createBulkNotifications(recipients, notificationMessage, "/", NotificationType.NEW_ANNOUNCEMENT);
     }
 
     @Transactional
     public void updateAnnouncement(Long id, AnnouncementRequestDto requestDto, String userEmail) {
-        Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
+        Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
+        Breeder editor = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono edytującego."));
 
-        Breeder editor = breederRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono edytującego."));
-
-        if (!announcement.getAuthor().getId().equals(editor.getId())) {
-            throw new IllegalStateException("Brak uprawnień. Tylko autor ogłoszenia może je modyfikować.");
+        if (!canEditAnnouncement(announcement, editor)) {
+            throw new ForbiddenOperationException("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.");
         }
 
         announcement.setTitle(requestDto.title());
@@ -79,11 +69,8 @@ public class AnnouncementService {
 
     @Transactional
     public void deleteAnnouncement(Long id, String userEmail) {
-        Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
-
-        Breeder editor = breederRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono usuwającego."));
+        Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
+        Breeder editor = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono usuwającego."));
 
         boolean isAuthor = announcement.getAuthor().getId().equals(editor.getId());
         boolean isAdmin = editor.getRole() == Role.ADMINISTRATOR;
@@ -91,24 +78,18 @@ public class AnnouncementService {
 
         if (!isAuthor) {
             if (!isAdmin) {
-                throw new IllegalStateException("Brak uprawnień do usunięcia tego ogłoszenia.");
+                throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego ogłoszenia.");
             }
             if (isAuthorAdmin) {
-                throw new IllegalStateException("Administrator nie może usuwać ogłoszeń należących do innych administratorów.");
+                throw new ForbiddenOperationException("Administrator nie może usuwać ogłoszeń należących do innych administratorów.");
             }
         }
 
         if (!isAuthor && isAdmin) {
             String adminFullName = editor.getName() + " " + editor.getSurname();
-            String message = String.format("Twoje ogłoszenie \"%s\" zostało usunięte przez administratora %s.",
-                    announcement.getTitle(), adminFullName);
+            String message = String.format("Twoje ogłoszenie \"%s\" zostało usunięte przez administratora %s.", announcement.getTitle(), adminFullName);
 
-            notificationService.createBulkNotifications(
-                    List.of(announcement.getAuthor()),
-                    message,
-                    "/",
-                    NotificationType.ANNOUNCEMENT_DELETED
-            );
+            notificationService.createBulkNotifications(List.of(announcement.getAuthor()), message, "/", NotificationType.ANNOUNCEMENT_DELETED);
         }
 
         announcementRepository.delete(announcement);
@@ -125,12 +106,20 @@ public class AnnouncementService {
         PaginationUtils.validate(page, size, 100);
         Pageable pageable = PageRequest.of(page, size);
 
-        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable)
-                .map(announcement -> mapToDto(announcement, finalCurrentUser));
+        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable).map(announcement -> mapToDto(announcement, finalCurrentUser));
+    }
+
+    private boolean canEditAnnouncement(Announcement announcement, Breeder requester) {
+        if (requester == null) {
+            return false;
+        }
+
+        boolean hasEditorRole = requester.getRole() == Role.ADMINISTRATOR || requester.getRole() == Role.MODERATOR;
+        return hasEditorRole && announcement.getAuthor().getId().equals(requester.getId());
     }
 
     private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {
-        boolean canEdit = false;
+        boolean canEdit = canEditAnnouncement(announcement, currentUser);
         boolean canDelete = false;
 
         if (currentUser != null) {
@@ -139,7 +128,6 @@ public class AnnouncementService {
             boolean isAuthorAdmin = announcement.getAuthor().getRole() == Role.ADMINISTRATOR;
 
             if (isAuthor) {
-                canEdit = true;
                 canDelete = true;
             } else if (isAdmin && !isAuthorAdmin) {
                 canDelete = true;

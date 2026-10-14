@@ -8,6 +8,8 @@ import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -120,6 +122,23 @@ class ForumCategoryServiceTest {
     }
 
     @Test
+    @DisplayName("Should return canEdit=false when category author was downgraded to BREEDER")
+    void getAllCategories_AsDowngradedAuthor_ShouldNotAllowEditing() {
+        category.setAuthor(moderator);
+        moderator.setRole(Role.BREEDER);
+
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        when(categoryRepository.findAllByOrderBySortOrderAscNameAsc()).thenReturn(List.of(category));
+
+        List<ForumCategoryDto> result = categoryService.getAllCategories("moderator@test.pl");
+        assertFalse(result.isEmpty());
+
+        ForumCategoryDto dto = result.getFirst();
+        assertFalse(dto.canEdit());
+        assertFalse(dto.canDelete());
+    }
+
+    @Test
     @DisplayName("Should return mapped flags canEdit=false, canDelete=false for Breeder viewing Admin's category")
     void getAllCategories_AsBreeder_ShouldReturnCorrectFlags() {
         when(breederRepository.findByEmail("breeder@test.pl")).thenReturn(Optional.of(breeder));
@@ -169,7 +188,7 @@ class ForumCategoryServiceTest {
     void createCategory_AsBreeder_ShouldThrowException() {
         when(breederRepository.findByEmail("breeder@test.pl")).thenReturn(Optional.of(breeder));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> {
             categoryService.createCategory(request, "breeder@test.pl");
         });
 
@@ -217,7 +236,7 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when Admin edits another Admin's category")
+    @DisplayName("Should throw ForbiddenOperationException when Admin edits another Admin's category")
     void updateCategory_AdminOnAnotherAdminCategory_ShouldThrowException() {
         Breeder anotherAdmin = new Breeder();
         anotherAdmin.setId(5L);
@@ -227,7 +246,7 @@ class ForumCategoryServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             categoryService.updateCategory(1L, request, "admin@test.pl");
         });
 
@@ -235,15 +254,31 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when Moderator tries to edit Admin's category")
+    @DisplayName("Should throw ForbiddenOperationException when Moderator tries to edit Admin's category")
     void updateCategory_AsModeratorOnAdminCategory_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             categoryService.updateCategory(1L, request, "moderator@test.pl");
         });
 
+        verify(categoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should deny category update when author was downgraded to BREEDER")
+    void updateCategory_AsDowngradedAuthor_ShouldThrowForbiddenOperation() {
+        category.setAuthor(moderator);
+        moderator.setRole(Role.BREEDER);
+
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
+                categoryService.updateCategory(1L, request, "moderator@test.pl"));
+
+        assertEquals("Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.", exception.getMessage());
         verify(categoryRepository, never()).save(any());
     }
 
@@ -276,7 +311,6 @@ class ForumCategoryServiceTest {
         when(threadRepository.existsByCategoryId(1L)).thenReturn(false);
 
         categoryService.deleteCategory(1L, "admin@test.pl");
-
         verify(categoryRepository, times(1)).delete(category);
     }
 
@@ -289,12 +323,11 @@ class ForumCategoryServiceTest {
         when(threadRepository.existsByCategoryId(1L)).thenReturn(false);
 
         categoryService.deleteCategory(1L, "admin@test.pl");
-
         verify(categoryRepository, times(1)).delete(category);
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when Admin deletes another Admin's category")
+    @DisplayName("Should throw ForbiddenOperationException when Admin deletes another Admin's category")
     void deleteCategory_AdminOnAnotherAdminCategory_ShouldThrowException() {
         Breeder anotherAdmin = new Breeder();
         anotherAdmin.setId(5L);
@@ -304,7 +337,7 @@ class ForumCategoryServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             categoryService.deleteCategory(1L, "admin@test.pl");
         });
 
@@ -318,7 +351,7 @@ class ForumCategoryServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertThrows(ForbiddenOperationException.class, () -> {
             categoryService.deleteCategory(1L, "moderator@test.pl");
         });
 
@@ -326,13 +359,13 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when deleting category that contains threads")
+    @DisplayName("Should throw ResourceConflictException when deleting category that contains threads")
     void deleteCategory_WhenThreadsExist_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
         when(threadRepository.existsByCategoryId(1L)).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> {
             categoryService.deleteCategory(1L, "admin@test.pl");
         });
 

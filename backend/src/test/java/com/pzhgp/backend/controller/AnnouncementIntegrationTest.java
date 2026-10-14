@@ -168,6 +168,27 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET /api/announcements - Should return canEdit=false after author is downgraded to BREEDER")
+    void shouldReturnCorrectPermissionsAfterAuthorRoleChange() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Moderatora");
+        announcement.setContent("Treść");
+        announcement.setAuthor(moderator);
+        announcement.setPinned(false);
+        announcementRepository.save(announcement);
+
+        moderator.setRole(Role.BREEDER);
+        breederRepository.save(moderator);
+
+        mockMvc.perform(get("/api/announcements").header("Authorization", "Bearer " + modToken)
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].canEdit").value(false))
+                .andExpect(jsonPath("$.content[0].canDelete").value(true));
+    }
+
+    @Test
     @DisplayName("POST /api/announcements - Should save into real DB when requested by Administrator")
     void shouldCreateAnnouncementAndSaveToDatabase() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Tytuł Integracyjny", "Treść Integracyjna", false);
@@ -243,10 +264,7 @@ class AnnouncementIntegrationTest {
         Long savedId = announcement.getId();
         assertEquals(1, announcementRepository.count());
 
-        mockMvc.perform(delete("/api/announcements/{id}", savedId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/announcements/{id}", savedId).header("Authorization", "Bearer " + adminToken)).andExpect(status().isNoContent());
         assertEquals(0, announcementRepository.count());
     }
 
@@ -305,13 +323,8 @@ class AnnouncementIntegrationTest {
 
         assertEquals(2, notifications.size());
 
-        assertTrue(notifications.stream()
-                .anyMatch(n -> n.getRecipient().getEmail().equals("moderator@test.pl")));
-
-        assertTrue(notifications.stream()
-                .anyMatch(n -> n.getRecipient().getEmail().equals("hodowca@test.pl")));
-
-        assertFalse(notifications.stream()
-                .anyMatch(n -> n.getRecipient().getEmail().equals("admin@test.pl")));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("moderator@test.pl")));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("hodowca@test.pl")));
+        assertFalse(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("admin@test.pl")));
     }
 }

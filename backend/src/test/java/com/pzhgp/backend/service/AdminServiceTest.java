@@ -6,6 +6,8 @@ import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -78,8 +80,7 @@ class AdminServiceTest {
     @DisplayName("Should return only ACTIVE and BLOCKED accounts (Registered)")
     void shouldReturnRegisteredAccounts() {
         Breeder blockedBreeder = createBreeder(4L, "Zly", "Hodowca", AccountStatus.BLOCKED, Role.BREEDER);
-        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)))
-                .thenReturn(List.of(activeBreeder, blockedBreeder));
+        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))).thenReturn(List.of(activeBreeder, blockedBreeder));
 
         List<BreederResponseDto> result = adminService.getAllRegisteredAccounts();
 
@@ -97,21 +98,16 @@ class AdminServiceTest {
 
         assertEquals(AccountStatus.ACTIVE, pendingBreeder.getStatus());
         verify(breederRepository, times(1)).save(pendingBreeder);
-        verify(notificationService, times(1)).createNotification(
-                eq(1L),
-                contains("Prezes Oddzialu"),
-                anyString(),
-                any()
-        );
+        verify(notificationService, times(1)).createNotification(eq(1L), contains("Prezes Oddzialu"), anyString(), any());
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when approving non-PENDING account")
+    @DisplayName("Should throw ResourceConflictException when approving non-PENDING account")
     void shouldThrowExceptionWhenApprovingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.approveAccount(2L, "admin@test.pl"));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> adminService.approveAccount(2L, "admin@test.pl"));
 
         assertEquals("Konto nie ma statusu oczekującego na akceptację.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -123,7 +119,6 @@ class AdminServiceTest {
         when(breederRepository.findById(99L)).thenReturn(Optional.empty());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(99L, "admin@test.pl"));
-
         assertEquals("Nie znaleziono hodowcy o ID: 99", ex.getMessage());
     }
 
@@ -145,11 +140,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when rejecting non-PENDING account")
+    @DisplayName("Should throw ResourceConflictException when rejecting non-PENDING account")
     void shouldThrowExceptionWhenRejectingActiveAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.rejectAccount(2L));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> adminService.rejectAccount(2L));
 
         assertEquals("Można usunąć fizycznie tylko konta o statusie oczekującym.", ex.getMessage());
         verify(breederRepository, never()).delete(any());
@@ -174,22 +169,22 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to block another ADMINISTRATOR")
+    @DisplayName("Should throw ForbiddenOperationException when trying to block another ADMINISTRATOR")
     void shouldPreventBlockingAdministrator() {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.blockAccount(3L));
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.blockAccount(3L));
 
         assertEquals("Odmowa dostępu: Nie możesz zablokować konta innego administratora.", ex.getMessage());
         verify(breederRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to block non-ACTIVE account")
+    @DisplayName("Should throw ResourceConflictException when trying to block non-ACTIVE account")
     void shouldThrowExceptionWhenBlockingNonActiveAccount() {
         when(breederRepository.findById(1L)).thenReturn(Optional.of(pendingBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.blockAccount(1L));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> adminService.blockAccount(1L));
 
         assertEquals("Tylko aktywne konta mogą zostać zablokowane.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -215,11 +210,11 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to unblock non-BLOCKED account")
+    @DisplayName("Should throw ResourceConflictException when trying to unblock non-BLOCKED account")
     void shouldThrowExceptionWhenUnblockingNonBlockedAccount() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.unblockAccount(2L));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> adminService.unblockAccount(2L));
 
         assertEquals("Tylko zablokowane konta mogą zostać odblokowane.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -298,12 +293,12 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when trying to change role of ADMINISTRATOR")
+    @DisplayName("Should throw ForbiddenOperationException when trying to change role of ADMINISTRATOR")
     void shouldPreventChangingAdminRole() {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
 
         assertEquals("Nie możesz zmieniać uprawnień innym administratorom.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -316,7 +311,6 @@ class AdminServiceTest {
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(1L, "unknown@test.pl"));
-
         assertEquals("Nie znaleziono administratora.", ex.getMessage());
     }
 }

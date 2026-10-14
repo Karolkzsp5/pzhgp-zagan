@@ -118,10 +118,10 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(get("/api/flight-results/999/file")).andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/flight-results/999")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/flight-results/999/file")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/flight-results/999")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -148,10 +148,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Administrator can upload results for a selected Section")
     void uploadsSectionResult() throws Exception {
-        Long resultId = uploadResult(
-                textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"),
-                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId())
-        );
+        Long resultId = uploadResult(textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
         FlightResult saved = flightResultRepository.findById(resultId).orElseThrow();
 
@@ -196,9 +193,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Second Branch result for the same flight returns 409 Conflict")
     void rejectsDuplicateBranchResult() throws Exception {
-        uploadResult(textFile("oddzial.txt", "Pierwsza lista"),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null)
-        );
+        uploadResult(textFile("oddzial.txt", "Pierwsza lista"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("oddzial2.txt", "Druga lista"))
@@ -213,9 +208,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Second result for the same Section and flight returns 409 Conflict")
     void rejectsDuplicateSectionResult() throws Exception {
-        uploadResult(textFile("sekcja3.txt", "Pierwsza lista"),
-                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId())
-        );
+        uploadResult(textFile("sekcja3.txt", "Pierwsza lista"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("sekcja3-v2.txt", "Druga lista"))
@@ -272,12 +265,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("File with extension other than TXT returns 400 Bad Request")
     void rejectsNonTxtFile() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "wyniki.pdf",
-                "application/pdf",
-                "Treść".getBytes(StandardCharsets.UTF_8)
-        );
+        MockMultipartFile file = new MockMultipartFile("file", "wyniki.pdf", "application/pdf", "Treść".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(file)
@@ -314,12 +302,7 @@ class FlightResultIntegrationTest {
     void rejectsOversizedFile() throws Exception {
         byte[] oversized = new byte[5 * 1024 * 1024 + 1];
 
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "wyniki.txt",
-                "text/plain",
-                oversized
-        );
+        MockMultipartFile file = new MockMultipartFile("file", "wyniki.txt", "text/plain", oversized);
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(file)
@@ -354,10 +337,7 @@ class FlightResultIntegrationTest {
     void returnsResultFile() throws Exception {
         String originalContent = "PZHGP Żagań\nZażółć gęślą jaźń\n12345";
 
-        Long resultId = uploadResult(
-                textFile("wyniki-dahme.txt", originalContent),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null)
-        );
+        Long resultId = uploadResult(textFile("wyniki-dahme.txt", originalContent), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
         mockMvc.perform(get("/api/flight-results/" + resultId + "/file")
                         .header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
@@ -371,28 +351,18 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Administrator can delete uploaded result")
     void deletesResult() throws Exception {
-        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null)
-        );
+        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
-        mockMvc.perform(delete("/api/flight-results/" + resultId)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
-                .andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
         assertTrue(flightResultRepository.findById(resultId).isEmpty());
     }
 
     @Test
     @DisplayName("Moderator cannot delete uploaded result")
     void rejectsDeletingResultByModerator() throws Exception {
-        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null)
-        );
+        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
-        mockMvc.perform(delete("/api/flight-results/" + resultId)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken)))
-                .andExpect(status().isForbidden());
-
+        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))).andExpect(status().isForbidden());
         assertTrue(flightResultRepository.findById(resultId).isPresent());
     }
 
@@ -428,21 +398,11 @@ class FlightResultIntegrationTest {
     }
 
     private MockMultipartFile textFile(String fileName, String content) {
-        return new MockMultipartFile(
-                "file",
-                fileName,
-                "text/plain",
-                content.getBytes(StandardCharsets.UTF_8)
-        );
+        return new MockMultipartFile("file", fileName, "text/plain", content.getBytes(StandardCharsets.UTF_8));
     }
 
     private MockMultipartFile metadataPart(FlightResultUploadRequest request) throws IOException {
-        return new MockMultipartFile(
-                "metadata",
-                "metadata",
-                MediaType.APPLICATION_JSON_VALUE,
-                objectMapper.writeValueAsBytes(request)
-        );
+        return new MockMultipartFile("metadata", "metadata", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(request));
     }
 
     private Long uploadResult(MockMultipartFile file, FlightResultUploadRequest metadata) throws Exception {

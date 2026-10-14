@@ -2,6 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.*;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
@@ -29,71 +30,36 @@ public class FlightPlanService {
 
     @Transactional(readOnly = true)
     public List<FlightPlanSummaryDto> getAllPlans() {
-        return flightPlanRepository.findAllByOrderByYearDesc()
-                .stream()
-                .map(plan -> new FlightPlanSummaryDto(
-                        plan.getId(),
-                        plan.getYear()
-                ))
-                .toList();
+        return flightPlanRepository.findAllByOrderByYearDesc().stream().map(plan -> new FlightPlanSummaryDto(plan.getId(), plan.getYear())).toList();
     }
 
     @Transactional(readOnly = true)
     public FlightPlanDetailsDto getPlanByYear(Integer year) {
-        FlightPlan plan = flightPlanRepository.findByYear(year)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono planu lotów dla roku " + year + "."
-                ));
+        FlightPlan plan = flightPlanRepository.findByYear(year).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono planu lotów dla roku " + year + "."));
 
         List<FlightPlanEntry> entries = flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId());
 
-        Map<Long, List<FlightResultSummaryDto>> resultsByEntryId =
-                flightResultRepository.findSummariesByFlightPlanId(plan.getId())
-                        .stream()
-                        .collect(Collectors.groupingBy(
-                                FlightResultSummaryProjection::getFlightPlanEntryId,
-                                Collectors.mapping(
-                                        this::mapResultToDto,
-                                        Collectors.toList()
-                                )
-                        ));
+        Map<Long, List<FlightResultSummaryDto>> resultsByEntryId = flightResultRepository.findSummariesByFlightPlanId(plan.getId())
+                .stream()
+                .collect(Collectors.groupingBy(FlightResultSummaryProjection::getFlightPlanEntryId, Collectors.mapping(this::mapResultToDto, Collectors.toList())));
 
         resultsByEntryId.values().forEach(results ->
-                results.sort(
-                        Comparator
-                                .comparingInt((FlightResultSummaryDto result) ->
-                                        result.scope() == FlightResultScope.BRANCH ? 0 : 1
-                                )
-                                .thenComparingInt(result ->
-                                        result.sectionSortOrder() != null
-                                                ? result.sectionSortOrder()
-                                                : 0
-                                )
+                results.sort(Comparator.comparingInt((FlightResultSummaryDto result) -> result.scope() == FlightResultScope.BRANCH ? 0 : 1)
+                        .thenComparingInt(result -> result.sectionSortOrder() != null ? result.sectionSortOrder() : 0)
                 )
         );
 
         List<FlightPlanEntryDto> adultFlights = entries.stream()
                 .filter(entry -> entry.getPigeonAgeGroup() == PigeonAgeGroup.ADULT)
-                .map(entry -> mapEntryToDto(
-                        entry,
-                        resultsByEntryId.getOrDefault(entry.getId(), List.of())
-                ))
+                .map(entry -> mapEntryToDto(entry, resultsByEntryId.getOrDefault(entry.getId(), List.of())))
                 .toList();
 
         List<FlightPlanEntryDto> youngFlights = entries.stream()
                 .filter(entry -> entry.getPigeonAgeGroup() == PigeonAgeGroup.YOUNG)
-                .map(entry -> mapEntryToDto(
-                        entry,
-                        resultsByEntryId.getOrDefault(entry.getId(), List.of())
-                ))
+                .map(entry -> mapEntryToDto(entry, resultsByEntryId.getOrDefault(entry.getId(), List.of())))
                 .toList();
 
-        return new FlightPlanDetailsDto(
-                plan.getId(),
-                plan.getYear(),
-                adultFlights,
-                youngFlights
-        );
+        return new FlightPlanDetailsDto(plan.getId(), plan.getYear(), adultFlights, youngFlights);
     }
 
     @Transactional
@@ -101,9 +67,7 @@ public class FlightPlanService {
         requireAdministrator(userEmail);
 
         if (flightPlanRepository.existsByYear(request.year())) {
-            throw new IllegalArgumentException(
-                    "Plan lotów dla roku " + request.year() + " już istnieje."
-            );
+            throw new IllegalArgumentException("Plan lotów dla roku " + request.year() + " już istnieje.");
         }
 
         FlightPlan plan = new FlightPlan();
@@ -131,10 +95,7 @@ public class FlightPlanService {
     public void updateEntry(Long entryId, FlightPlanEntryRequest request, String userEmail) {
         requireAdministrator(userEmail);
 
-        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono lotu w planie o ID: " + entryId
-                ));
+        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu w planie o ID: " + entryId));
 
         validateEntryRequest(entry.getFlightPlan(), request);
         applyEntryRequest(entry, request);
@@ -146,15 +107,10 @@ public class FlightPlanService {
     public void deleteEntry(Long entryId, String userEmail) {
         requireAdministrator(userEmail);
 
-        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono lotu w planie o ID: " + entryId
-                ));
+        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu w planie o ID: " + entryId));
 
         if (flightResultRepository.existsByFlightPlanEntryId(entryId)) {
-            throw new ResourceConflictException(
-                    "Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu."
-            );
+            throw new ResourceConflictException("Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu.");
         }
 
         flightPlanEntryRepository.delete(entry);
@@ -167,45 +123,29 @@ public class FlightPlanService {
         FlightPlan plan = requirePlanByYear(year);
 
         if (flightPlanEntryRepository.existsByFlightPlanId(plan.getId())) {
-            throw new ResourceConflictException(
-                    "Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu."
-            );
+            throw new ResourceConflictException("Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.");
         }
 
         flightPlanRepository.delete(plan);
     }
 
     private FlightPlan requirePlanByYear(Integer year) {
-        return flightPlanRepository.findByYear(year)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Nie znaleziono planu lotów dla roku " + year + "."
-                ));
+        return flightPlanRepository.findByYear(year).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono planu lotów dla roku " + year + "."));
     }
 
     private Breeder requireAdministrator(String userEmail) {
-        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Nie znaleziono użytkownika."
-                        )
-                );
+        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (user.getRole() != Role.ADMINISTRATOR) {
-            throw new IllegalStateException(
-                    "Brak uprawnień. Planami lotów może zarządzać wyłącznie administrator."
-            );
+            throw new ForbiddenOperationException("Brak uprawnień. Planami lotów może zarządzać wyłącznie administrator.");
         }
 
         return user;
     }
 
-    private void validateEntryRequest(
-            FlightPlan plan,
-            FlightPlanEntryRequest request
-    ) {
+    private void validateEntryRequest(FlightPlan plan, FlightPlanEntryRequest request) {
         if (request.scheduledDate().getYear() != plan.getYear()) {
-            throw new IllegalArgumentException(
-                    "Data lotu musi należeć do roku planu: " + plan.getYear() + "."
-            );
+            throw new IllegalArgumentException("Data lotu musi należeć do roku planu: " + plan.getYear() + ".");
         }
     }
 
@@ -218,10 +158,7 @@ public class FlightPlanService {
         entry.setListType(request.listType().trim());
     }
 
-    private FlightPlanEntryDto mapEntryToDto(
-            FlightPlanEntry entry,
-            List<FlightResultSummaryDto> results
-    ) {
+    private FlightPlanEntryDto mapEntryToDto(FlightPlanEntry entry, List<FlightResultSummaryDto> results) {
         return new FlightPlanEntryDto(
                 entry.getId(),
                 entry.getPigeonAgeGroup(),
@@ -234,9 +171,7 @@ public class FlightPlanService {
         );
     }
 
-    private FlightResultSummaryDto mapResultToDto(
-            FlightResultSummaryProjection result
-    ) {
+    private FlightResultSummaryDto mapResultToDto(FlightResultSummaryProjection result) {
         return new FlightResultSummaryDto(
                 result.getId(),
                 result.getScope(),
