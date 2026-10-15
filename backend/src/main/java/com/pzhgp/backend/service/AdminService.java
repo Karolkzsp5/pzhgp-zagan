@@ -5,6 +5,8 @@ import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.NotificationType;
 import com.pzhgp.backend.entity.Role;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -23,30 +25,21 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getPendingAccounts() {
-        return breederRepository.findByStatus(AccountStatus.PENDING)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getAllRegisteredAccounts() {
-        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional
     public void approveAccount(Long id, String adminEmail) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-
-        Breeder admin = breederRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
-            throw new IllegalStateException("Konto nie ma statusu oczekującego na akceptację.");
+            throw new ResourceConflictException("Konto nie ma statusu oczekującego na akceptację.");
         }
 
         breeder.setStatus(AccountStatus.ACTIVE);
@@ -63,11 +56,10 @@ public class AdminService {
 
     @Transactional
     public void rejectAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
-            throw new IllegalStateException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
+            throw new ResourceConflictException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
         }
 
         breederRepository.delete(breeder);
@@ -75,15 +67,14 @@ public class AdminService {
 
     @Transactional
     public void blockAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
-            throw new IllegalStateException("Odmowa dostępu: Nie możesz zablokować konta innego administratora.");
+            throw new ForbiddenOperationException("Odmowa dostępu: Nie możesz zablokować konta innego administratora.");
         }
 
         if (breeder.getStatus() != AccountStatus.ACTIVE) {
-            throw new IllegalStateException("Tylko aktywne konta mogą zostać zablokowane.");
+            throw new ResourceConflictException("Tylko aktywne konta mogą zostać zablokowane.");
         }
 
         breeder.setStatus(AccountStatus.BLOCKED);
@@ -92,11 +83,10 @@ public class AdminService {
 
     @Transactional
     public void unblockAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.BLOCKED) {
-            throw new IllegalStateException("Tylko zablokowane konta mogą zostać odblokowane.");
+            throw new ResourceConflictException("Tylko zablokowane konta mogą zostać odblokowane.");
         }
 
         breeder.setStatus(AccountStatus.ACTIVE);
@@ -105,14 +95,11 @@ public class AdminService {
 
     @Transactional
     public void changeRole(Long id, String newRoleStr, String adminEmail) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-
-        Breeder admin = breederRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
-            throw new IllegalStateException("Nie możesz zmieniać uprawnień innym administratorom.");
+            throw new ForbiddenOperationException("Nie możesz zmieniać uprawnień innym administratorom.");
         }
 
         if (newRoleStr == null) {

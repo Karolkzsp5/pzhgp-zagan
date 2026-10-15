@@ -15,6 +15,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,8 +70,7 @@ class NotificationServiceTest {
     void shouldCreateNotification() {
         when(breederRepository.findById(1L)).thenReturn(Optional.of(testBreeder));
 
-        assertDoesNotThrow(() -> notificationService.createNotification(
-                1L, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
+        assertDoesNotThrow(() -> notificationService.createNotification(1L, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository, times(1)).save(captor.capture());
@@ -105,26 +109,77 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Should not call saveAll when recipient list is null")
     void shouldNotSaveBulkWhenListIsNull() {
-        assertDoesNotThrow(() -> notificationService.createBulkNotifications(
-                null, "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
+        assertDoesNotThrow(() -> notificationService.createBulkNotifications(null, "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
 
         verify(notificationRepository, never()).saveAll(any());
     }
 
     @Test
-    @DisplayName("Should return user notifications mapped to DTOs")
+    @DisplayName("Should return requested page of user notifications mapped to DTOs")
     void shouldGetUserNotifications() {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
-        when(notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(1L))
-                .thenReturn(List.of(testNotification));
+        Page<Notification> notificationPage = new PageImpl<>(List.of(testNotification), PageRequest.of(0, 50), 1);
+        when(notificationRepository.findByRecipientId(eq(1L), any(Pageable.class))).thenReturn(notificationPage);
+        Page<NotificationDto> result = notificationService.getUserNotifications("test@test.pl", 0, 50);
 
-        List<NotificationDto> result = notificationService.getUserNotifications("test@test.pl");
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
 
-        assertEquals(1, result.size());
-        assertEquals(100L, result.getFirst().id());
-        assertEquals("Testowa wiadomość", result.getFirst().message());
-        assertFalse(result.getFirst().isRead());
-        assertEquals("ACCOUNT_APPROVED", result.getFirst().type());
+        NotificationDto dto = result.getContent().getFirst();
+
+        assertEquals(100L, dto.id());
+        assertEquals("Testowa wiadomość", dto.message());
+        assertFalse(dto.isRead());
+        assertEquals("ACCOUNT_APPROVED", dto.type());
+    }
+
+    @Test
+    @DisplayName("Should request notifications with stable descending order")
+    void shouldUseCorrectNotificationPaginationAndSorting() {
+        when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
+        when(notificationRepository.findByRecipientId(eq(1L), any(Pageable.class))).thenReturn(Page.empty());
+        notificationService.getUserNotifications("test@test.pl", 2, 50);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(notificationRepository).findByRecipientId(eq(1L), captor.capture());
+
+        Pageable pageable = captor.getValue();
+        assertEquals(2, pageable.getPageNumber());
+        assertEquals(50, pageable.getPageSize());
+
+        Sort.Order createdAtOrder = pageable.getSort().getOrderFor("createdAt");
+        Sort.Order idOrder = pageable.getSort().getOrderFor("id");
+
+        assertNotNull(createdAtOrder);
+        assertNotNull(idOrder);
+
+        assertEquals(Sort.Direction.DESC, createdAtOrder.getDirection());
+        assertEquals(Sort.Direction.DESC, idOrder.getDirection()
+        );
+    }
+
+    @Test
+    @DisplayName("Should request at most 50 notifications ordered by createdAt and id descending")
+    void shouldLimitAndSortUserNotifications() {
+        when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
+        when(notificationRepository.findByRecipientId(eq(1L), any(Pageable.class))).thenReturn(Page.empty());
+
+        notificationService.getUserNotifications("test@test.pl", 0, 50);
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(notificationRepository).findByRecipientId(eq(1L), pageableCaptor.capture());
+
+        Pageable pageable = pageableCaptor.getValue();
+        assertEquals(0, pageable.getPageNumber());
+        assertEquals(50, pageable.getPageSize());
+
+        Sort.Order createdAtOrder = pageable.getSort().getOrderFor("createdAt");
+        Sort.Order idOrder = pageable.getSort().getOrderFor("id");
+
+        assertNotNull(createdAtOrder);
+        assertNotNull(idOrder);
+
+        assertEquals(Sort.Direction.DESC, createdAtOrder.getDirection());
+        assertEquals(Sort.Direction.DESC, idOrder.getDirection());
     }
 
     @Test
@@ -144,9 +199,7 @@ class NotificationServiceTest {
     void shouldThrowExceptionWhenGettingUnreadCountForUnknownUser() {
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.getUnreadCount("unknown@test.pl"));
-
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.getUnreadCount("unknown@test.pl"));
         assertEquals("Nie znaleziono użytkownika: unknown@test.pl", ex.getMessage());
     }
 
@@ -193,7 +246,6 @@ class NotificationServiceTest {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
 
         assertDoesNotThrow(() -> notificationService.markAllAsRead("test@test.pl"));
-
         verify(notificationRepository, times(1)).markAllAsReadByRecipientId(1L);
     }
 
@@ -202,8 +254,7 @@ class NotificationServiceTest {
     void shouldThrowExceptionWhenMarkingAllAsReadForUnknownUser() {
         when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.markAllAsRead("ghost@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.markAllAsRead("ghost@test.pl"));
 
         assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
         verify(notificationRepository, never()).markAllAsReadByRecipientId(anyLong());

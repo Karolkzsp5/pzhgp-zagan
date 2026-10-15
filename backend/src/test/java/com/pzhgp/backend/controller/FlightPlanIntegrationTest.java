@@ -88,13 +88,12 @@ class FlightPlanIntegrationTest {
     @Test
     @DisplayName("Unauthenticated user cannot access flight plans")
     void requiresAuthentication() throws Exception {
-        mockMvc.perform(get("/api/flight-plans"))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/flight-plans")).andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/flight-plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -233,11 +232,7 @@ class FlightPlanIntegrationTest {
     void rejectsFlightCreationByModerator() throws Exception {
         FlightPlan plan = createPlan(2026);
 
-        FlightPlanEntryRequest request = request(
-                PigeonAgeGroup.ADULT,
-                LocalDate.of(2026, 4, 26),
-                "Dahme"
-        );
+        FlightPlanEntryRequest request = request(PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))
@@ -245,9 +240,7 @@ class FlightPlanIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
-        assertTrue(flightPlanEntryRepository
-                .findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId())
-                .isEmpty());
+        assertTrue(flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId()).isEmpty());
     }
 
     @Test
@@ -255,11 +248,7 @@ class FlightPlanIntegrationTest {
     void rejectsFlightFromDifferentYear() throws Exception {
         createPlan(2026);
 
-        FlightPlanEntryRequest request = request(
-                PigeonAgeGroup.ADULT,
-                LocalDate.of(2025, 12, 31),
-                "Dahme"
-        );
+        FlightPlanEntryRequest request = request(PigeonAgeGroup.ADULT, LocalDate.of(2025, 12, 31), "Dahme");
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
@@ -318,12 +307,7 @@ class FlightPlanIntegrationTest {
     @DisplayName("Administrator can update an existing flight")
     void updatesFlight() throws Exception {
         FlightPlan plan = createPlan(2026);
-        FlightPlanEntry entry = createFlight(
-                plan,
-                PigeonAgeGroup.ADULT,
-                LocalDate.of(2026, 4, 26),
-                "Dahme"
-        );
+        FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
         FlightPlanEntryRequest request = new FlightPlanEntryRequest(
                 PigeonAgeGroup.YOUNG,
@@ -354,16 +338,9 @@ class FlightPlanIntegrationTest {
     @DisplayName("Administrator can delete a flight without results")
     void deletesFlightWithoutResults() throws Exception {
         FlightPlan plan = createPlan(2026);
-        FlightPlanEntry entry = createFlight(
-                plan,
-                PigeonAgeGroup.ADULT,
-                LocalDate.of(2026, 4, 26),
-                "Dahme"
-        );
+        FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
-        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
-                .andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
         assertFalse(flightPlanEntryRepository.existsById(entry.getId()));
     }
 
@@ -371,12 +348,7 @@ class FlightPlanIntegrationTest {
     @DisplayName("Flight containing results cannot be deleted and returns 409 Conflict")
     void rejectsDeletingFlightWithResults() throws Exception {
         FlightPlan plan = createPlan(2026);
-        FlightPlanEntry entry = createFlight(
-                plan,
-                PigeonAgeGroup.ADULT,
-                LocalDate.of(2026, 4, 26),
-                "Dahme"
-        );
+        FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
         FlightResult result = new FlightResult();
         result.setFlightPlanEntry(entry);
@@ -442,12 +414,7 @@ class FlightPlanIntegrationTest {
         return flightPlanRepository.save(plan);
     }
 
-    private FlightPlanEntry createFlight(
-            FlightPlan plan,
-            PigeonAgeGroup ageGroup,
-            LocalDate date,
-            String location
-    ) {
+    private FlightPlanEntry createFlight(FlightPlan plan, PigeonAgeGroup ageGroup, LocalDate date, String location) {
         FlightPlanEntry entry = new FlightPlanEntry();
         entry.setFlightPlan(plan);
         entry.setPigeonAgeGroup(ageGroup);

@@ -6,7 +6,6 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 
 public record FlightPlanEntryRequest(
-
         @NotNull(message = "Grupa wiekowa gołębi jest wymagana.")
         PigeonAgeGroup pigeonAgeGroup,
 
@@ -28,6 +27,4 @@ public record FlightPlanEntryRequest(
         @NotBlank(message = "Rodzaj listy jest wymagany.")
         @Size(max = 100, message = "Rodzaj listy może mieć maksymalnie 100 znaków.")
         String listType
-
-) {
-}
+) {}

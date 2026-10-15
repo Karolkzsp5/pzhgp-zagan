@@ -8,6 +8,7 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -307,7 +308,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when Admin tries to delete another Admin's thread")
+    @DisplayName("Should throw ForbiddenOperationException when Admin tries to delete another Admin's thread")
     void deleteThread_WhenRequesterIsAdminOnAnotherAdminThread_ShouldThrowException() {
         Breeder anotherAdmin = new Breeder();
         anotherAdmin.setId(99L);
@@ -317,7 +318,7 @@ class ForumThreadServiceTest {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> {
             threadService.deleteThread(100L, "admin@test.com");
         });
 
@@ -327,7 +328,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalStateException when Moderator tries to delete another Moderator's thread")
+    @DisplayName("Should throw ForbiddenOperationException when Moderator tries to delete another Moderator's thread")
     void deleteThread_WhenRequesterIsModeratorOnAnotherModeratorThread_ShouldThrowException() {
         Breeder anotherModerator = new Breeder();
         anotherModerator.setId(99L);
@@ -337,7 +338,7 @@ class ForumThreadServiceTest {
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> {
             threadService.deleteThread(100L, "moderator@test.com");
         });
 

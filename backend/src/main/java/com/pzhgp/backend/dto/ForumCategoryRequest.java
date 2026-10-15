@@ -10,6 +10,7 @@ public record ForumCategoryRequest(
         @Size(min = 3, max = 100, message = "Nazwa kategorii musi mieć od 3 do 100 znaków.")
         String name,
 
+        @Size(max = 2000, message = "Opis kategorii może mieć maksymalnie 2000 znaków.")
         String description,
 
         @NotNull(message = "Kolejność wyświetlania jest wymagana.")

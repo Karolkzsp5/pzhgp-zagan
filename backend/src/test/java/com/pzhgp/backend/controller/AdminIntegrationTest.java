@@ -92,46 +92,33 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 403 when unauthenticated user tries to access admin endpoints")
+    @DisplayName("Should return 401 when unauthenticated user tries to access admin endpoints")
     void shouldDenyAccessForUnauthenticatedUser() throws Exception {
-        mockMvc.perform(get("/api/admin/pending"))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/pending")).andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("Should return 403 Forbidden when BREEDER tries to access admin endpoints")
     void shouldDenyAccessForBreeder() throws Exception {
-        mockMvc.perform(get("/api/admin/pending")
-                        .header(HttpHeaders.AUTHORIZATION, breederToken))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, breederToken))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("Should return 403 Forbidden when MODERATOR tries to access admin endpoints")
     void shouldDenyAccessForModerator() throws Exception {
-        mockMvc.perform(get("/api/admin/registered")
-                        .header(HttpHeaders.AUTHORIZATION, moderatorToken))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, moderatorToken))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/registered").header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("Should return 200 OK and correct JSON content when ADMINISTRATOR accesses GET endpoints")
     void shouldAllowAccessForAdministratorGetEndpoints() throws Exception {
-        mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk())
+        mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].email").value("pending@test.pl"));
 
-        mockMvc.perform(get("/api/admin/registered").header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk())
+        mockMvc.perform(get("/api/admin/registered").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
     }
 
@@ -140,18 +127,14 @@ class AdminIntegrationTest {
     void shouldApproveAccount() throws Exception {
         long initialNotificationCount = notificationRepository.count();
 
-        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
 
         Breeder updated = breederRepository.findById(pendingBreeder.getId()).get();
         assertEquals(AccountStatus.ACTIVE, updated.getStatus());
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification approvalNotification = notifications.stream()
-                .filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED)
-                .findFirst().orElseThrow();
+        Notification approvalNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED).findFirst().orElseThrow();
 
         assertEquals(pendingBreeder.getId(), approvalNotification.getRecipient().getId());
     }
@@ -159,19 +142,14 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should allow ADMINISTRATOR to reject account and remove from real DB")
     void shouldRejectAccount() throws Exception {
-        mockMvc.perform(delete("/api/admin/reject/" + pendingBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk());
-
+        mockMvc.perform(delete("/api/admin/reject/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
         assertTrue(breederRepository.findById(pendingBreeder.getId()).isEmpty());
     }
 
     @Test
     @DisplayName("Should allow ADMINISTRATOR to block account in real DB")
     void shouldBlockAccount() throws Exception {
-        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
 
         Breeder updated = breederRepository.findById(activeBreeder.getId()).get();
         assertEquals(AccountStatus.BLOCKED, updated.getStatus());
@@ -180,9 +158,7 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should allow ADMINISTRATOR to unblock account in real DB")
     void shouldUnblockAccount() throws Exception {
-        mockMvc.perform(put("/api/admin/unblock/" + blockedBreeder.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/unblock/" + blockedBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
 
         Breeder updated = breederRepository.findById(blockedBreeder.getId()).get();
         assertEquals(AccountStatus.ACTIVE, updated.getStatus());
@@ -205,9 +181,7 @@ class AdminIntegrationTest {
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification roleChangeNotification = notifications.stream()
-                .filter(n -> n.getType() == NotificationType.ROLE_CHANGED)
-                .findFirst().orElseThrow();
+        Notification roleChangeNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ROLE_CHANGED).findFirst().orElseThrow();
 
         assertEquals(activeBreeder.getId(), roleChangeNotification.getRecipient().getId());
     }
@@ -268,9 +242,7 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should return 400 Bad Request when ID parameter in URL is not a number")
     void shouldReturnBadRequestWhenIdIsInvalidType() throws Exception {
-        mockMvc.perform(put("/api/admin/approve/abc")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/admin/approve/abc").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isBadRequest());
     }
 
     @Test

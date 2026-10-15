@@ -76,8 +76,7 @@ class PigeonFlightIntegrationTest {
         adminToken = jwtService.generateToken(admin);
     }
 
-    private Breeder breeder(Section section, String email, String name, String surname,
-                            String phone, Role role) {
+    private Breeder breeder(Section section, String email, String name, String surname, String phone, Role role) {
         Breeder breeder = new Breeder();
         breeder.setEmail(email);
         breeder.setName(name);
@@ -98,8 +97,7 @@ class PigeonFlightIntegrationTest {
     }
 
     private MockMultipartFile metadataPart(FlightUploadRequest request) throws IOException {
-        return new MockMultipartFile("metadata", "metadata", MediaType.APPLICATION_JSON_VALUE,
-                objectMapper.writeValueAsBytes(request));
+        return new MockMultipartFile("metadata", "metadata", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(request));
     }
 
     private Long uploadRealFlight() throws Exception {
@@ -115,12 +113,8 @@ class PigeonFlightIntegrationTest {
     @Test
     @DisplayName("Unauthenticated user cannot upload a file or view flights")
     void requiresAuthentication() throws Exception {
-        mockMvc.perform(multipart("/api/flights")
-                        .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx")))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(get("/api/flights"))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(multipart("/api/flights").file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/flights")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -146,14 +140,10 @@ class PigeonFlightIntegrationTest {
                 .andExpect(jsonPath("$.ownerName").value("Jan Kowalski"))
                 .andExpect(jsonPath("$.statistics.totalPoints").value(1230))
                 .andExpect(jsonPath("$.statistics.timestampsAvailable").value(true))
-                .andExpect(jsonPath("$.statistics.straightLineDistanceKm").value(
-                        org.hamcrest.Matchers.closeTo(184.4, 1.5)))
-                .andExpect(jsonPath("$.statistics.trackDistanceKm").value(
-                        org.hamcrest.Matchers.closeTo(195.3, 1.5)))
-                .andExpect(jsonPath("$.statistics.averageSpeedMetersPerMinute").value(
-                        org.hamcrest.Matchers.closeTo(638.0, 20.0)))
-                .andExpect(jsonPath("$.statistics.maxSpeedMetersPerMinute").value(
-                        org.hamcrest.Matchers.closeTo(1754.0, 60.0)));
+                .andExpect(jsonPath("$.statistics.straightLineDistanceKm").value(org.hamcrest.Matchers.closeTo(184.4, 1.5)))
+                .andExpect(jsonPath("$.statistics.trackDistanceKm").value(org.hamcrest.Matchers.closeTo(195.3, 1.5)))
+                .andExpect(jsonPath("$.statistics.averageSpeedMetersPerMinute").value(org.hamcrest.Matchers.closeTo(638.0, 20.0)))
+                .andExpect(jsonPath("$.statistics.maxSpeedMetersPerMinute").value(org.hamcrest.Matchers.closeTo(1754.0, 60.0)));
     }
 
     @Test
@@ -173,13 +163,10 @@ class PigeonFlightIntegrationTest {
                 .andExpect(jsonPath("$.returnedPoints").value(1230))
                 .andReturn();
 
-        int simplifiedPoints = objectMapper.readTree(simplified.getResponse().getContentAsString())
-                .get("returnedPoints").asInt();
-        int fullPoints = objectMapper.readTree(full.getResponse().getContentAsString())
-                .get("returnedPoints").asInt();
+        int simplifiedPoints = objectMapper.readTree(simplified.getResponse().getContentAsString()).get("returnedPoints").asInt();
+        int fullPoints = objectMapper.readTree(full.getResponse().getContentAsString()).get("returnedPoints").asInt();
 
-        assertTrue(simplifiedPoints < fullPoints,
-                "Uproszczona trasa powinna zawierać mniej punktów niż pełna");
+        assertTrue(simplifiedPoints < fullPoints, "Uproszczona trasa powinna zawierać mniej punktów niż pełna");
     }
 
     @Test
@@ -256,8 +243,7 @@ class PigeonFlightIntegrationTest {
     void enforcesFlightVisibility() throws Exception {
         Long flightId = uploadRealFlight();
 
-        mockMvc.perform(get("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/flights/" + flightId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
@@ -269,11 +255,8 @@ class PigeonFlightIntegrationTest {
     void deletesFlightWithTrackPoints() throws Exception {
         Long flightId = uploadRealFlight();
 
-        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNoContent());
 
         assertTrue(flightRepository.findById(flightId).isEmpty());
         assertTrue(trackPointRepository.findByFlightIdOrderByPointIndexAsc(flightId).isEmpty());
@@ -282,7 +265,6 @@ class PigeonFlightIntegrationTest {
     @Test
     @DisplayName("Non-existent flight returns 404 Not Found")
     void returnsNotFoundForMissingFlight() throws Exception {
-        mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNotFound());
     }
 }

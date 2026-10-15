@@ -25,6 +25,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
     @Value("${cors.allowed-origins:http://localhost:3000}")
     private String[] allowedOrigins;
@@ -40,6 +42,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
@@ -50,8 +53,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/forum/categories/**").hasAuthority(Role.ADMINISTRATOR.name())
 
-                        // Zgłoszenie odnalezienia gołębia wysyła osoba postronna, bez konta.
-                        // Publiczny jest wyłącznie zapis — odczyt zgłoszeń obsługuje /api/admin/**.
                         .requestMatchers(HttpMethod.POST, "/api/found-pigeons").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/board").permitAll()

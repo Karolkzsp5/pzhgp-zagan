@@ -21,5 +21,4 @@ public record BreederResponseDto(
         AccountStatus status,
         String role,
         LocalDateTime createdAt
-) {
-}
+) {}

@@ -17,5 +17,4 @@ public record FlightUploadRequest(
 
         @Size(max = 150, message = "Nazwa miejsca wypuszczenia może mieć maksymalnie 150 znaków.")
         String releaseSite
-) {
-}
+) {}

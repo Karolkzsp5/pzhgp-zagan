@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
 
@@ -20,5 +22,6 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
     @EntityGraph(attributePaths = {"author"})
     Page<ForumPost> findByThreadId(Long threadId, Pageable pageable);
 
-    long countByThreadId(Long threadId);
+    Optional<ForumPost> findFirstByThreadIdOrderByCreatedAtAscIdAsc(Long threadId);
+    Optional<ForumPost> findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(Long threadId, Long excludedPostId);
 }

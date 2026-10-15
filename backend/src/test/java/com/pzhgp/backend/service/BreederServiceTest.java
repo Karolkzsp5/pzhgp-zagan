@@ -5,6 +5,8 @@ import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Section;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -62,39 +65,47 @@ class BreederServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw an exception if the email address already exists in the database")
+    @DisplayName("Should throw ResourceConflictException if the email address already exists")
     void shouldThrowExceptionWhenEmailAlreadyExists() {
-        when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(true);
+        when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(true);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> breederService.registerNewBreeder(validRegistrationRequest));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
 
         assertEquals("Użytkownik z podanym adresem e-mail już istnieje.", ex.getMessage());
-        verify(breederRepository, never()).save(any(Breeder.class));
+        verify(breederRepository, never()).saveAndFlush(any(Breeder.class));
     }
 
     @Test
-    @DisplayName("Should throw an exception if the phone number already exists in the database")
+    @DisplayName("Should normalize email address during registration")
+    void shouldNormalizeEmailDuringRegistration() {
+        RegistrationRequest request = new RegistrationRequest(
+                "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
+                "Testowa", "15b", 1, "  TestCypress@TEST.COM  ", "444444444", "Testcypress1@"
+        );
+
+        assertEquals("testcypress@test.com", request.email());
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceConflictException if the phone number already exists")
     void shouldThrowExceptionWhenPhoneNumberAlreadyExists() {
-        when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
+        when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(true);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> breederService.registerNewBreeder(validRegistrationRequest));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
 
         assertEquals("Użytkownik z podanym numerem telefonu już istnieje.", ex.getMessage());
-        verify(breederRepository, never()).save(any(Breeder.class));
+        verify(breederRepository, never()).saveAndFlush(any(Breeder.class));
     }
 
     @Test
     @DisplayName("Should throw EntityNotFoundException when section does not exist")
     void shouldThrowExceptionWhenSectionDoesNotExist() {
-        when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
+        when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
         when(sectionRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> breederService.registerNewBreeder(validRegistrationRequest));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
 
         assertEquals("Nie znaleziono sekcji o podanym ID: 1", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -104,7 +115,7 @@ class BreederServiceTest {
     @DisplayName("Should successfully register a new breeder and explicitly map necessary fields")
     void shouldRegisterNewBreederSuccessfully() {
         Section section = new Section(1L, "Żagań", 1);
-        when(breederRepository.existsByEmail(validRegistrationRequest.email())).thenReturn(false);
+        when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
         when(passwordEncoder.encode(validRegistrationRequest.password())).thenReturn("hashedPassword123");
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
@@ -112,7 +123,7 @@ class BreederServiceTest {
         assertDoesNotThrow(() -> breederService.registerNewBreeder(validRegistrationRequest));
 
         ArgumentCaptor<Breeder> captor = ArgumentCaptor.forClass(Breeder.class);
-        verify(breederRepository, times(1)).save(captor.capture());
+        verify(breederRepository, times(1)).saveAndFlush(captor.capture());
 
         Breeder saved = captor.getValue();
         assertEquals("Tomasz", saved.getName());
@@ -127,11 +138,9 @@ class BreederServiceTest {
     void shouldThrowExceptionWhenLoginEmailDoesNotExist() {
         LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@");
 
-        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.empty());
+        when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.empty());
 
-        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
-                () -> breederService.login(loginRequest));
-
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> breederService.login(loginRequest));
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());
     }
 
@@ -140,12 +149,10 @@ class BreederServiceTest {
     void shouldThrowExceptionWhenLoginPasswordIsIncorrect() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123");
 
-        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(false);
 
-        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
-                () -> breederService.login(loginRequest));
-
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> breederService.login(loginRequest));
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());
     }
 
@@ -155,12 +162,10 @@ class BreederServiceTest {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
         activeBreeder.setStatus(AccountStatus.PENDING);
 
-        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> breederService.login(loginRequest));
-
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> breederService.login(loginRequest));
         assertEquals("Twoje konto oczekuje jeszcze na akceptację administratora.", ex.getMessage());
     }
 
@@ -170,13 +175,18 @@ class BreederServiceTest {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
         activeBreeder.setStatus(AccountStatus.BLOCKED);
 
-        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> breederService.login(loginRequest));
-
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> breederService.login(loginRequest));
         assertEquals("Twoje konto zostało zablokowane.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should normalize email address during login")
+    void shouldNormalizeEmailDuringLogin() {
+        LoginRequest request = new LoginRequest("  TestCypress@TEST.COM  ", "Testcypress1@");
+        assertEquals("testcypress@test.com", request.email());
     }
 
     @Test
@@ -184,12 +194,26 @@ class BreederServiceTest {
     void shouldLoginSuccessfullyAndReturnToken() {
         LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
 
-        when(breederRepository.findByEmail(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
         when(jwtService.generateToken(activeBreeder)).thenReturn("mocked-jwt-token");
 
         String token = breederService.login(loginRequest);
-
         assertEquals("mocked-jwt-token", token);
+    }
+
+    @Test
+    @DisplayName("Should convert database uniqueness violation to ResourceConflictException")
+    void shouldConvertDatabaseUniquenessViolationToConflict() {
+        Section section = new Section(1L, "Żagań", 1);
+
+        when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(false);
+        when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(false);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(passwordEncoder.encode(validRegistrationRequest.password())).thenReturn("hashedPassword123");
+        when(breederRepository.saveAndFlush(any(Breeder.class))).thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
+        assertEquals("Użytkownik z podanym adresem e-mail lub numerem telefonu już istnieje.", ex.getMessage());
     }
 }

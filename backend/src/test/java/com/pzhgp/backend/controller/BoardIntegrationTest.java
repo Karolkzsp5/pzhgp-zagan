@@ -3,6 +3,7 @@ package com.pzhgp.backend.controller;
 import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BoardMemberRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.SectionRepository;
@@ -101,10 +102,7 @@ class BoardIntegrationTest {
     void shouldDenyAccessToCreateBoardMemberForAnonymousUser() throws Exception {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, breederZagan.getId(), null, null, null);
 
-        mockMvc.perform(post("/api/board")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/board").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -123,9 +121,7 @@ class BoardIntegrationTest {
     @Test
     @DisplayName("POST /api/board - Should create PREZES in Section successfully (201 Created)")
     void shouldCreateSectionPrezesSuccessfully() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, sectionZagan.getId(), breederZagan.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
@@ -138,39 +134,35 @@ class BoardIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/board - Should reject assigning WICEPREZES to Section")
+    @DisplayName("POST /api/board - Should return 400 when assigning WICEPREZES to Section")
     void shouldRejectVicePresidentInSection() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.WICEPREZES_DS_LOTOWYCH, sectionZagan.getId(), breederZagan.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_LOTOWYCH, sectionZagan.getId(), breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(result -> assertInstanceOf(IllegalStateException.class, result.getResolvedException()));
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(IllegalArgumentException.class, result.getResolvedException()));
 
         assertEquals(0, boardMemberRepository.count());
     }
 
     @Test
-    @DisplayName("POST /api/board - Should reject assigning SKARBNIK to Branch (Oddział)")
+    @DisplayName("POST /api/board - Should return 400 when assigning SKARBNIK to Branch (Oddział)")
     void shouldRejectTreasurerInBranch() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SKARBNIK, null, breederZagan.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.SKARBNIK, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(result -> assertInstanceOf(IllegalStateException.class, result.getResolvedException()));
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(IllegalArgumentException.class, result.getResolvedException()));
     }
 
     @Test
-    @DisplayName("POST /api/board - Should reject assigning a second PREZES to the same board")
+    @DisplayName("POST /api/board - Should return 409 when assigning a second PREZES to the same board")
     void shouldRejectSecondPrezesInSameBoard() throws Exception {
         BoardMember firstPrezes = new BoardMember();
         firstPrezes.setRole(BoardRole.PREZES);
@@ -178,20 +170,18 @@ class BoardIntegrationTest {
         firstPrezes.setBreeder(breederZagan);
         boardMemberRepository.save(firstPrezes);
 
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, sectionZagan.getId(), breederZagan2.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederZagan2.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(result -> assertInstanceOf(IllegalStateException.class, result.getResolvedException()));
+                .andExpect(status().isConflict())
+                .andExpect(result -> assertInstanceOf(ResourceConflictException.class, result.getResolvedException()));
     }
 
     @Test
-    @DisplayName("POST /api/board - Should reject assigning the same role to the same breeder in the same board")
+    @DisplayName("POST /api/board - Should return 409 when assigning the same role to the same breeder in the same board")
     void shouldRejectDuplicateRoleForSameBreeder() throws Exception {
         BoardMember existingMember = new BoardMember();
         existingMember.setRole(BoardRole.CZLONEK_ZARZADU);
@@ -199,39 +189,61 @@ class BoardIntegrationTest {
         existingMember.setBreeder(breederZagan);
         boardMemberRepository.save(existingMember);
 
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(result -> assertInstanceOf(IllegalStateException.class, result.getResolvedException()));
+                .andExpect(status().isConflict())
+                .andExpect(result -> assertInstanceOf(ResourceConflictException.class, result.getResolvedException()));
     }
 
     @Test
-    @DisplayName("POST /api/board - Should reject breeder if they belong to a different Section")
+    @DisplayName("POST /api/board - Should return 400 when breeder belongs to a different Section")
     void shouldRejectBreederFromDifferentSection() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, sectionZagan.getId(), breederWymiarki.getId(), null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederWymiarki.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(result -> assertInstanceOf(IllegalStateException.class, result.getResolvedException()));
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(IllegalArgumentException.class, result.getResolvedException()));
+    }
+
+    @Test
+    @DisplayName("POST /api/board - Should return 400 for non-positive breeder ID")
+    void shouldRejectNonPositiveBreederId() throws Exception {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, -1L, null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią"));
+    }
+
+    @Test
+    @DisplayName("POST /api/board - Should reject breeder account combined with manual person data")
+    void shouldRejectBreederCombinedWithManualPersonData() throws Exception {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), "Jan", "Ręczny", null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie."));
+
+        assertEquals(0, boardMemberRepository.count());
     }
 
     @Test
     @DisplayName("POST /api/board - Should create manual person with custom name and surname")
     void shouldCreateManualPersonSuccessfully() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "Tomasz", "Zewnętrzny", null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "Tomasz", "Zewnętrzny", null);
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
@@ -247,9 +259,7 @@ class BoardIntegrationTest {
     @Test
     @DisplayName("POST /api/board - Should create manual person with phone number")
     void shouldCreateManualPersonWithPhoneSuccessfully() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SEKRETARZ, null, null, "Tomasz", "Zewnętrzny", "987654321"
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.SEKRETARZ, null, null, "Tomasz", "Zewnętrzny", "987654321");
 
         mockMvc.perform(post("/api/board")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
@@ -261,6 +271,65 @@ class BoardIntegrationTest {
         assertEquals("987654321", saved.getContactPhone());
     }
 
+    @Test
+    @DisplayName("POST /api/board - Should return 409 when breeder account is PENDING")
+    void shouldRejectPendingBreeder() throws Exception {
+        breederZagan.setStatus(AccountStatus.PENDING);
+        breederRepository.save(breederZagan);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        assertEquals(0, boardMemberRepository.count());
+    }
+
+    @Test
+    @DisplayName("POST /api/board - Should return 409 when breeder account is BLOCKED")
+    void shouldRejectBlockedBreeder() throws Exception {
+        breederZagan.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(breederZagan);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        assertEquals(0, boardMemberRepository.count());
+    }
+
+    @Test
+    @DisplayName("PUT /api/board/{id} - Should reject changing member to BLOCKED breeder")
+    void shouldRejectBlockedBreederOnUpdate() throws Exception {
+        BoardMember existingMember = new BoardMember();
+        existingMember.setRole(BoardRole.CZLONEK_ZARZADU);
+        existingMember.setBreeder(breederZagan);
+        existingMember = boardMemberRepository.save(existingMember);
+
+        breederZagan2.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(breederZagan2);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan2.getId(), null, null, null);
+
+        mockMvc.perform(put("/api/board/" + existingMember.getId())
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        BoardMember unchanged = boardMemberRepository.findById(existingMember.getId()).orElseThrow();
+        assertEquals(breederZagan.getId(), unchanged.getBreeder().getId());
+    }
 
     @Test
     @DisplayName("PUT /api/board/{id} - Should update existing member and reflect changes in DB")
@@ -271,9 +340,7 @@ class BoardIntegrationTest {
         existingMember.setBreeder(breederZagan);
         existingMember = boardMemberRepository.save(existingMember);
 
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SKARBNIK, sectionZagan.getId(), breederZagan.getId(), null, null, "111222333"
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.SKARBNIK, sectionZagan.getId(), breederZagan.getId(), null, null, "111222333");
 
         mockMvc.perform(put("/api/board/" + existingMember.getId())
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
@@ -326,10 +393,7 @@ class BoardIntegrationTest {
         member.setBreeder(breederZagan);
         member = boardMemberRepository.save(member);
 
-        mockMvc.perform(delete("/api/board/" + member.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/board/" + member.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isNoContent());
         assertTrue(boardMemberRepository.findById(member.getId()).isEmpty());
     }
 }

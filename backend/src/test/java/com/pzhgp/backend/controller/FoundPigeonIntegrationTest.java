@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -95,8 +97,7 @@ class FoundPigeonIntegrationTest {
     }
 
     private FoundPigeonRequest report(String ringNumber, String phone, String email, ReportLanguage language) {
-        return new FoundPigeonRequest(ringNumber, phone, email, "Cottbus", "Niemcy",
-                "Gołąb siedzi na parapecie.", language);
+        return new FoundPigeonRequest(ringNumber, phone, email, "Cottbus", "Niemcy", "Gołąb siedzi na parapecie.", language);
     }
 
     private void submitExpectingCreated(FoundPigeonRequest request) throws Exception {
@@ -131,8 +132,7 @@ class FoundPigeonIntegrationTest {
     void submitsReportWithoutAuthentication() throws Exception {
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                report("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE))))
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists());
 
@@ -143,7 +143,6 @@ class FoundPigeonIntegrationTest {
     @DisplayName("A submitted report receives the PENDING status automatically")
     void newReportIsPending() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
-
         assertEquals(FoundPigeonStatus.PENDING, foundPigeonRepository.findAll().getFirst().getStatus());
     }
 
@@ -180,7 +179,6 @@ class FoundPigeonIntegrationTest {
     @DisplayName("A report with only a phone number is accepted")
     void acceptsPhoneOnly() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
-
         assertEquals(1, foundPigeonRepository.count());
     }
 
@@ -188,15 +186,13 @@ class FoundPigeonIntegrationTest {
     @DisplayName("A report with only an e-mail address is accepted")
     void acceptsEmailOnly() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.EN));
-
         assertEquals(1, foundPigeonRepository.count());
     }
 
     @Test
     @DisplayName("A report with both contact methods is accepted")
     void acceptsBothContactMethods() throws Exception {
-        submitExpectingCreated(
-                report("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
+        submitExpectingCreated(report("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
 
         FoundPigeonReport stored = foundPigeonRepository.findAll().getFirst();
         assertEquals("+48 601 234 567", stored.getContactPhone());
@@ -225,10 +221,7 @@ class FoundPigeonIntegrationTest {
 
         for (String number : validNumbers) {
             rateLimiter.reset();
-
-            submitExpectingCreated(
-                    report("PL-0369-24-1234", number, null, ReportLanguage.PL)
-            );
+            submitExpectingCreated(report("PL-0369-24-1234", number, null, ReportLanguage.PL));
         }
 
         assertEquals(validNumbers.size(), foundPigeonRepository.count());
@@ -239,8 +232,7 @@ class FoundPigeonIntegrationTest {
     void rejectsMalformedPhoneNumbers() throws Exception {
         submitExpectingBadRequest(report("PL-0369-26-1234", "12345", null, ReportLanguage.PL));
         submitExpectingBadRequest(report("PL-0369-26-1234", "telefon", null, ReportLanguage.PL));
-        submitExpectingBadRequest(
-                report("PL-0369-26-1234", "+48 601 234 567 890 123 456", null, ReportLanguage.PL));
+        submitExpectingBadRequest(report("PL-0369-26-1234", "+48 601 234 567 890 123 456", null, ReportLanguage.PL));
 
         assertEquals(0, foundPigeonRepository.count());
     }
@@ -277,10 +269,7 @@ class FoundPigeonIntegrationTest {
             submitExpectingCreated(report(ringNumber, "601234567", null, language));
         }
 
-        List<ReportLanguage> stored = foundPigeonRepository.findAll().stream()
-                .map(FoundPigeonReport::getPreferredLanguage)
-                .toList();
-
+        List<ReportLanguage> stored = foundPigeonRepository.findAll().stream().map(FoundPigeonReport::getPreferredLanguage).toList();
         assertTrue(stored.containsAll(List.of(ReportLanguage.PL, ReportLanguage.EN, ReportLanguage.DE)));
     }
 
@@ -289,14 +278,17 @@ class FoundPigeonIntegrationTest {
     void notifiesAdministrators() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
-        List<Notification> notifications = notificationRepository
-                .findAllByRecipientIdOrderByCreatedAtDesc(administrator.getId());
+        List<Notification> notifications = notificationRepository.findByRecipientId(
+                administrator.getId(),
+                PageRequest.of(0, 50, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")))).getContent();
 
         assertEquals(1, notifications.size());
-        assertEquals(NotificationType.NEW_FOUND_PIGEON_REPORT, notifications.getFirst().getType());
-        assertEquals("/found-pigeons/admin", notifications.getFirst().getLink());
-        assertFalse(notifications.getFirst().getMessage().contains("601234567"),
-                "The notification must not contain the finder's phone number");
+
+        Notification notification = notifications.getFirst();
+
+        assertEquals(NotificationType.NEW_FOUND_PIGEON_REPORT, notification.getType());
+        assertEquals("/found-pigeons/admin", notification.getLink());
+        assertFalse(notification.getMessage().contains("601234567"), "The notification must not contain the finder's phone number");
     }
 
     @Test
@@ -304,8 +296,7 @@ class FoundPigeonIntegrationTest {
     void responseDoesNotEchoSubmittedData() throws Exception {
         String response = mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                report("PL-0369-26-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
@@ -323,8 +314,7 @@ class FoundPigeonIntegrationTest {
 
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                report("PL-0369-26-9999", "601234567", null, ReportLanguage.PL))))
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-9999", "601234567", null, ReportLanguage.PL))))
                 .andExpect(status().isTooManyRequests());
 
         assertEquals(5, foundPigeonRepository.count());
@@ -337,9 +327,9 @@ class FoundPigeonIntegrationTest {
     void exposesNoPublicReadEndpoint() throws Exception {
         storeReport(FoundPigeonStatus.PENDING);
 
-        mockMvc.perform(get("/api/found-pigeons")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/found-pigeons/1")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/admin/found-pigeons")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/found-pigeons")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/found-pigeons/1")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/admin/found-pigeons")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -347,25 +337,15 @@ class FoundPigeonIntegrationTest {
     void deniesAccessToStandardBreeder() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.PENDING);
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .header("Authorization", "Bearer " + breederToken))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(get("/api/admin/found-pigeons/" + reportId)
-                        .header("Authorization", "Bearer " + breederToken))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(delete("/api/admin/found-pigeons/" + reportId)
-                        .header("Authorization", "Bearer " + breederToken))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/found-pigeons").header("Authorization", "Bearer " + breederToken)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/found-pigeons/" + reportId).header("Authorization", "Bearer " + breederToken)).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/admin/found-pigeons/" + reportId).header("Authorization", "Bearer " + breederToken)).andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("A moderator cannot reach the administration panel either")
     void deniesAccessToModerator() throws Exception {
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .header("Authorization", "Bearer " + moderatorToken))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/found-pigeons").header("Authorization", "Bearer " + moderatorToken)).andExpect(status().isForbidden());
     }
 
     // --- Administration panel ---------------------------------------------
@@ -457,16 +437,14 @@ class FoundPigeonIntegrationTest {
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + reportId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonStatusRequest(FoundPigeonStatus.APPROVED)))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonStatusRequest(FoundPigeonStatus.APPROVED)))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + reportId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonStatusRequest(FoundPigeonStatus.RESOLVED)))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonStatusRequest(FoundPigeonStatus.RESOLVED)))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESOLVED"));
@@ -480,15 +458,13 @@ class FoundPigeonIntegrationTest {
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + pendingId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonStatusRequest(FoundPigeonStatus.RESOLVED)))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonStatusRequest(FoundPigeonStatus.RESOLVED)))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isConflict());
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + resolvedId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonStatusRequest(FoundPigeonStatus.APPROVED)))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonStatusRequest(FoundPigeonStatus.APPROVED)))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isConflict());
     }
@@ -500,16 +476,14 @@ class FoundPigeonIntegrationTest {
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + reportId + "/note")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonNoteRequest("Właściciel: sekcja Żagań.")))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonNoteRequest("Właściciel: sekcja Żagań.")))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.adminNote").value("Właściciel: sekcja Żagań."));
 
         mockMvc.perform(patch("/api/admin/found-pigeons/" + reportId + "/note")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new FoundPigeonNoteRequest("Kontakt przekazany hodowcy.")))
+                        .content(objectMapper.writeValueAsString(new FoundPigeonNoteRequest("Kontakt przekazany hodowcy.")))
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.adminNote").value("Kontakt przekazany hodowcy."));
@@ -520,19 +494,14 @@ class FoundPigeonIntegrationTest {
     void deletesReport() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.RESOLVED);
 
-        mockMvc.perform(delete("/api/admin/found-pigeons/" + reportId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/admin/found-pigeons/" + reportId).header("Authorization", "Bearer " + adminToken)).andExpect(status().isNoContent());
         assertTrue(foundPigeonRepository.findById(reportId).isEmpty());
     }
 
     @Test
     @DisplayName("A missing report returns the not-found status")
     void returnsNotFoundForMissingReport() throws Exception {
-        mockMvc.perform(get("/api/admin/found-pigeons/999999")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/admin/found-pigeons/999999").header("Authorization", "Bearer " + adminToken)).andExpect(status().isNotFound());
     }
 
     @Test

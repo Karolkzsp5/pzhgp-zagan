@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
@@ -79,7 +80,7 @@ class FlightResultServiceTest {
     @DisplayName("Administrator can upload Branch results and raw text is preserved")
     void uploadsBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(flightResultRepository.existsByFlightPlanEntryIdAndScope(flight.getId(), FlightResultScope.BRANCH)).thenReturn(false);
 
         when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
@@ -122,7 +123,7 @@ class FlightResultServiceTest {
     @DisplayName("Administrator can upload results for a selected Section")
     void uploadsSectionResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(sectionRepository.findById(chotkow.getId())).thenReturn(Optional.of(chotkow));
         when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
                 flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(false);
@@ -158,7 +159,7 @@ class FlightResultServiceTest {
     @DisplayName("Directory path is removed from the original uploaded file name")
     void sanitizesOriginalFileName() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
             FlightResult saved = invocation.getArgument(0);
@@ -183,7 +184,7 @@ class FlightResultServiceTest {
     @DisplayName("TXT extension is accepted regardless of letter case")
     void acceptsUppercaseTxtExtension() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
             FlightResult saved = invocation.getArgument(0);
@@ -205,7 +206,7 @@ class FlightResultServiceTest {
     @DisplayName("Missing result file is rejected")
     void rejectsMissingFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -223,7 +224,7 @@ class FlightResultServiceTest {
     @DisplayName("Empty result file is rejected")
     void rejectsEmptyFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -248,7 +249,7 @@ class FlightResultServiceTest {
     @DisplayName("Result file larger than 5 megabytes is rejected")
     void rejectsOversizedFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(false);
@@ -270,7 +271,7 @@ class FlightResultServiceTest {
     @DisplayName("File with an extension other than TXT is rejected")
     void rejectsNonTxtFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -295,7 +296,7 @@ class FlightResultServiceTest {
     @DisplayName("Missing result metadata is rejected")
     void rejectsMissingMetadata() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -313,7 +314,7 @@ class FlightResultServiceTest {
     @DisplayName("Result metadata without scope is rejected")
     void rejectsMissingScope() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -331,7 +332,7 @@ class FlightResultServiceTest {
     @DisplayName("Branch results cannot reference a Section")
     void rejectsSectionForBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -349,7 +350,7 @@ class FlightResultServiceTest {
     @DisplayName("Second Branch result for the same flight is rejected")
     void rejectsDuplicateBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(flightResultRepository.existsByFlightPlanEntryIdAndScope(
                 flight.getId(), FlightResultScope.BRANCH)).thenReturn(true);
 
@@ -369,7 +370,7 @@ class FlightResultServiceTest {
     @DisplayName("Section result requires a Section identifier")
     void rejectsSectionResultWithoutSectionId() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -387,7 +388,7 @@ class FlightResultServiceTest {
     @DisplayName("Section result is rejected when selected Section does not exist")
     void rejectsMissingSection() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(sectionRepository.findById(99L)).thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
@@ -406,7 +407,7 @@ class FlightResultServiceTest {
     @DisplayName("Second result for the same Section and flight is rejected")
     void rejectsDuplicateSectionResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(sectionRepository.findById(chotkow.getId())).thenReturn(Optional.of(chotkow));
         when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
                 flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(true);
@@ -427,7 +428,7 @@ class FlightResultServiceTest {
     @DisplayName("Text file containing only whitespace is rejected")
     void rejectsBlankTextContent() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -445,7 +446,7 @@ class FlightResultServiceTest {
     @DisplayName("Text file containing a NUL character is rejected")
     void rejectsBinaryLikeContent() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 flightResultService.uploadResult(
@@ -463,7 +464,7 @@ class FlightResultServiceTest {
     @DisplayName("IOException while reading result file is converted to IllegalArgumentException")
     void convertsIoFailureToIllegalArgumentException() throws IOException {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
 
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(false);
@@ -488,7 +489,7 @@ class FlightResultServiceTest {
     void rejectsUploadByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 flightResultService.uploadResult(
                         flight.getId(),
                         textFile("wyniki.txt", "Treść"),
@@ -522,7 +523,7 @@ class FlightResultServiceTest {
     @DisplayName("Uploading results for a missing flight throws EntityNotFoundException")
     void rejectsResultForMissingFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findById(999L)).thenReturn(Optional.empty());
+        when(flightPlanEntryRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
                 flightResultService.uploadResult(
@@ -570,9 +571,7 @@ class FlightResultServiceTest {
         result.setId(500L);
 
         when(flightResultRepository.findById(result.getId())).thenReturn(Optional.of(result));
-
         flightResultService.deleteResult(result.getId(), administrator.getEmail());
-
         verify(flightResultRepository).delete(result);
     }
 
@@ -593,11 +592,35 @@ class FlightResultServiceTest {
     void rejectsDeletingResultByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> flightResultService.deleteResult(500L, moderator.getEmail()));
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> flightResultService.deleteResult(500L, moderator.getEmail()));
         assertEquals("Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.", exception.getMessage());
 
         verify(flightResultRepository, never()).findById(any());
         verify(flightResultRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should lock flight plan entry before checking and saving result")
+    void shouldLockFlightPlanEntryBeforeSavingResult() {
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightResultRepository.existsByFlightPlanEntryIdAndScope(flight.getId(), FlightResultScope.BRANCH)).thenReturn(false);
+
+        when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
+                    FlightResult result = invocation.getArgument(0);
+                    result.setId(500L);
+                    return result;
+                });
+
+        flightResultService.uploadResult(
+                flight.getId(),
+                textFile("wyniki.txt", "Treść wyników"),
+                new FlightResultUploadRequest(FlightResultScope.BRANCH, null),
+                administrator.getEmail()
+        );
+
+        verify(flightPlanEntryRepository).findByIdForUpdate(flight.getId());
+        verify(flightPlanEntryRepository, never()).findById(flight.getId());
     }
 
     private Breeder breeder(Long id, String email, Role role) {

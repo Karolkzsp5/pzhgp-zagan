@@ -6,6 +6,7 @@ import com.pzhgp.backend.dto.FlightPlanEntryDto;
 import com.pzhgp.backend.dto.FlightPlanEntryRequest;
 import com.pzhgp.backend.dto.FlightPlanSummaryDto;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
@@ -254,7 +255,7 @@ class FlightPlanServiceTest {
     void rejectsPlanCreationByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> flightPlanService.createPlan(
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> flightPlanService.createPlan(
                 new FlightPlanCreateRequest(2026),
                 moderator.getEmail()
         ));

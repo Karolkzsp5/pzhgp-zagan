@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -54,7 +55,8 @@ class AuthIntegrationTest {
     @DisplayName("Should return a 400 Bad Request status code if the input data is missing or incorrect")
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(
-                "", "", null, "", "", "", "", null, "niepoprawny-email", "", ""
+                "", "", null, "", "",
+                "", "", null, "niepoprawny-email", "", ""
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -64,8 +66,8 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return a 400 Bad Request status code when attempting to register with an existing email address")
-    void shouldReturnBadRequestWhenEmailIsDuplicatedIntegration() throws Exception {
+    @DisplayName("Should return 409 Conflict when attempting to register with an existing email address")
+    void shouldReturnConflictWhenEmailIsDuplicatedIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
@@ -79,13 +81,13 @@ class AuthIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(duplicateRequest)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(content().string("Użytkownik z podanym adresem e-mail już istnieje."));
     }
 
     @Test
-    @DisplayName("Should return a 400 Bad Request status code when attempting to register with an existing phone number")
-    void shouldReturnBadRequestWhenPhoneNumberIsDuplicatedIntegration() throws Exception {
+    @DisplayName("Should return 409 Conflict when attempting to register with an existing phone number")
+    void shouldReturnConflictWhenPhoneNumberIsDuplicatedIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
@@ -99,8 +101,32 @@ class AuthIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(duplicatePhoneRequest)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(content().string("Użytkownik z podanym numerem telefonu już istnieje."));
+    }
+
+    @Test
+    @DisplayName("Should normalize email case and surrounding whitespace during registration")
+    void shouldNormalizeEmailDuringRegistrationIntegration() throws Exception {
+        String requestJson = """
+                {
+                  "name": "Jan",
+                  "surname": "Kowalski",
+                  "dateOfBirth": "1995-05-15",
+                  "postalCode": "68-100",
+                  "city": "Żagań",
+                  "street": "Słowackiego",
+                  "houseNumber": "10",
+                  "sectionId": 1,
+                  "email": "  Integration.MixedCase@PZHGP.PL  ",
+                  "phoneNumber": "555666777",
+                  "password": "SecurePass1!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestJson)).andExpect(status().isCreated());
+        Breeder saved = breederRepository.findByEmail("integration.mixedcase@pzhgp.pl").orElseThrow();
+        assertEquals("integration.mixedcase@pzhgp.pl", saved.getEmail());
     }
 
     @Test
@@ -183,8 +209,28 @@ class AuthIntegrationTest {
         String jwtToken = result.getResponse().getContentAsString();
         org.junit.jupiter.api.Assertions.assertFalse(jwtToken.isEmpty(), "Zwrócony token JWT nie powinien być pusty");
 
-        mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/notifications/unread-count").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should login successfully with differently cased email address")
+    void shouldLoginWithCaseInsensitiveEmailIntegration() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isCreated());
+
+        Breeder savedBreeder = breederRepository.findByEmail(validRequest.email()).orElseThrow();
+        savedBreeder.setStatus(AccountStatus.ACTIVE);
+        breederRepository.save(savedBreeder);
+
+        String loginJson = """
+                {
+                  "email": "  INTEGRATION.TEST@PZHGP.PL  ",
+                  "password": "SecurePass1!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson)).andExpect(status().isOk());
     }
 }

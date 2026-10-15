@@ -145,10 +145,26 @@ describe('Breeder Login Process', () => {
         cy.get('input[name="password"]').clear().type('Test.cypress1');
         cy.get('input[name="remember-me"]').check();
 
-        cy.intercept('GET', '**/api/notifications', {
-            statusCode: 200,
-            body: []
-        });
+        cy.intercept(
+            {
+                method: 'GET',
+                pathname: '/api/notifications',
+                query: {
+                    page: '0',
+                    size: '50'
+                }
+            },
+            {
+                statusCode: 200,
+                body: {
+                    content: [],
+                    totalElements: 0,
+                    totalPages: 0,
+                    number: 0,
+                    size: 50
+                }
+            }
+        );
 
         cy.intercept('GET', '**/api/notifications/unread-count', {
             statusCode: 200,

@@ -51,8 +51,7 @@ public class FoundPigeonService {
     @Transactional
     public Long createReport(FoundPigeonRequest request, String clientKey) {
         if (!rateLimiter.tryAcquire(clientKey)) {
-            throw new SubmissionRateLimitException(
-                    "Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
+            throw new SubmissionRateLimitException("Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
         }
 
         FoundPigeonReport report = new FoundPigeonReport();
@@ -63,8 +62,7 @@ public class FoundPigeonService {
         report.setFoundLocation(trimToNull(request.foundLocation()));
         report.setFoundCountry(trimToNull(request.foundCountry()));
         report.setDescription(trimToNull(request.description()));
-        report.setPreferredLanguage(
-                request.preferredLanguage() == null ? ReportLanguage.PL : request.preferredLanguage());
+        report.setPreferredLanguage(request.preferredLanguage() == null ? ReportLanguage.PL : request.preferredLanguage());
         report.setStatus(FoundPigeonStatus.PENDING);
 
         FoundPigeonReport saved = foundPigeonRepository.save(report);
@@ -72,8 +70,7 @@ public class FoundPigeonService {
         notifyAdministrators(saved);
 
         // W logu wyłącznie identyfikatory — żadnych danych kontaktowych znalazcy.
-        log.info("Przyjęto zgłoszenie odnalezienia gołębia (ID: {}, obrączka: {}).",
-                saved.getId(), saved.getRingNumber());
+        log.info("Przyjęto zgłoszenie odnalezienia gołębia (ID: {}, obrączka: {}).", saved.getId(), saved.getRingNumber());
 
         return saved.getId();
     }
@@ -85,8 +82,7 @@ public class FoundPigeonService {
      * @param ringNumber opcjonalny fragment numeru obrączki
      */
     @Transactional(readOnly = true)
-    public Page<FoundPigeonDto> searchReports(FoundPigeonStatus status, String ringNumber,
-                                              int page, int size) {
+    public Page<FoundPigeonDto> searchReports(FoundPigeonStatus status, String ringNumber, int page, int size) {
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -114,11 +110,7 @@ public class FoundPigeonService {
         FoundPigeonReport report = findReport(id);
 
         if (!report.getStatus().canTransitionTo(newStatus)) {
-            throw new InvalidStatusTransitionException(String.format(
-                    "Nie można zmienić statusu z %s na %s.",
-                    report.getStatus(),
-                    newStatus
-            ));
+            throw new InvalidStatusTransitionException(String.format("Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
         }
 
         report.setStatus(newStatus);
@@ -161,27 +153,19 @@ public class FoundPigeonService {
      * Moderatorzy i zwykli hodowcy nie dostają tych powiadomień.
      */
     private void notifyAdministrators(FoundPigeonReport report) {
-        List<Breeder> administrators =
-                breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE);
+        List<Breeder> administrators = breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE);
 
         if (administrators.isEmpty()) {
             return;
         }
 
-        String message = "Nowe zgłoszenie odnalezienia gołębia o numerze obrączki "
-                + report.getRingNumber() + ".";
+        String message = "Nowe zgłoszenie odnalezienia gołębia o numerze obrączki " + report.getRingNumber() + ".";
 
-        notificationService.createBulkNotifications(
-                administrators,
-                message,
-                "/found-pigeons/admin",
-                NotificationType.NEW_FOUND_PIGEON_REPORT
-        );
+        notificationService.createBulkNotifications(administrators, message, "/found-pigeons/admin", NotificationType.NEW_FOUND_PIGEON_REPORT);
     }
 
     private FoundPigeonReport findReport(Long id) {
-        return foundPigeonRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
+        return foundPigeonRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
     }
 
     private FoundPigeonDto mapToDto(FoundPigeonReport report) {
@@ -205,6 +189,7 @@ public class FoundPigeonService {
         if (value == null) {
             return null;
         }
+
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

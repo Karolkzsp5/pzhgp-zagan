@@ -3,6 +3,7 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.AnnouncementRequestDto;
 import com.pzhgp.backend.dto.AnnouncementResponseDto;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -88,7 +89,7 @@ class AnnouncementServiceTest {
         AnnouncementRequestDto request = new AnnouncementRequestDto("Tytuł", "Treść", false);
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.createAnnouncement(request, standardBreeder.getEmail())
         );
         assertEquals("Zwykły hodowca nie może dodawać ogłoszeń.", exception.getMessage());
@@ -161,9 +162,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
-        assertThrows(IllegalStateException.class, () ->
-                announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail())
-        );
+        assertThrows(ForbiddenOperationException.class, () -> announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail()));
     }
 
     @Test
@@ -184,10 +183,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.updateAnnouncement(announcement.getId(), request, admin1.getEmail())
         );
-        assertEquals("Brak uprawnień. Tylko autor ogłoszenia może je modyfikować.", exception.getMessage());
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
 
@@ -231,7 +230,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.deleteAnnouncement(announcement.getId(), moderator.getEmail())
         );
         assertEquals("Brak uprawnień do usunięcia tego ogłoszenia.", exception.getMessage());
@@ -243,7 +242,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.deleteAnnouncement(announcement.getId(), standardBreeder.getEmail())
         );
     }
@@ -255,7 +254,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(admin2.getEmail())).thenReturn(Optional.of(admin2));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.deleteAnnouncement(announcement.getId(), admin2.getEmail())
         );
         assertEquals("Administrator nie może usuwać ogłoszeń należących do innych administratorów.", exception.getMessage());
@@ -316,6 +315,38 @@ class AnnouncementServiceTest {
         AnnouncementResponseDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Admin nie powinien mieć prawa edycji cudzego posta");
         assertTrue(dto.canDelete(), "Admin powinien mieć prawo usunięcia posta moderatora");
+    }
+
+    @Test
+    @DisplayName("Should set canEdit=false and canDelete=true when announcement author was downgraded to BREEDER")
+    void getAllAnnouncements_ShouldReflectDowngradedAuthorPermissions() {
+        moderator.setRole(Role.BREEDER);
+
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+
+        assertFalse(dto.canEdit(), "Zdegradowany autor nie powinien móc edytować ogłoszenia");
+        assertTrue(dto.canDelete(), "Autor nadal powinien móc usunąć własne ogłoszenie");
+    }
+
+    @Test
+    @DisplayName("Should deny editing when announcement author was downgraded to BREEDER")
+    void updateAnnouncement_ShouldDenyDowngradedAuthor() {
+        moderator.setRole(Role.BREEDER);
+        AnnouncementRequestDto request = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", false);
+
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
+                announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail()));
+
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
+        verify(announcementRepository, never()).save(any());
     }
 
     @Test

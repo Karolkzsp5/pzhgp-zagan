@@ -5,6 +5,8 @@ import com.pzhgp.backend.dto.ForumCategoryRequest;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.ForumCategory;
 import com.pzhgp.backend.entity.Role;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
@@ -26,8 +28,7 @@ public class ForumCategoryService {
 
     @Transactional(readOnly = true)
     public List<ForumCategoryDto> getAllCategories(String requesterEmail) {
-        Breeder requester = breederRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         return categoryRepository.findAllByOrderBySortOrderAscNameAsc()
                 .stream()
@@ -37,21 +38,18 @@ public class ForumCategoryService {
 
     @Transactional(readOnly = true)
     public ForumCategoryDto getCategoryById(Long id, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
-        Breeder requester = breederRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         return mapToDto(category, requester);
     }
 
     @Transactional
     public void createCategory(ForumCategoryRequest request, String authorEmail) {
-        Breeder author = breederRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder author = breederRepository.findByEmail(authorEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (author.getRole() == Role.BREEDER) {
-            throw new IllegalStateException("Brak uprawnień. Hodowcy nie mogą tworzyć kategorii.");
+            throw new ForbiddenOperationException("Brak uprawnień. Hodowcy nie mogą tworzyć kategorii.");
         }
 
         ForumCategory category = new ForumCategory();
@@ -65,13 +63,11 @@ public class ForumCategoryService {
 
     @Transactional
     public void updateCategory(Long id, ForumCategoryRequest request, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
-        Breeder requester = breederRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!canEditCategory(category.getAuthor(), requester)) {
-            throw new IllegalStateException("Brak uprawnień. Administratorzy edytują kategorie poniżej swojej rangi, a moderatorzy tylko własne.");
+            throw new ForbiddenOperationException("Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.");
         }
 
         category.setName(request.name());
@@ -83,17 +79,15 @@ public class ForumCategoryService {
 
     @Transactional
     public void deleteCategory(Long id, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
-        Breeder requester = breederRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!canDeleteCategory(category.getAuthor(), requester)) {
-            throw new IllegalStateException("Brak uprawnień. Tylko administrator może usuwać kategorie (z wyjątkiem tych utworzonych przez innych administratorów).");
+            throw new ForbiddenOperationException("Brak uprawnień. Tylko administrator może usuwać kategorie (z wyjątkiem tych utworzonych przez innych administratorów).");
         }
 
         if (threadRepository.existsByCategoryId(id)) {
-            throw new IllegalStateException("Nie można usunąć kategorii, która zawiera wątki.");
+            throw new ResourceConflictException("Nie można usunąć kategorii, która zawiera wątki.");
         }
 
         categoryRepository.delete(category);
@@ -101,12 +95,18 @@ public class ForumCategoryService {
 
 
     private boolean canEditCategory(Breeder author, Breeder requester) {
+        if (requester.getRole() == Role.BREEDER) {
+            return false;
+        }
+
         if (author.getId().equals(requester.getId())) {
             return true;
         }
+
         if (requester.getRole() == Role.ADMINISTRATOR) {
             return author.getRole() != Role.ADMINISTRATOR;
         }
+
         return false;
     }
 
@@ -114,6 +114,7 @@ public class ForumCategoryService {
         if (requester.getRole() == Role.ADMINISTRATOR) {
             return author.getId().equals(requester.getId()) || author.getRole() != Role.ADMINISTRATOR;
         }
+
         return false;
     }
 

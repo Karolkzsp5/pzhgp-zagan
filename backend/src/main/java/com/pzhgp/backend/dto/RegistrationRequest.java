@@ -2,6 +2,7 @@ package com.pzhgp.backend.dto;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.Locale;
 
 public record RegistrationRequest(
         @NotBlank(message = "Imię nie może być puste")
@@ -30,8 +31,7 @@ public record RegistrationRequest(
 
         @NotBlank(message = "Numer domu/lokalu nie może być pusty")
         @Size(max = 10, message = "Numer domu/lokalu może mieć maksymalnie 10 znaków")
-        @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$",
-                 message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
+        @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$", message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
         String houseNumber,
 
         @NotNull(message = "ID sekcji nie może być puste")
@@ -41,8 +41,7 @@ public record RegistrationRequest(
         @NotBlank(message = "Adres e-mail nie może być pusty")
         @Size(max = 320, message = "Adres e-mail może mieć maksymalnie 320 znaków")
         @Email(message = "Niepoprawny format adresu e-mail")
-        @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-                message = "Wymagany poprawny adres e-mail z domeną")
+        @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Wymagany poprawny adres e-mail z domeną")
         String email,
 
         @NotBlank(message = "Numer telefonu nie może być pusty")
@@ -50,10 +49,14 @@ public record RegistrationRequest(
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste")
-        @Pattern(
-                regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
+        @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
                 message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny"
         )
         String password
 ) {
+    public RegistrationRequest {
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
+        }
+    }
 }

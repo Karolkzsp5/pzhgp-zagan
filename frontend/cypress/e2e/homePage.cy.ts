@@ -126,29 +126,13 @@ describe('Home Page - Announcements Tests', () => {
     // ==========================================
 
     it('Should correctly render all visible elements of the home page and announcements section', () => {
-        // ==========================
-        // Navbar
-        // ==========================
-
         cy.checkLoggedInNavbar('Admin');
-
-        // ==========================
-        // Page header
-        // ==========================
 
         cy.get('h1').should('be.visible').and('have.text', 'Oddział 0369 Żagań');
         cy.contains('Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych.').should('be.visible');
 
-        // ==========================
-        // Announcements header
-        // ==========================
-
         cy.contains('h2', 'Najnowsze ogłoszenia').should('be.visible');
         cy.contains('button', '+ Dodaj ogłoszenie').should('be.visible').and('not.be.disabled');
-
-        // ==========================
-        // Announcement cards
-        // ==========================
 
         cy.get('article').should('have.length', 3).and('be.visible');
 
@@ -180,11 +164,89 @@ describe('Home Page - Announcements Tests', () => {
             cy.get('button').should('not.exist');
         });
 
-        // ==========================
-        // Footer
-        // ==========================
-
         cy.checkFooter();
+    });
+
+    // ==========================================
+    // NOTIFICATIONS PAGINATION
+    // ==========================================
+
+    it('Should load older notifications after clicking the load more button', () => {
+        const firstNotificationPage = {
+            content: Array.from({ length: 50 }, (_, index) => ({
+                id: 100 - index,
+                message: `Powiadomienie ${100 - index}`,
+                link: null,
+                isRead: false,
+                type: 'NEW_ANNOUNCEMENT',
+                createdAt: '2026-10-15T12:00:00'
+            })),
+            totalElements: 51,
+            totalPages: 2,
+            number: 0,
+            size: 50
+        };
+
+        const secondNotificationPage = {
+            content: [
+                {
+                    id: 50,
+                    message: 'Najstarsze powiadomienie',
+                    link: null,
+                    isRead: true,
+                    type: 'NEW_ANNOUNCEMENT',
+                    createdAt: '2026-10-01T12:00:00'
+                }
+            ],
+            totalElements: 51,
+            totalPages: 2,
+            number: 1,
+            size: 50
+        };
+
+        cy.intercept(
+            {
+                method: 'GET',
+                pathname: '/api/notifications',
+                query: {
+                    page: '0',
+                    size: '50'
+                }
+            },
+            {
+                statusCode: 200,
+                body: firstNotificationPage
+            }
+        ).as('getNotificationsPage0');
+
+        cy.intercept(
+            {
+                method: 'GET',
+                pathname: '/api/notifications',
+                query: {
+                    page: '1',
+                    size: '50'
+                }
+            },
+            {
+                statusCode: 200,
+                body: secondNotificationPage
+            }
+        ).as('getNotificationsPage1');
+
+        cy.reload();
+        cy.wait('@getNotificationsPage0');
+
+        cy.get('button[aria-label="Powiadomienia"]').click();
+        cy.contains('Powiadomienie 100').should('be.visible');
+        cy.contains('Najstarsze powiadomienie').should('not.exist');
+
+        cy.get('[data-cy="load-older-notifications"]').should('be.visible').and('not.be.disabled').and('have.text', 'Zobacz wcześniejsze powiadomienia').click();
+        cy.wait('@getNotificationsPage1');
+
+        cy.contains('Powiadomienie 100').should('exist');
+        cy.contains('Najstarsze powiadomienie').should('be.visible');
+        cy.get('[data-cy="load-older-notifications"]').should('not.exist');
     });
 
     // ==========================================

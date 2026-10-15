@@ -9,5 +9,4 @@ public record FlightResultSummaryDto(
         String sectionName,
         Integer sectionSortOrder,
         String originalFileName
-) {
-}
+) {}

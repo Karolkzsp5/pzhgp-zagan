@@ -20,5 +20,4 @@ public record FlightSummaryDto(
         boolean timestampsAvailable,
         Instant uploadedAt,
         boolean canDelete
-) {
-}
+) {}
