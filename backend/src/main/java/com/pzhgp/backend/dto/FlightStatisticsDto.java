@@ -28,5 +28,4 @@ public record FlightStatisticsDto(
         Double elevationGainMeters,
         int totalPoints,
         boolean timestampsAvailable
-) {
-}
+) {}

@@ -16,6 +16,16 @@ interface NotificationDto {
     createdAt: string;
 }
 
+interface NotificationPage {
+    content: NotificationDto[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+}
+
+const NOTIFICATIONS_PAGE_SIZE = 50;
+
 export default function Navbar() {
     const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
     const userName = user?.name || user?.sub?.split('@')[0] || 'Użytkowniku';
@@ -26,6 +36,9 @@ export default function Navbar() {
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [notificationPage, setNotificationPage] = useState(0);
+    const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
+    const [isLoadingMoreNotifications, setIsLoadingMoreNotifications] = useState(false);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -38,19 +51,62 @@ export default function Navbar() {
     const fetchNotifications = useCallback(async () => {
         try {
             const [notifRes, countRes] = await Promise.all([
-                fetchWithAuth(`${API_URL}/api/notifications`),
-                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
-            ]);
+                fetchWithAuth(`${API_URL}/api/notifications?page=0&size=${NOTIFICATIONS_PAGE_SIZE}`),
+                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)]
+            );
 
-            if (!notifRes.ok) throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
-            if (!countRes.ok) throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
+            if (!notifRes.ok) {
+                throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
+            }
 
-            setNotifications(await notifRes.json());
-            setUnreadCount(await countRes.json());
+            if (!countRes.ok) {
+                throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
+            }
+
+            const pageData = await notifRes.json() as NotificationPage;
+            const count = await countRes.json() as number;
+
+            setNotifications(pageData.content);
+            setNotificationPage(pageData.number);
+            setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
+            setUnreadCount(count);
         } catch (error) {
             console.error('Błąd pobierania powiadomień:', error);
         }
     }, []);
+
+    const handleLoadMoreNotifications = async () => {
+        if (isLoadingMoreNotifications || !hasMoreNotifications) {
+            return;
+        }
+
+        const nextPage = notificationPage + 1;
+        setIsLoadingMoreNotifications(true);
+
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/notifications?page=${nextPage}&size=${NOTIFICATIONS_PAGE_SIZE}`);
+
+            if (!response.ok) {
+                throw new Error(await readApiError(response, 'Nie udało się pobrać wcześniejszych powiadomień.'));
+            }
+
+            const pageData = await response.json() as NotificationPage;
+
+            setNotifications(prev => {
+                const existingIds = new Set(prev.map(notification => notification.id));
+                const newNotifications = pageData.content.filter(notification => !existingIds.has(notification.id));
+
+                return [...prev, ...newNotifications];
+            });
+
+            setNotificationPage(pageData.number);
+            setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
+        } catch (error) {
+            console.error('Błąd pobierania wcześniejszych powiadomień:', error);
+        } finally {
+            setIsLoadingMoreNotifications(false);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -86,6 +142,9 @@ export default function Navbar() {
         if (!isLoggedIn) {
             setNotifications([]);
             setUnreadCount(0);
+            setNotificationPage(0);
+            setHasMoreNotifications(false);
+            setIsLoadingMoreNotifications(false);
             setIsNotificationsOpen(false);
             return;
         }
@@ -133,6 +192,9 @@ export default function Navbar() {
 
         setNotifications([]);
         setUnreadCount(0);
+        setNotificationPage(0);
+        setHasMoreNotifications(false);
+        setIsLoadingMoreNotifications(false);
         setIsDropdownOpen(false);
         setIsNotificationsOpen(false);
         setIsMobileMenuOpen(false);
@@ -244,7 +306,7 @@ export default function Navbar() {
 
                                     {/* Notification modal */}
                                     {isNotificationsOpen && (
-                                        <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl py-2 border border-gray-100 z-50 animate-fadeIn text-gray-800">
+                                        <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 animate-fadeIn text-gray-800 overflow-hidden">
                                             <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                 <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                 {unreadCount > 0 && (
@@ -264,21 +326,39 @@ export default function Navbar() {
                                                         Brak nowych powiadomień.
                                                     </div>
                                                 ) : (
-                                                    notifications.map((notif) => (
-                                                        <button
-                                                            type="button"
-                                                            key={notif.id}
-                                                            onClick={() =>
-                                                                void handleNotificationClick(notif)}
-                                                            className={`block w-full text-left px-4 py-3 border-b border-gray-50 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 
-                                                            ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}>
+                                                    <>
+                                                        {notifications.map((notif) => (
+                                                            <button
+                                                                type="button"
+                                                                key={notif.id}
+                                                                onClick={() => void handleNotificationClick(notif)}
+                                                                className={`block w-full text-left px-4 py-3 border-b border-gray-50 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 
+                                                                ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}>
                                                                 <span className="flex justify-between items-start mb-1">
                                                                     <span className="text-[10px] text-gray-400 font-medium">{formatGlobalDate(notif.createdAt)}</span>
                                                                     {!notif.isRead && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
                                                                 </span>
-                                                            <span className={`block text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>{notif.message}</span>
-                                                        </button>
-                                                    ))
+
+                                                                <span className={`block text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                                                                    {notif.message}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+
+                                                        {hasMoreNotifications && (
+                                                            <div className="px-4 py-3 text-center bg-gray-100">
+                                                                <button
+                                                                    type="button"
+                                                                    data-cy="load-older-notifications"
+                                                                    onClick={() => void handleLoadMoreNotifications()}
+                                                                    disabled={isLoadingMoreNotifications}
+                                                                    className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-2 py-1"
+                                                                >
+                                                                    {isLoadingMoreNotifications ? 'Ładowanie...' : 'Zobacz wcześniejsze powiadomienia'}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         </div>

@@ -115,15 +115,58 @@ class NotificationIntegrationTest {
     @DisplayName("Should return user notifications mapped to DTOs with all fields using real JWT")
     void shouldReturnUserNotifications() throws Exception {
         mockMvc.perform(get("/api/notifications")
+                        .param("page", "0")
+                        .param("size", "50")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[?(@.message == 'Nowa nieprzeczytana wiadomość')].link").value("/link-1"))
-                .andExpect(jsonPath("$[?(@.message == 'Nowa nieprzeczytana wiadomość')].type").value("ACCOUNT_APPROVED"))
-                .andExpect(jsonPath("$[?(@.message == 'Nowa nieprzeczytana wiadomość')].isRead").value(false))
-                .andExpect(jsonPath("$[?(@.message == 'Stara przeczytana wiadomość')].link").value("/link-2"))
-                .andExpect(jsonPath("$[?(@.message == 'Stara przeczytana wiadomość')].type").value("ROLE_CHANGED"))
-                .andExpect(jsonPath("$[?(@.message == 'Stara przeczytana wiadomość')].isRead").value(true));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.content[?(@.message == 'Nowa nieprzeczytana wiadomość')].link").value("/link-1"))
+                .andExpect(jsonPath("$.content[?(@.message == 'Nowa nieprzeczytana wiadomość')].type").value("ACCOUNT_APPROVED"))
+                .andExpect(jsonPath("$.content[?(@.message == 'Nowa nieprzeczytana wiadomość')].isRead").value(false));
+    }
+
+    @Test
+    @DisplayName("Should return older notifications on the next page")
+    void shouldReturnOlderNotificationsOnNextPage()
+            throws Exception {
+
+        for (int i = 0; i < 60; i++) {
+            Notification notification = new Notification();
+
+            notification.setRecipient(testBreeder);
+            notification.setMessage("Powiadomienie " + i);
+            notification.setType(NotificationType.NEW_ANNOUNCEMENT);
+            notification.setRead(false);
+
+            notificationRepository.save(notification);
+        }
+
+        notificationRepository.flush();
+
+        mockMvc.perform(get("/api/notifications")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(50))
+                .andExpect(jsonPath("$.totalElements").value(62))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.content[0].message").value("Powiadomienie 59"))
+                .andExpect(jsonPath("$.content[49].message").value("Powiadomienie 10"));
+
+        mockMvc.perform(get("/api/notifications")
+                        .param("page", "1")
+                        .param("size", "50")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(12))
+                .andExpect(jsonPath("$.totalElements").value(62))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.content[0].message").value("Powiadomienie 9"));
     }
 
     @Test
@@ -156,6 +199,57 @@ class NotificationIntegrationTest {
 
         Notification updatedNotification = notificationRepository.findById(notificationId).orElseThrow();
         assertTrue(updatedNotification.isRead());
+    }
+
+    @Test
+    @DisplayName("GET /api/notifications - Should return at most 50 newest notifications")
+    void shouldReturnAtMostFiftyNewestNotifications() throws Exception {
+        for (int i = 0; i < 60; i++) {
+            Notification notification = new Notification();
+            notification.setRecipient(testBreeder);
+            notification.setMessage("Powiadomienie limit " + i);
+            notification.setLink("/limit/" + i);
+            notification.setType(NotificationType.NEW_ANNOUNCEMENT);
+            notification.setRead(false);
+
+            notificationRepository.save(notification);
+        }
+
+        notificationRepository.flush();
+
+        mockMvc.perform(get("/api/notifications")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(50))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(50))
+                .andExpect(jsonPath("$.content[0].message").value("Powiadomienie limit 59"))
+                .andExpect(jsonPath("$.content[49].message").value("Powiadomienie limit 10"));
+    }
+
+    @Test
+    @DisplayName("GET /api/notifications/unread-count - Should count all unread notifications even when list is limited")
+    void shouldCountAllUnreadNotificationsDespiteListLimit()
+            throws Exception {
+
+        for (int i = 0; i < 60; i++) {
+            Notification notification = new Notification();
+            notification.setRecipient(testBreeder);
+            notification.setMessage("Nieprzeczytane " + i);
+            notification.setType(NotificationType.NEW_ANNOUNCEMENT);
+            notification.setRead(false);
+
+            notificationRepository.save(notification);
+        }
+
+        notificationRepository.flush();
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("61"));
     }
 
     @Test

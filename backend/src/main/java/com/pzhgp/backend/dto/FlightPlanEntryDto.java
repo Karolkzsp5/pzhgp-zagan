@@ -14,5 +14,4 @@ public record FlightPlanEntryDto(
         String category,
         String listType,
         List<FlightResultSummaryDto> results
-) {
-}
+) {}

@@ -38,7 +38,9 @@ public class FlightResultService {
     public Long uploadResult(Long entryId, MultipartFile file, FlightResultUploadRequest request, String userEmail) {
         Breeder uploader = requireAdministrator(userEmail);
 
-        FlightPlanEntry entry = flightPlanEntryRepository.findById(entryId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu w planie o ID: " + entryId));
+        FlightPlanEntry entry = flightPlanEntryRepository.findByIdForUpdate(entryId).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono lotu w planie o ID: " + entryId));
+
         validateFile(file);
 
         if (request == null || request.scope() == null) {

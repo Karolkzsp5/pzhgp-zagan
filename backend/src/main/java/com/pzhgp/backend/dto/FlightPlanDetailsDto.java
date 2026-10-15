@@ -7,5 +7,4 @@ public record FlightPlanDetailsDto(
         Integer year,
         List<FlightPlanEntryDto> adultFlights,
         List<FlightPlanEntryDto> youngFlights
-) {
-}
+) {}

@@ -27,5 +27,4 @@ public record FlightDetailsDto(
         int returnedPoints,
         Instant uploadedAt,
         boolean canDelete
-) {
-}
+) {}

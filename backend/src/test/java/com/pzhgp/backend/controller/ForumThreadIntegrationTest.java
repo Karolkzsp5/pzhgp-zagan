@@ -210,9 +210,23 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /threads - Should return 400 for non-positive category ID")
+    void createThread_WithNonPositiveCategoryId_ShouldReturn400() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(0L, "Poprawny tytuł", "Poprawna treść pierwszej wiadomości");
+
+        mockMvc.perform(post("/api/forum/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("ID kategorii musi być liczbą dodatnią."));
+    }
+
+    @Test
     @DisplayName("POST /threads - Should return 400 Bad Request when title is empty")
     void createThread_WithEmptyTitle_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "", "Prawidłowa treść");
+
         mockMvc.perform(post("/api/forum/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -224,11 +238,25 @@ class ForumThreadIntegrationTest {
     @DisplayName("POST /threads - Should return 400 Bad Request when initial post content is empty")
     void createThread_WithEmptyContent_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Prawidłowy tytuł", "");
+
         mockMvc.perform(post("/api/forum/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /threads - Should return 400 when initial post exceeds maximum length")
+    void createThread_WithTooLongInitialPost_ShouldReturn400() throws Exception {
+        ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Poprawny tytuł", "a".repeat(20_001));
+
+        mockMvc.perform(post("/api/forum/threads")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Treść pierwszej wiadomości może mieć maksymalnie 20000 znaków."));
     }
 
     @Test

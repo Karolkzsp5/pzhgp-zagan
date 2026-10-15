@@ -123,6 +123,31 @@ class BoardMemberServiceTest {
         verify(boardMemberRepository, never()).save(any());
     }
 
+    @Test
+    @DisplayName("Should reject assigning PENDING breeder account to board")
+    void shouldRejectPendingBreederAccount() {
+        breeder.setStatus(AccountStatus.PENDING);
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breeder.getId(), null, null, null);
+
+        when(breederRepository.findById(breeder.getId())).thenReturn(Optional.of(breeder));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
+        assertEquals("Do zarządu można przypisać wyłącznie aktywne konto hodowcy.", exception.getMessage());
+        verify(boardMemberRepository, never()).save(any(BoardMember.class));
+    }
+
+    @Test
+    @DisplayName("Should reject assigning BLOCKED breeder account to board")
+    void shouldRejectBlockedBreederAccount() {
+        breeder.setStatus(AccountStatus.BLOCKED);
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breeder.getId(), null, null, null);
+
+        when(breederRepository.findById(breeder.getId())).thenReturn(Optional.of(breeder));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
+        assertEquals("Do zarządu można przypisać wyłącznie aktywne konto hodowcy.", exception.getMessage());
+        verify(boardMemberRepository, never()).save(any(BoardMember.class));
+    }
 
     @Test
     @DisplayName("Should successfully create a board member for a Section with valid data")

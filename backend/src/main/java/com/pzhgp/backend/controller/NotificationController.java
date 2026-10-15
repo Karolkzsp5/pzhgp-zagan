@@ -3,6 +3,7 @@ package com.pzhgp.backend.controller;
 import com.pzhgp.backend.dto.NotificationDto;
 import com.pzhgp.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +18,11 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<List<NotificationDto>> getUserNotifications(Authentication authentication) {
-        return ResponseEntity.ok(notificationService.getUserNotifications(authentication.getName()));
+    public ResponseEntity<Page<NotificationDto>> getUserNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(notificationService.getUserNotifications(authentication.getName(), page, size));
     }
 
     @GetMapping("/unread-count")

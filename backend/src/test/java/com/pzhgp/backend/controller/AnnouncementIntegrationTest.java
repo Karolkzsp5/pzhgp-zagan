@@ -235,6 +235,20 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /api/announcements - Should return 400 when content exceeds maximum length")
+    void shouldRejectAnnouncementWithTooLongContent() throws Exception {
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Poprawny tytuł", "a".repeat(50_001), false);
+
+        mockMvc.perform(post("/api/announcements").header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Treść ogłoszenia może mieć maksymalnie 50000 znaków."));
+
+        assertEquals(0, announcementRepository.count());
+    }
+
+    @Test
     @DisplayName("PUT /api/announcements/{id} - Should return 403 Forbidden when BREEDER tries to update announcement")
     void shouldDenyBreederFromUpdatingAnnouncement() throws Exception {
         Announcement announcement = new Announcement();

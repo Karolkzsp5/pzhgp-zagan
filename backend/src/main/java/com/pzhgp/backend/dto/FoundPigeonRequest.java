@@ -20,17 +20,14 @@ import jakarta.validation.constraints.*;
  * @param preferredLanguage język formularza; brak wartości oznacza polski
  */
 public record FoundPigeonRequest(
-
         @NotBlank(message = "Podaj numer obrączki gołębia.")
-        @Pattern(
-                regexp = "^PL-0369-\\d{2}-\\d{4}$",
+        @Pattern(regexp = "^PL-0369-\\d{2}-\\d{4}$",
                 message = "Numer obrączki musi mieć format PL-0369-RR-NNNN, np. PL-0369-24-1234."
         )
         String ringNumber,
 
         @Size(max = 15, message = "Numer telefonu może mieć maksymalnie 15 znaków.")
-        @Pattern(
-                regexp = "^\\+?[0-9 ()./\\-]+$",
+        @Pattern(regexp = "^\\+?[0-9 ()./\\-]+$",
                 message = "Numer telefonu może zawierać wyłącznie cyfry, opcjonalny znak + oraz spacje, nawiasy, kropki, ukośniki i kreski."
         )
         String contactPhone,
@@ -74,12 +71,8 @@ public record FoundPigeonRequest(
             return true;
         }
 
-        long digits = contactPhone.chars()
-                .filter(Character::isDigit)
-                .count();
-
-        return digits >= MIN_PHONE_DIGITS
-                && digits <= MAX_PHONE_DIGITS;
+        long digits = contactPhone.chars().filter(Character::isDigit).count();
+        return digits >= MIN_PHONE_DIGITS && digits <= MAX_PHONE_DIGITS;
     }
 
     private static String trim(String value) {

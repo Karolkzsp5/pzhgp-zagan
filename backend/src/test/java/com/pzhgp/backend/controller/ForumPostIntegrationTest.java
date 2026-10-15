@@ -185,6 +185,19 @@ class ForumPostIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /threads/{id}/posts - Should return 400 when body exceeds maximum length")
+    void addPost_WithTooLongBody_ShouldReturn400() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("a".repeat(20_001));
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Treść wpisu może mieć maksymalnie 20000 znaków."));
+    }
+
+    @Test
     @DisplayName("POST /threads/{id}/posts - As Thread Author, should save post but NOT create NEW_REPLY notification")
     void addPost_WhenReplierIsThreadAuthor_ShouldNotNotify() throws Exception {
         long initialPostCount = postRepository.count();

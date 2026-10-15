@@ -7,8 +7,13 @@ import com.pzhgp.backend.entity.NotificationType;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
+import com.pzhgp.backend.utils.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +23,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
+
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final NotificationRepository notificationRepository;
     private final BreederRepository breederRepository;
@@ -37,9 +44,12 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationDto> getUserNotifications(String userEmail) {
+    public Page<NotificationDto> getUserNotifications(String userEmail, int page, int size) {
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Breeder breeder = getBreederByEmail(userEmail);
-        return notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(breeder.getId()).stream().map(this::mapToDto).collect(Collectors.toList());
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+
+        return notificationRepository.findByRecipientId(breeder.getId(), pageable).map(this::mapToDto);
     }
 
     @Transactional

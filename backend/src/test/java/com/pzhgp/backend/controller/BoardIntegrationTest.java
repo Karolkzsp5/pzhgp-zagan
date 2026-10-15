@@ -213,6 +213,34 @@ class BoardIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /api/board - Should return 400 for non-positive breeder ID")
+    void shouldRejectNonPositiveBreederId() throws Exception {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, -1L, null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią"));
+    }
+
+    @Test
+    @DisplayName("POST /api/board - Should reject breeder account combined with manual person data")
+    void shouldRejectBreederCombinedWithManualPersonData() throws Exception {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), "Jan", "Ręczny", null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie."));
+
+        assertEquals(0, boardMemberRepository.count());
+    }
+
+    @Test
     @DisplayName("POST /api/board - Should create manual person with custom name and surname")
     void shouldCreateManualPersonSuccessfully() throws Exception {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "Tomasz", "Zewnętrzny", null);
@@ -243,6 +271,65 @@ class BoardIntegrationTest {
         assertEquals("987654321", saved.getContactPhone());
     }
 
+    @Test
+    @DisplayName("POST /api/board - Should return 409 when breeder account is PENDING")
+    void shouldRejectPendingBreeder() throws Exception {
+        breederZagan.setStatus(AccountStatus.PENDING);
+        breederRepository.save(breederZagan);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        assertEquals(0, boardMemberRepository.count());
+    }
+
+    @Test
+    @DisplayName("POST /api/board - Should return 409 when breeder account is BLOCKED")
+    void shouldRejectBlockedBreeder() throws Exception {
+        breederZagan.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(breederZagan);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
+
+        mockMvc.perform(post("/api/board")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        assertEquals(0, boardMemberRepository.count());
+    }
+
+    @Test
+    @DisplayName("PUT /api/board/{id} - Should reject changing member to BLOCKED breeder")
+    void shouldRejectBlockedBreederOnUpdate() throws Exception {
+        BoardMember existingMember = new BoardMember();
+        existingMember.setRole(BoardRole.CZLONEK_ZARZADU);
+        existingMember.setBreeder(breederZagan);
+        existingMember = boardMemberRepository.save(existingMember);
+
+        breederZagan2.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(breederZagan2);
+
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan2.getId(), null, null, null);
+
+        mockMvc.perform(put("/api/board/" + existingMember.getId())
+                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Do zarządu można przypisać wyłącznie aktywne konto hodowcy."));
+
+        BoardMember unchanged = boardMemberRepository.findById(existingMember.getId()).orElseThrow();
+        assertEquals(breederZagan.getId(), unchanged.getBreeder().getId());
+    }
 
     @Test
     @DisplayName("PUT /api/board/{id} - Should update existing member and reflect changes in DB")

@@ -184,10 +184,7 @@ class ForumCategoryIntegrationTest {
 
         assertEquals(initialCount + 1, categoryRepository.count());
 
-        ForumCategory saved = categoryRepository.findAll().stream()
-                .filter(c -> c.getName().equals("Nowy Dział"))
-                .findFirst().get();
-
+        ForumCategory saved = categoryRepository.findAll().stream().filter(c -> c.getName().equals("Nowy Dział")).findFirst().get();
         assertEquals("Opis testowy", saved.getDescription());
         assertEquals(99, saved.getSortOrder());
         assertEquals(admin.getId(), saved.getAuthor().getId());
@@ -218,6 +215,24 @@ class ForumCategoryIntegrationTest {
                 .andExpect(status().isCreated());
 
         assertEquals(initialCount + 1, categoryRepository.count());
+    }
+
+    @Test
+    @DisplayName("POST /categories - Should return 400 when description exceeds maximum length")
+    void createCategory_WithTooLongDescription_ShouldReturn400() throws Exception {
+
+        Map<String, Object> request = Map.of(
+                "name", "Poprawna kategoria",
+                "description", "a".repeat(2_001),
+                "sortOrder", 10
+        );
+
+        mockMvc.perform(post("/api/forum/categories")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Opis kategorii może mieć maksymalnie 2000 znaków."));
     }
 
     @Test

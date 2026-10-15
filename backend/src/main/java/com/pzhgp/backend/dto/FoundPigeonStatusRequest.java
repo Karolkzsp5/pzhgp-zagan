@@ -7,8 +7,6 @@ import jakarta.validation.constraints.NotNull;
  * Żądanie zmiany statusu zgłoszenia przez administratora.
  */
 public record FoundPigeonStatusRequest(
-
         @NotNull(message = "Podaj nowy status zgłoszenia.")
         FoundPigeonStatus status
-) {
-}
+) {}

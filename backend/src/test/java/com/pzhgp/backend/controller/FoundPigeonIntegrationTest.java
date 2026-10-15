@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -276,12 +278,17 @@ class FoundPigeonIntegrationTest {
     void notifiesAdministrators() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
-        List<Notification> notifications = notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(administrator.getId());
+        List<Notification> notifications = notificationRepository.findByRecipientId(
+                administrator.getId(),
+                PageRequest.of(0, 50, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")))).getContent();
 
         assertEquals(1, notifications.size());
-        assertEquals(NotificationType.NEW_FOUND_PIGEON_REPORT, notifications.getFirst().getType());
-        assertEquals("/found-pigeons/admin", notifications.getFirst().getLink());
-        assertFalse(notifications.getFirst().getMessage().contains("601234567"), "The notification must not contain the finder's phone number");
+
+        Notification notification = notifications.getFirst();
+
+        assertEquals(NotificationType.NEW_FOUND_PIGEON_REPORT, notification.getType());
+        assertEquals("/found-pigeons/admin", notification.getLink());
+        assertFalse(notification.getMessage().contains("601234567"), "The notification must not contain the finder's phone number");
     }
 
     @Test

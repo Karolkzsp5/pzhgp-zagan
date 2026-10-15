@@ -9,6 +9,7 @@ public record AnnouncementRequestDto(
         String title,
 
         @NotBlank(message = "Treść ogłoszenia nie może być pusta.")
+        @Size(max = 50_000, message = "Treść ogłoszenia może mieć maksymalnie 50000 znaków.")
         String content,
 
         boolean isPinned

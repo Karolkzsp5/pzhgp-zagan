@@ -243,6 +243,17 @@ class FlightResultIntegrationTest {
     }
 
     @Test
+    @DisplayName("Non-positive Section identifier returns 400 Bad Request")
+    void rejectsNonPositiveSectionId() throws Exception {
+        mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
+                        .file(textFile("wyniki.txt", "Treść"))
+                        .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.SECTION, -1L)))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("ID sekcji musi być liczbą dodatnią."));
+    }
+
+    @Test
     @DisplayName("Selecting non-existent Section returns 404 Not Found")
     void rejectsMissingSection() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
@@ -301,7 +312,6 @@ class FlightResultIntegrationTest {
     @DisplayName("Result file larger than 5 megabytes returns 400 Bad Request")
     void rejectsOversizedFile() throws Exception {
         byte[] oversized = new byte[5 * 1024 * 1024 + 1];
-
         MockMultipartFile file = new MockMultipartFile("file", "wyniki.txt", "text/plain", oversized);
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
@@ -336,7 +346,6 @@ class FlightResultIntegrationTest {
     @DisplayName("Stored result file is returned inline as UTF-8 plain text")
     void returnsResultFile() throws Exception {
         String originalContent = "PZHGP Żagań\nZażółć gęślą jaźń\n12345";
-
         Long resultId = uploadResult(textFile("wyniki-dahme.txt", originalContent), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
         mockMvc.perform(get("/api/flight-results/" + resultId + "/file")

@@ -66,10 +66,26 @@ Cypress.Commands.add('checkLoggedOutNavbar', () => {
 });
 
 Cypress.Commands.add('mockNavbarNotifications', () => {
-    cy.intercept('GET', '**/api/notifications', {
-        statusCode: 200,
-        body: []
-    }).as('getNotifications');
+    cy.intercept(
+        {
+            method: 'GET',
+            pathname: '/api/notifications',
+            query: {
+                page: '0',
+                size: '50'
+            }
+        },
+        {
+            statusCode: 200,
+            body: {
+                content: [],
+                totalElements: 0,
+                totalPages: 0,
+                number: 0,
+                size: 50
+            }
+        }
+    ).as('getNotifications');
 
     cy.intercept('GET', '**/api/notifications/unread-count', {
         statusCode: 200,

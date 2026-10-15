@@ -13,9 +13,9 @@ public record LoginRequest(
         @NotBlank(message = "Hasło nie może być puste")
         String password
 ) {
-        public LoginRequest {
-                if (email != null) {
-                        email = email.trim().toLowerCase(Locale.ROOT);
-                }
+    public LoginRequest {
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
         }
+    }
 }

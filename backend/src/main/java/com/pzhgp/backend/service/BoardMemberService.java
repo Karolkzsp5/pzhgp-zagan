@@ -2,10 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.BoardMemberDto;
 import com.pzhgp.backend.dto.BoardMemberRequest;
-import com.pzhgp.backend.entity.BoardMember;
-import com.pzhgp.backend.entity.BoardRole;
-import com.pzhgp.backend.entity.Breeder;
-import com.pzhgp.backend.entity.Section;
+import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BoardMemberRepository;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -77,6 +74,10 @@ public class BoardMemberService {
 
         if (request.breederId() != null) {
             Breeder breeder = breederRepository.findById(request.breederId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + request.breederId()));
+
+            if (breeder.getStatus() != AccountStatus.ACTIVE) {
+                throw new ResourceConflictException("Do zarządu można przypisać wyłącznie aktywne konto hodowcy.");
+            }
 
             if (managedSection != null && !breeder.getSection().getId().equals(managedSection.getId())) {
                 throw new IllegalArgumentException("Hodowca nie należy do sekcji, w której ma pełnić funkcję.");
