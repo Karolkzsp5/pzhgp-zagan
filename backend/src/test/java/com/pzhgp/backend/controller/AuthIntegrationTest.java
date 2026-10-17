@@ -311,4 +311,13 @@ class AuthIntegrationTest {
 
         mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson)).andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("Should return 401 Unauthorized when accessing a protected endpoint with invalid JWT")
+    void shouldRejectInvalidJwtOnProtectedEndpoint() throws Exception {
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer invalid.jwt.token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Wymagane jest uwierzytelnienie."));
+    }
 }

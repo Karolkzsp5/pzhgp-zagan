@@ -4,6 +4,7 @@ import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.service.JwtService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
-        final String userEmail;
+        String userEmail = null;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
@@ -51,29 +52,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (jwtService.isTokenValid(jwt)) {
                 userEmail = jwtService.extractEmail(jwt);
-
-                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    Optional<Breeder> breederOpt = breederRepository.findByEmail(userEmail);
-
-                    if (breederOpt.isPresent() && breederOpt.get().getStatus() == AccountStatus.ACTIVE) {
-                        String dbRole = breederOpt.get().getRole().name();
-                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(dbRole);
-
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userEmail,
-                                null,
-                                Collections.singletonList(authority)
-                        );
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    } else {
-                        log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
-                    }
-                }
             }
-        } catch (Exception e) {
-            log.error("Błąd uwierzytelniania JWT: {}", e.getMessage());
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Odrzucono nieprawidłowy token JWT: {}", e.getMessage());
+        }
+
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            Optional<Breeder> breederOpt = breederRepository.findByEmail(userEmail);
+
+            if (breederOpt.isPresent() && breederOpt.get().getStatus() == AccountStatus.ACTIVE) {
+                String dbRole = breederOpt.get().getRole().name();
+                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(dbRole);
+
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userEmail,
+                        null,
+                        Collections.singletonList(authority)
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
+            }
         }
 
         filterChain.doFilter(request, response);
