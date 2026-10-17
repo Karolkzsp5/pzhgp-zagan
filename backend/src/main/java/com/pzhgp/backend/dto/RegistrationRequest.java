@@ -1,6 +1,7 @@
 package com.pzhgp.backend.dto;
 
 import jakarta.validation.constraints.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Locale;
 
@@ -54,9 +55,14 @@ public record RegistrationRequest(
         )
         String password
 ) {
-    public RegistrationRequest {
-        if (email != null) {
-            email = email.trim().toLowerCase(Locale.ROOT);
+        public RegistrationRequest {
+                if (email != null) {
+                        email = email.trim().toLowerCase(Locale.ROOT);
+                }
         }
-    }
+
+        @AssertTrue(message = "Hasło może mieć maksymalnie 72 bajty (UTF-8).")
+        public boolean isPasswordLengthValid() {
+                return password == null || (password.length() <= 72 && password.getBytes(StandardCharsets.UTF_8).length <= 72);
+        }
 }

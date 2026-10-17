@@ -67,7 +67,7 @@ public class FlightPlanService {
         requireAdministrator(userEmail);
 
         if (flightPlanRepository.existsByYear(request.year())) {
-            throw new IllegalArgumentException("Plan lotów dla roku " + request.year() + " już istnieje.");
+            throw new ResourceConflictException("Plan lotów dla roku " + request.year() + " już istnieje.");
         }
 
         FlightPlan plan = new FlightPlan();

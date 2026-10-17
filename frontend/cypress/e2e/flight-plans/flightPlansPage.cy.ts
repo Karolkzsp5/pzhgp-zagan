@@ -162,7 +162,7 @@ describe('Flight Plans Page Tests', () => {
 
         it('Should display an API error when creating a flight plan fails', () => {
             cy.intercept('POST', '**/api/flight-plans', {
-                statusCode: 400,
+                statusCode: 409,
                 body: 'Plan lotów dla roku 2027 już istnieje.'
             }).as('createFlightPlanError');
 

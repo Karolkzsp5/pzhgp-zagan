@@ -241,7 +241,7 @@ class FlightPlanServiceTest {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(true);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> flightPlanService.createPlan(
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> flightPlanService.createPlan(
                 new FlightPlanCreateRequest(2026),
                 administrator.getEmail()
         ));

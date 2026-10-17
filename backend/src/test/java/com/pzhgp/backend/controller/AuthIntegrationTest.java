@@ -117,6 +117,25 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should reject registration when password exceeds 72 UTF-8 bytes")
+    void shouldRejectRegistrationPasswordExceeding72Utf8Bytes() throws Exception {
+        String tooLongPassword = "Aa1!" + "ą".repeat(35);
+
+        RegistrationRequest request = new RegistrationRequest(
+                validRequest.name(), validRequest.surname(), validRequest.dateOfBirth(),
+                validRequest.postalCode(), validRequest.city(), validRequest.street(),
+                validRequest.houseNumber(), validRequest.sectionId(), validRequest.email(),
+                validRequest.phoneNumber(), tooLongPassword
+        );
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Hasło może mieć maksymalnie 72 bajty (UTF-8)."));
+    }
+
+    @Test
     @DisplayName("Should return 429 after exceeding the registration attempt limit")
     void shouldReturnTooManyRequestsAfterRegistrationLimit() throws Exception {
         String clientAddress = "192.0.2.20";
@@ -246,6 +265,18 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(wrongPassLogin)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string("Nieprawidłowy adres e-mail lub hasło."));
+    }
+
+    @Test
+    @DisplayName("Should reject login when password exceeds 72 UTF-8 bytes")
+    void shouldRejectLoginPasswordExceeding72Utf8Bytes() throws Exception {
+        LoginRequest request = new LoginRequest("test@test.pl", "Aa1!" + "a".repeat(69));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Hasło może mieć maksymalnie 72 bajty (UTF-8)."));
     }
 
     @Test
