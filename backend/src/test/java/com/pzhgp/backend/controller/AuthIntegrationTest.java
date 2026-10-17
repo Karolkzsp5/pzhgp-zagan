@@ -6,6 +6,8 @@ import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.service.AuthRateLimiter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,16 +41,25 @@ class AuthIntegrationTest {
     private BreederRepository breederRepository;
 
     @Autowired
+    private AuthRateLimiter authRateLimiter;
+
+    @Autowired
     private JsonMapper objectMapper;
 
     private RegistrationRequest validRequest;
 
     @BeforeEach
     void setUp() {
+        authRateLimiter.reset();
         validRequest = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
                 "Słowackiego", "10", 1, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        authRateLimiter.reset();
     }
 
     @Test
@@ -103,6 +114,73 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(duplicatePhoneRequest)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Użytkownik z podanym numerem telefonu już istnieje."));
+    }
+
+    @Test
+    @DisplayName("Should return 429 after exceeding the registration attempt limit")
+    void shouldReturnTooManyRequestsAfterRegistrationLimit() throws Exception {
+        String clientAddress = "192.0.2.20";
+
+        for (int i = 0; i < 5; i++) {
+            RegistrationRequest request = new RegistrationRequest(
+                    "Jan",
+                    "Kowalski",
+                    LocalDate.parse("1995-05-15"),
+                    "68-100",
+                    "Żagań",
+                    "Słowackiego",
+                    "10",
+                    1,
+                    "rate-limit-" + i + "@pzhgp.pl",
+                    "88888888" + i,
+                    "SecurePass1!"
+            );
+
+            mockMvc.perform(post("/api/auth/register")
+                            .with(httpRequest -> {
+                                httpRequest.setRemoteAddr(clientAddress);
+                                return httpRequest;
+                            })
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+        }
+
+        mockMvc.perform(post("/api/auth/register")
+                        .with(httpRequest -> {
+                            httpRequest.setRemoteAddr(clientAddress);
+                            return httpRequest;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().string("Zbyt wiele prób rejestracji. Spróbuj ponownie później."));
+    }
+
+    @Test
+    @DisplayName("Should return 429 after exceeding the login attempt limit")
+    void shouldReturnTooManyRequestsAfterLoginLimit() throws Exception {
+        String clientAddress = "192.0.2.10";
+        LoginRequest request = new LoginRequest("unknown@test.pl", "WrongPassword123!");
+
+        for (int i = 0; i < 30; i++) {
+            mockMvc.perform(post("/api/auth/login").with(httpRequest -> {
+                                httpRequest.setRemoteAddr(clientAddress);
+                                return httpRequest;
+                            })
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login").with(httpRequest -> {
+                            httpRequest.setRemoteAddr(clientAddress);
+                            return httpRequest;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().string("Zbyt wiele prób logowania. Spróbuj ponownie później."));
     }
 
     @Test

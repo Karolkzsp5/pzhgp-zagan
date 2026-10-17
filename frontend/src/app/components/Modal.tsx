@@ -11,14 +11,7 @@ interface ModalProps {
     maxWidthClass?: string;
 }
 
-export default function Modal({
-                                  isOpen,
-                                  title,
-                                  children,
-                                  onClose,
-                                  closeDisabled = false,
-                                  maxWidthClass = 'max-w-md'
-                              }: ModalProps) {
+export default function Modal({isOpen, title, children, onClose, closeDisabled = false, maxWidthClass = 'max-w-md'}: ModalProps) {
     const titleId = useId();
     const panelRef = useRef<HTMLDivElement>(null);
     const onCloseRef = useRef(onClose);
