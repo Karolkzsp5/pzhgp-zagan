@@ -275,7 +275,7 @@ class AnnouncementServiceTest {
     @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Moderator)")
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenUserIsAuthor() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
@@ -291,7 +291,7 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenAdminIsAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
@@ -306,7 +306,7 @@ class AnnouncementServiceTest {
     @DisplayName("Should set canDelete=true and canEdit=false flags for administrator viewing moderator's post")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAdmin() {
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
@@ -323,7 +323,7 @@ class AnnouncementServiceTest {
         moderator.setRole(Role.BREEDER);
 
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
         assertEquals(1, result.getTotalElements());
@@ -352,7 +352,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should set false flags for both actions when user is anonymous")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAnonymous() {
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null, 0, 10);
@@ -368,7 +368,7 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsFalse_WhenUserIsModeratorAndNotAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);

@@ -464,12 +464,12 @@ class PigeonFlightServiceTest {
         PigeonFlight flight = completeFlightOwnedBy(owner);
 
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.findByOwnerOrderByUploadedAtDesc(eq(owner), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(flight)));
+        when(flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(eq(owner), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(flight)));
 
         Page<FlightSummaryDto> result = pigeonFlightService.getMyFlights("jan@example.com", 2, 50);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(flightRepository).findByOwnerOrderByUploadedAtDesc(eq(owner), pageableCaptor.capture());
+        verify(flightRepository).findByOwnerOrderByUploadedAtDescIdDesc(eq(owner), pageableCaptor.capture());
 
         Pageable pageable = pageableCaptor.getValue();
 
@@ -499,7 +499,7 @@ class PigeonFlightServiceTest {
         assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.getMyFlights("jan@example.com", -1, 10));
         assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.getMyFlights("jan@example.com", 0, 0));
 
-        verify(flightRepository, never()).findByOwnerOrderByUploadedAtDesc(any(), any());
+        verify(flightRepository, never()).findByOwnerOrderByUploadedAtDescIdDesc(any(), any());
     }
 
     private Breeder breeder(Long id, String name, String surname, String email, Role role, Section section) {

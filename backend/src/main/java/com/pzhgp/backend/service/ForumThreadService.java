@@ -41,7 +41,11 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         PaginationUtils.validate(page, size, 100);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(Sort.Direction.DESC, "lastPostAt")));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("isPinned"),
+                Sort.Order.desc("lastPostAt"),
+                Sort.Order.desc("id")
+        ));
 
         return threadRepository.findByCategoryId(categoryId, pageable).map(thread -> mapToDto(thread, requester));
     }

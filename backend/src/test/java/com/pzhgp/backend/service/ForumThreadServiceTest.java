@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -148,6 +149,13 @@ class ForumThreadServiceTest {
         when(threadRepository.findByCategoryId(eq(10L), any(Pageable.class))).thenReturn(page);
 
         Page<ForumThreadDto> result = threadService.getThreadsByCategory(10L, 0, 10, "author@test.com");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(threadRepository).findByCategoryId(eq(10L), pageableCaptor.capture());
+
+        Sort sort = pageableCaptor.getValue().getSort();
+        assertEquals(List.of("isPinned", "lastPostAt", "id"), sort.stream().map(Sort.Order::getProperty).toList());
+        assertTrue(sort.stream().allMatch(order -> order.getDirection() == Sort.Direction.DESC));
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());

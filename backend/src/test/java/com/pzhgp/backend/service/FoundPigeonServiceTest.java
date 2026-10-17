@@ -320,8 +320,12 @@ class FoundPigeonServiceTest {
 
         assertEquals(0, pageable.getValue().getPageNumber());
         assertEquals(10, pageable.getValue().getPageSize());
-        assertEquals(Sort.Direction.DESC,
-                pageable.getValue().getSort().getOrderFor("createdAt").getDirection());
+
+        Sort sort = pageable.getValue().getSort();
+
+        assertEquals(List.of("createdAt", "id"), sort.stream().map(Sort.Order::getProperty).toList());
+        assertEquals(Sort.Direction.DESC, sort.getOrderFor("createdAt").getDirection());
+        assertEquals(Sort.Direction.DESC, sort.getOrderFor("id").getDirection());
     }
 
     @Test

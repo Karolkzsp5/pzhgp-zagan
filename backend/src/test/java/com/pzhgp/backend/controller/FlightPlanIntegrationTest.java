@@ -179,7 +179,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Creating a second plan for the same year returns 400 Bad Request")
+    @DisplayName("Creating a second plan for the same year returns 409 Conflict")
     void rejectsDuplicatePlanYear() throws Exception {
         createPlan(2026);
 
@@ -187,7 +187,7 @@ class FlightPlanIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(content().string("Plan lotów dla roku 2026 już istnieje."));
 
         assertEquals(1, flightPlanRepository.count());
