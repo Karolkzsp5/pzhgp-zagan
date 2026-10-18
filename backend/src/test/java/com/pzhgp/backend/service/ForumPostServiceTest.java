@@ -103,6 +103,8 @@ class ForumPostServiceTest {
     }
 
     private void mockSuccessfulPostDeletion() {
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(postRepository.existsById(500L)).thenReturn(true);
         when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(openingPost));
         when(postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(100L, 500L)).thenReturn(Optional.of(openingPost));
     }
@@ -113,7 +115,7 @@ class ForumPostServiceTest {
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
         LocalDateTime oldLastPostAt = thread.getLastPostAt();
 
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
         when(postRepository.save(any(ForumPost.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -139,7 +141,7 @@ class ForumPostServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when thread does not exist on addPost")
     void addPost_WhenThreadNotFound_ShouldThrowException() {
-        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
         ForumPostRequest request = new ForumPostRequest("Odpowiedź");
 
         assertThrows(EntityNotFoundException.class, () -> {
@@ -155,7 +157,7 @@ class ForumPostServiceTest {
         thread.setIsLocked(true);
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
 
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> {
             postService.addPost(100L, request, "post.author@test.pl");
@@ -297,6 +299,8 @@ class ForumPostServiceTest {
     void deletePost_WhenPostIsOpeningPost_ShouldThrowConflict() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(postRepository.existsById(500L)).thenReturn(true);
         when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(post));
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->

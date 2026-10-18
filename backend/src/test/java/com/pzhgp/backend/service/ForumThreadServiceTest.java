@@ -192,21 +192,35 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should increment views and return thread with Moderator permissions")
+    @DisplayName("Should increment views atomically and return thread with Moderator permissions")
     void getThreadAndIncrementViews_WithModeratorPermissions() {
         thread.setRepliesCount(4);
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
-        assertEquals(0, thread.getViews());
+        ForumThread updatedThread = new ForumThread();
+        updatedThread.setId(100L);
+        updatedThread.setAuthor(author);
+        updatedThread.setCategory(category);
+        updatedThread.setTitle(thread.getTitle());
+        updatedThread.setIsLocked(false);
+        updatedThread.setIsPinned(false);
+        updatedThread.setViews(1);
+        updatedThread.setRepliesCount(4);
+
+        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread), Optional.of(updatedThread));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
+        when(threadRepository.incrementViews(100L)).thenReturn(1);
 
         ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
 
-        assertEquals(1, thread.getViews());
         assertNotNull(result);
+        assertEquals(1, result.views());
+        assertEquals(0, thread.getViews());
         assertTrue(result.canDelete());
         assertTrue(result.canModerate());
         assertFalse(result.canEdit());
+
+        verify(threadRepository).incrementViews(100L);
+        verify(threadRepository, times(2)).findById(100L);
     }
 
     @Test
@@ -224,6 +238,7 @@ class ForumThreadServiceTest {
         assertTrue(result.canEdit());
         assertTrue(result.canDelete());
         assertTrue(result.canModerate());
+        verify(threadRepository, never()).incrementViews(anyLong());
     }
 
     @Test
@@ -241,6 +256,7 @@ class ForumThreadServiceTest {
         assertTrue(result.canEdit());
         assertTrue(result.canDelete());
         assertTrue(result.canModerate());
+        verify(threadRepository, never()).incrementViews(anyLong());
     }
 
     @Test
@@ -256,7 +272,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Author should be able to delete their own thread along with all posts")
     void deleteThread_WhenRequesterIsAuthor_ShouldDeleteThreadAndPosts() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
 
         threadService.deleteThread(100L, "author@test.com");
@@ -268,7 +284,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Administrator should be able to delete any thread")
     void deleteThread_WhenRequesterIsAdmin_ShouldDeleteThreadAndPosts() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         threadService.deleteThread(100L, "admin@test.com");
@@ -281,7 +297,7 @@ class ForumThreadServiceTest {
     @DisplayName("Administrator should be able to delete Moderator's thread")
     void deleteThread_WhenAdminDeletesModeratorThread_ShouldDelete() {
         thread.setAuthor(moderator);
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         threadService.deleteThread(100L, "admin@test.com");
@@ -293,7 +309,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Moderator should be able to delete any thread created by a Breeder")
     void deleteThread_WhenRequesterIsModerator_ShouldDeleteThreadAndPosts() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         threadService.deleteThread(100L, "moderator@test.com");
@@ -306,7 +322,7 @@ class ForumThreadServiceTest {
     @DisplayName("Moderator should be able to delete their own thread")
     void deleteThread_WhenModeratorDeletesOwnThread_ShouldDelete() {
         thread.setAuthor(moderator);
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         threadService.deleteThread(100L, "moderator@test.com");
@@ -323,7 +339,7 @@ class ForumThreadServiceTest {
         anotherAdmin.setRole(Role.ADMINISTRATOR);
         thread.setAuthor(anotherAdmin);
 
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> {
@@ -343,7 +359,7 @@ class ForumThreadServiceTest {
         anotherModerator.setRole(Role.MODERATOR);
         thread.setAuthor(anotherModerator);
 
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> {
@@ -358,7 +374,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when trying to delete a non-existent thread")
     void deleteThread_WhenThreadNotFound_ShouldThrowEntityNotFoundException() {
-        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
 
         assertThrows(EntityNotFoundException.class, () -> {
             threadService.deleteThread(999L, "author@test.com");
@@ -368,7 +384,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Admin should be able to toggle lock status both ways")
     void toggleThreadStatus_AdminShouldToggleLock() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         assertFalse(thread.getIsLocked());
@@ -383,7 +399,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Moderator should be able to toggle pin status both ways")
     void toggleThreadStatus_ModeratorShouldTogglePin() {
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertFalse(thread.getIsPinned());
@@ -398,7 +414,7 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
     void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
-        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
 
         assertThrows(EntityNotFoundException.class, () -> {
             threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);

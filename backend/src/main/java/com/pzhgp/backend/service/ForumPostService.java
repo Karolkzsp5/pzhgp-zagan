@@ -45,7 +45,7 @@ public class ForumPostService {
 
     @Transactional
     public void addPost(Long threadId, ForumPostRequest request, String authorEmail) {
-        ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         if (thread.getIsLocked()) {
             throw new ResourceConflictException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
@@ -96,8 +96,12 @@ public class ForumPostService {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego wpisu.");
         }
 
-        ForumThread thread = post.getThread();
-        Long threadId = thread.getId();
+        Long threadId = post.getThread().getId();
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+
+        if (!postRepository.existsById(postId)) {
+            throw new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId);
+        }
 
         ForumPost firstPost = postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(threadId).orElse(post);
 

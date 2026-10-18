@@ -151,13 +151,29 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /threads/{id} - Should increment views in real DB")
+    @DisplayName("GET /threads/{id} - Should increment views for visitors but not for the author")
     void getThread_ShouldIncrementViewsInDb() throws Exception {
-        mockMvc.perform(get("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
-                .andExpect(status().isOk());
+        Long threadId = thread.getId();
 
-        assertEquals(1, threadRepository.findById(thread.getId()).get().getViews());
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(1));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(2));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(2));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertEquals(2, threadRepository.findById(threadId).orElseThrow().getViews());
     }
 
     @Test

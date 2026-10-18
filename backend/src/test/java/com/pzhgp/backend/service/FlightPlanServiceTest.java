@@ -14,6 +14,7 @@ import com.pzhgp.backend.repository.FlightPlanRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
 import com.pzhgp.backend.repository.projection.FlightResultSummaryProjection;
 import jakarta.persistence.EntityNotFoundException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -220,7 +223,7 @@ class FlightPlanServiceTest {
     void createsPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(false);
-        when(flightPlanRepository.save(any(FlightPlan.class))).thenAnswer(invocation -> {
+        when(flightPlanRepository.saveAndFlush(any(FlightPlan.class))).thenAnswer(invocation -> {
             FlightPlan saved = invocation.getArgument(0);
             saved.setId(50L);
             return saved;
@@ -230,7 +233,7 @@ class FlightPlanServiceTest {
         assertEquals(50L, id);
 
         ArgumentCaptor<FlightPlan> captor = ArgumentCaptor.forClass(FlightPlan.class);
-        verify(flightPlanRepository).save(captor.capture());
+        verify(flightPlanRepository).saveAndFlush(captor.capture());
 
         assertEquals(2026, captor.getValue().getYear());
     }
@@ -249,6 +252,35 @@ class FlightPlanServiceTest {
         assertEquals("Plan lotów dla roku 2026 już istnieje.", exception.getMessage());
         verify(flightPlanRepository, never()).save(any());
     }
+
+
+    @Test
+    @DisplayName("Should throw ResourceConflictException when database detects duplicate plan year")
+    void rejectsDuplicatePlanYearDetectedByDatabase() {
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+
+        when(flightPlanRepository.existsByYear(2026)).thenReturn(false);
+
+        SQLException sqlException = new SQLException("Duplicate key", "23505");
+
+        ConstraintViolationException constraintException = new ConstraintViolationException(
+                "Duplicate plan year",
+                sqlException,
+                "uk_flight_plans_year"
+        );
+
+        when(flightPlanRepository.saveAndFlush(any(FlightPlan.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate plan year", constraintException));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
+                flightPlanService.createPlan(new FlightPlanCreateRequest(2026), administrator.getEmail())
+        );
+
+        assertEquals("Plan lotów dla roku 2026 już istnieje.", exception.getMessage());
+
+        verify(flightPlanRepository).saveAndFlush(any(FlightPlan.class));
+    }
+
 
     @Test
     @DisplayName("Moderator cannot create a flight plan")

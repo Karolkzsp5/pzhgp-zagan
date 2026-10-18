@@ -11,6 +11,8 @@ import com.pzhgp.backend.repository.FlightResultRepository;
 import com.pzhgp.backend.repository.projection.FlightResultSummaryProjection;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,7 +75,15 @@ public class FlightPlanService {
         FlightPlan plan = new FlightPlan();
         plan.setYear(request.year());
 
-        return flightPlanRepository.save(plan).getId();
+        try {
+            return flightPlanRepository.saveAndFlush(plan).getId();
+        } catch (DataIntegrityViolationException ex) {
+            if (isPlanYearConflict(ex)) {
+                throw new ResourceConflictException("Plan lotów dla roku " + request.year() + " już istnieje.");
+            }
+
+            throw ex;
+        }
     }
 
     @Transactional
@@ -127,6 +137,21 @@ public class FlightPlanService {
         }
 
         flightPlanRepository.delete(plan);
+    }
+
+    private boolean isPlanYearConflict(Throwable exception) {
+        Throwable cause = exception;
+
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException violation
+                    && "uk_flight_plans_year".equalsIgnoreCase(violation.getConstraintName())) {
+                return true;
+            }
+
+            cause = cause.getCause();
+        }
+
+        return false;
     }
 
     private FlightPlan requirePlanByYear(Integer year) {
