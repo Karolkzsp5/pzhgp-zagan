@@ -84,7 +84,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should create bulk notifications using saveAll and verify complete details")
+    @DisplayName("Should create notifications for each recipient with the expected metadata")
     void shouldCreateBulkNotifications() {
         List<Breeder> recipients = List.of(testBreeder, anotherBreeder);
 
@@ -241,7 +241,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully trigger markAllAsReadByRecipientId in repository")
+    @DisplayName("Should invoke bulk mark-as-read for the requested recipient")
     void shouldMarkAllAsRead() {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
 

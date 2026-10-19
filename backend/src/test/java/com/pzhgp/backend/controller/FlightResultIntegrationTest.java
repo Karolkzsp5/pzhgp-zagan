@@ -113,7 +113,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Unauthenticated user cannot upload, view or delete flight results")
+    @DisplayName("Should return 401 when accessing flight results without authentication")
     void requiresAuthentication() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -125,7 +125,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can upload Branch results and file is stored in H2")
+    @DisplayName("Should allow an administrator to upload and save branch flight results")
     void uploadsBranchResult() throws Exception {
         String content = """
                 PZHGP Oddział Żagań
@@ -146,7 +146,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can upload results for a selected Section")
+    @DisplayName("Should allow an administrator to upload flight results for a selected section")
     void uploadsSectionResult() throws Exception {
         Long resultId = uploadResult(textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
@@ -158,7 +158,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Moderator and Breeder cannot upload flight results")
+    @DisplayName("Should return 403 when a moderator or breeder uploads flight results")
     void rejectsUploadByNonAdministrator() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -176,7 +176,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Current database role is checked when Administrator JWT becomes outdated")
+    @DisplayName("Should reject a flight result upload after the administrator's database role is downgraded")
     void usesCurrentDatabaseRoleWhenUploadingResult() throws Exception {
         administrator.setRole(Role.BREEDER);
         breederRepository.save(administrator);
@@ -191,7 +191,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Second Branch result for the same flight returns 409 Conflict")
+    @DisplayName("Should return 409 when uploading a second branch result for the same flight")
     void rejectsDuplicateBranchResult() throws Exception {
         uploadResult(textFile("oddzial.txt", "Pierwsza lista"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
@@ -206,7 +206,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Second result for the same Section and flight returns 409 Conflict")
+    @DisplayName("Should return 409 when uploading duplicate section results for the same flight")
     void rejectsDuplicateSectionResult() throws Exception {
         uploadResult(textFile("sekcja3.txt", "Pierwsza lista"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
@@ -221,7 +221,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Branch results cannot contain Section identifier")
+    @DisplayName("Should reject a section ID when uploading branch results")
     void rejectsSectionIdForBranchResult() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -232,7 +232,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Section result requires Section identifier")
+    @DisplayName("Should reject section results without a section ID")
     void rejectsSectionResultWithoutSectionId() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -243,7 +243,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Non-positive Section identifier returns 400 Bad Request")
+    @DisplayName("Should return 400 when the section ID is not positive")
     void rejectsNonPositiveSectionId() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -254,7 +254,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Selecting non-existent Section returns 404 Not Found")
+    @DisplayName("Should return 404 when uploading results for a non-existent section")
     void rejectsMissingSection() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -264,7 +264,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Uploading result for non-existent flight returns 404 Not Found")
+    @DisplayName("Should return 404 when uploading results for a non-existent flight")
     void rejectsMissingFlight() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/999999")
                         .file(textFile("wyniki.txt", "Treść"))
@@ -274,7 +274,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("File with extension other than TXT returns 400 Bad Request")
+    @DisplayName("Should return 400 when uploading a result file without the TXT extension")
     void rejectsNonTxtFile() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "wyniki.pdf", "application/pdf", "Treść".getBytes(StandardCharsets.UTF_8));
 
@@ -287,7 +287,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("TXT file containing only whitespace returns 400 Bad Request")
+    @DisplayName("Should return 400 when the result file contains only whitespace")
     void rejectsBlankTextFile() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "   \n\t   "))
@@ -298,7 +298,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("TXT file containing NUL character returns 400 Bad Request")
+    @DisplayName("Should return 400 when a TXT result file contains a NUL character")
     void rejectsBinaryLikeTextFile() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "ABC\0DEF"))
@@ -309,7 +309,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Result file larger than 5 megabytes returns 400 Bad Request")
+    @DisplayName("Should return 400 when the result file exceeds 5 MB")
     void rejectsOversizedFile() throws Exception {
         byte[] oversized = new byte[5 * 1024 * 1024 + 1];
         MockMultipartFile file = new MockMultipartFile("file", "wyniki.txt", "text/plain", oversized);
@@ -323,7 +323,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Missing multipart file part returns 400 Bad Request")
+    @DisplayName("Should return 400 when the multipart request omits the result file")
     void rejectsMissingFilePart() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
@@ -333,7 +333,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Missing multipart metadata part returns 400 Bad Request")
+    @DisplayName("Should return 400 when the multipart request omits result metadata")
     void rejectsMissingMetadataPart() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
@@ -343,7 +343,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Stored result file is returned inline as UTF-8 plain text")
+    @DisplayName("Should return the stored result file as inline UTF-8 plain text")
     void returnsResultFile() throws Exception {
         String originalContent = "PZHGP Żagań\nZażółć gęślą jaźń\n12345";
         Long resultId = uploadResult(textFile("wyniki-dahme.txt", originalContent), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
@@ -358,25 +358,7 @@ class FlightResultIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can delete uploaded result")
-    void deletesResult() throws Exception {
-        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
-
-        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
-        assertTrue(flightResultRepository.findById(resultId).isEmpty());
-    }
-
-    @Test
-    @DisplayName("Moderator cannot delete uploaded result")
-    void rejectsDeletingResultByModerator() throws Exception {
-        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
-
-        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))).andExpect(status().isForbidden());
-        assertTrue(flightResultRepository.findById(resultId).isPresent());
-    }
-
-    @Test
-    @DisplayName("Plan details return Branch result first and Sections in configured order")
+    @DisplayName("Should list branch results before section results in configured order")
     void returnsResultsInCorrectOrder() throws Exception {
         uploadResult(textFile("sekcja3.txt", "Sekcja 3"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
         uploadResult(textFile("oddzial.txt", "Oddział"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
@@ -391,6 +373,24 @@ class FlightResultIntegrationTest {
                 .andExpect(jsonPath("$.adultFlights[0].results[1].scope").value("SECTION"))
                 .andExpect(jsonPath("$.adultFlights[0].results[1].sectionSortOrder").value(1))
                 .andExpect(jsonPath("$.adultFlights[0].results[2].sectionSortOrder").value(3));
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to delete uploaded flight results")
+    void deletesResult() throws Exception {
+        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
+
+        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
+        assertTrue(flightResultRepository.findById(resultId).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a moderator deletes flight results")
+    void rejectsDeletingResultByModerator() throws Exception {
+        Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
+
+        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))).andExpect(status().isForbidden());
+        assertTrue(flightResultRepository.findById(resultId).isPresent());
     }
 
     private Breeder createRealUser(String email, String phoneNumber, Role role) {

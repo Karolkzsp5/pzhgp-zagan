@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TrackSimplifierTest {
 
     @Test
-    @DisplayName("Null and empty routes produce empty results")
+    @DisplayName("Should return empty results for null or empty routes")
     void handlesNullAndEmptyRoutes() {
         assertTrue(TrackSimplifier.selectIndices(null, 10.0).isEmpty());
         assertTrue(TrackSimplifier.selectIndices(List.of(), 10.0).isEmpty());
@@ -22,7 +22,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Routes with one or two points are returned unchanged")
+    @DisplayName("Should preserve routes containing one or two points")
     void keepsShortRoutesUnchanged() {
         GpxPoint first = new GpxPoint(51.0, 15.0, null, null);
         GpxPoint second = new GpxPoint(51.1, 15.1, null, null);
@@ -34,7 +34,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Collinear intermediate points are removed while route endpoints are preserved")
+    @DisplayName("Should remove collinear intermediate points while preserving route endpoints")
     void removesCollinearPoints() {
         List<GpxPoint> points = new ArrayList<>();
 
@@ -50,7 +50,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Sharp route turn is preserved")
+    @DisplayName("Should preserve sharp turns in a route")
     void keepsSharpTurn() {
         List<GpxPoint> points = List.of(
                 new GpxPoint(51.0, 15.0, null, null),
@@ -67,7 +67,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Zero tolerance keeps every route point")
+    @DisplayName("Should preserve every route point when tolerance is zero")
     void zeroToleranceKeepsEveryPoint() {
         List<GpxPoint> points = samplePoints();
 
@@ -76,7 +76,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Negative tolerance keeps every route point")
+    @DisplayName("Should preserve every route point when tolerance is negative")
     void negativeToleranceKeepsEveryPoint() {
         List<GpxPoint> points = samplePoints();
 
@@ -85,7 +85,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Selected indexes are ascending and refer to original route points")
+    @DisplayName("Should return ascending indices referring to original route points")
     void returnsAscendingIndices() {
         List<GpxPoint> points = new ArrayList<>();
 
@@ -104,7 +104,7 @@ class TrackSimplifierTest {
     }
 
     @Test
-    @DisplayName("Real route is significantly reduced without exceeding the configured tolerance")
+    @DisplayName("Should significantly reduce a real route without exceeding the configured tolerance")
     void reducesRealTrack() throws IOException {
         try (InputStream stream = getClass().getResourceAsStream("/gpx/skyleader-lot-konkursowy.gpx")) {
             assertNotNull(stream);

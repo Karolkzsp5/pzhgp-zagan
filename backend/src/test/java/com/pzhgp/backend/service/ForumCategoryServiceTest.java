@@ -77,7 +77,7 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should return all categories sorted by sortOrder with mapped flags for Admin")
+    @DisplayName("Should request categories ordered by sortOrder and name and map administrator permissions")
     void getAllCategories_AsAdmin_ShouldReturnList() {
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
         when(categoryRepository.findAllByOrderBySortOrderAscNameAsc()).thenReturn(List.of(category));
@@ -184,7 +184,7 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when Breeder tries to create a category")
+    @DisplayName("Should forbid a breeder from creating a category")
     void createCategory_AsBreeder_ShouldThrowException() {
         when(breederRepository.findByEmail("breeder@test.pl")).thenReturn(Optional.of(breeder));
 
@@ -346,7 +346,7 @@ class ForumCategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when Moderator tries to delete a category")
+    @DisplayName("Should forbid a moderator from deleting a category")
     void deleteCategory_AsModerator_ShouldThrowException() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));

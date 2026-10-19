@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Admin Panel Integration Tests")
 class AdminIntegrationTest {
 
     @Autowired
@@ -92,27 +93,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 401 when unauthenticated user tries to access admin endpoints")
-    void shouldDenyAccessForUnauthenticatedUser() throws Exception {
-        mockMvc.perform(get("/api/admin/pending")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("Should return 403 Forbidden when BREEDER tries to access admin endpoints")
-    void shouldDenyAccessForBreeder() throws Exception {
-        mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
-        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Should return 403 Forbidden when MODERATOR tries to access admin endpoints")
-    void shouldDenyAccessForModerator() throws Exception {
-        mockMvc.perform(get("/api/admin/registered").header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
-        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Should return 200 OK and correct JSON content when ADMINISTRATOR accesses GET endpoints")
+    @DisplayName("Should allow an administrator to retrieve pending and registered accounts")
     void shouldAllowAccessForAdministratorGetEndpoints() throws Exception {
         mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -123,7 +104,27 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should allow ADMINISTRATOR to approve account, update real DB and create Notification")
+    @DisplayName("Should return 401 when an unauthenticated user accesses administrator endpoints")
+    void shouldDenyAccessForUnauthenticatedUser() throws Exception {
+        mockMvc.perform(get("/api/admin/pending")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a breeder accesses administrator endpoints")
+    void shouldDenyAccessForBreeder() throws Exception {
+        mockMvc.perform(get("/api/admin/pending").header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, breederToken)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a moderator accesses administrator endpoints")
+    void shouldDenyAccessForModerator() throws Exception {
+        mockMvc.perform(get("/api/admin/registered").header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).header(HttpHeaders.AUTHORIZATION, moderatorToken)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should approve a pending account and notify the breeder")
     void shouldApproveAccount() throws Exception {
         long initialNotificationCount = notificationRepository.count();
 
@@ -140,14 +141,22 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should allow ADMINISTRATOR to reject account and remove from real DB")
+    @DisplayName("Should return 404 when approving a non-existent account")
+    void shouldReturnNotFoundWhenEntityDoesNotExist() throws Exception {
+        mockMvc.perform(put("/api/admin/approve/99999")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should reject a pending account and delete it from the database")
     void shouldRejectAccount() throws Exception {
         mockMvc.perform(delete("/api/admin/reject/" + pendingBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
         assertTrue(breederRepository.findById(pendingBreeder.getId()).isEmpty());
     }
 
     @Test
-    @DisplayName("Should allow ADMINISTRATOR to block account in real DB")
+    @DisplayName("Should block an active account")
     void shouldBlockAccount() throws Exception {
         mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
 
@@ -156,7 +165,15 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should allow ADMINISTRATOR to unblock account in real DB")
+    @DisplayName("Should return 403 when an administrator attempts to block another administrator")
+    void shouldReturnForbiddenWhenActionIsDenied() throws Exception {
+        mockMvc.perform(put("/api/admin/block/" + anotherAdmin.getId())
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should unblock a blocked account")
     void shouldUnblockAccount() throws Exception {
         mockMvc.perform(put("/api/admin/unblock/" + blockedBreeder.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk());
 
@@ -165,7 +182,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should allow ADMINISTRATOR to change role in real DB and create Notification")
+    @DisplayName("Should change a breeder's role and create a notification")
     void shouldAllowAdministratorToChangeRole() throws Exception {
         long initialNotificationCount = notificationRepository.count();
         Map<String, String> requestBody = Map.of("role", "MODERATOR");
@@ -187,7 +204,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /api/admin/{id}/role - Role changed to BREEDER in DB after ADMIN JWT issuance should return 403")
+    @DisplayName("Should return 403 when a downgraded administrator uses an outdated JWT to change a role")
     void shouldDenyRoleChangeWhenAdminRoleDowngradedInDb() throws Exception {
         Breeder currentAdmin = breederRepository.findByEmail("admin@test.pl").get();
         currentAdmin.setRole(Role.BREEDER);
@@ -203,7 +220,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 400 Bad Request when role data is missing or empty in the request body")
+    @DisplayName("Should return 400 when role is missing from the request body")
     void shouldReturnBadRequestWhenRoleIsMissing() throws Exception {
         mockMvc.perform(put("/api/admin/" + activeBreeder.getId() + "/role")
                         .header(HttpHeaders.AUTHORIZATION, adminToken)
@@ -213,7 +230,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 400 Bad Request when role is completely invalid (e.g., SUPERMAN)")
+    @DisplayName("Should return 400 when the requested role is invalid")
     void shouldReturnBadRequestOnInvalidRoleString() throws Exception {
         Map<String, String> requestBody = Map.of("role", "SUPERMAN");
         mockMvc.perform(put("/api/admin/" + activeBreeder.getId() + "/role")
@@ -224,29 +241,7 @@ class AdminIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 404 Not Found when trying to perform action on non-existent account")
-    void shouldReturnNotFoundWhenEntityDoesNotExist() throws Exception {
-        mockMvc.perform(put("/api/admin/approve/99999")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("Should return 403 Forbidden when action is denied (e.g., blocking another admin)")
-    void shouldReturnForbiddenWhenActionIsDenied() throws Exception {
-        mockMvc.perform(put("/api/admin/block/" + anotherAdmin.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Should return 400 Bad Request when ID parameter in URL is not a number")
-    void shouldReturnBadRequestWhenIdIsInvalidType() throws Exception {
-        mockMvc.perform(put("/api/admin/approve/abc").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Should return 400 Bad Request on malformed JSON payload")
+    @DisplayName("Should return 400 when a role change contains malformed JSON")
     void shouldReturnBadRequestOnMalformedJson() throws Exception {
         String malformedJson = "{\"role\": \"MODERATOR\"";
 
@@ -255,5 +250,11 @@ class AdminIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(malformedJson))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when an account ID is not numeric")
+    void shouldReturnBadRequestWhenIdIsInvalidType() throws Exception {
+        mockMvc.perform(put("/api/admin/approve/abc").header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isBadRequest());
     }
 }

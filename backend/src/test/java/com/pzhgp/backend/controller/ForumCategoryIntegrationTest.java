@@ -135,7 +135,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories - Authenticated can fetch categories")
+    @DisplayName("Should allow an authenticated user to list forum categories")
     void getAllCategories_ShouldReturn200() throws Exception {
         mockMvc.perform(get("/api/forum/categories")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
@@ -144,13 +144,13 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories - Unauthenticated user gets 401 Unauthorized")
+    @DisplayName("Should return 401 when an unauthenticated user lists forum categories")
     void getAllCategories_WhenUnauthenticated_ShouldReturn401() throws Exception {
         mockMvc.perform(get("/api/forum/categories")).andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("GET /categories/{id} - Should return existing category")
+    @DisplayName("Should return an existing forum category by its ID")
     void getCategoryById_ShouldReturn200() throws Exception {
         mockMvc.perform(get("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
@@ -159,7 +159,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories/{id} - Should return 404 for non-existing category")
+    @DisplayName("Should return 404 when requesting a non-existent forum category")
     void getCategoryById_WhenMissing_ShouldReturn404() throws Exception {
         mockMvc.perform(get("/api/forum/categories/9999")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
@@ -167,7 +167,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /categories - Admin can create category and data is saved correctly in DB")
+    @DisplayName("Should allow an administrator to create and save a forum category")
     void createCategory_AsAdmin_ShouldReturn201() throws Exception {
         long initialCount = categoryRepository.count();
         Map<String, Object> request = Map.of(
@@ -191,19 +191,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /categories - Should return 400 Bad Request on invalid empty data")
-    void createCategory_WithInvalidData_ShouldReturn400() throws Exception {
-        Map<String, Object> request = Map.of("name", "", "sortOrder", 1);
-
-        mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST /categories - Moderator can create category")
+    @DisplayName("Should allow a moderator to create a forum category")
     void createCategory_AsModerator_ShouldReturn201() throws Exception {
         long initialCount = categoryRepository.count();
         Map<String, Object> request = Map.of("name", "Dział Moderatora", "sortOrder", 4);
@@ -218,7 +206,19 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /categories - Should return 400 when description exceeds maximum length")
+    @DisplayName("Should return 400 when creating a category with an empty name")
+    void createCategory_WithInvalidData_ShouldReturn400() throws Exception {
+        Map<String, Object> request = Map.of("name", "", "sortOrder", 1);
+
+        mockMvc.perform(post("/api/forum/categories")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when a category description exceeds the maximum length")
     void createCategory_WithTooLongDescription_ShouldReturn400() throws Exception {
 
         Map<String, Object> request = Map.of(
@@ -236,7 +236,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /categories - Breeder gets 403 Forbidden")
+    @DisplayName("Should return 403 when a breeder creates a forum category")
     void createCategory_AsBreeder_ShouldReturn403() throws Exception {
         Map<String, Object> request = Map.of("name", "Próba ataku", "sortOrder", 4);
 
@@ -248,7 +248,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Moderator can update THEIR OWN category")
+    @DisplayName("Should allow a moderator to update their own category")
     void updateCategory_AsModeratorOnOwnCategory_ShouldReturn200() throws Exception {
         Map<String, Object> request = Map.of("name", "Zmieniona Nazwa Mod", "sortOrder", 2);
 
@@ -262,7 +262,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Admin can update Moderator's category")
+    @DisplayName("Should allow an administrator to update a moderator's category")
     void updateCategory_AsAdminOnModeratorCategory_ShouldReturn200() throws Exception {
         Map<String, Object> request = Map.of("name", "Zmieniona przez Admina", "sortOrder", 2);
 
@@ -276,7 +276,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Moderator attempting to update Admin's category gets 403 Forbidden")
+    @DisplayName("Should return 403 when a moderator updates an administrator's category")
     void updateCategory_AsModeratorOnAdminCategory_ShouldReturn403() throws Exception {
         Map<String, Object> request = Map.of("name", "Włam Moderatora", "sortOrder", 1);
 
@@ -290,7 +290,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Admin attempting to update ANOTHER Admin's category gets 403 Forbidden")
+    @DisplayName("Should return 403 when an administrator updates another administrator's category")
     void updateCategory_AsAdminOnAnotherAdminCategory_ShouldReturn403() throws Exception {
         Map<String, Object> request = Map.of("name", "Włam Admina", "sortOrder", 3);
 
@@ -304,7 +304,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/{id} - Breeder gets 403 Forbidden")
+    @DisplayName("Should return 403 when a breeder updates a category")
     void updateCategory_AsBreeder_ShouldReturn403() throws Exception {
         Map<String, Object> request = Map.of("name", "Zmieniona Nazwa", "sortOrder", 1);
 
@@ -318,7 +318,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /categories/9999 - Should return 404 Not Found")
+    @DisplayName("Should return 404 when updating a non-existent category")
     void updateCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
         Map<String, Object> request = Map.of("name", "Test", "sortOrder", 1);
 
@@ -330,7 +330,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Admin can delete empty category")
+    @DisplayName("Should allow an administrator to delete an empty category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
@@ -340,7 +340,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Should return 409 Conflict when attempting to delete category that contains threads")
+    @DisplayName("Should return 409 when deleting a category containing threads")
     void deleteCategory_WhenThreadsExist_ShouldReturn409() throws Exception {
         ForumThread thread = new ForumThread();
         thread.setCategory(adminCategory);
@@ -357,7 +357,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Moderator gets 403 Forbidden")
+    @DisplayName("Should return 403 when a moderator deletes a category")
     void deleteCategory_AsModerator_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
@@ -367,7 +367,7 @@ class ForumCategoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /categories/{id} - Breeder gets 403 Forbidden")
+    @DisplayName("Should return 403 when a breeder deletes a category")
     void deleteCategory_AsBreeder_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))

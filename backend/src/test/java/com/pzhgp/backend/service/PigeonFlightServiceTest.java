@@ -79,7 +79,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Uploaded GPX file is saved with all track points and calculated statistics")
+    @DisplayName("Should save an uploaded GPX file with its track points and calculated statistics")
     void savesFlightWithTrackPoints() throws IOException {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -108,7 +108,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Flight name and ring number are read from the file when not provided by the breeder")
+    @DisplayName("Should use flight name and ring number from the GPX file when the breeder omits them")
     void fallsBackToFileMetadata() throws IOException {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -124,7 +124,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("User-provided metadata takes precedence over metadata read from the GPX file")
+    @DisplayName("Should prefer user-provided metadata over metadata from the GPX file")
     void prefersUserProvidedMetadata() throws IOException {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -142,7 +142,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Blank user metadata is treated as missing and falls back where applicable")
+    @DisplayName("Should treat blank user metadata as missing and fall back where applicable")
     void trimsOptionalMetadataToNull() throws IOException {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -162,108 +162,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("File with an extension other than GPX is rejected")
-    void rejectsNonGpxFile() {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-
-        MockMultipartFile file = new MockMultipartFile("file", "track.txt",
-                "text/plain", "not a GPX file".getBytes(StandardCharsets.UTF_8));
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-
-        assertTrue(exception.getMessage().contains(".gpx"));
-        verify(flightRepository, never()).countByOwner(any());
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Empty GPX file is rejected")
-    void rejectsEmptyFile() {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        MockMultipartFile file = new MockMultipartFile("file", "track.gpx", "application/gpx+xml", new byte[0]);
-
-        assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("GPX file larger than 10 megabytes is rejected")
-    void rejectsOversizedFile() {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getSize()).thenReturn(10L * 1024 * 1024 + 1);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-
-        assertTrue(exception.getMessage().contains("10 MB"));
-        verify(flightRepository, never()).countByOwner(any());
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Malformed GPX content results in a GPX parsing exception")
-    void rejectsGarbageContent() {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.countByOwner(owner)).thenReturn(0L);
-
-        MockMultipartFile file = new MockMultipartFile("file", "track.gpx",
-                "application/gpx+xml", "this is not XML".getBytes(StandardCharsets.UTF_8));
-
-        assertThrows(GpxParsingException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("IOException while reading the uploaded file is converted to a GPX parsing exception")
-    void convertsIoFailureToGpxParsingException() throws IOException {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.countByOwner(owner)).thenReturn(0L);
-
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getSize()).thenReturn(100L);
-        when(file.getOriginalFilename()).thenReturn("track.gpx");
-        when(file.getInputStream()).thenThrow(new IOException("Disk read error"));
-
-        GpxParsingException exception = assertThrows(GpxParsingException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
-
-        assertNotNull(exception.getCause());
-        assertInstanceOf(IOException.class, exception.getCause());
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Uploading another flight is blocked after the breeder reaches the flight limit")
-    void enforcesFlightLimit() throws IOException {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.countByOwner(owner)).thenReturn(200L);
-
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class,
-                () -> pigeonFlightService.uploadFlight(realGpxFile(), null, "jan@example.com"));
-
-        assertTrue(exception.getMessage().contains("limit"));
-        verify(flightRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Unknown breeder account is rejected before processing the GPX file")
-    void rejectsUnknownBreeder() {
-        when(breederRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class,
-                () -> pigeonFlightService.uploadFlight(null, null, "missing@example.com"));
-
-        verifyNoInteractions(flightRepository);
-        verifyNoInteractions(trackPointRepository);
-    }
-
-    @Test
-    @DisplayName("Path elements are removed from the original uploaded file name")
+    @DisplayName("Should remove path elements from the original uploaded file name")
     void sanitizesFileName() throws IOException {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -285,7 +184,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Smoothed speed is calculated and stored for track points with timestamps")
+    @DisplayName("Should calculate and store smoothed speeds for track points with timestamps")
     void storesSmoothedPointSpeeds() {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -322,7 +221,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Track points without timestamps are stored with null instantaneous speed")
+    @DisplayName("Should store null instantaneous speeds for track points without timestamps")
     void storesNullPointSpeedsWithoutTimestamps() {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
         when(flightRepository.countByOwner(owner)).thenReturn(0L);
@@ -357,83 +256,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Breeder cannot view a flight owned by another breeder")
-    void deniesAccessToForeignFlight() {
-        PigeonFlight flight = flightOwnedBy(owner);
-
-        when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
-        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
-
-        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class,
-                () -> pigeonFlightService.getFlightDetails(7L, "adam@example.com", null));
-
-        assertTrue(exception.getMessage().contains("uprawnień"));
-        verifyNoInteractions(trackPointRepository);
-    }
-
-    @Test
-    @DisplayName("Administrator can view a flight owned by any breeder")
-    void allowsAdministratorToViewAnyFlight() {
-        PigeonFlight flight = completeFlightOwnedBy(owner);
-
-        when(breederRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(administrator));
-        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
-        when(trackPointRepository.findByFlightIdOrderByPointIndexAsc(7L)).thenReturn(List.of(
-                trackPoint(0, 51.0, 15.0),
-                trackPoint(1, 51.1, 15.1),
-                trackPoint(2, 51.2, 15.2)));
-
-        FlightDetailsDto details = pigeonFlightService.getFlightDetails(7L, "admin@example.com", 0.0);
-
-        assertEquals("Jan Kowalski", details.ownerName());
-        assertTrue(details.canDelete());
-        assertEquals(12.35, details.statistics().straightLineDistanceKm(), 0.001);
-        assertEquals(13.0, details.statistics().trackDistanceKm(), 0.001);
-        assertEquals(1235.0, details.statistics().averageSpeedMetersPerMinute());
-        assertEquals(3, details.returnedPoints());
-        assertEquals(80.0, details.trackPoints().getFirst().speedMetersPerMinute(), 0.001);
-    }
-
-    @Test
-    @DisplayName("Flight owner can delete their own flight")
-    void allowsOwnerToDeleteFlight() {
-        PigeonFlight flight = flightOwnedBy(owner);
-
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
-
-        pigeonFlightService.deleteFlight(7L, "jan@example.com");
-        verify(flightRepository).delete(flight);
-    }
-
-    @Test
-    @DisplayName("Foreign breeder cannot delete a flight but administrator can")
-    void enforcesDeletePermissions() {
-        PigeonFlight flight = flightOwnedBy(owner);
-
-        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
-        when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
-
-        assertThrows(ForbiddenOperationException.class, () -> pigeonFlightService.deleteFlight(7L, "adam@example.com"));
-        verify(flightRepository, never()).delete(any());
-
-        when(breederRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(administrator));
-        pigeonFlightService.deleteFlight(7L, "admin@example.com");
-        verify(flightRepository).delete(flight);
-    }
-
-    @Test
-    @DisplayName("Missing flight throws EntityNotFoundException")
-    void reportsMissingFlight() {
-        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
-        when(flightRepository.findWithOwnerById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class,
-                () -> pigeonFlightService.getFlightDetails(999L, "jan@example.com", null));
-    }
-
-    @Test
-    @DisplayName("Zero and negative tolerance keep all points while positive and default tolerance simplify the route")
+    @DisplayName("Should preserve all points for non-positive tolerance and simplify routes otherwise")
     void appliesSimplificationTolerance() {
         PigeonFlight flight = flightOwnedBy(owner);
 
@@ -459,7 +282,108 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Flight list is mapped to summary DTOs and requested page size is capped at fifty")
+    @DisplayName("Should reject a file with an extension other than GPX")
+    void rejectsNonGpxFile() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+
+        MockMultipartFile file = new MockMultipartFile("file", "track.txt",
+                "text/plain", "not a GPX file".getBytes(StandardCharsets.UTF_8));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+
+        assertTrue(exception.getMessage().contains(".gpx"));
+        verify(flightRepository, never()).countByOwner(any());
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject an empty GPX file")
+    void rejectsEmptyFile() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        MockMultipartFile file = new MockMultipartFile("file", "track.gpx", "application/gpx+xml", new byte[0]);
+
+        assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject a GPX file larger than 10 MB")
+    void rejectsOversizedFile() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(10L * 1024 * 1024 + 1);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+
+        assertTrue(exception.getMessage().contains("10 MB"));
+        verify(flightRepository, never()).countByOwner(any());
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw GpxParsingException for malformed GPX content")
+    void rejectsGarbageContent() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.countByOwner(owner)).thenReturn(0L);
+
+        MockMultipartFile file = new MockMultipartFile("file", "track.gpx",
+                "application/gpx+xml", "this is not XML".getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(GpxParsingException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should convert IOException to GpxParsingException when reading an uploaded file")
+    void convertsIoFailureToGpxParsingException() throws IOException {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.countByOwner(owner)).thenReturn(0L);
+
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(100L);
+        when(file.getOriginalFilename()).thenReturn("track.gpx");
+        when(file.getInputStream()).thenThrow(new IOException("Disk read error"));
+
+        GpxParsingException exception = assertThrows(GpxParsingException.class,
+                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+
+        assertNotNull(exception.getCause());
+        assertInstanceOf(IOException.class, exception.getCause());
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should block another flight upload when the breeder reaches the flight limit")
+    void enforcesFlightLimit() throws IOException {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.countByOwner(owner)).thenReturn(200L);
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class,
+                () -> pigeonFlightService.uploadFlight(realGpxFile(), null, "jan@example.com"));
+
+        assertTrue(exception.getMessage().contains("limit"));
+        verify(flightRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject an unknown breeder before processing the GPX file")
+    void rejectsUnknownBreeder() {
+        when(breederRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> pigeonFlightService.uploadFlight(null, null, "missing@example.com"));
+
+        verifyNoInteractions(flightRepository);
+        verifyNoInteractions(trackPointRepository);
+    }
+
+    @Test
+    @DisplayName("Should map flight summaries and cap the requested page size at 50")
     void mapsFlightListAndCapsPageSize() {
         PigeonFlight flight = completeFlightOwnedBy(owner);
 
@@ -492,7 +416,7 @@ class PigeonFlightServiceTest {
     }
 
     @Test
-    @DisplayName("Negative page number and zero page size are rejected")
+    @DisplayName("Should reject negative page numbers and zero page sizes")
     void rejectsInvalidPaginationArguments() {
         when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
 
@@ -500,6 +424,82 @@ class PigeonFlightServiceTest {
         assertThrows(IllegalArgumentException.class, () -> pigeonFlightService.getMyFlights("jan@example.com", 0, 0));
 
         verify(flightRepository, never()).findByOwnerOrderByUploadedAtDescIdDesc(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should forbid a breeder from viewing another breeder's flight")
+    void deniesAccessToForeignFlight() {
+        PigeonFlight flight = flightOwnedBy(owner);
+
+        when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
+        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class,
+                () -> pigeonFlightService.getFlightDetails(7L, "adam@example.com", null));
+
+        assertTrue(exception.getMessage().contains("uprawnień"));
+        verifyNoInteractions(trackPointRepository);
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to view flights owned by other breeders")
+    void allowsAdministratorToViewAnyFlight() {
+        PigeonFlight flight = completeFlightOwnedBy(owner);
+
+        when(breederRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(administrator));
+        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
+        when(trackPointRepository.findByFlightIdOrderByPointIndexAsc(7L)).thenReturn(List.of(
+                trackPoint(0, 51.0, 15.0),
+                trackPoint(1, 51.1, 15.1),
+                trackPoint(2, 51.2, 15.2)));
+
+        FlightDetailsDto details = pigeonFlightService.getFlightDetails(7L, "admin@example.com", 0.0);
+
+        assertEquals("Jan Kowalski", details.ownerName());
+        assertTrue(details.canDelete());
+        assertEquals(12.35, details.statistics().straightLineDistanceKm(), 0.001);
+        assertEquals(13.0, details.statistics().trackDistanceKm(), 0.001);
+        assertEquals(1235.0, details.statistics().averageSpeedMetersPerMinute());
+        assertEquals(3, details.returnedPoints());
+        assertEquals(80.0, details.trackPoints().getFirst().speedMetersPerMinute(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when a flight does not exist")
+    void reportsMissingFlight() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.findWithOwnerById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> pigeonFlightService.getFlightDetails(999L, "jan@example.com", null));
+    }
+
+    @Test
+    @DisplayName("Should allow a flight owner to delete their own flight")
+    void allowsOwnerToDeleteFlight() {
+        PigeonFlight flight = flightOwnedBy(owner);
+
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
+
+        pigeonFlightService.deleteFlight(7L, "jan@example.com");
+        verify(flightRepository).delete(flight);
+    }
+
+    @Test
+    @DisplayName("Should forbid a breeder from deleting another breeder's flight but allow an administrator")
+    void enforcesDeletePermissions() {
+        PigeonFlight flight = flightOwnedBy(owner);
+
+        when(flightRepository.findWithOwnerById(7L)).thenReturn(Optional.of(flight));
+        when(breederRepository.findByEmail("adam@example.com")).thenReturn(Optional.of(otherBreeder));
+
+        assertThrows(ForbiddenOperationException.class, () -> pigeonFlightService.deleteFlight(7L, "adam@example.com"));
+        verify(flightRepository, never()).delete(any());
+
+        when(breederRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(administrator));
+        pigeonFlightService.deleteFlight(7L, "admin@example.com");
+        verify(flightRepository).delete(flight);
     }
 
     private Breeder breeder(Long id, String name, String surname, String email, Role role, Section section) {

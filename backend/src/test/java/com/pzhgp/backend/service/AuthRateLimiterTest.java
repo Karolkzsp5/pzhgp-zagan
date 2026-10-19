@@ -39,17 +39,6 @@ class AuthRateLimiterTest {
     }
 
     @Test
-    @DisplayName("Should reject registration attempts after the limit is reached")
-    void shouldLimitRegistrationAttempts() {
-        for (int i = 0; i < 5; i++) {
-            assertTrue(rateLimiter.tryAcquireRegistration("192.0.2.10"));
-        }
-
-        assertFalse(rateLimiter.tryAcquireRegistration("192.0.2.10"));
-        assertTrue(rateLimiter.tryAcquireRegistration("192.0.2.11"));
-    }
-
-    @Test
     @DisplayName("Should reset login limit after fifteen minutes")
     void shouldResetLoginLimitAfterWindowExpires() {
         for (int i = 0; i < 30; i++) {
@@ -59,6 +48,17 @@ class AuthRateLimiterTest {
         assertFalse(rateLimiter.tryAcquireLogin("192.0.2.10"));
         currentTime.updateAndGet(time -> time.plus(Duration.ofMinutes(15)));
         assertTrue(rateLimiter.tryAcquireLogin("192.0.2.10"));
+    }
+
+    @Test
+    @DisplayName("Should reject registration attempts after the limit is reached")
+    void shouldLimitRegistrationAttempts() {
+        for (int i = 0; i < 5; i++) {
+            assertTrue(rateLimiter.tryAcquireRegistration("192.0.2.10"));
+        }
+
+        assertFalse(rateLimiter.tryAcquireRegistration("192.0.2.10"));
+        assertTrue(rateLimiter.tryAcquireRegistration("192.0.2.11"));
     }
 
     @Test

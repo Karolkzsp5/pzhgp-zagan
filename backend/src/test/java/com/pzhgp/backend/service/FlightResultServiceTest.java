@@ -77,7 +77,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can upload Branch results and raw text is preserved")
+    @DisplayName("Should allow an administrator to upload branch results and preserve their raw text")
     void uploadsBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -120,7 +120,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can upload results for a selected Section")
+    @DisplayName("Should allow an administrator to upload results for a selected section")
     void uploadsSectionResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -156,7 +156,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Directory path is removed from the original uploaded file name")
+    @DisplayName("Should remove directory paths from the original uploaded file name")
     void sanitizesOriginalFileName() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -181,7 +181,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("TXT extension is accepted regardless of letter case")
+    @DisplayName("Should accept TXT extensions regardless of letter case")
     void acceptsUppercaseTxtExtension() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -203,7 +203,31 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Missing result file is rejected")
+    @DisplayName("Should retrieve a flight plan entry with a write lock when uploading results")
+    void shouldLockFlightPlanEntryBeforeSavingResult() {
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightResultRepository.existsByFlightPlanEntryIdAndScope(flight.getId(), FlightResultScope.BRANCH)).thenReturn(false);
+
+        when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
+            FlightResult result = invocation.getArgument(0);
+            result.setId(500L);
+            return result;
+        });
+
+        flightResultService.uploadResult(
+                flight.getId(),
+                textFile("wyniki.txt", "Treść wyników"),
+                new FlightResultUploadRequest(FlightResultScope.BRANCH, null),
+                administrator.getEmail()
+        );
+
+        verify(flightPlanEntryRepository).findByIdForUpdate(flight.getId());
+        verify(flightPlanEntryRepository, never()).findById(flight.getId());
+    }
+
+    @Test
+    @DisplayName("Should reject a missing result file")
     void rejectsMissingFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -221,7 +245,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Empty result file is rejected")
+    @DisplayName("Should reject an empty result file")
     void rejectsEmptyFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -246,7 +270,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Result file larger than 5 megabytes is rejected")
+    @DisplayName("Should reject a result file larger than 5 MB")
     void rejectsOversizedFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -268,7 +292,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("File with an extension other than TXT is rejected")
+    @DisplayName("Should reject a result file with an extension other than TXT")
     void rejectsNonTxtFile() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -293,7 +317,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Missing result metadata is rejected")
+    @DisplayName("Should reject missing result metadata")
     void rejectsMissingMetadata() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -311,7 +335,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Result metadata without scope is rejected")
+    @DisplayName("Should reject result metadata without a scope")
     void rejectsMissingScope() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -329,7 +353,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Branch results cannot reference a Section")
+    @DisplayName("Should reject a section reference in branch results")
     void rejectsSectionForBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -347,7 +371,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Second Branch result for the same flight is rejected")
+    @DisplayName("Should reject a second branch result for the same flight")
     void rejectsDuplicateBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -367,7 +391,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Section result requires a Section identifier")
+    @DisplayName("Should require a section ID for section results")
     void rejectsSectionResultWithoutSectionId() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -385,7 +409,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Section result is rejected when selected Section does not exist")
+    @DisplayName("Should reject section results when the selected section does not exist")
     void rejectsMissingSection() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -404,7 +428,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Second result for the same Section and flight is rejected")
+    @DisplayName("Should reject a second result for the same section and flight")
     void rejectsDuplicateSectionResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -425,7 +449,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Text file containing only whitespace is rejected")
+    @DisplayName("Should reject a result text file containing only whitespace")
     void rejectsBlankTextContent() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -443,7 +467,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Text file containing a NUL character is rejected")
+    @DisplayName("Should reject a result text file containing a NUL character")
     void rejectsBinaryLikeContent() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -461,7 +485,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("IOException while reading result file is converted to IllegalArgumentException")
+    @DisplayName("Should convert IOException to IllegalArgumentException when reading a result file")
     void convertsIoFailureToIllegalArgumentException() throws IOException {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
@@ -485,7 +509,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator cannot upload flight results")
+    @DisplayName("Should forbid a moderator from uploading flight results")
     void rejectsUploadByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
@@ -503,7 +527,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Uploading results fails when requesting user does not exist")
+    @DisplayName("Should reject result uploads when the requesting user does not exist")
     void rejectsUploadByMissingUser() {
         when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
 
@@ -520,7 +544,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Uploading results for a missing flight throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when uploading results for a missing flight")
     void rejectsResultForMissingFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
@@ -538,7 +562,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Stored result file is returned without modifying its content")
+    @DisplayName("Should return a stored result file without changing its content")
     void returnsResultFile() {
         FlightResult result = new FlightResult();
         result.setId(500L);
@@ -554,7 +578,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Requesting a missing result file throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when requesting a missing result file")
     void rejectsMissingResultFile() {
         when(flightResultRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -563,7 +587,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can delete uploaded flight results")
+    @DisplayName("Should allow an administrator to delete uploaded flight results")
     void deletesResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
 
@@ -576,7 +600,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Deleting a missing flight result throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when deleting a missing flight result")
     void rejectsDeletingMissingResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightResultRepository.findById(999L)).thenReturn(Optional.empty());
@@ -588,7 +612,7 @@ class FlightResultServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator cannot delete flight results")
+    @DisplayName("Should forbid a moderator from deleting flight results")
     void rejectsDeletingResultByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
@@ -597,30 +621,6 @@ class FlightResultServiceTest {
 
         verify(flightResultRepository, never()).findById(any());
         verify(flightResultRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("Should lock flight plan entry before checking and saving result")
-    void shouldLockFlightPlanEntryBeforeSavingResult() {
-        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
-        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
-        when(flightResultRepository.existsByFlightPlanEntryIdAndScope(flight.getId(), FlightResultScope.BRANCH)).thenReturn(false);
-
-        when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
-                    FlightResult result = invocation.getArgument(0);
-                    result.setId(500L);
-                    return result;
-                });
-
-        flightResultService.uploadResult(
-                flight.getId(),
-                textFile("wyniki.txt", "Treść wyników"),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null),
-                administrator.getEmail()
-        );
-
-        verify(flightPlanEntryRepository).findByIdForUpdate(flight.getId());
-        verify(flightPlanEntryRepository, never()).findById(flight.getId());
     }
 
     private Breeder breeder(Long id, String email, Role role) {

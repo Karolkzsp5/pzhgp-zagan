@@ -110,6 +110,58 @@ class ForumPostServiceTest {
     }
 
     @Test
+    @DisplayName("Should return mapped page of posts with edit=true and delete=true for Author")
+    void getPostsByThread_WhenRequesterIsAuthor_ShouldMapFlagsCorrectly() {
+        Page<ForumPost> page = new PageImpl<>(List.of(post));
+
+        when(threadRepository.existsById(100L)).thenReturn(true);
+        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
+
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "post.author@test.pl");
+
+        assertNotNull(result);
+        ForumPostDto dto = result.getContent().getFirst();
+        assertTrue(dto.canEdit());
+        assertTrue(dto.canDelete());
+    }
+
+    @Test
+    @DisplayName("Should return mapped page of posts with edit=false and delete=true for Moderator viewing Breeder's post")
+    void getPostsByThread_WhenRequesterIsModerator_ShouldMapFlagsCorrectly() {
+        Page<ForumPost> page = new PageImpl<>(List.of(post));
+
+        when(threadRepository.existsById(100L)).thenReturn(true);
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
+
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "moderator@test.pl");
+
+        assertNotNull(result);
+        ForumPostDto dto = result.getContent().getFirst();
+        assertFalse(dto.canEdit());
+        assertTrue(dto.canDelete());
+    }
+
+    @Test
+    @DisplayName("Should return mapped page of posts with edit=false and delete=false for regular user")
+    void getPostsByThread_WhenRequesterIsRegularUser_ShouldMapFlagsCorrectly() {
+        Page<ForumPost> page = new PageImpl<>(List.of(post));
+
+        when(threadRepository.existsById(100L)).thenReturn(true);
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor));
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
+
+        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "thread.author@test.pl");
+
+        assertNotNull(result);
+        ForumPostDto dto = result.getContent().getFirst();
+
+        assertFalse(dto.canEdit());
+        assertFalse(dto.canDelete());
+    }
+
+    @Test
     @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
     void addPost_ShouldSaveAndNotify() {
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
@@ -141,14 +193,15 @@ class ForumPostServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when thread does not exist on addPost")
     void addPost_WhenThreadNotFound_ShouldThrowException() {
-        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
         ForumPostRequest request = new ForumPostRequest("Odpowiedź");
 
-        assertThrows(EntityNotFoundException.class, () -> {
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
             postService.addPost(999L, request, "post.author@test.pl");
         });
 
-        verify(postRepository, never()).save(any());
+        assertEquals("Nie znaleziono wątku.", exception.getMessage());
+        verifyNoInteractions(breederRepository, postRepository);
     }
 
     @Test
@@ -168,7 +221,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Author should be able to edit their own post")
+    @DisplayName("Should allow an author to edit their own post")
     void updatePost_WhenRequesterIsAuthor_ShouldUpdateBody() {
         ForumPostRequest request = new ForumPostRequest("Nowa, zedytowana treść");
 
@@ -199,7 +252,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator should be able to delete a Breeder's post")
+    @DisplayName("Should allow a moderator to delete a breeder's post")
     void deletePost_WhenRequesterIsModeratorOnBreederPost_ShouldDelete() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
@@ -210,7 +263,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator should be able to delete their own post")
+    @DisplayName("Should allow a moderator to delete their own post")
     void deletePost_WhenRequesterIsModeratorOnOwnPost_ShouldDelete() {
         post.setAuthor(moderator);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
@@ -222,7 +275,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator should be able to delete Moderator's post")
+    @DisplayName("Should allow an administrator to delete a moderator's post")
     void deletePost_WhenRequesterIsAdminOnModeratorPost_ShouldDelete() {
         post.setAuthor(moderator);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
@@ -234,7 +287,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator should be able to delete their own post")
+    @DisplayName("Should allow an administrator to delete their own post")
     void deletePost_WhenRequesterIsAdminOnOwnPost_ShouldDelete() {
         post.setAuthor(admin);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
@@ -247,7 +300,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when Moderator tries to delete Admin's post")
+    @DisplayName("Should forbid a moderator from deleting an administrator's post")
     void deletePost_WhenModeratorTriesToDeleteAdminPost_ShouldThrowException() {
         post.setAuthor(admin);
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
@@ -261,7 +314,7 @@ class ForumPostServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when regular Breeder tries to delete another Breeder's post")
+    @DisplayName("Should forbid a breeder from deleting another breeder's post")
     void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
         when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
@@ -312,57 +365,5 @@ class ForumPostServiceTest {
         verify(postRepository, never()).delete(any());
         verify(postRepository, never()).findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(anyLong(), anyLong());
         verify(threadRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Should return mapped page of posts with edit=true and delete=true for Author")
-    void getPostsByThread_WhenRequesterIsAuthor_ShouldMapFlagsCorrectly() {
-        Page<ForumPost> page = new PageImpl<>(List.of(post));
-
-        when(threadRepository.existsById(100L)).thenReturn(true);
-        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
-
-        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "post.author@test.pl");
-
-        assertNotNull(result);
-        ForumPostDto dto = result.getContent().getFirst();
-        assertTrue(dto.canEdit());
-        assertTrue(dto.canDelete());
-    }
-
-    @Test
-    @DisplayName("Should return mapped page of posts with edit=false and delete=true for Moderator viewing Breeder's post")
-    void getPostsByThread_WhenRequesterIsModerator_ShouldMapFlagsCorrectly() {
-        Page<ForumPost> page = new PageImpl<>(List.of(post));
-
-        when(threadRepository.existsById(100L)).thenReturn(true);
-        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
-
-        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "moderator@test.pl");
-
-        assertNotNull(result);
-        ForumPostDto dto = result.getContent().getFirst();
-        assertFalse(dto.canEdit());
-        assertTrue(dto.canDelete());
-    }
-
-    @Test
-    @DisplayName("Should return mapped page of posts with edit=false and delete=false for regular user")
-    void getPostsByThread_WhenRequesterIsRegularUser_ShouldMapFlagsCorrectly() {
-        Page<ForumPost> page = new PageImpl<>(List.of(post));
-
-        when(threadRepository.existsById(100L)).thenReturn(true);
-        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor));
-        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
-
-        Page<ForumPostDto> result = postService.getPostsByThread(100L, 0, 10, "thread.author@test.pl");
-
-        assertNotNull(result);
-        ForumPostDto dto = result.getContent().getFirst();
-
-        assertFalse(dto.canEdit());
-        assertFalse(dto.canDelete());
     }
 }

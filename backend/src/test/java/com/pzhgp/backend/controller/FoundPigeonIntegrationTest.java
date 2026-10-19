@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Found Pigeon Integration Tests")
 class FoundPigeonIntegrationTest {
 
     @Autowired
@@ -128,7 +129,7 @@ class FoundPigeonIntegrationTest {
     // --- Public submission -------------------------------------------------
 
     @Test
-    @DisplayName("Anyone can submit a report without a JWT token")
+    @DisplayName("Should allow submitting a found-pigeon report without authentication")
     void submitsReportWithoutAuthentication() throws Exception {
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -140,14 +141,28 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A submitted report receives the PENDING status automatically")
+    @DisplayName("Should assign PENDING status to a newly submitted report")
     void newReportIsPending() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
         assertEquals(FoundPigeonStatus.PENDING, foundPigeonRepository.findAll().getFirst().getStatus());
     }
 
     @Test
-    @DisplayName("The ring number is required")
+    @DisplayName("Should return only the report ID without exposing submitted personal data")
+    void responseDoesNotEchoSubmittedData() throws Exception {
+        String response = mockMvc.perform(post("/api/found-pigeons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(response.contains("601234567"));
+        assertFalse(response.contains("finder@example.com"));
+        assertFalse(response.contains("PL-0369-26-1234"));
+    }
+
+    @Test
+    @DisplayName("Should reject a report without a ring number")
     void requiresRingNumber() throws Exception {
         submitExpectingBadRequest(report(null, "601234567", null, ReportLanguage.PL));
         submitExpectingBadRequest(report("   ", "601234567", null, ReportLanguage.PL));
@@ -156,7 +171,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Only the PL-0369-RR-NNNN ring number format is accepted")
+    @DisplayName("Should reject a ring number that does not match the required Polish format")
     void rejectsInvalidRingNumberFormat() throws Exception {
         submitExpectingBadRequest(report("PL-0208-24-1234", "601234567", null, ReportLanguage.PL));
         submitExpectingBadRequest(report("PL-0369-2024-1234", "601234567", null, ReportLanguage.PL));
@@ -167,7 +182,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A report without a phone number and without an e-mail address is rejected")
+    @DisplayName("Should reject a report without a phone number or email address")
     void requiresAtLeastOneContactMethod() throws Exception {
         submitExpectingBadRequest(report("PL-0369-26-1234", null, null, ReportLanguage.PL));
         submitExpectingBadRequest(report("PL-0369-26-1234", "  ", "  ", ReportLanguage.PL));
@@ -176,21 +191,21 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A report with only a phone number is accepted")
+    @DisplayName("Should accept a report containing only a phone number")
     void acceptsPhoneOnly() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
         assertEquals(1, foundPigeonRepository.count());
     }
 
     @Test
-    @DisplayName("A report with only an e-mail address is accepted")
+    @DisplayName("Should accept a report containing only an email address")
     void acceptsEmailOnly() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.EN));
         assertEquals(1, foundPigeonRepository.count());
     }
 
     @Test
-    @DisplayName("A report with both contact methods is accepted")
+    @DisplayName("Should accept a report containing both phone number and email address")
     void acceptsBothContactMethods() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
 
@@ -200,7 +215,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("An invalid e-mail address is rejected")
+    @DisplayName("Should reject a report containing an invalid email address")
     void rejectsInvalidEmail() throws Exception {
         submitExpectingBadRequest(report("PL-0369-26-1234", null, "not-an-email", ReportLanguage.PL));
         submitExpectingBadRequest(report("PL-0369-26-1234", null, "finder@", ReportLanguage.PL));
@@ -209,7 +224,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Foreign phone numbers in supported notation are accepted")
+    @DisplayName("Should accept supported international phone number formats")
     void acceptsForeignPhoneNumbers() throws Exception {
         List<String> validNumbers = List.of(
                 "+49 30 12345678",
@@ -228,7 +243,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Clearly malformed phone numbers are rejected")
+    @DisplayName("Should reject malformed phone numbers")
     void rejectsMalformedPhoneNumbers() throws Exception {
         submitExpectingBadRequest(report("PL-0369-26-1234", "12345", null, ReportLanguage.PL));
         submitExpectingBadRequest(report("PL-0369-26-1234", "telefon", null, ReportLanguage.PL));
@@ -238,7 +253,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Field length limits are enforced")
+    @DisplayName("Should enforce the maximum lengths of report fields")
     void enforcesMaximumLengths() throws Exception {
         submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "1234567890123456", null,
                         null, null, null, ReportLanguage.PL));
@@ -259,7 +274,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Polish, English and German are stored as the preferred language")
+    @DisplayName("Should store Polish, English and German as preferred contact languages")
     void storesAllSupportedLanguages() throws Exception {
         int pigeonNumber = 1;
 
@@ -274,7 +289,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrators receive a notification about a new report")
+    @DisplayName("Should notify administrators when a new found-pigeon report is submitted")
     void notifiesAdministrators() throws Exception {
         submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
@@ -292,21 +307,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("The submission response returns only the identifier, never the submitted data")
-    void responseDoesNotEchoSubmittedData() throws Exception {
-        String response = mockMvc.perform(post("/api/found-pigeons")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "601234567", "finder@example.com", ReportLanguage.PL))))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        assertFalse(response.contains("601234567"));
-        assertFalse(response.contains("finder@example.com"));
-        assertFalse(response.contains("PL-0369-26-1234"));
-    }
-
-    @Test
-    @DisplayName("Repeated submissions from one address are throttled")
+    @DisplayName("Should rate-limit repeated report submissions from one address")
     void throttlesRepeatedSubmissions() throws Exception {
         for (int i = 0; i < 5; i++) {
             submitExpectingCreated(report("PL-0369-26-000" + i, "601234567", null, ReportLanguage.PL));
@@ -323,7 +324,7 @@ class FoundPigeonIntegrationTest {
     // --- Privacy and authorization ----------------------------------------
 
     @Test
-    @DisplayName("The module exposes no public endpoint for reading reports")
+    @DisplayName("Should prevent unauthenticated users from reading found-pigeon reports")
     void exposesNoPublicReadEndpoint() throws Exception {
         storeReport(FoundPigeonStatus.PENDING);
 
@@ -333,7 +334,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A standard breeder cannot reach the administration panel")
+    @DisplayName("Should deny breeders access to found-pigeon administration")
     void deniesAccessToStandardBreeder() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.PENDING);
 
@@ -343,7 +344,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A moderator cannot reach the administration panel either")
+    @DisplayName("Should deny moderators access to found-pigeon administration")
     void deniesAccessToModerator() throws Exception {
         mockMvc.perform(get("/api/admin/found-pigeons").header("Authorization", "Bearer " + moderatorToken)).andExpect(status().isForbidden());
     }
@@ -351,7 +352,7 @@ class FoundPigeonIntegrationTest {
     // --- Administration panel ---------------------------------------------
 
     @Test
-    @DisplayName("The administrator sees the report together with the contact details")
+    @DisplayName("Should show contact details to administrators reviewing a report")
     void administratorSeesContactDetails() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.PENDING);
 
@@ -366,7 +367,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Reports can be filtered by status and searched by ring number")
+    @DisplayName("Should filter reports by status and search by ring number")
     void filtersAndSearchesReports() throws Exception {
         storeReport(FoundPigeonStatus.PENDING);
         storeReport(FoundPigeonStatus.APPROVED);
@@ -392,7 +393,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Pagination defaults to ten records and rejects a size above fifty")
+    @DisplayName("Should apply default pagination and reject page sizes above 50")
     void appliesPaginationLimits() throws Exception {
         for (int i = 0; i < 12; i++) {
             storeReport(FoundPigeonStatus.PENDING);
@@ -431,7 +432,20 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("The administrator walks a report through the allowed statuses")
+    @DisplayName("Should count found-pigeon reports awaiting verification")
+    void countsPendingReports() throws Exception {
+        storeReport(FoundPigeonStatus.PENDING);
+        storeReport(FoundPigeonStatus.PENDING);
+        storeReport(FoundPigeonStatus.APPROVED);
+
+        mockMvc.perform(get("/api/admin/found-pigeons/pending-count")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(2));
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to apply valid report status transitions")
     void movesReportThroughAllowedStatuses() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.PENDING);
 
@@ -451,7 +465,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("Invalid status transitions are rejected with conflict")
+    @DisplayName("Should return 409 when applying an invalid report status transition")
     void rejectsForbiddenStatusTransitions() throws Exception {
         Long pendingId = storeReport(FoundPigeonStatus.PENDING);
         Long resolvedId = storeReport(FoundPigeonStatus.RESOLVED);
@@ -470,7 +484,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("The administrator adds and edits the private note")
+    @DisplayName("Should allow an administrator to add and edit a private report note")
     void managesAdministratorNote() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.APPROVED);
 
@@ -490,7 +504,7 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("The administrator deletes a report that is no longer needed")
+    @DisplayName("Should allow an administrator to delete a found-pigeon report")
     void deletesReport() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.RESOLVED);
 
@@ -499,21 +513,8 @@ class FoundPigeonIntegrationTest {
     }
 
     @Test
-    @DisplayName("A missing report returns the not-found status")
+    @DisplayName("Should return 404 when requesting a non-existent report")
     void returnsNotFoundForMissingReport() throws Exception {
         mockMvc.perform(get("/api/admin/found-pigeons/999999").header("Authorization", "Bearer " + adminToken)).andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("The pending counter reports how many submissions await verification")
-    void countsPendingReports() throws Exception {
-        storeReport(FoundPigeonStatus.PENDING);
-        storeReport(FoundPigeonStatus.PENDING);
-        storeReport(FoundPigeonStatus.APPROVED);
-
-        mockMvc.perform(get("/api/admin/found-pigeons/pending-count")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count").value(2));
     }
 }

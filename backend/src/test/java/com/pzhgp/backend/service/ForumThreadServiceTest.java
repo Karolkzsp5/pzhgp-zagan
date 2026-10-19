@@ -96,49 +96,6 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should create a new thread, save its initial post, and notify active breeders")
-    void createThread_ShouldSaveThreadAndFirstPostAndNotify() {
-        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść pierwszego posta");
-        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
-        when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
-        when(threadRepository.save(any(ForumThread.class))).thenReturn(thread);
-
-        Breeder otherActiveBreeder = new Breeder();
-        otherActiveBreeder.setId(5L);
-        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(author, otherActiveBreeder));
-
-        threadService.createThread(request, "author@test.com");
-
-        ArgumentCaptor<ForumThread> threadCaptor = ArgumentCaptor.forClass(ForumThread.class);
-        verify(threadRepository, times(1)).save(threadCaptor.capture());
-        assertEquals("Nowy Wątek", threadCaptor.getValue().getTitle());
-        assertEquals(author, threadCaptor.getValue().getAuthor());
-
-        ArgumentCaptor<ForumPost> postCaptor = ArgumentCaptor.forClass(ForumPost.class);
-        verify(postRepository, times(1)).save(postCaptor.capture());
-        assertEquals("Treść pierwszego posta", postCaptor.getValue().getBody());
-
-        verify(notificationService, times(1)).createBulkNotifications(
-                argThat(list -> list.size() == 1 && list.getFirst().getId().equals(5L)),
-                eq("Jan Kowalski dodał/a nowy wątek na forum"),
-                eq("/forum/thread/100"),
-                eq(NotificationType.NEW_THREAD)
-        );
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when user creating thread is not found")
-    void createThread_WhenUserNotFound_ShouldThrowException() {
-        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść");
-        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
-        when(breederRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            threadService.createThread(request, "ghost@test.com");
-        });
-    }
-
-    @Test
     @DisplayName("Should return mapped page of threads when category exists")
     void getThreadsByCategory_Success() {
         thread.setRepliesCount(1);
@@ -192,7 +149,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should increment views atomically and return thread with Moderator permissions")
+    @DisplayName("Should invoke atomic view increment and map moderator permissions")
     void getThreadAndIncrementViews_WithModeratorPermissions() {
         thread.setRepliesCount(4);
 
@@ -224,7 +181,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should NOT increment views and map true for all flags when Admin reads their own thread")
+    @DisplayName("Should not increment views and should grant full permissions to an administrator viewing their own thread")
     void getThreadAndIncrementViews_WhenAdminIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(admin);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
@@ -242,7 +199,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Should NOT increment views and map true for all flags when Moderator reads their own thread")
+    @DisplayName("Should not increment views and should grant full permissions to a moderator viewing their own thread")
     void getThreadAndIncrementViews_WhenModeratorIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(moderator);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
@@ -270,7 +227,93 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Author should be able to delete their own thread along with all posts")
+    @DisplayName("Should create a new thread, save its initial post, and notify active breeders")
+    void createThread_ShouldSaveThreadAndFirstPostAndNotify() {
+        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść pierwszego posta");
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
+        when(threadRepository.save(any(ForumThread.class))).thenReturn(thread);
+
+        Breeder otherActiveBreeder = new Breeder();
+        otherActiveBreeder.setId(5L);
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(author, otherActiveBreeder));
+
+        threadService.createThread(request, "author@test.com");
+
+        ArgumentCaptor<ForumThread> threadCaptor = ArgumentCaptor.forClass(ForumThread.class);
+        verify(threadRepository, times(1)).save(threadCaptor.capture());
+        assertEquals("Nowy Wątek", threadCaptor.getValue().getTitle());
+        assertEquals(author, threadCaptor.getValue().getAuthor());
+
+        ArgumentCaptor<ForumPost> postCaptor = ArgumentCaptor.forClass(ForumPost.class);
+        verify(postRepository, times(1)).save(postCaptor.capture());
+        assertEquals("Treść pierwszego posta", postCaptor.getValue().getBody());
+
+        verify(notificationService, times(1)).createBulkNotifications(
+                argThat(list -> list.size() == 1 && list.getFirst().getId().equals(5L)),
+                eq("Jan Kowalski dodał/a nowy wątek na forum"),
+                eq("/forum/thread/100"),
+                eq(NotificationType.NEW_THREAD)
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when user creating thread is not found")
+    void createThread_WhenUserNotFound_ShouldThrowException() {
+        ForumThreadRequest request = new ForumThreadRequest(10L, "Nowy Wątek", "Treść");
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
+        when(breederRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            threadService.createThread(request, "ghost@test.com");
+        });
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to lock and unlock a thread")
+    void toggleThreadStatus_AdminShouldToggleLock() {
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        assertFalse(thread.getIsLocked());
+
+        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
+        assertTrue(thread.getIsLocked());
+
+        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
+        assertFalse(thread.getIsLocked());
+    }
+
+    @Test
+    @DisplayName("Should allow a moderator to pin and unpin a thread")
+    void toggleThreadStatus_ModeratorShouldTogglePin() {
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
+
+        assertFalse(thread.getIsPinned());
+
+        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
+        assertTrue(thread.getIsPinned());
+
+        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
+        assertFalse(thread.getIsPinned());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
+    void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
+            threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);
+        });
+
+        assertEquals("Nie znaleziono wątku.", exception.getMessage());
+        verifyNoInteractions(breederRepository);
+    }
+
+    @Test
+    @DisplayName("Should allow an author to delete their own thread and its posts")
     void deleteThread_WhenRequesterIsAuthor_ShouldDeleteThreadAndPosts() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
@@ -282,7 +325,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator should be able to delete any thread")
+    @DisplayName("Should allow an administrator to delete a breeder's thread and its posts")
     void deleteThread_WhenRequesterIsAdmin_ShouldDeleteThreadAndPosts() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
@@ -294,7 +337,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator should be able to delete Moderator's thread")
+    @DisplayName("Should allow an administrator to delete a moderator's thread")
     void deleteThread_WhenAdminDeletesModeratorThread_ShouldDelete() {
         thread.setAuthor(moderator);
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
@@ -307,7 +350,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator should be able to delete any thread created by a Breeder")
+    @DisplayName("Should allow a moderator to delete a breeder's thread and its posts")
     void deleteThread_WhenRequesterIsModerator_ShouldDeleteThreadAndPosts() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
@@ -319,7 +362,7 @@ class ForumThreadServiceTest {
     }
 
     @Test
-    @DisplayName("Moderator should be able to delete their own thread")
+    @DisplayName("Should allow a moderator to delete their own thread")
     void deleteThread_WhenModeratorDeletesOwnThread_ShouldDelete() {
         thread.setAuthor(moderator);
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
@@ -374,50 +417,13 @@ class ForumThreadServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when trying to delete a non-existent thread")
     void deleteThread_WhenThreadNotFound_ShouldThrowEntityNotFoundException() {
-        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> {
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
             threadService.deleteThread(999L, "author@test.com");
         });
-    }
 
-    @Test
-    @DisplayName("Admin should be able to toggle lock status both ways")
-    void toggleThreadStatus_AdminShouldToggleLock() {
-        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
-
-        assertFalse(thread.getIsLocked());
-
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
-        assertTrue(thread.getIsLocked());
-
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
-        assertFalse(thread.getIsLocked());
-    }
-
-    @Test
-    @DisplayName("Moderator should be able to toggle pin status both ways")
-    void toggleThreadStatus_ModeratorShouldTogglePin() {
-        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
-
-        assertFalse(thread.getIsPinned());
-
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
-        assertTrue(thread.getIsPinned());
-
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
-        assertFalse(thread.getIsPinned());
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
-    void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
-        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.of(thread));
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);
-        });
+        assertEquals("Nie znaleziono wątku o ID: 999", exception.getMessage());
+        verifyNoInteractions(breederRepository, postRepository);
     }
 }

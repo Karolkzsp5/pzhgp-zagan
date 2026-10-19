@@ -131,7 +131,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories/{id}/threads - Should fetch real data from H2")
+    @DisplayName("Should return category threads with mapped permissions and reply counts")
     void getThreadsByCategory_ShouldReturnRealData() throws Exception {
         mockMvc.perform(get("/api/forum/categories/" + category.getId() + "/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
@@ -143,7 +143,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /categories/9999/threads - Should return 404 for missing category")
+    @DisplayName("Should return 404 when listing threads in a non-existent category")
     void getThreadsByCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
         mockMvc.perform(get("/api/forum/categories/9999/threads")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
@@ -151,7 +151,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /threads/{id} - Should increment views for visitors but not for the author")
+    @DisplayName("Should increase views for visitors but not for the thread author")
     void getThread_ShouldIncrementViewsInDb() throws Exception {
         Long threadId = thread.getId();
 
@@ -177,7 +177,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should save new thread, INITIAL POST to H2 DB and send NEW_THREAD notification")
+    @DisplayName("Should save a new thread and opening post and notify relevant users")
     void createThread_ShouldSaveToDbAndNotify() throws Exception {
         long initialThreadCount = threadRepository.count();
         long initialPostCount = postRepository.count();
@@ -214,7 +214,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should return 404 when CategoryId is invalid")
+    @DisplayName("Should return 404 when creating a thread in a non-existent category")
     void createThread_WhenCategoryIsInvalid_ShouldReturn404() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(9999L, "Wątek w pustkę", "Treść testowa");
 
@@ -226,7 +226,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should return 400 for non-positive category ID")
+    @DisplayName("Should return 400 when creating a thread with a non-positive category ID")
     void createThread_WithNonPositiveCategoryId_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(0L, "Poprawny tytuł", "Poprawna treść pierwszej wiadomości");
 
@@ -239,7 +239,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should return 400 Bad Request when title is empty")
+    @DisplayName("Should return 400 when creating a thread with an empty title")
     void createThread_WithEmptyTitle_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "", "Prawidłowa treść");
 
@@ -251,7 +251,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should return 400 Bad Request when initial post content is empty")
+    @DisplayName("Should return 400 when creating a thread with an empty opening post")
     void createThread_WithEmptyContent_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Prawidłowy tytuł", "");
 
@@ -263,7 +263,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Should return 400 when initial post exceeds maximum length")
+    @DisplayName("Should return 400 when the opening post exceeds the maximum length")
     void createThread_WithTooLongInitialPost_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Poprawny tytuł", "a".repeat(20_001));
 
@@ -276,7 +276,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads - Unauthenticated user should receive 401 Unauthorized")
+    @DisplayName("Should return 401 when an unauthenticated user creates a thread")
     void createThread_WhenUnauthenticated_ShouldFail() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Haker", "Próba ataku");
 
@@ -287,7 +287,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/title - Author should be able to update thread title in DB")
+    @DisplayName("Should allow a thread author to update its title")
     void updateThreadTitle_AsAuthor_ShouldReturn200() throws Exception {
         Map<String, String> payload = Map.of("title", "Zaktualizowany piękny tytuł");
 
@@ -302,7 +302,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/title - Should return 400 Bad Request for titles that are too short (4 chars) or empty")
+    @DisplayName("Should return 400 when a new thread title is empty or too short")
     void updateThreadTitle_WithInvalidLengthBoundary_ShouldReturn400() throws Exception {
         Map<String, String> shortPayload = Map.of("title", "1234");
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
@@ -321,7 +321,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/title - Other breeder attempting to update title should get 403 Forbidden")
+    @DisplayName("Should return 403 when another breeder updates the thread title")
     void updateThreadTitle_AsOtherBreeder_ShouldReturn403() throws Exception {
         Map<String, String> payload = Map.of("title", "Włamuję się na twój wątek");
 
@@ -336,7 +336,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/9999/title - Updating non-existent thread should return 404")
+    @DisplayName("Should return 404 when updating a non-existent thread")
     void updateThreadTitle_WhenMissing_ShouldReturn404() throws Exception {
         Map<String, String> payload = Map.of("title", "Gdzie ja jestem?");
 
@@ -348,35 +348,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /threads/{id} - As Author, should return 204 and remove from DB")
-    void deleteThread_AsAuthor_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
-                .andExpect(status().isNoContent());
-
-        assertTrue(threadRepository.findById(thread.getId()).isEmpty());
-    }
-
-    @Test
-    @DisplayName("DELETE /threads/{id} - As Other Breeder, should return 403 Forbidden")
-    void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
-                .andExpect(status().isForbidden());
-
-        assertTrue(threadRepository.existsById(thread.getId()));
-    }
-
-    @Test
-    @DisplayName("DELETE /threads/9999 - Should return 404 Not Found for non-existent thread")
-    void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
-        mockMvc.perform(delete("/api/forum/threads/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("PUT /threads/{id}/lock - As Admin, should be able to double-toggle status")
+    @DisplayName("Should allow an administrator to lock and unlock a thread")
     void lockThread_AsAdmin_ShouldToggleProperly() throws Exception {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
 
@@ -394,7 +366,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/pin - As Moderator, should be able to double-toggle status")
+    @DisplayName("Should allow a moderator to pin and unpin a thread")
     void pinThread_AsModerator_ShouldToggleProperly() throws Exception {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
 
@@ -412,7 +384,7 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/pin - As Breeder, should return 403 Forbidden")
+    @DisplayName("Should return 403 when a breeder pins a thread")
     void pinThread_AsBreeder_ShouldReturn403() throws Exception {
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
@@ -422,12 +394,40 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /threads/{id}/lock - As Author (Breeder), should return 403 Forbidden because they are not Mod/Admin")
+    @DisplayName("Should return 403 when a breeder attempts to lock their own thread")
     void lockThread_AsBreederAuthor_ShouldReturn403() throws Exception {
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
                 .andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+    }
+
+    @Test
+    @DisplayName("Should allow the author to delete a thread and its posts")
+    void deleteThread_AsAuthor_ShouldRemoveFromDb() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                .andExpect(status().isNoContent());
+
+        assertTrue(threadRepository.findById(thread.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when another breeder deletes a thread")
+    void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                .andExpect(status().isForbidden());
+
+        assertTrue(threadRepository.existsById(thread.getId()));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when deleting a non-existent thread")
+    void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
+        mockMvc.perform(delete("/api/forum/threads/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
     }
 }

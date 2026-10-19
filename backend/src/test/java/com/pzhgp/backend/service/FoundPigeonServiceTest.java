@@ -87,7 +87,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("A new report is stored with the PENDING status")
+    @DisplayName("Should store a new report with PENDING status")
     void newReportStartsAsPending() {
         acceptRateLimit();
         stubSave();
@@ -106,7 +106,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("The ring number is stored both as typed and in a normalized form")
+    @DisplayName("Should store both the original and normalized ring number")
     void storesOriginalAndNormalizedRingNumber() {
         acceptRateLimit();
         stubSave();
@@ -123,7 +123,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("Missing language defaults to Polish")
+    @DisplayName("Should default to Polish when the report language is missing")
     void defaultsToPolishLanguage() {
         acceptRateLimit();
         stubSave();
@@ -139,7 +139,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("Active administrators are notified about a new report")
+    @DisplayName("Should notify active administrators about a new report")
     void notifiesActiveAdministrators() {
         acceptRateLimit();
         stubSave();
@@ -157,7 +157,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("The notification never carries the finder's contact details")
+    @DisplayName("Should omit the finder's phone number and email from administrator notifications")
     void notificationOmitsContactDetails() {
         acceptRateLimit();
         stubSave();
@@ -176,7 +176,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("No notification is sent when there is no active administrator")
+    @DisplayName("Should skip notifications when there are no active administrators")
     void skipsNotificationWithoutAdministrators() {
         acceptRateLimit();
         stubSave();
@@ -189,77 +189,19 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("A report is rejected once the submission rate limit is exceeded")
+    @DisplayName("Should reject a report when the submission rate limit is exceeded")
     void rejectsReportOverRateLimit() {
         when(rateLimiter.tryAcquire(CLIENT_IP)).thenReturn(false);
 
-        SubmissionRateLimitException exception = assertThrows(SubmissionRateLimitException.class,
-                () -> foundPigeonService.createReport(
-                        request("PL-0369-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP));
+        SubmissionRateLimitException exception = assertThrows(SubmissionRateLimitException.class, () -> foundPigeonService.createReport(
+                request("PL-0369-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP));
 
         assertFalse(exception.getMessage().matches(".*\\d+.*"), "The message must not reveal the configured limit");
         verify(foundPigeonRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Allowed status transitions are accepted")
-    void allowsValidStatusTransitions() {
-        FoundPigeonReport pending = reportWithStatus(FoundPigeonStatus.PENDING);
-        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
-        stubSave();
-
-        FoundPigeonDto approved = foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED);
-        assertEquals(FoundPigeonStatus.APPROVED, approved.status());
-
-        FoundPigeonDto resolved = foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED);
-        assertEquals(FoundPigeonStatus.RESOLVED, resolved.status());
-
-        verify(foundPigeonRepository, times(2)).findByIdForUpdate(1L);
-        verify(foundPigeonRepository, never()).findById(1L);
-    }
-
-    @Test
-    @DisplayName("Skipping the verification step is rejected")
-    void rejectsTransitionFromPendingToResolved() {
-        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
-
-        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
-        verify(foundPigeonRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Closed reports cannot be reopened")
-    void rejectsReopeningClosedReports() {
-        when(foundPigeonRepository.findByIdForUpdate(1L))
-                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.RESOLVED)));
-
-        assertThrows(InvalidStatusTransitionException.class,
-                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED));
-
-        when(foundPigeonRepository.findByIdForUpdate(2L))
-                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.REJECTED)));
-
-        assertThrows(InvalidStatusTransitionException.class,
-                () -> foundPigeonService.updateStatus(2L, FoundPigeonStatus.APPROVED));
-    }
-
-    @Test
-    @DisplayName("The administrator note can be added, edited and cleared")
-    void managesAdminNote() {
-        FoundPigeonReport report = reportWithStatus(FoundPigeonStatus.APPROVED);
-        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(report));
-        stubSave();
-
-        assertEquals("Właściciel ustalony.", foundPigeonService.updateAdminNote(1L, "Właściciel ustalony.").adminNote());
-        assertEquals("Kontakt przekazany hodowcy.", foundPigeonService.updateAdminNote(1L, "Kontakt przekazany hodowcy.").adminNote());
-        assertNull(foundPigeonService.updateAdminNote(1L, "   ").adminNote());
-
-        verify(foundPigeonRepository, times(3)).findByIdForUpdate(1L);
-        verify(foundPigeonRepository, never()).findById(1L);
-    }
-
-    @Test
-    @DisplayName("The search normalizes the ring number before querying")
+    @DisplayName("Should normalize the ring number before searching reports")
     void normalizesSearchQuery() {
         when(foundPigeonRepository.search(any(), any(), any())).thenReturn(new PageImpl<>(List.of(reportWithStatus(FoundPigeonStatus.PENDING))));
         foundPigeonService.searchReports(FoundPigeonStatus.PENDING, "pl-0208", 0, 10);
@@ -271,7 +213,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("A blank search phrase matches every report instead of being passed as null")
+    @DisplayName("Should pass an empty search phrase to the repository when input is blank")
     void blankSearchMatchesEverything() {
         when(foundPigeonRepository.search(any(), any(), any())).thenReturn(Page.empty());
 
@@ -283,7 +225,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("A missing search phrase is also passed as an empty text")
+    @DisplayName("Should pass an empty search phrase when the input is null")
     void nullSearchIsPassedAsEmptyText() {
         when(foundPigeonRepository.search(any(), any(), any())).thenReturn(Page.empty());
 
@@ -293,20 +235,7 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("Pagination parameters outside the allowed range are rejected")
-    void rejectsInvalidPaginationParameters() {
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, -1, 10));
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, 0, 0));
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, 0, 51));
-
-        verify(foundPigeonRepository, never()).search(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Reports are sorted from the newest submission")
+    @DisplayName("Should sort reports by creation date and ID in descending order")
     void sortsByNewestFirst() {
         when(foundPigeonRepository.search(any(), any(), any())).thenReturn(Page.empty());
 
@@ -326,17 +255,77 @@ class FoundPigeonServiceTest {
     }
 
     @Test
-    @DisplayName("A missing report ends with a not-found error")
-    void reportsMissingEntity() {
-        when(foundPigeonRepository.findById(999L)).thenReturn(Optional.empty());
-        when(foundPigeonRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+    @DisplayName("Should reject pagination parameters outside the allowed range")
+    void rejectsInvalidPaginationParameters() {
+        assertThrows(IllegalArgumentException.class,
+                () -> foundPigeonService.searchReports(null, null, -1, 10));
+        assertThrows(IllegalArgumentException.class,
+                () -> foundPigeonService.searchReports(null, null, 0, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> foundPigeonService.searchReports(null, null, 0, 51));
 
-        assertThrows(EntityNotFoundException.class, () -> foundPigeonService.getReport(999L));
-        assertThrows(EntityNotFoundException.class, () -> foundPigeonService.deleteReport(999L));
+        verify(foundPigeonRepository, never()).search(any(), any(), any());
     }
 
     @Test
-    @DisplayName("The administrator can delete a report together with the contact details")
+    @DisplayName("Should allow valid report status transitions")
+    void allowsValidStatusTransitions() {
+        FoundPigeonReport pending = reportWithStatus(FoundPigeonStatus.PENDING);
+        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pending));
+        stubSave();
+
+        FoundPigeonDto approved = foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED);
+        assertEquals(FoundPigeonStatus.APPROVED, approved.status());
+
+        FoundPigeonDto resolved = foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED);
+        assertEquals(FoundPigeonStatus.RESOLVED, resolved.status());
+
+        verify(foundPigeonRepository, times(2)).findByIdForUpdate(1L);
+        verify(foundPigeonRepository, never()).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Should reject skipping report verification when changing status")
+    void rejectsTransitionFromPendingToResolved() {
+        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
+
+        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        verify(foundPigeonRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject reopening closed reports")
+    void rejectsReopeningClosedReports() {
+        when(foundPigeonRepository.findByIdForUpdate(1L))
+                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.RESOLVED)));
+
+        assertThrows(InvalidStatusTransitionException.class,
+                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED));
+
+        when(foundPigeonRepository.findByIdForUpdate(2L))
+                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.REJECTED)));
+
+        assertThrows(InvalidStatusTransitionException.class,
+                () -> foundPigeonService.updateStatus(2L, FoundPigeonStatus.APPROVED));
+    }
+
+    @Test
+    @DisplayName("Should allow adding, editing and clearing an administrator note")
+    void managesAdminNote() {
+        FoundPigeonReport report = reportWithStatus(FoundPigeonStatus.APPROVED);
+        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(report));
+        stubSave();
+
+        assertEquals("Właściciel ustalony.", foundPigeonService.updateAdminNote(1L, "Właściciel ustalony.").adminNote());
+        assertEquals("Kontakt przekazany hodowcy.", foundPigeonService.updateAdminNote(1L, "Kontakt przekazany hodowcy.").adminNote());
+        assertNull(foundPigeonService.updateAdminNote(1L, "   ").adminNote());
+
+        verify(foundPigeonRepository, times(3)).findByIdForUpdate(1L);
+        verify(foundPigeonRepository, never()).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to delete a report with its contact details")
     void deletesReport() {
         FoundPigeonReport report = reportWithStatus(FoundPigeonStatus.RESOLVED);
         when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(report));
@@ -344,6 +333,16 @@ class FoundPigeonServiceTest {
         foundPigeonService.deleteReport(1L);
 
         verify(foundPigeonRepository).delete(report);
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when a report does not exist")
+    void reportsMissingEntity() {
+        when(foundPigeonRepository.findById(999L)).thenReturn(Optional.empty());
+        when(foundPigeonRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> foundPigeonService.getReport(999L));
+        assertThrows(EntityNotFoundException.class, () -> foundPigeonService.deleteReport(999L));
     }
 
     private FoundPigeonReport reportWithStatus(FoundPigeonStatus status) {

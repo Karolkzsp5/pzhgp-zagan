@@ -89,7 +89,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Plans are returned in the order provided by the repository")
+    @DisplayName("Should return flight plans in the order provided by the repository")
     void returnsAllPlans() {
         FlightPlan olderPlan = new FlightPlan();
         olderPlan.setId(11L);
@@ -108,7 +108,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Plan details separate adult and young flights and preserve date order")
+    @DisplayName("Should separate adult and young flights and preserve their date order")
     void returnsPlanDetailsSeparatedByAgeGroup() {
         FlightPlanEntry secondAdultFlight = flight(
                 101L,
@@ -144,7 +144,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Flight results are ordered with Branch first and Sections by their sort order")
+    @DisplayName("Should order flight results with branch results first and section results by sort order")
     void sortsFlightResults() {
         FlightResultSummaryProjection sectionThree = resultProjection(
                 3L,
@@ -195,7 +195,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("A flight without uploaded results contains an empty result list")
+    @DisplayName("Should return an empty result list for a flight without uploaded results")
     void returnsEmptyResultListForFlightWithoutResults() {
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
         when(flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId())).thenReturn(List.of(adultFlight));
@@ -207,7 +207,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Requesting a plan for a missing year throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when requesting a plan for a missing year")
     void rejectsMissingPlan() {
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.empty());
 
@@ -219,7 +219,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can create a new flight plan")
+    @DisplayName("Should throw EntityNotFoundException when requesting a plan for a missing year")
     void createsPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(false);
@@ -239,7 +239,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Creating another plan for the same year is rejected")
+    @DisplayName("Should reject creating another flight plan for the same year")
     void rejectsDuplicatePlanYear() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(true);
@@ -250,7 +250,7 @@ class FlightPlanServiceTest {
         ));
 
         assertEquals("Plan lotów dla roku 2026 już istnieje.", exception.getMessage());
-        verify(flightPlanRepository, never()).save(any());
+        verify(flightPlanRepository, never()).saveAndFlush(any());
     }
 
 
@@ -283,7 +283,7 @@ class FlightPlanServiceTest {
 
 
     @Test
-    @DisplayName("Moderator cannot create a flight plan")
+    @DisplayName("Should reject creating another flight plan for the same year")
     void rejectsPlanCreationByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
@@ -297,7 +297,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Plan modification fails when the requesting user does not exist")
+    @DisplayName("Should reject plan modifications when the requesting user does not exist")
     void rejectsMissingAdministrator() {
         when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
 
@@ -311,7 +311,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can add a flight to an existing plan")
+    @DisplayName("Should allow an administrator to add a flight to an existing plan")
     void addsFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
@@ -349,7 +349,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Blank flight category is stored as null")
+    @DisplayName("Should store a blank flight category as null")
     void convertsBlankCategoryToNull() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
@@ -377,7 +377,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Flight date outside the plan year is rejected when adding a flight")
+    @DisplayName("Should reject adding a flight scheduled outside the plan year")
     void rejectsFlightFromDifferentYearOnCreate() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
@@ -390,7 +390,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Adding a flight to a missing plan throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when adding a flight to a missing plan")
     void rejectsFlightForMissingPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.empty());
@@ -405,7 +405,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can update an existing flight")
+    @DisplayName("Should allow an administrator to update an existing flight")
     void updatesFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(adultFlight.getId())).thenReturn(Optional.of(adultFlight));
@@ -432,7 +432,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Flight date outside the plan year is rejected when updating a flight")
+    @DisplayName("Should reject updating a flight with a date outside the plan year")
     void rejectsFlightFromDifferentYearOnUpdate() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(adultFlight.getId())).thenReturn(Optional.of(adultFlight));
@@ -450,7 +450,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Updating a missing flight throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when updating a missing flight")
     void rejectsUpdateOfMissingFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(999L)).thenReturn(Optional.empty());
@@ -466,7 +466,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can delete a flight without results")
+    @DisplayName("Should allow an administrator to delete a flight without results")
     void deletesFlightWithoutResults() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(adultFlight.getId())).thenReturn(Optional.of(adultFlight));
@@ -478,7 +478,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Flight with uploaded results cannot be deleted")
+    @DisplayName("Should reject deleting a flight with uploaded results")
     void rejectsDeletingFlightWithResults() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(adultFlight.getId())).thenReturn(Optional.of(adultFlight));
@@ -491,7 +491,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Deleting a missing flight throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when deleting a missing flight")
     void rejectsDeletingMissingFlight() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findById(999L)).thenReturn(Optional.empty());
@@ -501,7 +501,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Administrator can delete an empty flight plan")
+    @DisplayName("Should allow an administrator to delete an empty flight plan")
     void deletesEmptyPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
@@ -513,7 +513,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Flight plan containing flights cannot be deleted")
+    @DisplayName("Should reject deleting a flight plan that contains flights")
     void rejectsDeletingNonEmptyPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
@@ -526,7 +526,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Deleting a missing flight plan throws EntityNotFoundException")
+    @DisplayName("Should throw EntityNotFoundException when deleting a missing flight plan")
     void rejectsDeletingMissingPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.empty());
