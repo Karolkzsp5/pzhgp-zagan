@@ -86,7 +86,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Unauthenticated user cannot access flight plans")
+    @DisplayName("Should return 401 when an unauthenticated user accesses flight plans")
     void requiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/flight-plans")).andExpect(status().isUnauthorized());
 
@@ -97,7 +97,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Authenticated users can read flight plans")
+    @DisplayName("Should allow authenticated users to read flight plans")
     void allowsAuthenticatedUsersToReadPlans() throws Exception {
         createPlan(2026);
 
@@ -112,7 +112,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can create a flight plan in the real database")
+    @DisplayName("Should allow an administrator to create a flight plan")
     void createsPlan() throws Exception {
         mockMvc.perform(post("/api/flight-plans")
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
@@ -126,7 +126,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Moderator and Breeder cannot create flight plans")
+    @DisplayName("Should return 403 when a moderator or breeder creates a flight plan")
     void rejectsPlanCreationByNonAdministrator() throws Exception {
         FlightPlanCreateRequest request = new FlightPlanCreateRequest(2026);
 
@@ -146,7 +146,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Current database role is checked even when JWT was issued for Administrator")
+    @DisplayName("Should deny plan creation after an administrator's role is downgraded in the database")
     void usesCurrentDatabaseRoleWhenCreatingPlan() throws Exception {
         administrator.setRole(Role.BREEDER);
         breederRepository.save(administrator);
@@ -161,7 +161,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight plan year validation rejects values outside allowed range")
+    @DisplayName("Should reject a flight plan year outside the allowed range")
     void validatesPlanYear() throws Exception {
         mockMvc.perform(post("/api/flight-plans")
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
@@ -179,7 +179,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Creating a second plan for the same year returns 400 Bad Request")
+    @DisplayName("Should return 409 when creating a second flight plan for the same year")
     void rejectsDuplicatePlanYear() throws Exception {
         createPlan(2026);
 
@@ -187,14 +187,14 @@ class FlightPlanIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(content().string("Plan lotów dla roku 2026 już istnieje."));
 
         assertEquals(1, flightPlanRepository.count());
     }
 
     @Test
-    @DisplayName("Administrator can add a flight and values are normalized before saving")
+    @DisplayName("Should allow an administrator to add a flight with normalized values")
     void addsFlight() throws Exception {
         FlightPlan plan = createPlan(2026);
 
@@ -228,7 +228,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Moderator cannot add flights to a plan")
+    @DisplayName("Should return 403 when a moderator adds a flight to a plan")
     void rejectsFlightCreationByModerator() throws Exception {
         FlightPlan plan = createPlan(2026);
 
@@ -244,7 +244,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight date outside plan year returns 400 Bad Request")
+    @DisplayName("Should return 400 when a flight date falls outside the plan year")
     void rejectsFlightFromDifferentYear() throws Exception {
         createPlan(2026);
 
@@ -259,7 +259,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Bean Validation rejects invalid flight data")
+    @DisplayName("Should reject invalid flight entry data")
     void validatesFlightRequest() throws Exception {
         createPlan(2026);
 
@@ -282,7 +282,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight plan details are sorted by scheduled date and separated by age group")
+    @DisplayName("Should sort flight plan entries by scheduled date and group them by age category")
     void returnsFlightsSortedByDate() throws Exception {
         FlightPlan plan = createPlan(2026);
 
@@ -304,7 +304,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can update an existing flight")
+    @DisplayName("Should allow an administrator to update an existing flight")
     void updatesFlight() throws Exception {
         FlightPlan plan = createPlan(2026);
         FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
@@ -335,7 +335,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Administrator can delete a flight without results")
+    @DisplayName("Should allow an administrator to delete a flight without results")
     void deletesFlightWithoutResults() throws Exception {
         FlightPlan plan = createPlan(2026);
         FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
@@ -345,7 +345,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight containing results cannot be deleted and returns 409 Conflict")
+    @DisplayName("Should return 409 when deleting a flight that has results")
     void rejectsDeletingFlightWithResults() throws Exception {
         FlightPlan plan = createPlan(2026);
         FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
@@ -366,7 +366,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Empty flight plan can be deleted")
+    @DisplayName("Should allow deletion of an empty flight plan")
     void deletesEmptyPlan() throws Exception {
         createPlan(2026);
 
@@ -375,7 +375,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight plan containing flights cannot be deleted and returns 409 Conflict")
+    @DisplayName("Should return 409 when deleting a flight plan containing flights")
     void rejectsDeletingNonEmptyPlan() throws Exception {
         FlightPlan plan = createPlan(2026);
         createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
@@ -388,7 +388,7 @@ class FlightPlanIntegrationTest {
     }
 
     @Test
-    @DisplayName("Missing flight plan returns 404 Not Found")
+    @DisplayName("Should return 404 when requesting a non-existent flight plan")
     void returnsNotFoundForMissingPlan() throws Exception {
         mockMvc.perform(get("/api/flight-plans/2099").header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
                 .andExpect(status().isNotFound())

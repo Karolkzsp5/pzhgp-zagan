@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Notifications Integration Tests")
 class NotificationIntegrationTest {
 
     @Autowired
@@ -106,13 +107,13 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 401 for unauthenticated users")
+    @DisplayName("Should return 401 when an unauthenticated user accesses notifications")
     void shouldRequireAuthenticationForUnauthenticatedUsers() throws Exception {
         mockMvc.perform(get("/api/notifications")).andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("Should return user notifications mapped to DTOs with all fields using real JWT")
+    @DisplayName("Should return the authenticated user's notifications with mapped DTO fields")
     void shouldReturnUserNotifications() throws Exception {
         mockMvc.perform(get("/api/notifications")
                         .param("page", "0")
@@ -170,39 +171,7 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return correct unread count using real JWT")
-    void shouldReturnUnreadCount() throws Exception {
-        mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
-                .andExpect(status().isOk())
-                .andExpect(content().string("1"));
-    }
-
-    @Test
-    @DisplayName("Should successfully mark notification as read and decrease unread count using real JWT")
-    void shouldMarkNotificationAsReadAndDecreaseCount() throws Exception {
-        Long notificationId = unreadNotification.getId();
-
-        mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
-                .andExpect(status().isOk())
-                .andExpect(content().string("1"));
-
-        mockMvc.perform(put("/api/notifications/" + notificationId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
-                .andExpect(status().isOk())
-                .andExpect(content().string("0"));
-
-        Notification updatedNotification = notificationRepository.findById(notificationId).orElseThrow();
-        assertTrue(updatedNotification.isRead());
-    }
-
-    @Test
-    @DisplayName("GET /api/notifications - Should return at most 50 newest notifications")
+    @DisplayName("Should return at most 50 newest notifications")
     void shouldReturnAtMostFiftyNewestNotifications() throws Exception {
         for (int i = 0; i < 60; i++) {
             Notification notification = new Notification();
@@ -230,7 +199,16 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/notifications/unread-count - Should count all unread notifications even when list is limited")
+    @DisplayName("Should return the unread notification count for the authenticated user")
+    void shouldReturnUnreadCount() throws Exception {
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+    }
+
+    @Test
+    @DisplayName("Should count all unread notifications even when the list is limited")
     void shouldCountAllUnreadNotificationsDespiteListLimit()
             throws Exception {
 
@@ -253,7 +231,50 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should mark only current user's notifications as read")
+    @DisplayName("Should mark a notification as read and decrease the unread count")
+    void shouldMarkNotificationAsReadAndDecreaseCount() throws Exception {
+        Long notificationId = unreadNotification.getId();
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+
+        mockMvc.perform(put("/api/notifications/" + notificationId + "/read")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("0"));
+
+        Notification updatedNotification = notificationRepository.findById(notificationId).orElseThrow();
+        assertTrue(updatedNotification.isRead());
+    }
+
+    @Test
+    @DisplayName("Should reject attempts to mark another user's notification as read")
+    void shouldPreventIdorWhenMarkingOthersNotificationAsRead() throws Exception {
+        Long othersNotificationId = unreadNotification.getId();
+
+        mockMvc.perform(put("/api/notifications/" + othersNotificationId + "/read")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when marking a non-existent notification as read")
+    void shouldReturn404WhenNotificationNotFound() throws Exception {
+        Long nonExistentId = 999999L;
+
+        mockMvc.perform(put("/api/notifications/" + nonExistentId + "/read")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should mark only the current user's notifications as read")
     void shouldMarkAllNotificationsAsRead() throws Exception {
         Notification extraUnread = new Notification();
         extraUnread.setRecipient(testBreeder);
@@ -279,25 +300,5 @@ class NotificationIntegrationTest {
 
         Notification untouchedNotification = notificationRepository.findById(anotherBreederNotification.getId()).orElseThrow();
         assertFalse(untouchedNotification.isRead());
-    }
-
-    @Test
-    @DisplayName("Should prevent IDOR and return error when marking someone else's notification as read")
-    void shouldPreventIdorWhenMarkingOthersNotificationAsRead() throws Exception {
-        Long othersNotificationId = unreadNotification.getId();
-
-        mockMvc.perform(put("/api/notifications/" + othersNotificationId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Should return 404 Not Found when marking non-existent notification as read")
-    void shouldReturn404WhenNotificationNotFound() throws Exception {
-        Long nonExistentId = 999999L;
-
-        mockMvc.perform(put("/api/notifications/" + nonExistentId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
-                .andExpect(status().isNotFound());
     }
 }

@@ -7,7 +7,6 @@ export default function useLatestRequest() {
 
     const beginRequest = useCallback(() => {
         latestRequestIdRef.current += 1;
-
         return latestRequestIdRef.current;
     }, []);
 

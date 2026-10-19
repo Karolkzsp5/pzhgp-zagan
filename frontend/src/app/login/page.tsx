@@ -36,6 +36,12 @@ export default function LoginPage() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });
+
+        if (formData.password.length > 72 || new TextEncoder().encode(formData.password).length > 72) {
+            setMessage({ text: 'Hasło może mieć maksymalnie 72 bajty (UTF-8).', type: 'error' });
+            return;
+        }
+
         setIsLoading(true);
 
         try {

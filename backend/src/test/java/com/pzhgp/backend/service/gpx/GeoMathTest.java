@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GeoMathTest {
 
     @Test
-    @DisplayName("Distance between identical coordinates is zero")
+    @DisplayName("Should return zero distance for identical coordinates")
     void returnsZeroForIdenticalCoordinates() {
         double distance = GeoMath.distance(51.0, 15.0, 51.0, 15.0);
 
@@ -16,7 +16,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("Haversine distance is symmetric")
+    @DisplayName("Should calculate symmetric Haversine distances")
     void distanceIsSymmetric() {
         double forward = GeoMath.distance(51.0, 15.0, 52.0, 16.0);
         double backward = GeoMath.distance(52.0, 16.0, 51.0, 15.0);
@@ -25,7 +25,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("One degree of latitude is approximately one hundred eleven kilometers")
+    @DisplayName("Should calculate approximately 111 km for one degree of latitude")
     void computesKnownLatitudeDistance() {
         double distance = GeoMath.distance(51.0, 15.0, 52.0, 15.0);
 
@@ -33,7 +33,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("Point located directly on a segment has zero distance to that segment")
+    @DisplayName("Should return zero distance for a point lying on a segment")
     void pointOnSegmentHasZeroDistance() {
         double distance = GeoMath.distanceToSegment(51.0, 15.005, 51.0, 15.0, 51.0, 15.01);
 
@@ -41,7 +41,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("Perpendicular point distance to a horizontal segment is calculated in meters")
+    @DisplayName("Should calculate perpendicular distance to a horizontal segment in meters")
     void computesPerpendicularDistanceToSegment() {
         double distance = GeoMath.distanceToSegment(51.001, 15.005, 51.0, 15.0, 51.0, 15.01);
 
@@ -49,7 +49,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("Point outside the segment is measured from the nearest endpoint")
+    @DisplayName("Should measure distance to the nearest endpoint when projection falls outside a segment")
     void clampsProjectionToSegmentEndpoint() {
         double distance = GeoMath.distanceToSegment(51.0, 14.999, 51.0, 15.0, 51.0, 15.01);
 
@@ -58,7 +58,7 @@ class GeoMathTest {
     }
 
     @Test
-    @DisplayName("Zero-length segment is handled as distance to a single point")
+    @DisplayName("Should measure distance to a single point when the segment has zero length")
     void handlesZeroLengthSegment() {
         double distance = GeoMath.distanceToSegment(51.001, 15.0, 51.0, 15.0, 51.0, 15.0);
 

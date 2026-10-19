@@ -106,7 +106,7 @@ public class AnnouncementService {
         PaginationUtils.validate(page, size, 100);
         Pageable pageable = PageRequest.of(page, size);
 
-        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable).map(announcement -> mapToDto(announcement, finalCurrentUser));
+        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(pageable).map(announcement -> mapToDto(announcement, finalCurrentUser));
     }
 
     private boolean canEditAnnouncement(Announcement announcement, Breeder requester) {

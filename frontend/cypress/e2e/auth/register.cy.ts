@@ -161,7 +161,7 @@ describe('Breeder Registration Process Test', () => {
 
     it('E-mail test - Should return an error: "User with this email address already exists."', () => {
         cy.intercept('POST', '**/api/auth/register', {
-            statusCode: 400,
+            statusCode: 409,
             body: 'Użytkownik z podanym adresem e-mail już istnieje.'
         }).as('duplicateEmailRequest');
 
@@ -205,7 +205,7 @@ describe('Breeder Registration Process Test', () => {
 
     it('Phone number test - Should prevent registration when user with the same phone number already exists', () => {
         cy.intercept('POST', '**/api/auth/register', {
-            statusCode: 400,
+            statusCode: 409,
             body: 'Użytkownik z podanym numerem telefonu już istnieje.'
         }).as('duplicatePhoneRequest');
 

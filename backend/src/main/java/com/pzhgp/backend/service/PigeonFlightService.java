@@ -111,7 +111,7 @@ public class PigeonFlightService {
         PaginationUtils.validate(page, size, 50);
         Pageable pageable = PageRequest.of(page, size);
 
-        return flightRepository.findByOwnerOrderByUploadedAtDesc(owner, pageable).map(flight -> toSummary(flight, owner));
+        return flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(owner, pageable).map(flight -> toSummary(flight, owner));
     }
 
     /**

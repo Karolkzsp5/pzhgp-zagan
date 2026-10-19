@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { formatGlobalDate } from '@/app/utils/formatters';
 import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { getAuthToken } from '@/app/utils/jwt';
 
 interface NotificationDto {
     id: number;
@@ -44,16 +45,20 @@ export default function Navbar() {
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
-
+    const notificationSessionRef = useRef(0);
+    const isCurrentNotificationSession = useCallback((sessionId: number, token: string | null) =>
+        sessionId === notificationSessionRef.current && token !== null && getAuthToken() === token, []);
     const router = useRouter();
     const pathname = usePathname();
 
-    const fetchNotifications = useCallback(async () => {
+    const fetchNotifications = useCallback(async (sessionId: number) => {
+        const token = getAuthToken();
+
         try {
             const [notifRes, countRes] = await Promise.all([
                 fetchWithAuth(`${API_URL}/api/notifications?page=0&size=${NOTIFICATIONS_PAGE_SIZE}`),
-                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)]
-            );
+                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
+            ]);
 
             if (!notifRes.ok) {
                 throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
@@ -66,20 +71,26 @@ export default function Navbar() {
             const pageData = await notifRes.json() as NotificationPage;
             const count = await countRes.json() as number;
 
+            if (!isCurrentNotificationSession(sessionId, token)) return;
+
             setNotifications(pageData.content);
             setNotificationPage(pageData.number);
             setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
             setUnreadCount(count);
         } catch (error) {
-            console.error('Błąd pobierania powiadomień:', error);
+            if (isCurrentNotificationSession(sessionId, token)) {
+                console.error('Błąd pobierania powiadomień:', error);
+            }
         }
-    }, []);
+    }, [isCurrentNotificationSession]);
 
     const handleLoadMoreNotifications = async () => {
         if (isLoadingMoreNotifications || !hasMoreNotifications) {
             return;
         }
 
+        const sessionId = notificationSessionRef.current;
+        const token = getAuthToken();
         const nextPage = notificationPage + 1;
         setIsLoadingMoreNotifications(true);
 
@@ -92,6 +103,8 @@ export default function Navbar() {
 
             const pageData = await response.json() as NotificationPage;
 
+            if (!isCurrentNotificationSession(sessionId, token)) return;
+
             setNotifications(prev => {
                 const existingIds = new Set(prev.map(notification => notification.id));
                 const newNotifications = pageData.content.filter(notification => !existingIds.has(notification.id));
@@ -102,9 +115,13 @@ export default function Navbar() {
             setNotificationPage(pageData.number);
             setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
         } catch (error) {
-            console.error('Błąd pobierania wcześniejszych powiadomień:', error);
+            if (isCurrentNotificationSession(sessionId, token)) {
+                console.error('Błąd pobierania wcześniejszych powiadomień:', error);
+            }
         } finally {
-            setIsLoadingMoreNotifications(false);
+            if (isCurrentNotificationSession(sessionId, token)) {
+                setIsLoadingMoreNotifications(false);
+            }
         }
     };
 
@@ -139,20 +156,30 @@ export default function Navbar() {
     }, []);
 
     useEffect(() => {
-        if (!isLoggedIn) {
-            setNotifications([]);
-            setUnreadCount(0);
-            setNotificationPage(0);
-            setHasMoreNotifications(false);
-            setIsLoadingMoreNotifications(false);
-            setIsNotificationsOpen(false);
-            return;
+        const sessionId = ++notificationSessionRef.current;
+
+        setNotifications([]);
+        setUnreadCount(0);
+        setNotificationPage(0);
+        setHasMoreNotifications(false);
+        setIsLoadingMoreNotifications(false);
+        setIsNotificationsOpen(false);
+
+        if (isLoggedIn) {
+            void fetchNotifications(sessionId);
         }
 
-        void fetchNotifications();
-    }, [fetchNotifications, isLoggedIn]);
+        return () => {
+            notificationSessionRef.current++;
+        };
+    }, [fetchNotifications, isLoggedIn, user?.sub]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
+        const sessionId = notificationSessionRef.current;
+        const token = getAuthToken();
+
+        if (!isCurrentNotificationSession(sessionId, token)) return;
+
         if (!notif.isRead) {
             try {
                 const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
@@ -160,12 +187,18 @@ export default function Navbar() {
                     throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
                 }
 
+                if (!isCurrentNotificationSession(sessionId, token)) return;
+
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                console.error('Błąd oznaczania jako przeczytane:', error);
+                if (isCurrentNotificationSession(sessionId, token)) {
+                    console.error('Błąd oznaczania jako przeczytane:', error);
+                }
             }
         }
+
+        if (!isCurrentNotificationSession(sessionId, token)) return;
 
         setIsNotificationsOpen(false);
         if (notif.link) {
@@ -174,20 +207,30 @@ export default function Navbar() {
     };
 
     const handleMarkAllAsRead = async () => {
+        const sessionId = notificationSessionRef.current;
+        const token = getAuthToken();
+
+        if (!isCurrentNotificationSession(sessionId, token)) return;
+
         try {
             const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
             if (!response.ok) {
                 throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
             }
 
+            if (!isCurrentNotificationSession(sessionId, token)) return;
+
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (error) {
-            console.error('Błąd oznaczania wszystkich jako przeczytane:', error);
+            if (isCurrentNotificationSession(sessionId, token)) {
+                console.error('Błąd oznaczania wszystkich jako przeczytane:', error);
+            }
         }
     };
 
     const handleLogout = () => {
+        notificationSessionRef.current++;
         signOut();
 
         setNotifications([]);

@@ -41,7 +41,11 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         PaginationUtils.validate(page, size, 100);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(Sort.Direction.DESC, "lastPostAt")));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("isPinned"),
+                Sort.Order.desc("lastPostAt"),
+                Sort.Order.desc("id")
+        ));
 
         return threadRepository.findByCategoryId(categoryId, pageable).map(thread -> mapToDto(thread, requester));
     }
@@ -80,7 +84,8 @@ public class ForumThreadService {
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!thread.getAuthor().getId().equals(requester.getId())) {
-            thread.setViews(thread.getViews() + 1);
+            threadRepository.incrementViews(threadId);
+            thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         }
 
         return mapToDto(thread, requester);
@@ -88,7 +93,7 @@ public class ForumThreadService {
 
     @Transactional
     public void toggleThreadStatus(Long threadId, String requesterEmail, ThreadAction action) {
-        ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!canModerateContent(thread.getAuthor(), requester)) {
@@ -104,7 +109,7 @@ public class ForumThreadService {
 
     @Transactional
     public void updateThreadTitle(Long threadId, String title, String requesterEmail) {
-        ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!thread.getAuthor().getId().equals(requester.getId())) {
@@ -120,7 +125,7 @@ public class ForumThreadService {
 
     @Transactional
     public void deleteThread(Long threadId, String requesterEmail) {
-        ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
         if (!canDeleteContent(thread.getAuthor(), requester)) {

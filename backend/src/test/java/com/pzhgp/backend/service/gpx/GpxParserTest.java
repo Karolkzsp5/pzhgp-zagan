@@ -22,7 +22,20 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Parses a Skyleader GPX file without namespace and version attributes")
+    @DisplayName("Should parse a standard GPX 1.1 file")
+    void parsesStandardGpx() throws IOException {
+        try (InputStream stream = resource("standardowy-gpx11.gpx")) {
+            GpxTrack track = parser.parse(stream);
+
+            assertEquals(2, track.points().size());
+            assertEquals("TestCreator", track.creator());
+            assertEquals("PL-0208-24-1234", track.ringNumber());
+            assertEquals(Instant.parse("2026-07-15T06:00:00Z"), track.points().getFirst().time());
+        }
+    }
+
+    @Test
+    @DisplayName("Should parse a Skyleader GPX file without namespace and version attributes")
     void parsesSkyleaderFileWithoutNamespace() throws IOException {
         try (InputStream stream = resource("skyleader-minimalny.gpx")) {
             GpxTrack track = parser.parse(stream);
@@ -34,28 +47,38 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Interprets timestamps without a time zone as UTC")
+    @DisplayName("Should parse all track points from a real Skyleader GPX export")
+    void parsesRealSkyleaderExport() throws IOException {
+        try (InputStream stream = resource("skyleader-lot-konkursowy.gpx")) {
+            GpxTrack track = parser.parse(stream);
+
+            assertEquals(1230, track.points().size());
+            assertEquals("8414", track.ringNumber());
+            assertEquals(Instant.parse("2026-08-30T04:12:35Z"), track.points().getFirst().time());
+            assertEquals(Instant.parse("2026-08-30T09:18:48Z"), track.points().getLast().time());
+        }
+    }
+
+    @Test
+    @DisplayName("Should interpret timestamps without a time zone as UTC")
     void treatsTimeWithoutZoneAsUtc() throws IOException {
         try (InputStream stream = resource("skyleader-minimalny.gpx")) {
             GpxTrack track = parser.parse(stream);
-
             assertEquals(Instant.parse("2026-08-30T05:00:00Z"), track.points().getFirst().time());
         }
     }
 
     @Test
-    @DisplayName("Ignores metadata timestamp when reading track point timestamps")
+    @DisplayName("Should ignore metadata timestamps when reading track point times")
     void ignoresMetadataTime() throws IOException {
         try (InputStream stream = resource("skyleader-minimalny.gpx")) {
             GpxTrack track = parser.parse(stream);
-
-            assertTrue(track.points().stream()
-                    .allMatch(point -> point.time().isAfter(Instant.parse("2020-01-01T00:00:00Z"))));
+            assertTrue(track.points().stream().allMatch(point -> point.time().isAfter(Instant.parse("2020-01-01T00:00:00Z"))));
         }
     }
 
     @Test
-    @DisplayName("Reads creator name from metadata link text when root creator attribute is missing")
+    @DisplayName("Should read the creator name from metadata link text when the root attribute is missing")
     void readsCreatorFromMetadataText() {
         String gpx = """
                 <gpx>
@@ -80,20 +103,26 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Parses a standard GPX 1.1 file")
-    void parsesStandardGpx() throws IOException {
-        try (InputStream stream = resource("standardowy-gpx11.gpx")) {
-            GpxTrack track = parser.parse(stream);
+    @DisplayName("Should return null ring number when the track has no name")
+    void returnsNullRingNumberWithoutTrackName() {
+        String gpx = """
+                <gpx>
+                    <trk>
+                        <trkseg>
+                            <trkpt lat="51.0" lon="15.0"/>
+                        </trkseg>
+                    </trk>
+                </gpx>
+                """;
 
-            assertEquals(2, track.points().size());
-            assertEquals("TestCreator", track.creator());
-            assertEquals("PL-0208-24-1234", track.ringNumber());
-            assertEquals(Instant.parse("2026-07-15T06:00:00Z"), track.points().getFirst().time());
-        }
+        GpxTrack track = parser.parse(stream(gpx));
+
+        assertNull(track.trackName());
+        assertNull(track.ringNumber());
     }
 
     @Test
-    @DisplayName("Parses track points without elevation and timestamps as null values")
+    @DisplayName("Should assign null elevation and timestamps to track points missing those fields")
     void parsesPointsWithoutElevationAndTime() throws IOException {
         try (InputStream stream = resource("bez-czasu.gpx")) {
             GpxTrack track = parser.parse(stream);
@@ -105,7 +134,7 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Invalid optional elevation and timestamp values are stored as null")
+    @DisplayName("Should store null for invalid optional elevation and timestamp values")
     void ignoresInvalidOptionalValues() {
         String gpx = """
                 <gpx>
@@ -138,7 +167,7 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Malformed non-finite and out-of-range coordinates are skipped")
+    @DisplayName("Should skip points with malformed, non-finite or out-of-range coordinates")
     void skipsInvalidCoordinates() {
         String gpx = """
                 <gpx>
@@ -164,61 +193,7 @@ class GpxParserTest {
     }
 
     @Test
-    @DisplayName("Track without a name has no extracted ring number")
-    void returnsNullRingNumberWithoutTrackName() {
-        String gpx = """
-                <gpx>
-                    <trk>
-                        <trkseg>
-                            <trkpt lat="51.0" lon="15.0"/>
-                        </trkseg>
-                    </trk>
-                </gpx>
-                """;
-
-        GpxTrack track = parser.parse(stream(gpx));
-
-        assertNull(track.trackName());
-        assertNull(track.ringNumber());
-    }
-
-    @Test
-    @DisplayName("External XML entities are blocked")
-    void blocksExternalEntities() throws IOException {
-        try (InputStream stream = resource("xxe.gpx")) {
-            try {
-                GpxTrack track = parser.parse(stream);
-
-                assertFalse(track.trackName() != null && track.trackName().contains("root:"));
-            } catch (GpxParsingException expected) {
-                assertNotNull(expected.getMessage());
-            }
-        }
-    }
-
-    @Test
-    @DisplayName("GPX file without track points is rejected")
-    void rejectsFileWithoutTrackPoints() throws IOException {
-        try (InputStream stream = resource("bez-punktow.gpx")) {
-            GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream));
-
-            assertTrue(exception.getMessage().contains("trkpt"));
-        }
-    }
-
-    @Test
-    @DisplayName("Malformed XML produces a readable GPX parsing exception")
-    void rejectsMalformedXml() {
-        InputStream stream = new ByteArrayInputStream(
-                "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
-
-        GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream));
-
-        assertTrue(exception.getMessage().contains("GPX"));
-    }
-
-    @Test
-    @DisplayName("Coordinates outside valid Earth ranges are skipped")
+    @DisplayName("Should skip coordinates outside valid Earth ranges")
     void skipsPointsOutsideEarth() {
         String gpx = """
                 <gpx>
@@ -233,12 +208,43 @@ class GpxParserTest {
                 """;
 
         GpxTrack track = parser.parse(stream(gpx));
-
         assertEquals(2, track.points().size());
     }
 
     @Test
-    @DisplayName("GPX file exceeding the maximum track point count is rejected")
+    @DisplayName("Should block external XML entities")
+    void blocksExternalEntities() throws IOException {
+        try (InputStream stream = resource("xxe.gpx")) {
+            try {
+                GpxTrack track = parser.parse(stream);
+                assertFalse(track.trackName() != null && track.trackName().contains("root:"));
+            } catch (GpxParsingException expected) {
+                assertNotNull(expected.getMessage());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Should reject a GPX file without track points")
+    void rejectsFileWithoutTrackPoints() throws IOException {
+        try (InputStream stream = resource("bez-punktow.gpx")) {
+            GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream));
+            assertTrue(exception.getMessage().contains("trkpt"));
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw a readable GPX parsing exception for malformed XML")
+    void rejectsMalformedXml() {
+        InputStream stream = new ByteArrayInputStream(
+                "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
+
+        GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream));
+        assertTrue(exception.getMessage().contains("GPX"));
+    }
+
+    @Test
+    @DisplayName("Should reject a GPX file exceeding the maximum number of track points")
     void rejectsTooManyTrackPoints() {
         StringBuilder gpx = new StringBuilder("<gpx><trk><trkseg>");
 
@@ -248,23 +254,8 @@ class GpxParserTest {
 
         gpx.append("</trkseg></trk></gpx>");
 
-        GpxParsingException exception = assertThrows(GpxParsingException.class,
-                () -> parser.parse(stream(gpx.toString())));
-
+        GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream(gpx.toString())));
         assertTrue(exception.getMessage().contains(String.valueOf(GpxParser.MAX_POINTS)));
-    }
-
-    @Test
-    @DisplayName("Parses all points from the real Skyleader GPX export")
-    void parsesRealSkyleaderExport() throws IOException {
-        try (InputStream stream = resource("skyleader-lot-konkursowy.gpx")) {
-            GpxTrack track = parser.parse(stream);
-
-            assertEquals(1230, track.points().size());
-            assertEquals("8414", track.ringNumber());
-            assertEquals(Instant.parse("2026-08-30T04:12:35Z"), track.points().getFirst().time());
-            assertEquals(Instant.parse("2026-08-30T09:18:48Z"), track.points().getLast().time());
-        }
     }
 
     private InputStream resource(String name) {

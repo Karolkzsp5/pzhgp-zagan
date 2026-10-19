@@ -84,20 +84,99 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when a standard breeder tries to create an announcement")
-    void createAnnouncement_ShouldThrowException_WhenUserIsBreeder() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Tytuł", "Treść", false);
-        when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
+    @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Moderator)")
+    void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenUserIsAuthor() {
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
-                announcementService.createAnnouncement(request, standardBreeder.getEmail())
-        );
-        assertEquals("Zwykły hodowca nie może dodawać ogłoszeń.", exception.getMessage());
-        verify(announcementRepository, never()).save(any());
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+        assertTrue(dto.canEdit(), "Autor (moderator) powinien móc edytować swoje ogłoszenie");
+        assertTrue(dto.canDelete(), "Autor (moderator) powinien móc usunąć swoje ogłoszenie");
     }
 
     @Test
-    @DisplayName("Should save announcement, verify its fields with captor and send bulk notifications excluding author")
+    @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Administrator)")
+    void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenAdminIsAuthor() {
+        announcement.setAuthor(admin1);
+        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+        assertTrue(dto.canEdit(), "Autor (admin) powinien móc edytować swoje ogłoszenie");
+        assertTrue(dto.canDelete(), "Autor (admin) powinien móc usunąć swoje ogłoszenie");
+    }
+
+    @Test
+    @DisplayName("Should set canDelete=true and canEdit=false flags for administrator viewing moderator's post")
+    void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAdmin() {
+        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+        assertFalse(dto.canEdit(), "Admin nie powinien mieć prawa edycji cudzego posta");
+        assertTrue(dto.canDelete(), "Admin powinien mieć prawo usunięcia posta moderatora");
+    }
+
+    @Test
+    @DisplayName("Should set canEdit=false and canDelete=true when announcement author was downgraded to BREEDER")
+    void getAllAnnouncements_ShouldReflectDowngradedAuthorPermissions() {
+        moderator.setRole(Role.BREEDER);
+
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+
+        assertFalse(dto.canEdit(), "Zdegradowany autor nie powinien móc edytować ogłoszenia");
+        assertTrue(dto.canDelete(), "Autor nadal powinien móc usunąć własne ogłoszenie");
+    }
+
+    @Test
+    @DisplayName("Should set false flags for both actions when user is anonymous")
+    void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAnonymous() {
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null, 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+        assertFalse(dto.canEdit(), "Niezalogowany użytkownik nie może edytować");
+        assertFalse(dto.canDelete(), "Niezalogowany użytkownik nie może usuwać");
+    }
+
+    @Test
+    @DisplayName("Should deny editing and deletion when a moderator views another author's announcement")
+    void getAllAnnouncements_ShouldSetBothFlagsFalse_WhenUserIsModeratorAndNotAuthor() {
+        announcement.setAuthor(admin1);
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(announcement)));
+
+        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+
+        assertEquals(1, result.getTotalElements());
+        AnnouncementResponseDto dto = result.getContent().getFirst();
+        assertFalse(dto.canEdit(), "Moderator nie powinien móc edytować cudzego ogłoszenia");
+        assertFalse(dto.canDelete(), "Moderator nie powinien móc usuwać cudzego ogłoszenia");
+    }
+
+    @Test
+    @DisplayName("Should save announcement details and notify active breeders except the author")
     void createAnnouncement_ShouldSaveAndNotify_WhenUserIsAdmin() {
         AnnouncementRequestDto request = new AnnouncementRequestDto("Ważny lot", "Szczegóły", true);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
@@ -124,6 +203,19 @@ class AnnouncementServiceTest {
                 eq("/"),
                 eq(NotificationType.NEW_ANNOUNCEMENT)
         );
+    }
+
+    @Test
+    @DisplayName("Should reject announcement creation by a breeder")
+    void createAnnouncement_ShouldThrowException_WhenUserIsBreeder() {
+        AnnouncementRequestDto request = new AnnouncementRequestDto("Tytuł", "Treść", false);
+        when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
+                announcementService.createAnnouncement(request, standardBreeder.getEmail())
+        );
+        assertEquals("Zwykły hodowca nie może dodawać ogłoszeń.", exception.getMessage());
+        verify(announcementRepository, never()).save(any());
     }
 
     @Test
@@ -156,13 +248,43 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when ordinary breeder tries to update an announcement")
+    @DisplayName("Should deny editing when announcement author was downgraded to BREEDER")
+    void updateAnnouncement_ShouldDenyDowngradedAuthor() {
+        moderator.setRole(Role.BREEDER);
+        AnnouncementRequestDto request = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", false);
+
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
+                announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail()));
+
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
+        verify(announcementRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should forbid a breeder from editing an announcement")
     void updateAnnouncement_ShouldThrowException_WhenBreederUpdatesPost() {
         AnnouncementRequestDto request = new AnnouncementRequestDto("X", "Y", false);
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
         assertThrows(ForbiddenOperationException.class, () -> announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail()));
+    }
+
+    @Test
+    @DisplayName("Should forbid an administrator from editing a moderator's announcement")
+    void updateAnnouncement_ShouldThrowException_WhenAdminTriesToUpdateModPost() {
+        AnnouncementRequestDto request = new AnnouncementRequestDto("Zmieniony", "Treść", false);
+        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
+        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
+
+        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
+                announcementService.updateAnnouncement(announcement.getId(), request, admin1.getEmail())
+        );
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
+        verify(announcementRepository, never()).save(any());
     }
 
     @Test
@@ -174,20 +296,6 @@ class AnnouncementServiceTest {
         assertThrows(EntityNotFoundException.class, () ->
                 announcementService.updateAnnouncement(99L, request, admin1.getEmail())
         );
-    }
-
-    @Test
-    @DisplayName("Should throw exception when administrator tries to update moderator's announcement (edit restricted to author only)")
-    void updateAnnouncement_ShouldThrowException_WhenAdminTriesToUpdateModPost() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Zmieniony", "Treść", false);
-        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
-        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-
-        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
-                announcementService.updateAnnouncement(announcement.getId(), request, admin1.getEmail())
-        );
-        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
-        verify(announcementRepository, never()).save(any());
     }
 
     @Test
@@ -220,7 +328,7 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when Moderator tries to delete another Moderator's announcement")
+    @DisplayName("Should forbid a moderator from deleting another moderator's announcement")
     void deleteAnnouncement_ShouldThrowException_WhenModeratorDeletesOtherModeratorPost() {
         Breeder anotherModerator = new Breeder();
         anotherModerator.setId(99L);
@@ -237,7 +345,7 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when ordinary breeder tries to delete an announcement")
+    @DisplayName("Should forbid a breeder from deleting an announcement")
     void deleteAnnouncement_ShouldThrowException_WhenBreederDeletesPost() {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
@@ -248,7 +356,7 @@ class AnnouncementServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when administrator tries to delete another administrator's announcement")
+    @DisplayName("Should forbid an administrator from deleting another administrator's announcement")
     void deleteAnnouncement_ShouldThrowException_WhenAdminDeletesAdminPost() {
         announcement.setAuthor(admin1);
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
@@ -269,113 +377,5 @@ class AnnouncementServiceTest {
         assertThrows(EntityNotFoundException.class, () ->
                 announcementService.deleteAnnouncement(99L, admin1.getEmail())
         );
-    }
-
-    @Test
-    @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Moderator)")
-    void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenUserIsAuthor() {
-        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
-
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-        assertTrue(dto.canEdit(), "Autor (moderator) powinien móc edytować swoje ogłoszenie");
-        assertTrue(dto.canDelete(), "Autor (moderator) powinien móc usunąć swoje ogłoszenie");
-    }
-
-    @Test
-    @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Administrator)")
-    void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenAdminIsAuthor() {
-        announcement.setAuthor(admin1);
-        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
-
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-        assertTrue(dto.canEdit(), "Autor (admin) powinien móc edytować swoje ogłoszenie");
-        assertTrue(dto.canDelete(), "Autor (admin) powinien móc usunąć swoje ogłoszenie");
-    }
-
-    @Test
-    @DisplayName("Should set canDelete=true and canEdit=false flags for administrator viewing moderator's post")
-    void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAdmin() {
-        when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
-
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-        assertFalse(dto.canEdit(), "Admin nie powinien mieć prawa edycji cudzego posta");
-        assertTrue(dto.canDelete(), "Admin powinien mieć prawo usunięcia posta moderatora");
-    }
-
-    @Test
-    @DisplayName("Should set canEdit=false and canDelete=true when announcement author was downgraded to BREEDER")
-    void getAllAnnouncements_ShouldReflectDowngradedAuthorPermissions() {
-        moderator.setRole(Role.BREEDER);
-
-        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-
-        assertFalse(dto.canEdit(), "Zdegradowany autor nie powinien móc edytować ogłoszenia");
-        assertTrue(dto.canDelete(), "Autor nadal powinien móc usunąć własne ogłoszenie");
-    }
-
-    @Test
-    @DisplayName("Should deny editing when announcement author was downgraded to BREEDER")
-    void updateAnnouncement_ShouldDenyDowngradedAuthor() {
-        moderator.setRole(Role.BREEDER);
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", false);
-
-        when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
-        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-
-        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
-                announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail()));
-
-        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
-        verify(announcementRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Should set false flags for both actions when user is anonymous")
-    void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAnonymous() {
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null, 0, 10);
-
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-        assertFalse(dto.canEdit(), "Niezalogowany użytkownik nie może edytować");
-        assertFalse(dto.canDelete(), "Niezalogowany użytkownik nie może usuwać");
-    }
-
-    @Test
-    @DisplayName("Should set false flags for both actions when moderator views someone else's post")
-    void getAllAnnouncements_ShouldSetBothFlagsFalse_WhenUserIsModeratorAndNotAuthor() {
-        announcement.setAuthor(admin1);
-        when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
-
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
-
-        assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
-        assertFalse(dto.canEdit(), "Moderator nie powinien móc edytować cudzego ogłoszenia");
-        assertFalse(dto.canDelete(), "Moderator nie powinien móc usuwać cudzego ogłoszenia");
     }
 }

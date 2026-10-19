@@ -70,6 +70,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage());
     }
 
+    @ExceptionHandler(AuthRateLimitException.class)
+    public ResponseEntity<String> handleAuthRateLimit(AuthRateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidStatusTransitionException.class)
     public ResponseEntity<String> handleInvalidStatusTransition(InvalidStatusTransitionException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());

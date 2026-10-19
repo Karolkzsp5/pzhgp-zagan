@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Announcement Integration Tests")
 class AnnouncementIntegrationTest {
 
     @Autowired
@@ -105,7 +106,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/announcements - Should fetch paginated data from real database (Public Access)")
+    @DisplayName("Should return paginated announcements to unauthenticated users")
     void shouldFetchAnnouncementsFromDatabase() throws Exception {
         Announcement announcement = new Announcement();
         announcement.setTitle("Prawdziwe Ogłoszenie");
@@ -131,7 +132,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/announcements - Should correctly paginate results")
+    @DisplayName("Should paginate announcements across multiple pages")
     void shouldPaginateAnnouncementsCorrectly() throws Exception {
         for (int i = 1; i <= 12; i++) {
             Announcement announcement = new Announcement();
@@ -168,7 +169,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/announcements - Should return canEdit=false after author is downgraded to BREEDER")
+    @DisplayName("Should disable editing but retain deletion permission after an announcement author's role is downgraded")
     void shouldReturnCorrectPermissionsAfterAuthorRoleChange() throws Exception {
         Announcement announcement = new Announcement();
         announcement.setTitle("Ogłoszenie Moderatora");
@@ -189,7 +190,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Should save into real DB when requested by Administrator")
+    @DisplayName("Should save an announcement created by an administrator")
     void shouldCreateAnnouncementAndSaveToDatabase() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Tytuł Integracyjny", "Treść Integracyjna", false);
         assertEquals(0, announcementRepository.count());
@@ -207,7 +208,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Should allow MODERATOR to create announcement")
+    @DisplayName("Should allow a moderator to create an announcement")
     void shouldAllowModeratorToCreateAnnouncement() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Lot próbny", "Informacje dla hodowców", false);
 
@@ -221,7 +222,27 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Spring Security should block standard Breeder")
+    @DisplayName("Should notify other active breeders when an announcement is created")
+    void shouldCreateNotificationsOnAnnouncementCreation() throws Exception {
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Nowe ogłoszenie", "Ważne info", true);
+
+        mockMvc.perform(post("/api/announcements")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isCreated());
+
+        List<Notification> notifications = notificationRepository.findAll();
+
+        assertEquals(2, notifications.size());
+
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("moderator@test.pl")));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("hodowca@test.pl")));
+        assertFalse(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("admin@test.pl")));
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a breeder creates an announcement")
     void shouldBlockBreederFromCreatingAnnouncement() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zły tytuł", "Nieważne", false);
 
@@ -235,7 +256,7 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Should return 400 when content exceeds maximum length")
+    @DisplayName("Should return 400 when announcement content exceeds the maximum length")
     void shouldRejectAnnouncementWithTooLongContent() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Poprawny tytuł", "a".repeat(50_001), false);
 
@@ -249,41 +270,23 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /api/announcements/{id} - Should return 403 Forbidden when BREEDER tries to update announcement")
-    void shouldDenyBreederFromUpdatingAnnouncement() throws Exception {
-        Announcement announcement = new Announcement();
-        announcement.setTitle("Ogłoszenie Admina");
-        announcement.setContent("Treść");
-        announcement.setAuthor(admin);
-        announcementRepository.save(announcement);
+    @DisplayName("Should deny announcement creation when the user's current database role no longer permits it")
+    void shouldReflectDbRoleChangeDespiteOldJwt() throws Exception {
+        Breeder currentAdmin = breederRepository.findByEmail("admin@test.pl").orElseThrow();
+        currentAdmin.setRole(Role.BREEDER);
+        breederRepository.save(currentAdmin);
 
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zmieniony tytuł", "Treść", false);
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Próba ataku", "Mam stary token!", false);
 
-        mockMvc.perform(put("/api/announcements/{id}", announcement.getId())
-                        .header("Authorization", "Bearer " + breederToken)
+        mockMvc.perform(post("/api/announcements")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("DELETE /api/announcements/{id} - Administrator should successfully delete Moderator's post from DB")
-    void adminShouldDeleteModeratorsPostFromDatabase() throws Exception {
-        Announcement announcement = new Announcement();
-        announcement.setTitle("Ogłoszenie Moderatora");
-        announcement.setContent("Treść Moderatora");
-        announcement.setAuthor(moderator);
-        announcementRepository.save(announcement);
-
-        Long savedId = announcement.getId();
-        assertEquals(1, announcementRepository.count());
-
-        mockMvc.perform(delete("/api/announcements/{id}", savedId).header("Authorization", "Bearer " + adminToken)).andExpect(status().isNoContent());
-        assertEquals(0, announcementRepository.count());
-    }
-
-    @Test
-    @DisplayName("PUT /api/announcements/{id} - Should update real DB record when Author modifies it")
+    @DisplayName("Should save changes when an announcement author edits their announcement")
     void authorShouldUpdateOwnPostInDatabase() throws Exception {
         Announcement announcement = new Announcement();
         announcement.setTitle("Stary tytuł");
@@ -307,38 +310,36 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Should use current role from database instead of outdated JWT claim")
-    void shouldReflectDbRoleChangeDespiteOldJwt() throws Exception {
-        Breeder currentAdmin = breederRepository.findByEmail("admin@test.pl").orElseThrow();
-        currentAdmin.setRole(Role.BREEDER);
-        breederRepository.save(currentAdmin);
+    @DisplayName("Should return 403 when a breeder tries to update an announcement")
+    void shouldDenyBreederFromUpdatingAnnouncement() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Admina");
+        announcement.setContent("Treść");
+        announcement.setAuthor(admin);
+        announcementRepository.save(announcement);
 
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Próba ataku", "Mam stary token!", false);
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zmieniony tytuł", "Treść", false);
 
-        mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + adminToken)
+        mockMvc.perform(put("/api/announcements/{id}", announcement.getId())
+                        .header("Authorization", "Bearer " + breederToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("POST /api/announcements - Should create notifications for all active breeders except the author")
-    void shouldCreateNotificationsOnAnnouncementCreation() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Nowe ogłoszenie", "Ważne info", true);
+    @DisplayName("Should allow an administrator to delete a moderator's announcement")
+    void adminShouldDeleteModeratorsPostFromDatabase() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Moderatora");
+        announcement.setContent("Treść Moderatora");
+        announcement.setAuthor(moderator);
+        announcementRepository.save(announcement);
 
-        mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isCreated());
+        Long savedId = announcement.getId();
+        assertEquals(1, announcementRepository.count());
 
-        List<Notification> notifications = notificationRepository.findAll();
-
-        assertEquals(2, notifications.size());
-
-        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("moderator@test.pl")));
-        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("hodowca@test.pl")));
-        assertFalse(notifications.stream().anyMatch(n -> n.getRecipient().getEmail().equals("admin@test.pl")));
+        mockMvc.perform(delete("/api/announcements/{id}", savedId).header("Authorization", "Bearer " + adminToken)).andExpect(status().isNoContent());
+        assertEquals(0, announcementRepository.count());
     }
 }

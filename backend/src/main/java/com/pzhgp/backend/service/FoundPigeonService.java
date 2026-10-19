@@ -85,7 +85,7 @@ public class FoundPigeonService {
     public Page<FoundPigeonDto> searchReports(FoundPigeonStatus status, String ringNumber, int page, int size) {
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
 
         // Fraza wyszukiwania przechodzi przez tę samą normalizację co zapisany numer,
         // dzięki czemu "pl 0208" odnajduje zgłoszenie zapisane jako "PL-0208-24-1234".
@@ -107,7 +107,7 @@ public class FoundPigeonService {
      */
     @Transactional
     public FoundPigeonDto updateStatus(Long id, FoundPigeonStatus newStatus) {
-        FoundPigeonReport report = findReport(id);
+        FoundPigeonReport report = findReportForUpdate(id);
 
         if (!report.getStatus().canTransitionTo(newStatus)) {
             throw new InvalidStatusTransitionException(String.format("Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
@@ -124,7 +124,7 @@ public class FoundPigeonService {
     /** Zapisuje prywatną notatkę administratora; pusta wartość ją czyści. */
     @Transactional
     public FoundPigeonDto updateAdminNote(Long id, String adminNote) {
-        FoundPigeonReport report = findReport(id);
+        FoundPigeonReport report = findReportForUpdate(id);
         report.setAdminNote(trimToNull(adminNote));
 
         return mapToDto(foundPigeonRepository.save(report));
@@ -133,7 +133,7 @@ public class FoundPigeonService {
     /** Usuwa zgłoszenie razem z danymi kontaktowymi, gdy przestaje być potrzebne. */
     @Transactional
     public void deleteReport(Long id) {
-        FoundPigeonReport report = findReport(id);
+        FoundPigeonReport report = findReportForUpdate(id);
         foundPigeonRepository.delete(report);
 
         log.info("Usunięto zgłoszenie odnalezienia gołębia o ID {}.", id);
@@ -166,6 +166,10 @@ public class FoundPigeonService {
 
     private FoundPigeonReport findReport(Long id) {
         return foundPigeonRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
+    }
+
+    private FoundPigeonReport findReportForUpdate(Long id) {
+        return foundPigeonRepository.findByIdForUpdate(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
     }
 
     private FoundPigeonDto mapToDto(FoundPigeonReport report) {

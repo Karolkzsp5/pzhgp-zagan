@@ -14,10 +14,10 @@ import java.util.Optional;
 public interface PigeonFlightRepository extends JpaRepository<PigeonFlight, Long> {
 
     @EntityGraph(attributePaths = {"owner"})
-    Page<PigeonFlight> findByOwnerOrderByUploadedAtDesc(Breeder owner, Pageable pageable);
+    Page<PigeonFlight> findByOwnerOrderByUploadedAtDescIdDesc(Breeder owner, Pageable pageable);
 
     @EntityGraph(attributePaths = {"owner"})
-    Page<PigeonFlight> findAllByOrderByUploadedAtDesc(Pageable pageable);
+    Page<PigeonFlight> findAllByOrderByUploadedAtDescIdDesc(Pageable pageable);
 
     @EntityGraph(attributePaths = {"owner"})
     Optional<PigeonFlight> findWithOwnerById(Long id);

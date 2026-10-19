@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@DisplayName("Pigeon Flight Integration Tests")
 class PigeonFlightIntegrationTest {
 
     @Autowired
@@ -111,14 +112,14 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Unauthenticated user cannot upload a file or view flights")
+    @DisplayName("Should return 401 when accessing pigeon flights without authentication")
     void requiresAuthentication() throws Exception {
         mockMvc.perform(multipart("/api/flights").file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/flights")).andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("Breeder uploads GPX file and receives saved flight identifier")
+    @DisplayName("Should save an uploaded GPX flight and return its ID")
     void uploadsFlight() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -129,7 +130,61 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Flight details contain statistics calculated from the entire recorded track")
+    @DisplayName("Should persist user-provided pigeon flight metadata")
+    void savesUserProvidedMetadata() throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/flights")
+                        .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
+                        .file(metadataPart(new FlightUploadRequest("Lot z Dessau", "PL-0208-24-99", "Dessau")))
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long flightId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(get("/api/flights/" + flightId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Lot z Dessau"))
+                .andExpect(jsonPath("$.ringNumber").value("PL-0208-24-99"))
+                .andExpect(jsonPath("$.releaseSite").value("Dessau"));
+    }
+
+    @Test
+    @DisplayName("Should reject an invalid ring number in flight metadata")
+    void rejectsInvalidMetadata() throws Exception {
+        mockMvc.perform(multipart("/api/flights")
+                        .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
+                        .file(metadataPart(new FlightUploadRequest("Lot", "obrączka<script>", null)))
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when uploading a file without the GPX extension")
+    void rejectsNonGpxUpload() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "zlosliwy.exe",
+                "application/octet-stream", "MZ".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/flights")
+                        .file(file)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 for malformed GPX data")
+    void rejectsMalformedGpx() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "uszkodzony.gpx",
+                "application/gpx+xml", "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/flights")
+                        .file(file)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should calculate flight statistics from the entire recorded track")
     void returnsFlightStatistics() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -147,7 +202,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Track is simplified by default and tolerance=0 returns all points")
+    @DisplayName("Should simplify the track by default and return all points when tolerance is zero")
     void appliesTrackSimplification() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -170,61 +225,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("User-provided metadata is saved with the flight")
-    void savesUserProvidedMetadata() throws Exception {
-        MvcResult result = mockMvc.perform(multipart("/api/flights")
-                        .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
-                        .file(metadataPart(new FlightUploadRequest("Lot z Dessau", "PL-0208-24-99", "Dessau")))
-                        .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        Long flightId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
-
-        mockMvc.perform(get("/api/flights/" + flightId)
-                        .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Lot z Dessau"))
-                .andExpect(jsonPath("$.ringNumber").value("PL-0208-24-99"))
-                .andExpect(jsonPath("$.releaseSite").value("Dessau"));
-    }
-
-    @Test
-    @DisplayName("Invalid ring number in metadata is rejected by validation")
-    void rejectsInvalidMetadata() throws Exception {
-        mockMvc.perform(multipart("/api/flights")
-                        .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
-                        .file(metadataPart(new FlightUploadRequest("Lot", "obrączka<script>", null)))
-                        .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("File with extension other than .gpx is rejected with 400 Bad Request")
-    void rejectsNonGpxUpload() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "zlosliwy.exe",
-                "application/octet-stream", "MZ".getBytes(StandardCharsets.UTF_8));
-
-        mockMvc.perform(multipart("/api/flights")
-                        .file(file)
-                        .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Malformed GPX file returns 400 Bad Request instead of server error")
-    void rejectsMalformedGpx() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "uszkodzony.gpx",
-                "application/gpx+xml", "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
-
-        mockMvc.perform(multipart("/api/flights")
-                        .file(file)
-                        .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Flight list contains only flights belonging to authenticated breeder")
+    @DisplayName("Should list only flights belonging to the authenticated breeder")
     void listsOnlyOwnFlights() throws Exception {
         uploadRealFlight();
 
@@ -239,7 +240,7 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Another breeder cannot access someone else's flight, but administrator can")
+    @DisplayName("Should deny other breeders access to a flight while allowing administrators")
     void enforcesFlightVisibility() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -251,7 +252,13 @@ class PigeonFlightIntegrationTest {
     }
 
     @Test
-    @DisplayName("Owner deletes flight together with track points")
+    @DisplayName("Should return 404 when requesting a non-existent pigeon flight")
+    void returnsNotFoundForMissingFlight() throws Exception {
+        mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should delete a flight and its track points when requested by the owner")
     void deletesFlightWithTrackPoints() throws Exception {
         Long flightId = uploadRealFlight();
 
@@ -260,11 +267,5 @@ class PigeonFlightIntegrationTest {
 
         assertTrue(flightRepository.findById(flightId).isEmpty());
         assertTrue(trackPointRepository.findByFlightIdOrderByPointIndexAsc(flightId).isEmpty());
-    }
-
-    @Test
-    @DisplayName("Non-existent flight returns 404 Not Found")
-    void returnsNotFoundForMissingFlight() throws Exception {
-        mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNotFound());
     }
 }

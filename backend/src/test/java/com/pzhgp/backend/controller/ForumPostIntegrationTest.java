@@ -128,7 +128,7 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /threads/{id}/posts - Should fetch mapped posts from H2")
+    @DisplayName("Should return mapped posts belonging to the requested thread")
     void getPostsByThread_ShouldReturnRealData() throws Exception {
         mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
@@ -140,7 +140,15 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Should save post, update lastPostAt, and create NEW_REPLY notification")
+    @DisplayName("Should return 404 when listing posts in a non-existent thread")
+    void getPostsByThread_WhenThreadNotFound_ShouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/9999/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should save a reply, update thread activity time and notify the thread author")
     void addPost_ShouldSaveToDbAndUpdateThreadAndNotify() throws Exception {
         long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
@@ -173,32 +181,7 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Should return 400 Bad Request when body is empty")
-    void addPost_WithEmptyBody_ShouldReturn400() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("");
-
-        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST /threads/{id}/posts - Should return 400 when body exceeds maximum length")
-    void addPost_WithTooLongBody_ShouldReturn400() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("a".repeat(20_001));
-
-        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Treść wpisu może mieć maksymalnie 20000 znaków."));
-    }
-
-    @Test
-    @DisplayName("POST /threads/{id}/posts - As Thread Author, should save post but NOT create NEW_REPLY notification")
+    @DisplayName("Should save a reply without notifying the thread author about their own post")
     void addPost_WhenReplierIsThreadAuthor_ShouldNotNotify() throws Exception {
         long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
@@ -216,7 +199,58 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /posts/{id} - As Author, should update post content and assign editedAt timestamp in DB")
+    @DisplayName("Should return 400 when creating a post with empty content")
+    void addPost_WithEmptyBody_ShouldReturn400() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("");
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when post content exceeds the maximum length")
+    void addPost_WithTooLongBody_ShouldReturn400() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("a".repeat(20_001));
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Treść wpisu może mieć maksymalnie 20000 znaków."));
+    }
+
+    @Test
+    @DisplayName("Should return 409 when adding a post to a locked thread")
+    void addPost_WhenThreadIsLocked_ShouldReturn409() throws Exception {
+        thread.setIsLocked(true);
+        threadRepository.save(thread);
+
+        ForumPostRequest request = new ForumPostRequest("Próba odpisu");
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when an unauthenticated user adds a post")
+    void addPost_WhenUnauthenticated_ShouldFail() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("Anonim pyta");
+
+        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should allow the author to update post content and set the edit timestamp")
     void updatePost_AsAuthor_ShouldUpdateDbAndSetEditedAt() throws Exception {
         ForumPostRequest request = new ForumPostRequest("Treść po modyfikacji");
 
@@ -234,7 +268,7 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("PUT /posts/{id} - Should return 400 Bad Request when body is empty")
+    @DisplayName("Should return 400 when updating a post with empty content")
     void updatePost_WithEmptyBody_ShouldReturn400() throws Exception {
         ForumPostRequest request = new ForumPostRequest("");
 
@@ -246,7 +280,47 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - As Author, should remove reply and update thread lastPostAt")
+    @DisplayName("Should return 403 when a breeder edits another breeder's post")
+    void updatePost_AsOtherBreeder_ShouldReturn403() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("Zmieniam sobie cudzy post");
+
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a moderator edits another user's post")
+    void updatePost_AsModerator_ShouldReturn403() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("Moderator hakuje wpis");
+
+        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when updating a non-existent post")
+    void updatePost_WhenPostNotFound_ShouldReturn404() throws Exception {
+        ForumPostRequest request = new ForumPostRequest("Zmiana");
+
+        mockMvc.perform(put("/api/forum/posts/9999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should allow an author to delete a reply and update thread activity time")
     void deletePost_AsAuthor_ShouldRemoveFromDb() throws Exception {
         LocalDateTime expectedLastPostAt = adminPost.getCreatedAt();
 
@@ -259,7 +333,27 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - Trying to delete the only post in thread should return 409 Conflict")
+    @DisplayName("Should allow an administrator to delete another user's post")
+    void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should allow a moderator to delete a breeder's post")
+    void deletePost_AsModeratorOnBreederPost_ShouldReturn204() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isNoContent());
+
+        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should return 409 when deleting the only post in a thread")
     void deletePost_WhenOnlyOnePostInThread_ShouldReturn409() throws Exception {
         ForumThread singleThread = new ForumThread();
         singleThread.setCategory(category);
@@ -282,73 +376,7 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("DELETE /posts/{id} - As Admin, should remove from DB")
-    void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
-                .andExpect(status().isNoContent());
-
-        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
-    }
-
-    @Test
-    @DisplayName("DELETE /posts/{id} - Moderator should successfully delete Breeder's post from DB")
-    void deletePost_AsModeratorOnBreederPost_ShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
-                .andExpect(status().isNoContent());
-
-        assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
-    }
-
-    @Test
-    @DisplayName("DELETE /posts/{id} - Moderator attempting to delete Admin's post should get 403 Forbidden")
-    void deletePost_AsModeratorOnAdminPost_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
-                .andExpect(status().isForbidden());
-
-        assertTrue(postRepository.existsById(adminPost.getId()));
-    }
-
-    @Test
-    @DisplayName("PUT /posts/{id} - Regular breeder attempting to edit someone else's post gets 403 Forbidden")
-    void updatePost_AsOtherBreeder_ShouldReturn403() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("Zmieniam sobie cudzy post");
-
-        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-
-        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
-    }
-
-    @Test
-    @DisplayName("PUT /posts/{id} - As Moderator, trying to edit someone's post should return 403 Forbidden")
-    void updatePost_AsModerator_ShouldReturn403() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("Moderator hakuje wpis");
-
-        mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-
-        assertEquals("Początkowa treść posta hodowcy", postRepository.findById(breederPost.getId()).get().getBody());
-    }
-
-    @Test
-    @DisplayName("DELETE /posts/{id} - As regular user, trying to delete someone's post should return 403 Forbidden")
-    void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)).andExpect(status().isForbidden());
-        assertTrue(postRepository.existsById(breederPost.getId()));
-    }
-
-    @Test
-    @DisplayName("DELETE /posts/{id} - Opening post cannot be deleted even when thread contains replies")
+    @DisplayName("Should return 409 when deleting an opening post from a thread with replies")
     void deletePost_WhenPostIsOpeningPost_ShouldReturn409() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId()).header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
                 .andExpect(status().isConflict())
@@ -359,48 +387,20 @@ class ForumPostIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Adding post to a locked thread should return 409 Conflict")
-    void addPost_WhenThreadIsLocked_ShouldReturn409() throws Exception {
-        thread.setIsLocked(true);
-        threadRepository.save(thread);
+    @DisplayName("Should return 403 when a moderator deletes an administrator's post")
+    void deletePost_AsModeratorOnAdminPost_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                .andExpect(status().isForbidden());
 
-        ForumPostRequest request = new ForumPostRequest("Próba odpisu");
-
-        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
+        assertTrue(postRepository.existsById(adminPost.getId()));
     }
 
     @Test
-    @DisplayName("POST /threads/{id}/posts - Unauthenticated user should receive 401 Unauthorized")
-    void addPost_WhenUnauthenticated_ShouldFail() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("Anonim pyta");
-
-        mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("GET /threads/9999/posts - Should return 404 Not Found")
-    void getPostsByThread_WhenThreadNotFound_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/threads/9999/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("PUT /posts/9999 - Should return 404 Not Found")
-    void updatePost_WhenPostNotFound_ShouldReturn404() throws Exception {
-        ForumPostRequest request = new ForumPostRequest("Zmiana");
-
-        mockMvc.perform(put("/api/forum/posts/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
+    @DisplayName("Should return 403 when a breeder deletes another user's post")
+    void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)).andExpect(status().isForbidden());
+        assertTrue(postRepository.existsById(breederPost.getId()));
     }
 }

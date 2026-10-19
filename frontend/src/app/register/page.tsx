@@ -127,6 +127,7 @@ export default function RegisterPage() {
         if (!/[a-ząćęłńóśźż]/.test(pass)) return "Hasło musi zawierać co najmniej jedną małą literę.";
         if (!/\d/.test(pass)) return "Hasło musi zawierać co najmniej jedną cyfrę.";
         if (!/[!@#$%^&*(),.?":{}|<>_\-\=\+\/\\]/.test(pass)) return "Hasło musi zawierać co najmniej jeden znak specjalny.";
+        if (pass.length > 72 || new TextEncoder().encode(pass).length > 72) return "Hasło może mieć maksymalnie 72 bajty (UTF-8).";
         return null;
     };
 

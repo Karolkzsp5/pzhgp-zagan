@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RingNumberNormalizerTest {
 
     @Test
-    @DisplayName("Removes separators and converts the ring number to upper case")
+    @DisplayName("Should remove separators and convert ring numbers to uppercase")
     void removesSeparatorsAndUpperCases() {
         assertEquals("PL0369261234", RingNumberNormalizer.normalize("PL-0369-26-1234"));
         assertEquals("PL0369261234", RingNumberNormalizer.normalize("pl 0369 26 1234"));
@@ -16,7 +16,7 @@ class RingNumberNormalizerTest {
     }
 
     @Test
-    @DisplayName("Different notations of the same ring number normalize to one value")
+    @DisplayName("Should normalize different notations of the same ring number to one value")
     void differentNotationsMatch() {
         String reference = RingNumberNormalizer.normalize("PL-0369-26-1234");
 
@@ -25,7 +25,7 @@ class RingNumberNormalizerTest {
     }
 
     @Test
-    @DisplayName("Keeps leading zeros, because they carry the section number")
+    @DisplayName("Should preserve leading zeros that encode the section number")
     void keepsLeadingZeros() {
         assertEquals("PL0369261234", RingNumberNormalizer.normalize("PL-0369-26-1234"));
         assertTrue(RingNumberNormalizer.normalize("PL-0001-24-0007").contains("0001"));
@@ -33,14 +33,14 @@ class RingNumberNormalizerTest {
     }
 
     @Test
-    @DisplayName("Normalizes partial ring number search phrases")
+    @DisplayName("Should normalize partial ring number search phrases")
     void normalizesPartialSearchPhrases() {
         assertEquals("PL0369", RingNumberNormalizer.normalize("pl-0369"));
         assertEquals("261234", RingNumberNormalizer.normalize("26 1234"));
     }
 
     @Test
-    @DisplayName("Returns an empty text for a missing ring number")
+    @DisplayName("Should return an empty string for null or blank ring numbers")
     void handlesNullAndBlank() {
         assertEquals("", RingNumberNormalizer.normalize(null));
         assertEquals("", RingNumberNormalizer.normalize("   "));

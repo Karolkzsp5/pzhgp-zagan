@@ -103,211 +103,10 @@ class ForumPostServiceTest {
     }
 
     private void mockSuccessfulPostDeletion() {
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(postRepository.existsById(500L)).thenReturn(true);
         when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(openingPost));
         when(postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(100L, 500L)).thenReturn(Optional.of(openingPost));
-    }
-
-    @Test
-    @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
-    void addPost_ShouldSaveAndNotify() {
-        ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
-        LocalDateTime oldLastPostAt = thread.getLastPostAt();
-
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.save(any(ForumPost.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        postService.addPost(100L, request, "post.author@test.pl");
-
-        ArgumentCaptor<ForumPost> postCaptor = ArgumentCaptor.forClass(ForumPost.class);
-        verify(postRepository, times(1)).save(postCaptor.capture());
-        assertEquals("Odpowiedź do tematu", postCaptor.getValue().getBody());
-        assertEquals(postAuthor, postCaptor.getValue().getAuthor());
-        assertEquals(thread, postCaptor.getValue().getThread());
-
-        verify(threadRepository, times(1)).save(thread);
-        assertTrue(thread.getLastPostAt().isAfter(oldLastPostAt));
-
-        verify(notificationService, times(1)).createNotification(
-                eq(1L),
-                contains("Piotr Nowak dodał/a odpowiedź"),
-                eq("/forum/thread/100"),
-                eq(NotificationType.NEW_REPLY)
-        );
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when thread does not exist on addPost")
-    void addPost_WhenThreadNotFound_ShouldThrowException() {
-        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
-        ForumPostRequest request = new ForumPostRequest("Odpowiedź");
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            postService.addPost(999L, request, "post.author@test.pl");
-        });
-
-        verify(postRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Should throw ResourceConflictException when trying to add post to a locked thread")
-    void addPost_WhenThreadIsLocked_ShouldThrowException() {
-        thread.setIsLocked(true);
-        ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
-
-        when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
-
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> {
-            postService.addPost(100L, request, "post.author@test.pl");
-        });
-
-        assertEquals("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.", exception.getMessage());
-        verify(postRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Author should be able to edit their own post")
-    void updatePost_WhenRequesterIsAuthor_ShouldUpdateBody() {
-        ForumPostRequest request = new ForumPostRequest("Nowa, zedytowana treść");
-
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-
-        postService.updatePost(500L, request, "post.author@test.pl");
-
-        assertEquals("Nowa, zedytowana treść", post.getBody());
-        assertNotNull(post.getEditedAt());
-        verify(postRepository, times(1)).save(post);
-    }
-
-    @Test
-    @DisplayName("Should throw ForbiddenOperationException when someone else tries to edit a post (even Admin)")
-    void updatePost_WhenRequesterIsNotAuthor_ShouldThrowException() {
-        ForumPostRequest request = new ForumPostRequest("Próba włamania do treści");
-
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
-
-        assertThrows(ForbiddenOperationException.class, () -> {
-            postService.updatePost(500L, request, "admin@test.pl");
-        });
-
-        assertEquals("Stara treść posta", post.getBody());
-        verify(postRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Moderator should be able to delete a Breeder's post")
-    void deletePost_WhenRequesterIsModeratorOnBreederPost_ShouldDelete() {
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-        mockSuccessfulPostDeletion();
-
-        postService.deletePost(500L, "moderator@test.pl");
-        verify(postRepository, times(1)).delete(post);
-    }
-
-    @Test
-    @DisplayName("Moderator should be able to delete their own post")
-    void deletePost_WhenRequesterIsModeratorOnOwnPost_ShouldDelete() {
-        post.setAuthor(moderator);
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-        mockSuccessfulPostDeletion();
-
-        postService.deletePost(500L, "moderator@test.pl");
-        verify(postRepository, times(1)).delete(post);
-    }
-
-    @Test
-    @DisplayName("Administrator should be able to delete Moderator's post")
-    void deletePost_WhenRequesterIsAdminOnModeratorPost_ShouldDelete() {
-        post.setAuthor(moderator);
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
-        mockSuccessfulPostDeletion();
-
-        postService.deletePost(500L, "admin@test.pl");
-        verify(postRepository, times(1)).delete(post);
-    }
-
-    @Test
-    @DisplayName("Administrator should be able to delete their own post")
-    void deletePost_WhenRequesterIsAdminOnOwnPost_ShouldDelete() {
-        post.setAuthor(admin);
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
-        mockSuccessfulPostDeletion();
-
-        postService.deletePost(500L, "admin@test.pl");
-
-        verify(postRepository, times(1)).delete(post);
-    }
-
-    @Test
-    @DisplayName("Should throw exception when Moderator tries to delete Admin's post")
-    void deletePost_WhenModeratorTriesToDeleteAdminPost_ShouldThrowException() {
-        post.setAuthor(admin);
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
-
-        assertThrows(ForbiddenOperationException.class, () -> {
-            postService.deletePost(500L, "moderator@test.pl");
-        });
-
-        verify(postRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("Should throw exception when regular Breeder tries to delete another Breeder's post")
-    void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
-
-        assertThrows(ForbiddenOperationException.class, () -> {
-            postService.deletePost(500L, "thread.author@test.pl");
-        });
-
-        verify(postRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when deleting non-existent post")
-    void deletePost_WhenPostNotFound_ShouldThrowException() {
-        when(postRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            postService.deletePost(999L, "admin@test.pl");
-        });
-    }
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when user performing delete is not found")
-    void deletePost_WhenUserNotFound_ShouldThrowException() {
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            postService.deletePost(500L, "ghost@test.pl");
-        });
-    }
-
-    @Test
-    @DisplayName("Should reject deleting the opening post even when replies exist")
-    void deletePost_WhenPostIsOpeningPost_ShouldThrowConflict() {
-        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
-        when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(post));
-
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
-                postService.deletePost(500L, "post.author@test.pl"
-        ));
-
-        assertEquals("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.", exception.getMessage());
-
-        verify(postRepository, never()).delete(any());
-        verify(postRepository, never()).findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(anyLong(), anyLong());
-        verify(threadRepository, never()).save(any());
     }
 
     @Test
@@ -360,5 +159,211 @@ class ForumPostServiceTest {
 
         assertFalse(dto.canEdit());
         assertFalse(dto.canDelete());
+    }
+
+    @Test
+    @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
+    void addPost_ShouldSaveAndNotify() {
+        ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
+        LocalDateTime oldLastPostAt = thread.getLastPostAt();
+
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+        when(postRepository.save(any(ForumPost.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        postService.addPost(100L, request, "post.author@test.pl");
+
+        ArgumentCaptor<ForumPost> postCaptor = ArgumentCaptor.forClass(ForumPost.class);
+        verify(postRepository, times(1)).save(postCaptor.capture());
+        assertEquals("Odpowiedź do tematu", postCaptor.getValue().getBody());
+        assertEquals(postAuthor, postCaptor.getValue().getAuthor());
+        assertEquals(thread, postCaptor.getValue().getThread());
+
+        verify(threadRepository, times(1)).save(thread);
+        assertTrue(thread.getLastPostAt().isAfter(oldLastPostAt));
+
+        verify(notificationService, times(1)).createNotification(
+                eq(1L),
+                contains("Piotr Nowak dodał/a odpowiedź"),
+                eq("/forum/thread/100"),
+                eq(NotificationType.NEW_REPLY)
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when thread does not exist on addPost")
+    void addPost_WhenThreadNotFound_ShouldThrowException() {
+        when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+        ForumPostRequest request = new ForumPostRequest("Odpowiedź");
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
+            postService.addPost(999L, request, "post.author@test.pl");
+        });
+
+        assertEquals("Nie znaleziono wątku.", exception.getMessage());
+        verifyNoInteractions(breederRepository, postRepository);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceConflictException when trying to add post to a locked thread")
+    void addPost_WhenThreadIsLocked_ShouldThrowException() {
+        thread.setIsLocked(true);
+        ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
+
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> {
+            postService.addPost(100L, request, "post.author@test.pl");
+        });
+
+        assertEquals("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.", exception.getMessage());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should allow an author to edit their own post")
+    void updatePost_WhenRequesterIsAuthor_ShouldUpdateBody() {
+        ForumPostRequest request = new ForumPostRequest("Nowa, zedytowana treść");
+
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+
+        postService.updatePost(500L, request, "post.author@test.pl");
+
+        assertEquals("Nowa, zedytowana treść", post.getBody());
+        assertNotNull(post.getEditedAt());
+        verify(postRepository, times(1)).save(post);
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenOperationException when someone else tries to edit a post (even Admin)")
+    void updatePost_WhenRequesterIsNotAuthor_ShouldThrowException() {
+        ForumPostRequest request = new ForumPostRequest("Próba włamania do treści");
+
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
+
+        assertThrows(ForbiddenOperationException.class, () -> {
+            postService.updatePost(500L, request, "admin@test.pl");
+        });
+
+        assertEquals("Stara treść posta", post.getBody());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should allow a moderator to delete a breeder's post")
+    void deletePost_WhenRequesterIsModeratorOnBreederPost_ShouldDelete() {
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        mockSuccessfulPostDeletion();
+
+        postService.deletePost(500L, "moderator@test.pl");
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Should allow a moderator to delete their own post")
+    void deletePost_WhenRequesterIsModeratorOnOwnPost_ShouldDelete() {
+        post.setAuthor(moderator);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+        mockSuccessfulPostDeletion();
+
+        postService.deletePost(500L, "moderator@test.pl");
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to delete a moderator's post")
+    void deletePost_WhenRequesterIsAdminOnModeratorPost_ShouldDelete() {
+        post.setAuthor(moderator);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
+        mockSuccessfulPostDeletion();
+
+        postService.deletePost(500L, "admin@test.pl");
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Should allow an administrator to delete their own post")
+    void deletePost_WhenRequesterIsAdminOnOwnPost_ShouldDelete() {
+        post.setAuthor(admin);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(admin));
+        mockSuccessfulPostDeletion();
+
+        postService.deletePost(500L, "admin@test.pl");
+
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    @DisplayName("Should forbid a moderator from deleting an administrator's post")
+    void deletePost_WhenModeratorTriesToDeleteAdminPost_ShouldThrowException() {
+        post.setAuthor(admin);
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("moderator@test.pl")).thenReturn(Optional.of(moderator));
+
+        assertThrows(ForbiddenOperationException.class, () -> {
+            postService.deletePost(500L, "moderator@test.pl");
+        });
+
+        verify(postRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should forbid a breeder from deleting another breeder's post")
+    void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
+
+        assertThrows(ForbiddenOperationException.class, () -> {
+            postService.deletePost(500L, "thread.author@test.pl");
+        });
+
+        verify(postRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when deleting non-existent post")
+    void deletePost_WhenPostNotFound_ShouldThrowException() {
+        when(postRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            postService.deletePost(999L, "admin@test.pl");
+        });
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when user performing delete is not found")
+    void deletePost_WhenUserNotFound_ShouldThrowException() {
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            postService.deletePost(500L, "ghost@test.pl");
+        });
+    }
+
+    @Test
+    @DisplayName("Should reject deleting the opening post even when replies exist")
+    void deletePost_WhenPostIsOpeningPost_ShouldThrowConflict() {
+        when(postRepository.findById(500L)).thenReturn(Optional.of(post));
+        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+        when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
+        when(postRepository.existsById(500L)).thenReturn(true);
+        when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(post));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
+                postService.deletePost(500L, "post.author@test.pl"
+        ));
+
+        assertEquals("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.", exception.getMessage());
+
+        verify(postRepository, never()).delete(any());
+        verify(postRepository, never()).findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(anyLong(), anyLong());
+        verify(threadRepository, never()).save(any());
     }
 }

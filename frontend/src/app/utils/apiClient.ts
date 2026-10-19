@@ -11,9 +11,11 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
     const token = getAuthToken();
     const hadToken = token !== null;
     const headers = new Headers(options.headers);
+    let requestToken: string | null = null;
 
     if (token && isJwtValid(token)) {
         headers.set('Authorization', `Bearer ${token}`);
+        requestToken = token;
     } else if (token) {
         logout();
     }
@@ -23,6 +25,10 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
     });
 
     if (response.status === 401) {
+        if (getAuthToken() !== requestToken) {
+            return response;
+        }
+
         logout();
 
         if (typeof window !== 'undefined') {

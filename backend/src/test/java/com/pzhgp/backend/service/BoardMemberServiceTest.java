@@ -80,26 +80,159 @@ class BoardMemberServiceTest {
     }
 
     @Test
-    @DisplayName("Should delete board member when they exist in the database")
-    void shouldDeleteBoardMemberWhenExists() {
-        BoardMember member = new BoardMember();
-        member.setId(1L);
+    @DisplayName("Should successfully create a board member for a Section with valid data")
+    void shouldCreateSectionMemberSuccessfully() {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, 1L, 1L, null, null, null);
 
-        when(boardMemberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
+        when(boardMemberRepository.existsByBreederAndRoleForSection(any(), any(), any(), any())).thenReturn(false);
+        when(boardMemberRepository.existsConflictForSection(any(), any(), any())).thenReturn(false);
 
-        assertDoesNotThrow(() -> boardMemberService.deleteBoardMember(1L));
-        verify(boardMemberRepository, times(1)).delete(member);
+        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
+        verify(boardMemberRepository, times(1)).save(any(BoardMember.class));
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when attempting to delete a non-existent member")
-    void shouldThrowExceptionWhenDeletingNonExistentMember() {
-        when(boardMemberRepository.findById(99L)).thenReturn(Optional.empty());
+    @DisplayName("Should successfully save a custom person with full details including phone number")
+    void shouldSaveCustomPersonWithPhoneNumber() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.CZLONEK_ZARZADU, null, null, "Anna", "Nowak", "987654321"
+        );
 
-        assertThrows(EntityNotFoundException.class, () -> boardMemberService.deleteBoardMember(99L));
-        verify(boardMemberRepository, never()).delete(any());
+        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
+
+        ArgumentCaptor<BoardMember> captor = ArgumentCaptor.forClass(BoardMember.class);
+        verify(boardMemberRepository).save(captor.capture());
+
+        BoardMember savedMember = captor.getValue();
+        assertNull(savedMember.getBreeder());
+        assertEquals("Anna", savedMember.getCustomName());
+        assertEquals("Nowak", savedMember.getCustomSurname());
+        assertEquals("987654321", savedMember.getContactPhone());
     }
 
+    @Test
+    @DisplayName("Should successfully save a custom board member, trimming whitespace")
+    void shouldSaveSuccessfullyWithCustomPersonAndTrim() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "  Adam  ", " Nowak ", null
+        );
+
+        when(boardMemberRepository.existsConflictForBranch(any(), any())).thenReturn(false);
+
+        boardMemberService.createBoardMember(request);
+
+        ArgumentCaptor<BoardMember> captor = ArgumentCaptor.forClass(BoardMember.class);
+        verify(boardMemberRepository).save(captor.capture());
+
+        BoardMember savedMember = captor.getValue();
+        assertNull(savedMember.getBreeder());
+        assertEquals("Adam", savedMember.getCustomName());
+        assertEquals("Nowak", savedMember.getCustomSurname());
+        assertNull(savedMember.getContactPhone());
+    }
+
+    @Test
+    @DisplayName("Should skip exclusive-role conflict check for ordinary board members")
+    void shouldAllowMultipleMembersWithNonUniqueRole() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.CZLONEK_ZARZADU, null, 1L, null, null, null
+        );
+
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
+        when(boardMemberRepository.existsByBreederAndRoleForBranch(anyLong(), any(), any())).thenReturn(false);
+
+        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
+
+        verify(boardMemberRepository, times(1)).existsByBreederAndRoleForBranch(anyLong(), any(), any());
+        verify(boardMemberRepository, never()).existsConflictForBranch(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should prevent assigning an invalid role (e.g., Vice President) in a Section board")
+    void shouldThrowExceptionWhenInvalidRoleAssignedToSection() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.WICEPREZES_DS_LOTOWYCH, 1L, 1L, null, null, null
+        );
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
+        assertTrue(exception.getMessage().contains("wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz"));
+    }
+
+    @Test
+    @DisplayName("Should prevent assigning a Treasurer in a Branch board")
+    void shouldThrowExceptionWhenSkarbnikAssignedToBranch() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.SKARBNIK, null, 1L, null, null, null
+        );
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
+        assertTrue(exception.getMessage().contains("Zarząd Oddziału nie posiada stanowiska Skarbnika"));
+    }
+
+    @Test
+    @DisplayName("Should reject assigning an occupied unique role in the branch board")
+    void shouldThrowExceptionWhenUniqueRoleConflictInBranch() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.PREZES, null, 1L, null, null, null
+        );
+
+        when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
+        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+    }
+
+    @Test
+    @DisplayName("Should reject assigning an occupied unique role in a section board")
+    void shouldThrowExceptionWhenUniqueRoleConflictInSection() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.SEKRETARZ, 1L, 1L, null, null, null
+        );
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(boardMemberRepository.existsConflictForSection(eq(BoardRole.SEKRETARZ), eq(1L), any())).thenReturn(true);
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
+        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+    }
+
+    @Test
+    @DisplayName("Should reject assigning a breeder to a board in a different section")
+    void shouldThrowExceptionWhenBreederSectionMismatch() {
+        Section otherSection = new Section();
+        otherSection.setId(2L);
+        otherSection.setName("Szprotawa");
+        breeder.setSection(otherSection);
+
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.PREZES, 1L, 1L, null, null, null
+        );
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
+        assertEquals("Hodowca nie należy do sekcji, w której ma pełnić funkcję.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject assigning the same role twice to a breeder in one section board")
+    void shouldThrowExceptionWhenBreederAlreadyHasSameRoleInSection() {
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.PREZES, 1L, 1L, null, null, null
+        );
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
+        when(boardMemberRepository.existsByBreederAndRoleForSection(eq(1L), eq(BoardRole.PREZES), eq(1L), any())).thenReturn(true);
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
+        assertEquals("Ten hodowca pełni już to stanowisko w tym zarządzie.", exception.getMessage());
+    }
 
     @Test
     @DisplayName("Should throw EntityNotFoundException when assigned Section does not exist")
@@ -150,54 +283,6 @@ class BoardMemberServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully create a board member for a Section with valid data")
-    void shouldCreateSectionMemberSuccessfully() {
-        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, 1L, 1L, null, null, null);
-
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
-        when(boardMemberRepository.existsByBreederAndRoleForSection(any(), any(), any(), any())).thenReturn(false);
-        when(boardMemberRepository.existsConflictForSection(any(), any(), any())).thenReturn(false);
-
-        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
-        verify(boardMemberRepository, times(1)).save(any(BoardMember.class));
-    }
-
-    @Test
-    @DisplayName("Should prevent assigning an invalid role (e.g., Vice President) in a Section board")
-    void shouldThrowExceptionWhenInvalidRoleAssignedToSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.WICEPREZES_DS_LOTOWYCH, 1L, 1L, null, null, null
-        );
-
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz"));
-    }
-
-    @Test
-    @DisplayName("Should prevent assigning a Treasurer in a Branch board")
-    void shouldThrowExceptionWhenSkarbnikAssignedToBranch() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SKARBNIK, null, 1L, null, null, null
-        );
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("Zarząd Oddziału nie posiada stanowiska Skarbnika"));
-    }
-
-
-    @Test
-    @DisplayName("Should throw EntityNotFoundException when updating a non-existent board member")
-    void shouldThrowExceptionWhenUpdatingNonExistentMember() {
-        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, 1L, null, null, null);
-        when(boardMemberRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> boardMemberService.updateBoardMember(99L, request));
-    }
-
-    @Test
     @DisplayName("Should successfully update existing board member without triggering false positive unique conflicts")
     void shouldUpdateExistingBoardMemberWithoutFalseConflict() {
         BoardMember existingMember = new BoardMember();
@@ -217,123 +302,33 @@ class BoardMemberServiceTest {
         verify(boardMemberRepository, times(1)).save(existingMember);
     }
 
-
     @Test
-    @DisplayName("Should throw an exception when a unique role in a Branch is already taken")
-    void shouldThrowExceptionWhenUniqueRoleConflictInBranch() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, null, 1L, null, null, null
-        );
+    @DisplayName("Should throw EntityNotFoundException when updating a non-existent board member")
+    void shouldThrowExceptionWhenUpdatingNonExistentMember() {
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, 1L, null, null, null);
+        when(boardMemberRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
-
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+        assertThrows(EntityNotFoundException.class, () -> boardMemberService.updateBoardMember(99L, request));
     }
 
     @Test
-    @DisplayName("Should throw an exception when a unique role in a Section is already taken")
-    void shouldThrowExceptionWhenUniqueRoleConflictInSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SEKRETARZ, 1L, 1L, null, null, null
-        );
+    @DisplayName("Should delete board member when they exist in the database")
+    void shouldDeleteBoardMemberWhenExists() {
+        BoardMember member = new BoardMember();
+        member.setId(1L);
 
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(boardMemberRepository.existsConflictForSection(eq(BoardRole.SEKRETARZ), eq(1L), any())).thenReturn(true);
+        when(boardMemberRepository.findById(1L)).thenReturn(Optional.of(member));
 
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+        assertDoesNotThrow(() -> boardMemberService.deleteBoardMember(1L));
+        verify(boardMemberRepository, times(1)).delete(member);
     }
 
     @Test
-    @DisplayName("Should ignore uniqueness check for regular Board Members (non-unique role)")
-    void shouldAllowMultipleMembersWithNonUniqueRole() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.CZLONEK_ZARZADU, null, 1L, null, null, null
-        );
+    @DisplayName("Should throw EntityNotFoundException when attempting to delete a non-existent member")
+    void shouldThrowExceptionWhenDeletingNonExistentMember() {
+        when(boardMemberRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
-        when(boardMemberRepository.existsByBreederAndRoleForBranch(anyLong(), any(), any())).thenReturn(false);
-
-        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
-
-        verify(boardMemberRepository, times(1)).existsByBreederAndRoleForBranch(anyLong(), any(), any());
-        verify(boardMemberRepository, never()).existsConflictForBranch(any(), any());
-    }
-
-
-    @Test
-    @DisplayName("Should throw an exception when attempting to assign a breeder to a different Section")
-    void shouldThrowExceptionWhenBreederSectionMismatch() {
-        Section otherSection = new Section();
-        otherSection.setId(2L);
-        otherSection.setName("Szprotawa");
-        breeder.setSection(otherSection);
-
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, 1L, 1L, null, null, null
-        );
-
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
-        assertEquals("Hodowca nie należy do sekcji, w której ma pełnić funkcję.", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should throw an exception when the same breeder is assigned the exact same role multiple times in a Section")
-    void shouldThrowExceptionWhenBreederAlreadyHasSameRoleInSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, 1L, 1L, null, null, null
-        );
-
-        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
-        when(boardMemberRepository.existsByBreederAndRoleForSection(eq(1L), eq(BoardRole.PREZES), eq(1L), any())).thenReturn(true);
-
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
-        assertEquals("Ten hodowca pełni już to stanowisko w tym zarządzie.", exception.getMessage());
-    }
-
-
-    @Test
-    @DisplayName("Should successfully save a custom person with full details including phone number")
-    void shouldSaveCustomPersonWithPhoneNumber() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.CZLONEK_ZARZADU, null, null, "Anna", "Nowak", "987654321"
-        );
-
-        assertDoesNotThrow(() -> boardMemberService.createBoardMember(request));
-
-        ArgumentCaptor<BoardMember> captor = ArgumentCaptor.forClass(BoardMember.class);
-        verify(boardMemberRepository).save(captor.capture());
-
-        BoardMember savedMember = captor.getValue();
-        assertNull(savedMember.getBreeder());
-        assertEquals("Anna", savedMember.getCustomName());
-        assertEquals("Nowak", savedMember.getCustomSurname());
-        assertEquals("987654321", savedMember.getContactPhone());
-    }
-
-    @Test
-    @DisplayName("Should successfully save a custom board member, trimming whitespace")
-    void shouldSaveSuccessfullyWithCustomPersonAndTrim() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "  Adam  ", " Nowak ", null
-        );
-
-        when(boardMemberRepository.existsConflictForBranch(any(), any())).thenReturn(false);
-
-        boardMemberService.createBoardMember(request);
-
-        ArgumentCaptor<BoardMember> captor = ArgumentCaptor.forClass(BoardMember.class);
-        verify(boardMemberRepository).save(captor.capture());
-
-        BoardMember savedMember = captor.getValue();
-        assertNull(savedMember.getBreeder());
-        assertEquals("Adam", savedMember.getCustomName());
-        assertEquals("Nowak", savedMember.getCustomSurname());
-        assertNull(savedMember.getContactPhone());
+        assertThrows(EntityNotFoundException.class, () -> boardMemberService.deleteBoardMember(99L));
+        verify(boardMemberRepository, never()).delete(any());
     }
 }
