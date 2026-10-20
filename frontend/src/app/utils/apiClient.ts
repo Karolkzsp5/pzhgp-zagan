@@ -1,6 +1,20 @@
 import { getAuthToken, isJwtValid, logout } from './jwt';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+export const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
+
+// Wspólna obsługa błędów połączenia, również dla endpointów publicznych.
+export const fetchApi = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    try {
+        return await fetch(url, options);
+    } catch (error) {
+        if (error instanceof TypeError) {
+            throw new TypeError(CONNECTION_ERROR_MESSAGE);
+        }
+
+        throw error;
+    }
+};
 
 export const readApiError = async (response: Response, fallback: string): Promise<string> => {
     const message = await response.text();
@@ -20,7 +34,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
         logout();
     }
 
-    const response = await fetch(url, {
+    const response = await fetchApi(url, {
         ...options, headers
     });
 

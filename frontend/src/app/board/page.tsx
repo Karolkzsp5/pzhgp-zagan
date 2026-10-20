@@ -5,7 +5,7 @@ import Navbar from "@/app/components/Navbar";
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { API_URL } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi } from '@/app/utils/apiClient';
 import { useAuth } from '@/app/components/AuthProvider';
 import { boardService } from '@/app/services/boardService';
 import { BoardMemberDto, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER } from '@/app/types/board';
@@ -50,7 +50,7 @@ export default function BoardPage() {
         try {
             const [boardData, sectionsResponse] = await Promise.all([
                 boardService.getAllBoardMembers(),
-                fetch(`${API_URL}/api/sections`)
+                fetchApi(`${API_URL}/api/sections`)
             ]);
 
             if (!sectionsResponse.ok) {
@@ -62,7 +62,7 @@ export default function BoardPage() {
             setMembers(boardData);
             setSections(sectionsData);
         } catch (error) {
-            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' : 'Nie udało się pobrać danych zarządu.');
+            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać danych zarządu.');
         } finally {
             setIsLoading(false);
         }
@@ -84,7 +84,7 @@ export default function BoardPage() {
                     await boardService.deleteBoardMember(id);
                     void fetchData();
                 } catch (error) {
-                    showAlert('Błąd', 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
+                    showAlert('Błąd', error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
                 }
             }
         });

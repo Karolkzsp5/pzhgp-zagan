@@ -3,7 +3,7 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { API_URL, readApiError } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 import Modal from '@/app/components/Modal';
 
@@ -55,7 +55,7 @@ export default function RegisterPage() {
             setSectionsError('');
 
             try {
-                const response = await fetch(`${API_URL}/api/sections`);
+                const response = await fetchApi(`${API_URL}/api/sections`);
 
                 if (!response.ok) {
                     setSectionsError('Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.');
@@ -63,8 +63,8 @@ export default function RegisterPage() {
                 }
 
                 setSections(await response.json());
-            } catch {
-                setSectionsError('Brak połączenia z serwerem podczas pobierania sekcji.');
+            } catch (error) {
+                setSectionsError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać listy sekcji.');
             }
         };
 
@@ -206,7 +206,7 @@ export default function RegisterPage() {
                 phoneNumber: rawPhoneNumber
             };
 
-            const response = await fetch(`${API_URL}/api/auth/register`, {
+            const response = await fetchApi(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -223,7 +223,7 @@ export default function RegisterPage() {
             );
 
         } catch (error) {
-            setError('Błąd połączenia z serwerem.');
+            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas rejestracji.');
         } finally {
             setIsLoading(false);
         }

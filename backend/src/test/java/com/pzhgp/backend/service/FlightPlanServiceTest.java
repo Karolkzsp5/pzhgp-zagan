@@ -219,7 +219,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when requesting a plan for a missing year")
+    @DisplayName("Should allow an administrator to create a new flight plan")
     void createsPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(false);
@@ -283,7 +283,7 @@ class FlightPlanServiceTest {
 
 
     @Test
-    @DisplayName("Should reject creating another flight plan for the same year")
+    @DisplayName("Should reject flight plan creation by a moderator")
     void rejectsPlanCreationByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 

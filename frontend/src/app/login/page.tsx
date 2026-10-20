@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { API_URL, readApiError } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
 import { saveAuthToken } from '@/app/utils/jwt';
 
 interface LoginFormData {
@@ -45,7 +45,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/login`, {
+            const response = await fetchApi(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -63,7 +63,7 @@ export default function LoginPage() {
             setIsLoading(false);
 
         } catch (error) {
-            setMessage({ text: 'Błąd połączenia z serwerem.', type: 'error' });
+            setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas logowania.', type: 'error' });
             setIsLoading(false);
         }
     };

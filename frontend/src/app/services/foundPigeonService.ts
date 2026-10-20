@@ -1,4 +1,4 @@
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { API_URL, fetchApi, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus, PageResponse } from '@/app/types/foundPigeon';
 
 export class FoundPigeonApiError extends Error {
@@ -12,11 +12,11 @@ export const foundPigeonService = {
     /**
      * Wysyła publiczne zgłoszenie odnalezienia gołębia.
      *
-     * Jedyna operacja modułu działająca bez logowania, dlatego korzysta ze zwykłego
-     * fetch zamiast fetchWithAuth — nie ma tokenu do dołączenia ani sesji do odświeżenia.
+     * Jedyna operacja modułu działająca bez logowania, dlatego korzysta z funkcji
+     * fetchApi zamiast fetchWithAuth — nie ma tokenu do dołączenia ani sesji do odświeżenia.
      */
     submitReport: async (request: FoundPigeonRequest): Promise<number> => {
-        const response = await fetch(`${API_URL}/api/found-pigeons`, {
+        const response = await fetchApi(`${API_URL}/api/found-pigeons`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request)

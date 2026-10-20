@@ -27,7 +27,6 @@ public class AuthRateLimiter {
     private final Map<String, Deque<Instant>> loginAttempts = new ConcurrentHashMap<>();
     private final Map<String, Deque<Instant>> registrationAttempts = new ConcurrentHashMap<>();
 
-    @Autowired
     public AuthRateLimiter() {
         this(Clock.systemUTC());
     }
