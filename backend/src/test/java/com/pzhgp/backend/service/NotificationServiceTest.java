@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.NotificationDto;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Notification;
 import com.pzhgp.backend.entity.NotificationType;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -238,6 +239,43 @@ class NotificationServiceTest {
 
         assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
         verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should delete an owned notification")
+    void shouldDeleteOwnNotification() {
+        when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
+        when(notificationRepository.findById(100L)).thenReturn(Optional.of(testNotification));
+
+        notificationService.deleteNotification(100L, "test@test.pl");
+
+        verify(notificationRepository).delete(testNotification);
+    }
+
+    @Test
+    @DisplayName("Should reject deleting another user's notification")
+    void shouldRejectDeletingAnotherUsersNotification() {
+        when(breederRepository.findByEmail("other@test.pl")).thenReturn(Optional.of(anotherBreeder));
+        when(notificationRepository.findById(100L)).thenReturn(Optional.of(testNotification));
+
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class,
+                () -> notificationService.deleteNotification(100L, "other@test.pl"));
+
+        assertEquals("Brak uprawnień do usunięcia tego powiadomienia.", ex.getMessage());
+        verify(notificationRepository, never()).delete(any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("Should reject deleting a non-existent notification")
+    void shouldRejectDeletingNonExistentNotification() {
+        when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
+        when(notificationRepository.findById(999L)).thenReturn(Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> notificationService.deleteNotification(999L, "test@test.pl"));
+
+        assertEquals("Nie znaleziono powiadomienia.", ex.getMessage());
+        verify(notificationRepository, never()).delete(any(Notification.class));
     }
 
     @Test

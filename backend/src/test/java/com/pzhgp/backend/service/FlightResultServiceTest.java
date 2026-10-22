@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,6 +44,9 @@ class FlightResultServiceTest {
 
     @Mock
     private BreederRepository breederRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private FlightResultService flightResultService;
@@ -153,6 +157,65 @@ class FlightResultServiceTest {
         assertEquals("sekcja3.txt", saved.getOriginalFileName());
         assertEquals("Wyniki Sekcji 3", saved.getContent());
         assertSame(administrator, saved.getUploadedBy());
+    }
+
+    @Test
+    @DisplayName("Should notify active users except the uploader about branch flight results")
+    void notifiesActiveUsersAboutBranchResults() {
+        Breeder zaganBreeder = breeder(3L, "zagan@test.pl", Role.BREEDER);
+        zaganBreeder.setSection(zagan);
+        Breeder chotkowBreeder = breeder(4L, "chotkow@test.pl", Role.BREEDER);
+        chotkowBreeder.setSection(chotkow);
+
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
+        when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
+            FlightResult saved = invocation.getArgument(0);
+            saved.setId(500L);
+            return saved;
+        });
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE))
+                .thenReturn(List.of(administrator, zaganBreeder, chotkowBreeder));
+
+        flightResultService.uploadResult(flight.getId(), textFile("oddzial.txt", "Wyniki"),
+                new FlightResultUploadRequest(FlightResultScope.BRANCH, null), administrator.getEmail());
+
+        verify(notificationService).createBulkNotifications(
+                List.of(zaganBreeder, chotkowBreeder),
+                "Dodano wyniki oddziałowe lotu z Dahme (26.04.2026).",
+                "/flight-plans/2026",
+                NotificationType.NEW_FLIGHT_RESULT
+        );
+    }
+
+    @Test
+    @DisplayName("Should notify only active members of the selected section about section flight results")
+    void notifiesOnlySelectedSectionAboutSectionResults() {
+        Breeder zaganBreeder = breeder(3L, "zagan@test.pl", Role.BREEDER);
+        zaganBreeder.setSection(zagan);
+        Breeder chotkowBreeder = breeder(4L, "chotkow@test.pl", Role.BREEDER);
+        chotkowBreeder.setSection(chotkow);
+
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+        when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
+        when(sectionRepository.findById(chotkow.getId())).thenReturn(Optional.of(chotkow));
+        when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
+            FlightResult saved = invocation.getArgument(0);
+            saved.setId(501L);
+            return saved;
+        });
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE))
+                .thenReturn(List.of(administrator, zaganBreeder, chotkowBreeder));
+
+        flightResultService.uploadResult(flight.getId(), textFile("chotkow.txt", "Wyniki sekcyjne"),
+                new FlightResultUploadRequest(FlightResultScope.SECTION, chotkow.getId()), administrator.getEmail());
+
+        verify(notificationService).createBulkNotifications(
+                List.of(chotkowBreeder),
+                "Dodano wyniki sekcji Chotków dla lotu z Dahme (26.04.2026).",
+                "/flight-plans/2026",
+                NotificationType.NEW_FLIGHT_RESULT
+        );
     }
 
     @Test

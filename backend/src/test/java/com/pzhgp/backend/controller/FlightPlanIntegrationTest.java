@@ -7,6 +7,7 @@ import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightPlanRepository;
+import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
@@ -46,6 +47,9 @@ class FlightPlanIntegrationTest {
 
     @Autowired
     private FlightResultRepository flightResultRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private BreederRepository breederRepository;
@@ -123,6 +127,25 @@ class FlightPlanIntegrationTest {
 
         FlightPlan saved = flightPlanRepository.findByYear(2026).orElseThrow();
         assertEquals(2026, saved.getYear());
+    }
+
+    @Test
+    @DisplayName("Should persist notifications for active users other than the flight plan creator")
+    void createsNotificationsForNewPlan() throws Exception {
+        mockMvc.perform(post("/api/flight-plans")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
+                .andExpect(status().isCreated());
+
+        var notifications = notificationRepository.findAll();
+        assertEquals(2, notifications.size());
+        assertTrue(notifications.stream().allMatch(n -> n.getType() == NotificationType.NEW_FLIGHT_PLAN));
+        assertTrue(notifications.stream().allMatch(n -> n.getMessage().equals("Dodano nowy plan lotów na rok 2026.")));
+        assertTrue(notifications.stream().allMatch(n -> n.getLink().equals("/flight-plans/2026")));
+        assertTrue(notifications.stream().noneMatch(n -> n.getRecipient().getId().equals(administrator.getId())));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getId().equals(moderator.getId())));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getId().equals(breeder.getId())));
     }
 
     @Test

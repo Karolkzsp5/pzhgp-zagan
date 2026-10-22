@@ -2,10 +2,12 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
+import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.FlightPlanEntry;
 import com.pzhgp.backend.entity.FlightResult;
 import com.pzhgp.backend.entity.FlightResultScope;
+import com.pzhgp.backend.entity.NotificationType;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
@@ -22,17 +24,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class FlightResultService {
 
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final DateTimeFormatter FLIGHT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final FlightResultRepository flightResultRepository;
     private final FlightPlanEntryRepository flightPlanEntryRepository;
     private final SectionRepository sectionRepository;
     private final BreederRepository breederRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Long uploadResult(Long entryId, MultipartFile file, FlightResultUploadRequest request, String userEmail) {
@@ -66,7 +72,26 @@ public class FlightResultService {
         result.setContent(content);
         result.setUploadedBy(uploader);
 
-        return flightResultRepository.save(result).getId();
+        Long resultId = flightResultRepository.save(result).getId();
+
+        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
+                .filter(breeder -> !breeder.getId().equals(uploader.getId()))
+                .filter(breeder -> request.scope() == FlightResultScope.BRANCH
+                        || breeder.getSection().getId().equals(section.getId()))
+                .toList();
+
+        if (!recipients.isEmpty()) {
+            String flightDescription = "lotu z " + entry.getLocation()
+                    + " (" + entry.getScheduledDate().format(FLIGHT_DATE_FORMAT) + ").";
+            String message = request.scope() == FlightResultScope.BRANCH
+                    ? "Dodano wyniki oddziałowe " + flightDescription
+                    : "Dodano wyniki sekcji " + section.getName() + " dla " + flightDescription;
+            String link = "/flight-plans/" + entry.getFlightPlan().getYear();
+
+            notificationService.createBulkNotifications(recipients, message, link, NotificationType.NEW_FLIGHT_RESULT);
+        }
+
+        return resultId;
     }
 
     @Transactional(readOnly = true)

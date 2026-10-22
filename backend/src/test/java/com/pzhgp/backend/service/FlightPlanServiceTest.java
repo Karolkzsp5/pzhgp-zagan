@@ -49,6 +49,9 @@ class FlightPlanServiceTest {
     @Mock
     private BreederRepository breederRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private FlightPlanService flightPlanService;
 
@@ -219,7 +222,7 @@ class FlightPlanServiceTest {
     }
 
     @Test
-    @DisplayName("Should allow an administrator to create a new flight plan")
+    @DisplayName("Should throw EntityNotFoundException when requesting a plan for a missing year")
     void createsPlan() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.existsByYear(2026)).thenReturn(false);
@@ -239,6 +242,28 @@ class FlightPlanServiceTest {
     }
 
     @Test
+    @DisplayName("Should notify active users except the creator after creating a flight plan")
+    void notifiesActiveUsersAfterPlanCreation() {
+        Breeder recipient = breeder(3L, "breeder@test.pl", Role.BREEDER);
+        when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
+        when(flightPlanRepository.saveAndFlush(any(FlightPlan.class))).thenAnswer(invocation -> {
+            FlightPlan saved = invocation.getArgument(0);
+            saved.setId(50L);
+            return saved;
+        });
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(administrator, recipient));
+
+        flightPlanService.createPlan(new FlightPlanCreateRequest(2026), administrator.getEmail());
+
+        verify(notificationService).createBulkNotifications(
+                List.of(recipient),
+                "Dodano nowy plan lotów na rok 2026.",
+                "/flight-plans/2026",
+                NotificationType.NEW_FLIGHT_PLAN
+        );
+    }
+
+    @Test
     @DisplayName("Should reject creating another flight plan for the same year")
     void rejectsDuplicatePlanYear() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
@@ -251,6 +276,7 @@ class FlightPlanServiceTest {
 
         assertEquals("Plan lotów dla roku 2026 już istnieje.", exception.getMessage());
         verify(flightPlanRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(notificationService);
     }
 
 
@@ -283,7 +309,7 @@ class FlightPlanServiceTest {
 
 
     @Test
-    @DisplayName("Should reject flight plan creation by a moderator")
+    @DisplayName("Should reject creating another flight plan for the same year")
     void rejectsPlanCreationByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
