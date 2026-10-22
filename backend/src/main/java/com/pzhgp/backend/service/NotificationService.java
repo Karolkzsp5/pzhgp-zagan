@@ -96,6 +96,18 @@ public class NotificationService {
         notificationRepository.markAllAsReadByRecipientId(breeder.getId());
     }
 
+    @Transactional
+    public void deleteNotification(Long notificationId, String userEmail) {
+        Breeder breeder = getBreederByEmail(userEmail);
+        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+
+        if (!notification.getRecipient().getId().equals(breeder.getId())) {
+            throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego powiadomienia.");
+        }
+
+        notificationRepository.delete(notification);
+    }
+
     private Breeder getBreederByEmail(String email) {
         return breederRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika: " + email));
     }

@@ -7,6 +7,7 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightPlanRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
+import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ class FlightResultIntegrationTest {
 
     @Autowired
     private FlightResultRepository flightResultRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private FlightPlanRepository flightPlanRepository;
@@ -155,6 +159,41 @@ class FlightResultIntegrationTest {
         assertEquals(FlightResultScope.SECTION, saved.getScope());
         assertEquals(sectionThree.getId(), saved.getSection().getId());
         assertEquals("sekcja3.txt", saved.getOriginalFileName());
+    }
+
+    @Test
+    @DisplayName("Should notify active users except the uploader when branch results are uploaded")
+    void createsNotificationsForBranchResults() throws Exception {
+        uploadResult(textFile("oddzial.txt", "Wyniki oddziałowe"),
+                new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
+
+        var notifications = notificationRepository.findAll();
+        assertEquals(2, notifications.size());
+        assertTrue(notifications.stream().allMatch(n -> n.getType() == NotificationType.NEW_FLIGHT_RESULT));
+        assertTrue(notifications.stream().allMatch(n -> n.getMessage().equals("Dodano wyniki oddziałowe lotu z Dahme (26.04.2026).")));
+        assertTrue(notifications.stream().allMatch(n -> n.getLink().equals("/flight-plans/2026")));
+        assertTrue(notifications.stream().noneMatch(n -> n.getRecipient().getId().equals(administrator.getId())));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getId().equals(moderator.getId())));
+        assertTrue(notifications.stream().anyMatch(n -> n.getRecipient().getId().equals(breeder.getId())));
+    }
+
+    @Test
+    @DisplayName("Should notify only active breeders in the selected section when section results are uploaded")
+    void createsNotificationsForSectionResults() throws Exception {
+        Breeder chotkowBreeder = createRealUser("result-chotkow@test.pl", "977777777", Role.BREEDER);
+        chotkowBreeder.setSection(sectionThree);
+        breederRepository.save(chotkowBreeder);
+
+        uploadResult(textFile("sekcja3.txt", "Wyniki sekcyjne"),
+                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
+
+        var notifications = notificationRepository.findAll();
+        assertEquals(1, notifications.size());
+        Notification notification = notifications.getFirst();
+        assertEquals(chotkowBreeder.getId(), notification.getRecipient().getId());
+        assertEquals(NotificationType.NEW_FLIGHT_RESULT, notification.getType());
+        assertEquals("Dodano wyniki sekcji " + sectionThree.getName() + " dla lotu z Dahme (26.04.2026).", notification.getMessage());
+        assertEquals("/flight-plans/2026", notification.getLink());
     }
 
     @Test

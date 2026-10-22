@@ -29,6 +29,7 @@ public class FlightPlanService {
     private final FlightPlanEntryRepository flightPlanEntryRepository;
     private final FlightResultRepository flightResultRepository;
     private final BreederRepository breederRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<FlightPlanSummaryDto> getAllPlans() {
@@ -66,7 +67,7 @@ public class FlightPlanService {
 
     @Transactional
     public Long createPlan(FlightPlanCreateRequest request, String userEmail) {
-        requireAdministrator(userEmail);
+        Breeder creator = requireAdministrator(userEmail);
 
         if (flightPlanRepository.existsByYear(request.year())) {
             throw new ResourceConflictException("Plan lotów dla roku " + request.year() + " już istnieje.");
@@ -75,8 +76,9 @@ public class FlightPlanService {
         FlightPlan plan = new FlightPlan();
         plan.setYear(request.year());
 
+        Long planId;
         try {
-            return flightPlanRepository.saveAndFlush(plan).getId();
+            planId = flightPlanRepository.saveAndFlush(plan).getId();
         } catch (DataIntegrityViolationException ex) {
             if (isPlanYearConflict(ex)) {
                 throw new ResourceConflictException("Plan lotów dla roku " + request.year() + " już istnieje.");
@@ -84,6 +86,18 @@ public class FlightPlanService {
 
             throw ex;
         }
+
+        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
+                .filter(breeder -> !breeder.getId().equals(creator.getId()))
+                .toList();
+
+        if (!recipients.isEmpty()) {
+            String message = "Dodano nowy plan lotów na rok " + request.year() + ".";
+            String link = "/flight-plans/" + request.year();
+            notificationService.createBulkNotifications(recipients, message, link, NotificationType.NEW_FLIGHT_PLAN);
+        }
+
+        return planId;
     }
 
     @Transactional

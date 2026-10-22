@@ -274,6 +274,74 @@ class NotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should delete an unread notification and decrease the unread count")
+    void shouldDeleteUnreadNotificationAndDecreaseCount() throws Exception {
+        Long notificationId = unreadNotification.getId();
+
+        mockMvc.perform(delete("/api/notifications/{id}", notificationId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        notificationRepository.flush();
+        assertFalse(notificationRepository.existsById(notificationId));
+        assertTrue(notificationRepository.existsById(readNotification.getId()));
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("0"));
+    }
+
+    @Test
+    @DisplayName("Should delete a read notification without changing the unread count")
+    void shouldDeleteReadNotificationWithoutChangingCount() throws Exception {
+        Long notificationId = readNotification.getId();
+
+        mockMvc.perform(delete("/api/notifications/{id}", notificationId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isNoContent());
+
+        notificationRepository.flush();
+        assertFalse(notificationRepository.existsById(notificationId));
+        assertTrue(notificationRepository.existsById(unreadNotification.getId()));
+
+        mockMvc.perform(get("/api/notifications/unread-count")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+    }
+
+    @Test
+    @DisplayName("Should return 403 when deleting another user's notification")
+    void shouldPreventDeletingAnotherUsersNotification() throws Exception {
+        Long notificationId = unreadNotification.getId();
+
+        mockMvc.perform(delete("/api/notifications/{id}", notificationId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
+                .andExpect(status().isForbidden());
+
+        assertTrue(notificationRepository.existsById(notificationId));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when deleting a non-existent notification")
+    void shouldReturn404WhenDeletingNonExistentNotification() throws Exception {
+        mockMvc.perform(delete("/api/notifications/{id}", 999999L)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when deleting a notification without authentication")
+    void shouldRequireAuthenticationWhenDeletingNotification() throws Exception {
+        mockMvc.perform(delete("/api/notifications/{id}", unreadNotification.getId()))
+                .andExpect(status().isUnauthorized());
+
+        assertTrue(notificationRepository.existsById(unreadNotification.getId()));
+    }
+
+    @Test
     @DisplayName("Should mark only the current user's notifications as read")
     void shouldMarkAllNotificationsAsRead() throws Exception {
         Notification extraUnread = new Notification();
