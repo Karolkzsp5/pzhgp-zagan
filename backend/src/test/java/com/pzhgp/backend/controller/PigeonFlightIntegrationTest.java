@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -104,7 +105,7 @@ class PigeonFlightIntegrationTest {
     private Long uploadRealFlight() throws Exception {
         MvcResult result = mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-lot-konkursowy.gpx", "Lot_konkursowy.gpx"))
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -135,14 +136,14 @@ class PigeonFlightIntegrationTest {
         MvcResult result = mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
                         .file(metadataPart(new FlightUploadRequest("Lot z Dessau", "PL-0208-24-99", "Dessau")))
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         Long flightId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
 
         mockMvc.perform(get("/api/flights/" + flightId)
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Lot z Dessau"))
                 .andExpect(jsonPath("$.ringNumber").value("PL-0208-24-99"))
@@ -155,7 +156,7 @@ class PigeonFlightIntegrationTest {
         mockMvc.perform(multipart("/api/flights")
                         .file(gpxFile("skyleader-minimalny.gpx", "trasa.gpx"))
                         .file(metadataPart(new FlightUploadRequest("Lot", "obrączka<script>", null)))
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -167,7 +168,7 @@ class PigeonFlightIntegrationTest {
 
         mockMvc.perform(multipart("/api/flights")
                         .file(file)
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -179,7 +180,7 @@ class PigeonFlightIntegrationTest {
 
         mockMvc.perform(multipart("/api/flights")
                         .file(file)
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -189,7 +190,7 @@ class PigeonFlightIntegrationTest {
         Long flightId = uploadRealFlight();
 
         mockMvc.perform(get("/api/flights/" + flightId)
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ringNumber").value("8414"))
                 .andExpect(jsonPath("$.ownerName").value("Jan Kowalski"))
@@ -207,13 +208,13 @@ class PigeonFlightIntegrationTest {
         Long flightId = uploadRealFlight();
 
         MvcResult simplified = mockMvc.perform(get("/api/flights/" + flightId)
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andReturn();
 
         MvcResult full = mockMvc.perform(get("/api/flights/" + flightId)
                         .param("tolerance", "0")
-                        .header("Authorization", "Bearer " + ownerToken))
+                        .with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.returnedPoints").value(1230))
                 .andReturn();
@@ -229,12 +230,12 @@ class PigeonFlightIntegrationTest {
     void listsOnlyOwnFlights() throws Exception {
         uploadRealFlight();
 
-        mockMvc.perform(get("/api/flights").header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/flights").with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].ringNumber").value("8414"));
 
-        mockMvc.perform(get("/api/flights").header("Authorization", "Bearer " + otherToken))
+        mockMvc.perform(get("/api/flights").with(cookieAuth(otherToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
@@ -244,9 +245,9 @@ class PigeonFlightIntegrationTest {
     void enforcesFlightVisibility() throws Exception {
         Long flightId = uploadRealFlight();
 
-        mockMvc.perform(get("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/flights/" + flightId).with(cookieAuth(otherToken))).andExpect(status().isForbidden());
 
-        mockMvc.perform(get("/api/flights/" + flightId).header("Authorization", "Bearer " + adminToken))
+        mockMvc.perform(get("/api/flights/" + flightId).with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.canDelete").value(true));
     }
@@ -254,7 +255,7 @@ class PigeonFlightIntegrationTest {
     @Test
     @DisplayName("Should return 404 when requesting a non-existent pigeon flight")
     void returnsNotFoundForMissingFlight() throws Exception {
-        mockMvc.perform(get("/api/flights/999999").header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/flights/999999").with(cookieAuth(ownerToken))).andExpect(status().isNotFound());
     }
 
     @Test
@@ -262,8 +263,8 @@ class PigeonFlightIntegrationTest {
     void deletesFlightWithTrackPoints() throws Exception {
         Long flightId = uploadRealFlight();
 
-        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/flights/" + flightId).header("Authorization", "Bearer " + ownerToken)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/flights/" + flightId).with(cookieAuth(otherToken))).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/flights/" + flightId).with(cookieAuth(ownerToken))).andExpect(status().isNoContent());
 
         assertTrue(flightRepository.findById(flightId).isEmpty());
         assertTrue(trackPointRepository.findByFlightIdOrderByPointIndexAsc(flightId).isEmpty());

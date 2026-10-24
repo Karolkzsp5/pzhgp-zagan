@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -131,7 +131,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should return mapped posts belonging to the requested thread")
     void getPostsByThread_ShouldReturnRealData() throws Exception {
         mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken))
+                        .with(cookieAuth(postAuthorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta hodowcy"))
@@ -143,7 +143,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should return 404 when listing posts in a non-existent thread")
     void getPostsByThread_WhenThreadNotFound_ShouldReturn404() throws Exception {
         mockMvc.perform(get("/api/forum/threads/9999/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .with(cookieAuth(otherBreederToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -157,7 +157,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Zupełnie nowa odpowiedź");
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .with(cookieAuth(otherBreederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -189,7 +189,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Podbijam swój własny temat");
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + threadAuthorToken)
+                        .with(cookieAuth(threadAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -204,7 +204,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("");
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -216,7 +216,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("a".repeat(20_001));
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -232,7 +232,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Próba odpisu");
 
         mockMvc.perform(post("/api/forum/threads/" + thread.getId() + "/posts")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .with(cookieAuth(otherBreederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -257,7 +257,7 @@ class ForumPostIntegrationTest {
         assertNull(postRepository.findById(breederPost.getId()).get().getEditedAt());
 
         mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -273,7 +273,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("");
 
         mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -285,7 +285,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Zmieniam sobie cudzy post");
 
         mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .with(cookieAuth(otherBreederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -299,7 +299,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Moderator hakuje wpis");
 
         mockMvc.perform(put("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -313,7 +313,7 @@ class ForumPostIntegrationTest {
         ForumPostRequest request = new ForumPostRequest("Zmiana");
 
         mockMvc.perform(put("/api/forum/posts/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)
+                        .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -325,7 +325,7 @@ class ForumPostIntegrationTest {
         LocalDateTime expectedLastPostAt = adminPost.getCreatedAt();
 
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + postAuthorToken)).andExpect(status().isNoContent());
+                .with(cookieAuth(postAuthorToken))).andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
         ForumThread updatedThread = threadRepository.findById(thread.getId()).orElseThrow();
@@ -336,7 +336,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should allow an administrator to delete another user's post")
     void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
@@ -346,7 +346,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should allow a moderator to delete a breeder's post")
     void deletePost_AsModeratorOnBreederPost_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                        .with(cookieAuth(modToken)))
                 .andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
@@ -369,7 +369,7 @@ class ForumPostIntegrationTest {
         postRepository.save(singlePost);
 
         mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + threadAuthorToken))
+                        .with(cookieAuth(threadAuthorToken)))
                 .andExpect(status().isConflict());
 
         assertTrue(postRepository.existsById(singlePost.getId()));
@@ -378,7 +378,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 409 when deleting an opening post from a thread with replies")
     void deletePost_WhenPostIsOpeningPost_ShouldReturn409() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId()).header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId()).with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu."));
 
@@ -390,7 +390,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should return 403 when a moderator deletes an administrator's post")
     void deletePost_AsModeratorOnAdminPost_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                        .with(cookieAuth(modToken)))
                 .andExpect(status().isForbidden());
 
         assertTrue(postRepository.existsById(adminPost.getId()));
@@ -400,7 +400,7 @@ class ForumPostIntegrationTest {
     @DisplayName("Should return 403 when a breeder deletes another user's post")
     void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)).andExpect(status().isForbidden());
+                .with(cookieAuth(otherBreederToken))).andExpect(status().isForbidden());
         assertTrue(postRepository.existsById(breederPost.getId()));
     }
 }

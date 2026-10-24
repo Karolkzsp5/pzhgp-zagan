@@ -1,4 +1,4 @@
-import { createFakeToken } from '../support/testUtils';
+import { createTestUser } from '../support/testUtils';
 
 type MockBoardRole =
     | 'PREZES'
@@ -21,8 +21,8 @@ interface MockBoardMember {
 }
 
 describe('Board Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const mockSections = [
         { id: 1, name: 'Żagań' },
@@ -151,7 +151,7 @@ describe('Board Page Tests', () => {
         }).as('getRegisteredBreeders');
 
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/board', adminToken);
+        cy.visitAsUser('/board', adminUser);
 
         cy.wait(['@getBoard', '@getSections', '@getNotifications', '@getUnreadCount']);
     });
@@ -326,11 +326,9 @@ describe('Board Page Tests', () => {
             });
         }).as('getPublicBoard');
 
-        cy.window().then((win) => {
-            win.localStorage.removeItem('jwt_token');
-            win.localStorage.removeItem('auth_persistence');
-            win.sessionStorage.removeItem('jwt_token');
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
         });
 
         cy.reload();
@@ -357,11 +355,9 @@ describe('Board Page Tests', () => {
     // ==========================================
 
     it('Should hide administration controls from a breeder', () => {
-        cy.window().then((win) => {
-            win.localStorage.setItem('auth_persistence', 'persistent');
-            win.localStorage.setItem('jwt_token', breederToken);
-            win.sessionStorage.removeItem('jwt_token');
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 200,
+            body: breederUser
         });
 
         cy.reload();

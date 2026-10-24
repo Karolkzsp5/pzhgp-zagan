@@ -3,8 +3,9 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
-import { saveAuthToken } from '@/app/utils/jwt';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
+import { useAuth } from '@/app/components/AuthProvider';
+import { invalidateAuthSession } from '@/app/utils/authSession';
 
 interface LoginFormData {
     email: string;
@@ -23,6 +24,7 @@ export default function LoginPage() {
     const [rememberMe, setRememberMe] = useState(false);
     const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
     const router = useRouter();
+    const { refreshAuth } = useAuth();
 
     useEffect(() => {
         setSessionExpired(new URLSearchParams(window.location.search).get('expired') === 'true');
@@ -45,15 +47,27 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetchApi(`${API_URL}/api/auth/login`, {
+            const response = await fetchApi(`${API_URL}/api/auth/login-cookie?rememberMe=${rememberMe}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
             if (response.ok) {
-                const token = await response.text();
-                saveAuthToken(token, rememberMe);
+                // Backend ustawia JWT w HttpOnly cookie (odpowiedź 204, bez tokenu).
+                invalidateAuthSession(false);
+                const isAuthenticated = await refreshAuth();
+                if (!isAuthenticated) {
+                    setMessage({ text: 'Nie udało się potwierdzić sesji. Sprawdź konfigurację ciasteczek.', type: 'error' });
+                    setIsLoading(false);
+                    return;
+                }
+                // Spring Security może wyczyścić wcześniejszy token CSRF po logowaniu.
+                try {
+                    await refreshCsrfToken();
+                } catch (csrfError) {
+                    console.error('Błąd odświeżenia CSRF po logowaniu:', csrfError);
+                }
                 router.push('/');
                 return;
             }
@@ -63,7 +77,7 @@ export default function LoginPage() {
             setIsLoading(false);
 
         } catch (error) {
-            setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas logowania.', type: 'error' });
+            setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : error instanceof Error ? error.message : 'Wystąpił błąd podczas logowania.', type: 'error' });
             setIsLoading(false);
         }
     };
@@ -123,7 +137,7 @@ export default function LoginPage() {
 
                     {message.text && (
                         <div className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
-                            message.type === 'success' ? 'bg-green-100 text-green-700' : 
+                            message.type === 'success' ? 'bg-green-100 text-green-700' :
                                 message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                             {message.text}

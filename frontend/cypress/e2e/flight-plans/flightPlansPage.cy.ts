@@ -1,4 +1,4 @@
-import { createFakeTokenForUser, TEST_USERS } from '../../support/testUtils';
+import { createTestUserFor, TEST_USERS } from '../../support/testUtils';
 
 interface MockFlightPlanSummary {
     id: number;
@@ -6,9 +6,9 @@ interface MockFlightPlanSummary {
 }
 
 describe('Flight Plans Page Tests', () => {
-    const adminToken = createFakeTokenForUser(TEST_USERS.admin);
-    const moderatorToken = createFakeTokenForUser(TEST_USERS.moderator);
-    const breederToken = createFakeTokenForUser(TEST_USERS.breeder);
+    const adminUser = createTestUserFor(TEST_USERS.admin);
+    const moderatorUser = createTestUserFor(TEST_USERS.moderator);
+    const breederUser = createTestUserFor(TEST_USERS.breeder);
 
     const createPlans = (): MockFlightPlanSummary[] => [
         {
@@ -39,7 +39,7 @@ describe('Flight Plans Page Tests', () => {
             mockFlightPlansRequest();
             cy.mockNavbarNotifications();
 
-            cy.visitWithToken('/flight-plans', adminToken);
+            cy.visitAsUser('/flight-plans', adminUser);
             cy.wait(['@getFlightPlans', '@getNotifications', '@getUnreadCount']);
         });
 
@@ -151,8 +151,8 @@ describe('Flight Plans Page Tests', () => {
             cy.get('[role="dialog"]').should('not.exist');
 
             cy.get('[data-cy="flight-plan-card-2027"]').should('be.visible').within(() => {
-                    cy.contains('h2', '2027').should('be.visible');
-                    cy.get('a').should('have.attr', 'href', '/flight-plans/2027');
+                cy.contains('h2', '2027').should('be.visible');
+                cy.get('a').should('have.attr', 'href', '/flight-plans/2027');
             });
         });
 
@@ -186,9 +186,9 @@ describe('Flight Plans Page Tests', () => {
             cy.get('[data-cy="delete-flight-plan-2026"]').click();
 
             cy.get('[role="dialog"]').should('be.visible').within(() => {
-                    cy.contains('h2', 'Usuń plan lotów').should('be.visible');
-                    cy.contains('Czy na pewno chcesz usunąć plan lotów na rok 2026?').should('be.visible');
-                    cy.contains('button', 'Anuluj').click();
+                cy.contains('h2', 'Usuń plan lotów').should('be.visible');
+                cy.contains('Czy na pewno chcesz usunąć plan lotów na rok 2026?').should('be.visible');
+                cy.contains('button', 'Anuluj').click();
             });
 
             cy.get('[role="dialog"]').should('not.exist');
@@ -242,10 +242,10 @@ describe('Flight Plans Page Tests', () => {
             cy.wait('@deleteFlightPlanError');
 
             cy.get('[role="dialog"]').should('be.visible').within(() => {
-                    cy.contains('h2', 'Nie udało się usunąć planu').should('be.visible');
-                    cy.contains('Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.').should('be.visible');
+                cy.contains('h2', 'Nie udało się usunąć planu').should('be.visible');
+                cy.contains('Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.').should('be.visible');
 
-                    cy.contains('button', 'OK').click();
+                cy.contains('button', 'OK').click();
             });
 
             cy.get('[role="dialog"]').should('not.exist');
@@ -322,7 +322,7 @@ describe('Flight Plans Page Tests', () => {
 
         it('Should hide flight plan management controls from a Moderator', () => {
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flight-plans', moderatorToken);
+            cy.visitAsUser('/flight-plans', moderatorUser);
 
             cy.wait(['@getFlightPlans', '@getNotifications', '@getUnreadCount']);
             cy.checkLoggedInNavbar('Moderator');
@@ -335,7 +335,7 @@ describe('Flight Plans Page Tests', () => {
 
         it('Should hide flight plan management controls from a Breeder', () => {
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flight-plans', breederToken);
+            cy.visitAsUser('/flight-plans', breederUser);
 
             cy.wait(['@getFlightPlans', '@getNotifications', '@getUnreadCount']);
             cy.checkLoggedInNavbar('Hodowca');
@@ -352,13 +352,18 @@ describe('Flight Plans Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/flight-plans', {
                 statusCode: 401,
                 body: ''
             });
 
             cy.visit('/flight-plans');
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

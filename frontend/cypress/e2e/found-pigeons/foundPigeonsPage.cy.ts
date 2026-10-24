@@ -1,11 +1,17 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 describe('Found Pigeons Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     beforeEach(() => {
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('getUnauthenticatedUser');
+
         cy.visit('/found-pigeons');
+        cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
         cy.checkLoggedOutNavbar();
     });
 
@@ -112,7 +118,7 @@ describe('Found Pigeons Page Tests', () => {
 
     it('Should hide the admin reports link from a breeder', () => {
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/found-pigeons', breederToken);
+        cy.visitAsUser('/found-pigeons', breederUser);
 
         cy.wait(['@getNotifications', '@getUnreadCount']);
 
@@ -122,7 +128,7 @@ describe('Found Pigeons Page Tests', () => {
 
     it('Should display the admin reports link for an administrator', () => {
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/found-pigeons', adminToken);
+        cy.visitAsUser('/found-pigeons', adminUser);
 
         cy.wait(['@getNotifications', '@getUnreadCount']);
 

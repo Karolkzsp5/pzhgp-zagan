@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -138,7 +138,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should allow an authenticated user to list forum categories")
     void getAllCategories_ShouldReturn200() throws Exception {
         mockMvc.perform(get("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Wystawy i loty"));
     }
@@ -153,7 +153,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should return an existing forum category by its ID")
     void getCategoryById_ShouldReturn200() throws Exception {
         mockMvc.perform(get("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Wystawy i loty"));
     }
@@ -162,7 +162,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should return 404 when requesting a non-existent forum category")
     void getCategoryById_WhenMissing_ShouldReturn404() throws Exception {
         mockMvc.perform(get("/api/forum/categories/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -177,7 +177,7 @@ class ForumCategoryIntegrationTest {
         );
 
         mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -197,7 +197,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Dział Moderatora", "sortOrder", 4);
 
         mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -211,7 +211,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "", "sortOrder", 1);
 
         mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -228,7 +228,7 @@ class ForumCategoryIntegrationTest {
         );
 
         mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -241,7 +241,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Próba ataku", "sortOrder", 4);
 
         mockMvc.perform(post("/api/forum/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
+                        .with(cookieAuth(breederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -253,7 +253,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Zmieniona Nazwa Mod", "sortOrder", 2);
 
         mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -267,7 +267,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Zmieniona przez Admina", "sortOrder", 2);
 
         mockMvc.perform(put("/api/forum/categories/" + modCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -281,7 +281,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Włam Moderatora", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -295,7 +295,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Włam Admina", "sortOrder", 3);
 
         mockMvc.perform(put("/api/forum/categories/" + anotherAdminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -309,7 +309,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Zmieniona Nazwa", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken)
+                        .with(cookieAuth(breederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -323,7 +323,7 @@ class ForumCategoryIntegrationTest {
         Map<String, Object> request = Map.of("name", "Test", "sortOrder", 1);
 
         mockMvc.perform(put("/api/forum/categories/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -333,7 +333,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should allow an administrator to delete an empty category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isNoContent());
 
         assertTrue(categoryRepository.findById(adminCategory.getId()).isEmpty());
@@ -349,7 +349,7 @@ class ForumCategoryIntegrationTest {
         threadRepository.save(thread);
 
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć kategorii, która zawiera wątki."));
 
@@ -360,7 +360,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should return 403 when a moderator deletes a category")
     void deleteCategory_AsModerator_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                        .with(cookieAuth(modToken)))
                 .andExpect(status().isForbidden());
 
         assertTrue(categoryRepository.findById(modCategory.getId()).isPresent());
@@ -370,7 +370,7 @@ class ForumCategoryIntegrationTest {
     @DisplayName("Should return 403 when a breeder deletes a category")
     void deleteCategory_AsBreeder_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + breederToken))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isForbidden());
     }
 }

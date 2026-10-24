@@ -1,71 +1,94 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AUTH_CHANGED_EVENT, decodeJwt, getAuthToken, isJwtValid, JwtPayload, logout } from '@/app/utils/jwt';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { API_URL, fetchApi, fetchWithAuth, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
+import { AUTH_CHANGED_EVENT, AUTH_SYNC_KEY, clearLegacyAuthStorage, CurrentUser, getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
 
 interface AuthContextValue {
-    user: JwtPayload | null;
+    user: CurrentUser | null;
     isLoggedIn: boolean;
     isAuthResolved: boolean;
-    refreshAuth: () => void;
-    signOut: () => void;
+    refreshAuth: () => Promise<boolean>;
+    signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export default function AuthProvider({children}: { children: ReactNode; }) {
-    const [user, setUser] = useState<JwtPayload | null>(null);
+export default function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<CurrentUser | null>(null);
     const [isAuthResolved, setIsAuthResolved] = useState(false);
+    const latestAuthRequestRef = useRef(0);
 
-    const refreshAuth = useCallback(() => {
-        const token = getAuthToken();
+    const refreshAuth = useCallback(async (): Promise<boolean> => {
+        const requestId = ++latestAuthRequestRef.current;
+        const generation = getAuthGeneration();
 
-        if (!isJwtValid(token)) {
-            if (token) {
-                logout();
+        try {
+            const response = await fetchApi(`${API_URL}/api/auth/me`, { cache: 'no-store' });
+            if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
+
+            if (response.status === 401) {
+                setUser(null);
+                setIsAuthResolved(true);
+                return false;
+            }
+            if (!response.ok) {
+                throw new Error(await readApiError(response, 'Nie udało się pobrać danych użytkownika.'));
             }
 
-            setUser(null);
+            const currentUser = await response.json() as CurrentUser;
+            if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
+            setUser(currentUser);
             setIsAuthResolved(true);
-            return;
+            return true;
+        } catch (error) {
+            if (requestId === latestAuthRequestRef.current && generation === getAuthGeneration()) {
+                // Awaria sieci nie oznacza wylogowania — zachowujemy dotychczasowy stan.
+                console.error('Błąd sprawdzania sesji:', error);
+                setIsAuthResolved(true);
+            }
+            return false;
         }
-
-        setUser(decodeJwt(token!));
-        setIsAuthResolved(true);
     }, []);
 
-    const signOut = useCallback(() => {
-        logout();
+    const signOut = useCallback(async () => {
+        const response = await fetchWithAuth(`${API_URL}/api/auth/logout`, { method: 'POST' });
+        if (!response.ok) {
+            throw new Error(await readApiError(response, 'Nie udało się wylogować.'));
+        }
+        invalidateAuthSession(false);
+        latestAuthRequestRef.current++;
         setUser(null);
         setIsAuthResolved(true);
+
+        try {
+            await refreshCsrfToken();
+        } catch (error) {
+            console.error('Błąd odświeżenia tokenu CSRF po wylogowaniu:', error);
+        }
     }, []);
 
     useEffect(() => {
-        refreshAuth();
+        clearLegacyAuthStorage();
+        void refreshAuth();
 
-        const handleStorage = (event: StorageEvent) => {
-
-            if (event.storageArea === localStorage && (event.key === 'jwt_token' || event.key === null)) {
-                refreshAuth();
+        const onStorage = (event: StorageEvent) => {
+            if (event.storageArea === localStorage && (event.key === AUTH_SYNC_KEY || event.key === null)) {
+                invalidateAuthSession(false, false);
+                void refreshAuth();
             }
         };
+        const onAuthChanged = () => { void refreshAuth(); };
+        const onFocus = () => { void refreshAuth(); };
 
-        const handleAuthChanged = () => {
-            refreshAuth();
-        };
-
-        const handleWindowFocus = () => {
-            refreshAuth();
-        };
-
-        window.addEventListener('storage', handleStorage);
-        window.addEventListener(AUTH_CHANGED_EVENT, handleAuthChanged);
-        window.addEventListener('focus', handleWindowFocus);
-
+        window.addEventListener('storage', onStorage);
+        window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+        window.addEventListener('focus', onFocus);
         return () => {
-            window.removeEventListener('storage', handleStorage);
-            window.removeEventListener(AUTH_CHANGED_EVENT, handleAuthChanged);
-            window.removeEventListener('focus', handleWindowFocus);
+            latestAuthRequestRef.current++;
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+            window.removeEventListener('focus', onFocus);
         };
     }, [refreshAuth]);
 
@@ -77,19 +100,11 @@ export default function AuthProvider({children}: { children: ReactNode; }) {
         signOut
     }), [user, isAuthResolved, refreshAuth, signOut]);
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = (): AuthContextValue => {
     const context = useContext(AuthContext);
-
-    if (!context) {
-        throw new Error('useAuth musi być używany wewnątrz AuthProvider.');
-    }
-
+    if (!context) throw new Error('useAuth musi być używany wewnątrz AuthProvider.');
     return context;
 };

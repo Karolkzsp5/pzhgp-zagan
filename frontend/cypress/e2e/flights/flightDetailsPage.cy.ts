@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 interface MockFlightTrackPoint {
     latitude: number;
@@ -43,7 +43,7 @@ interface MockFlightDetails {
 }
 
 describe('Flight Details Page Tests', () => {
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createFlightDetails = (): MockFlightDetails => ({
         id: 1,
@@ -137,7 +137,7 @@ describe('Flight Details Page Tests', () => {
             }).as('getFlight');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flights/1', breederToken);
+            cy.visitAsUser('/flights/1', breederUser);
 
             cy.wait(['@getFlight', '@getNotifications', '@getUnreadCount']);
         });
@@ -474,7 +474,7 @@ describe('Flight Details Page Tests', () => {
     describe('Invalid Flight ID', () => {
         it('Should display an error for an invalid flight identifier', () => {
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flights/abc', breederToken);
+            cy.visitAsUser('/flights/abc', breederUser);
 
             cy.wait(['@getNotifications', '@getUnreadCount']);
 
@@ -494,13 +494,18 @@ describe('Flight Details Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/flights/1', {
                 statusCode: 401,
                 body: ''
             });
 
             cy.visit('/flights/1');
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

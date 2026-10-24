@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 interface MockForumCategory {
     id: number;
@@ -11,9 +11,9 @@ interface MockForumCategory {
 }
 
 describe('Forum Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
-    const moderatorToken = createFakeToken('MODERATOR', 'moderator@pzhgp.pl', 'Moderator');
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const moderatorUser = createTestUser('MODERATOR', 'moderator@pzhgp.pl', 'Moderator');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createCategories = (): MockForumCategory[] => [
         {
@@ -54,7 +54,7 @@ describe('Forum Page Tests', () => {
             }).as('getCategories');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum', adminToken);
+            cy.visitAsUser('/forum', adminUser);
 
             cy.wait(['@getCategories', '@getNotifications', '@getUnreadCount']);
         });
@@ -393,7 +393,7 @@ describe('Forum Page Tests', () => {
             }).as('getModeratorCategories');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum', moderatorToken);
+            cy.visitAsUser('/forum', moderatorUser);
 
             cy.wait(['@getModeratorCategories', '@getNotifications', '@getUnreadCount']);
 
@@ -414,7 +414,7 @@ describe('Forum Page Tests', () => {
             }).as('getBreederCategories');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum', breederToken);
+            cy.visitAsUser('/forum', breederUser);
 
             cy.wait(['@getBreederCategories', '@getNotifications', '@getUnreadCount']);
 
@@ -432,13 +432,18 @@ describe('Forum Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/forum/categories', {
                 statusCode: 401,
                 body: ''
             });
 
             cy.visit('/forum');
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

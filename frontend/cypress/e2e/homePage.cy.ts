@@ -1,9 +1,9 @@
-import { createFakeTokenForUser, TEST_USERS } from '../support/testUtils';
+import { createTestUserFor, TEST_USERS } from '../support/testUtils';
 
 describe('Home Page - Announcements Tests', () => {
-    const adminToken = createFakeTokenForUser(TEST_USERS.admin);
-    const moderatorToken = createFakeTokenForUser(TEST_USERS.moderator);
-    const breederToken = createFakeTokenForUser(TEST_USERS.breeder);
+    const adminUser = createTestUserFor(TEST_USERS.admin);
+    const moderatorUser = createTestUserFor(TEST_USERS.moderator);
+    const breederUser = createTestUserFor(TEST_USERS.breeder);
 
     const createFirstPage = () => ({
         content: [
@@ -85,6 +85,7 @@ describe('Home Page - Announcements Tests', () => {
         cy.get('[role="dialog"]').should('be.visible').within(() => {
             cy.contains('h2', 'Dodaj nowe ogłoszenie').should('be.visible');
         });
+        cy.get('[role="dialog"] button[aria-label="Zamknij okno"]').should('be.focused');
     };
 
     beforeEach(() => {
@@ -116,7 +117,7 @@ describe('Home Page - Announcements Tests', () => {
         }).as('getAnnouncements');
 
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/', adminToken);
+        cy.visitAsUser('/', adminUser);
 
         cy.wait(['@getAnnouncements', '@getNotifications', '@getUnreadCount']);
     });
@@ -241,10 +242,13 @@ describe('Home Page - Announcements Tests', () => {
         cy.contains('Powiadomienie 100').should('be.visible');
         cy.contains('Najstarsze powiadomienie').should('not.exist');
 
-        cy.get('[data-cy="load-older-notifications"]').should('be.visible').and('not.be.disabled').and('have.text', 'Zobacz wcześniejsze powiadomienia').click();
+        cy.get('[data-cy="load-older-notifications"]').scrollIntoView();
+        cy.get('[data-cy="load-older-notifications"]').should('be.visible').and('not.be.disabled')
+            .and('have.text', 'Zobacz wcześniejsze powiadomienia').click();
         cy.wait('@getNotificationsPage1');
 
         cy.contains('Powiadomienie 100').should('exist');
+        cy.contains('Najstarsze powiadomienie').scrollIntoView();
         cy.contains('Najstarsze powiadomienie').should('be.visible');
         cy.get('[data-cy="load-older-notifications"]').should('not.exist');
     });
@@ -497,8 +501,10 @@ describe('Home Page - Announcements Tests', () => {
 
         openAddAnnouncementModal();
 
-        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress');
+        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress')
+            .should('have.value', 'Nowe ogłoszenie Cypress');
         getAnnouncementEditor().click().type('Treść nowego ogłoszenia testowego.');
+        getAnnouncementEditor().should('contain.text', 'Treść nowego ogłoszenia testowego.');
         cy.get('#isPinned').check();
         cy.contains('button', 'Opublikuj').click();
 
@@ -580,10 +586,14 @@ describe('Home Page - Announcements Tests', () => {
             cy.contains('h2', 'Edytuj ogłoszenie').should('be.visible');
         });
 
-        cy.get('#announcement-title').should('have.value', 'Ważne ogłoszenie oddziału').clear().type('Zmienione ogłoszenie');
+        cy.get('[role="dialog"] button[aria-label="Zamknij okno"]').should('be.focused');
+
+        cy.get('#announcement-title').should('have.value', 'Ważne ogłoszenie oddziału').clear()
+            .type('Zmienione ogłoszenie').should('have.value', 'Zmienione ogłoszenie');
 
         getAnnouncementEditor().should('contain.text', 'Ważna przypięta treść ogłoszenia.').click()
             .type('{selectall}{backspace}' + 'Zmieniona treść ogłoszenia.');
+        getAnnouncementEditor().should('contain.text', 'Zmieniona treść ogłoszenia.');
 
         cy.get('#isPinned').should('be.checked').uncheck();
         cy.contains('button', 'Zapisz zmiany').click();
@@ -767,16 +777,9 @@ describe('Home Page - Announcements Tests', () => {
             }))
         };
 
-        cy.window().then((win) => {
-            win.localStorage.removeItem('jwt_token');
-            win.localStorage.removeItem('auth_persistence');
-            win.sessionStorage.removeItem('jwt_token');
-
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
-
-            expect(win.localStorage.getItem('jwt_token')).to.be.null;
-            expect(win.localStorage.getItem('auth_persistence')).to.be.null;
-            expect(win.sessionStorage.getItem('jwt_token')).to.be.null;
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
         });
 
         cy.intercept('GET', '**/api/announcements*', (req) => {
@@ -808,11 +811,9 @@ describe('Home Page - Announcements Tests', () => {
             }))
         };
 
-        cy.window().then((win) => {
-            win.localStorage.setItem('auth_persistence', 'persistent');
-            win.localStorage.setItem('jwt_token', breederToken);
-            win.sessionStorage.removeItem('jwt_token');
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 200,
+            body: breederUser
         });
 
         cy.reload();
@@ -828,11 +829,9 @@ describe('Home Page - Announcements Tests', () => {
     // ==========================================
 
     it('Should allow a moderator to see the add announcement button', () => {
-        cy.window().then((win) => {
-            win.localStorage.setItem('auth_persistence', 'persistent');
-            win.localStorage.setItem('jwt_token', moderatorToken);
-            win.sessionStorage.removeItem('jwt_token');
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 200,
+            body: moderatorUser
         });
 
         cy.reload();

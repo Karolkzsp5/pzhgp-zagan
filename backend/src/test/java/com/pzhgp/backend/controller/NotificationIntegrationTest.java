@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -118,7 +118,7 @@ class NotificationIntegrationTest {
         mockMvc.perform(get("/api/notifications")
                         .param("page", "0")
                         .param("size", "50")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.totalElements").value(2))
@@ -149,7 +149,7 @@ class NotificationIntegrationTest {
         mockMvc.perform(get("/api/notifications")
                         .param("page", "0")
                         .param("size", "50")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(50))
                 .andExpect(jsonPath("$.totalElements").value(62))
@@ -161,7 +161,7 @@ class NotificationIntegrationTest {
         mockMvc.perform(get("/api/notifications")
                         .param("page", "1")
                         .param("size", "50")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(12))
                 .andExpect(jsonPath("$.totalElements").value(62))
@@ -189,7 +189,7 @@ class NotificationIntegrationTest {
         mockMvc.perform(get("/api/notifications")
                         .param("page", "0")
                         .param("size", "50")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(50))
                 .andExpect(jsonPath("$.number").value(0))
@@ -202,7 +202,7 @@ class NotificationIntegrationTest {
     @DisplayName("Should return the unread notification count for the authenticated user")
     void shouldReturnUnreadCount() throws Exception {
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("1"));
     }
@@ -225,7 +225,7 @@ class NotificationIntegrationTest {
         notificationRepository.flush();
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("61"));
     }
@@ -236,16 +236,16 @@ class NotificationIntegrationTest {
         Long notificationId = unreadNotification.getId();
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("1"));
 
         mockMvc.perform(put("/api/notifications/" + notificationId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("0"));
 
@@ -259,7 +259,7 @@ class NotificationIntegrationTest {
         Long othersNotificationId = unreadNotification.getId();
 
         mockMvc.perform(put("/api/notifications/" + othersNotificationId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
+                        .with(cookieAuth(anotherBreederToken)))
                 .andExpect(status().isForbidden());
     }
 
@@ -269,7 +269,7 @@ class NotificationIntegrationTest {
         Long nonExistentId = 999999L;
 
         mockMvc.perform(put("/api/notifications/" + nonExistentId + "/read")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -279,7 +279,7 @@ class NotificationIntegrationTest {
         Long notificationId = unreadNotification.getId();
 
         mockMvc.perform(delete("/api/notifications/{id}", notificationId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
@@ -288,7 +288,7 @@ class NotificationIntegrationTest {
         assertTrue(notificationRepository.existsById(readNotification.getId()));
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("0"));
     }
@@ -299,7 +299,7 @@ class NotificationIntegrationTest {
         Long notificationId = readNotification.getId();
 
         mockMvc.perform(delete("/api/notifications/{id}", notificationId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isNoContent());
 
         notificationRepository.flush();
@@ -307,7 +307,7 @@ class NotificationIntegrationTest {
         assertTrue(notificationRepository.existsById(unreadNotification.getId()));
 
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("1"));
     }
@@ -318,7 +318,7 @@ class NotificationIntegrationTest {
         Long notificationId = unreadNotification.getId();
 
         mockMvc.perform(delete("/api/notifications/{id}", notificationId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + anotherBreederToken))
+                        .with(cookieAuth(anotherBreederToken)))
                 .andExpect(status().isForbidden());
 
         assertTrue(notificationRepository.existsById(notificationId));
@@ -328,7 +328,7 @@ class NotificationIntegrationTest {
     @DisplayName("Should return 404 when deleting a non-existent notification")
     void shouldReturn404WhenDeletingNonExistentNotification() throws Exception {
         mockMvc.perform(delete("/api/notifications/{id}", 999999L)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -359,7 +359,7 @@ class NotificationIntegrationTest {
         anotherBreederNotification = notificationRepository.save(anotherBreederNotification);
 
         mockMvc.perform(put("/api/notifications/read-all")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + testBreederToken))
+                        .with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk());
 
         assertTrue(notificationRepository.findById(unreadNotification.getId()).orElseThrow().isRead());

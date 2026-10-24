@@ -1,14 +1,20 @@
-import { createFakeToken } from '../support/testUtils';
+import { createTestUser } from '../support/testUtils';
 
 describe('Weather Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
 
     // ==========================================
     // PUBLIC USER
     // ==========================================
 
     it('Should correctly render the weather page for an unauthenticated user', () => {
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('getUnauthenticatedUser');
+
         cy.visit('/weather');
+        cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
 
         cy.checkLoggedOutNavbar();
 
@@ -52,7 +58,7 @@ describe('Weather Page Tests', () => {
 
     it('Should correctly render the weather page for an authenticated user', () => {
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/weather', adminToken);
+        cy.visitAsUser('/weather', adminUser);
 
         cy.wait(['@getNotifications', '@getUnreadCount']);
 
