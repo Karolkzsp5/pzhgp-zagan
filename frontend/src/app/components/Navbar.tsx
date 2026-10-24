@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { formatGlobalDate } from '@/app/utils/formatters';
 import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { getAuthToken } from '@/app/utils/jwt';
+import { getAuthGeneration } from '@/app/utils/authSession';
 
 interface NotificationDto {
     id: number;
@@ -42,6 +42,7 @@ export default function Navbar() {
     const [isLoadingMoreNotifications, setIsLoadingMoreNotifications] = useState(false);
     const [deletingNotificationId, setDeletingNotificationId] = useState<number | null>(null);
     const [notificationDeleteError, setNotificationDeleteError] = useState<string | null>(null);
+    const [logoutError, setLogoutError] = useState<string | null>(null);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -49,13 +50,13 @@ export default function Navbar() {
     const notificationsRef = useRef<HTMLDivElement>(null);
     const notificationSessionRef = useRef(0);
     const notificationDataVersionRef = useRef(0);
-    const isCurrentNotificationSession = useCallback((sessionId: number, token: string | null) =>
-        sessionId === notificationSessionRef.current && token !== null && getAuthToken() === token, []);
+    const isCurrentNotificationSession = useCallback((sessionId: number, generation: number) =>
+        sessionId === notificationSessionRef.current && generation === getAuthGeneration(), []);
     const router = useRouter();
     const pathname = usePathname();
 
     const fetchNotifications = useCallback(async (sessionId: number) => {
-        const token = getAuthToken();
+        const generation = getAuthGeneration();
         const dataVersion = notificationDataVersionRef.current;
 
         try {
@@ -75,14 +76,14 @@ export default function Navbar() {
             const pageData = await notifRes.json() as NotificationPage;
             const count = await countRes.json() as number;
 
-            if (!isCurrentNotificationSession(sessionId, token) || dataVersion !== notificationDataVersionRef.current) return;
+            if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
             setNotifications(pageData.content);
             setNotificationPage(pageData.number);
             setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
             setUnreadCount(count);
         } catch (error) {
-            if (isCurrentNotificationSession(sessionId, token) && dataVersion === notificationDataVersionRef.current) {
+            if (isCurrentNotificationSession(sessionId, generation) && dataVersion === notificationDataVersionRef.current) {
                 console.error('Błąd pobierania powiadomień:', error);
             }
         }
@@ -94,7 +95,7 @@ export default function Navbar() {
         }
 
         const sessionId = notificationSessionRef.current;
-        const token = getAuthToken();
+        const generation = getAuthGeneration();
         const dataVersion = notificationDataVersionRef.current;
         const nextPage = notificationPage + 1;
         setIsLoadingMoreNotifications(true);
@@ -108,7 +109,7 @@ export default function Navbar() {
 
             const pageData = await response.json() as NotificationPage;
 
-            if (!isCurrentNotificationSession(sessionId, token) || dataVersion !== notificationDataVersionRef.current) return;
+            if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
             setNotifications(prev => {
                 const existingIds = new Set(prev.map(notification => notification.id));
@@ -120,11 +121,11 @@ export default function Navbar() {
             setNotificationPage(pageData.number);
             setHasMoreNotifications(pageData.number + 1 < pageData.totalPages);
         } catch (error) {
-            if (isCurrentNotificationSession(sessionId, token) && dataVersion === notificationDataVersionRef.current) {
+            if (isCurrentNotificationSession(sessionId, generation) && dataVersion === notificationDataVersionRef.current) {
                 console.error('Błąd pobierania wcześniejszych powiadomień:', error);
             }
         } finally {
-            if (isCurrentNotificationSession(sessionId, token) && dataVersion === notificationDataVersionRef.current) {
+            if (isCurrentNotificationSession(sessionId, generation) && dataVersion === notificationDataVersionRef.current) {
                 setIsLoadingMoreNotifications(false);
             }
         }
@@ -184,9 +185,9 @@ export default function Navbar() {
 
     const handleNotificationClick = async (notif: NotificationDto) => {
         const sessionId = notificationSessionRef.current;
-        const token = getAuthToken();
+        const generation = getAuthGeneration();
 
-        if (!isCurrentNotificationSession(sessionId, token)) return;
+        if (!isCurrentNotificationSession(sessionId, generation)) return;
 
         if (!notif.isRead) {
             try {
@@ -195,18 +196,18 @@ export default function Navbar() {
                     throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
                 }
 
-                if (!isCurrentNotificationSession(sessionId, token)) return;
+                if (!isCurrentNotificationSession(sessionId, generation)) return;
 
                 setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
-                if (isCurrentNotificationSession(sessionId, token)) {
+                if (isCurrentNotificationSession(sessionId, generation)) {
                     console.error('Błąd oznaczania jako przeczytane:', error);
                 }
             }
         }
 
-        if (!isCurrentNotificationSession(sessionId, token)) return;
+        if (!isCurrentNotificationSession(sessionId, generation)) return;
 
         setIsNotificationsOpen(false);
         if (notif.link) {
@@ -216,9 +217,9 @@ export default function Navbar() {
 
     const handleDeleteNotification = async (notif: NotificationDto) => {
         const sessionId = notificationSessionRef.current;
-        const token = getAuthToken();
+        const generation = getAuthGeneration();
 
-        if (!isCurrentNotificationSession(sessionId, token) || deletingNotificationId !== null) return;
+        if (!isCurrentNotificationSession(sessionId, generation) || deletingNotificationId !== null) return;
 
         setDeletingNotificationId(notif.id);
         setNotificationDeleteError(null);
@@ -229,10 +230,8 @@ export default function Navbar() {
                 throw new Error(await readApiError(response, 'Nie udało się usunąć powiadomienia.'));
             }
 
-            if (!isCurrentNotificationSession(sessionId, token)) return;
+            if (!isCurrentNotificationSession(sessionId, generation)) return;
 
-            // Usunięcie przesuwa rekordy w paginacji. Unieważniamy starsze odpowiedzi
-            // i pobieramy stronę 0 ponownie, by nie pominąć kolejnych powiadomień.
             notificationDataVersionRef.current++;
             setNotifications(prev => prev.filter(n => n.id !== notif.id));
             if (!notif.isRead) {
@@ -243,13 +242,13 @@ export default function Navbar() {
             setIsLoadingMoreNotifications(false);
             void fetchNotifications(sessionId);
         } catch (error) {
-            if (isCurrentNotificationSession(sessionId, token)) {
+            if (isCurrentNotificationSession(sessionId, generation)) {
                 setNotificationDeleteError(error instanceof TypeError
                     ? 'Nie udało się połączyć z serwerem.'
                     : error instanceof Error ? error.message : 'Nie udało się usunąć powiadomienia.');
             }
         } finally {
-            if (isCurrentNotificationSession(sessionId, token)) {
+            if (isCurrentNotificationSession(sessionId, generation)) {
                 setDeletingNotificationId(null);
             }
         }
@@ -257,9 +256,9 @@ export default function Navbar() {
 
     const handleMarkAllAsRead = async () => {
         const sessionId = notificationSessionRef.current;
-        const token = getAuthToken();
+        const generation = getAuthGeneration();
 
-        if (!isCurrentNotificationSession(sessionId, token)) return;
+        if (!isCurrentNotificationSession(sessionId, generation)) return;
 
         try {
             const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
@@ -267,21 +266,27 @@ export default function Navbar() {
                 throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
             }
 
-            if (!isCurrentNotificationSession(sessionId, token)) return;
+            if (!isCurrentNotificationSession(sessionId, generation)) return;
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (error) {
-            if (isCurrentNotificationSession(sessionId, token)) {
+            if (isCurrentNotificationSession(sessionId, generation)) {
                 console.error('Błąd oznaczania wszystkich jako przeczytane:', error);
             }
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        setLogoutError(null);
+        try {
+            await signOut();
+        } catch (error) {
+            setLogoutError(error instanceof Error ? error.message : 'Nie udało się wylogować.');
+            return;
+        }
         notificationSessionRef.current++;
         notificationDataVersionRef.current++;
-        signOut();
 
         setNotifications([]);
         setUnreadCount(0);
@@ -546,9 +551,14 @@ export default function Navbar() {
 
                                                 <div className="border-t border-gray-100"></div>
 
+                                                {logoutError && (
+                                                    <div role="alert" className="px-4 py-2 text-xs text-red-700 bg-red-50">
+                                                        {logoutError}
+                                                    </div>
+                                                )}
                                                 <button
                                                     type="button"
-                                                    onClick={handleLogout}
+                                                    onClick={() => void handleLogout()}
                                                     className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition text-left"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-red-600 shrink-0" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">

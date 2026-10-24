@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -181,7 +182,7 @@ class AnnouncementIntegrationTest {
         moderator.setRole(Role.BREEDER);
         breederRepository.save(moderator);
 
-        mockMvc.perform(get("/api/announcements").header("Authorization", "Bearer " + modToken)
+        mockMvc.perform(get("/api/announcements").with(cookieAuth(modToken))
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
@@ -196,7 +197,7 @@ class AnnouncementIntegrationTest {
         assertEquals(0, announcementRepository.count());
 
         mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated());
@@ -213,7 +214,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Lot próbny", "Informacje dla hodowców", false);
 
         mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated());
@@ -227,7 +228,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Nowe ogłoszenie", "Ważne info", true);
 
         mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated());
@@ -247,7 +248,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zły tytuł", "Nieważne", false);
 
         mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + breederToken)
+                        .with(cookieAuth(breederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden());
@@ -260,7 +261,7 @@ class AnnouncementIntegrationTest {
     void shouldRejectAnnouncementWithTooLongContent() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Poprawny tytuł", "a".repeat(50_001), false);
 
-        mockMvc.perform(post("/api/announcements").header("Authorization", "Bearer " + adminToken)
+        mockMvc.perform(post("/api/announcements").with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isBadRequest())
@@ -279,7 +280,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Próba ataku", "Mam stary token!", false);
 
         mockMvc.perform(post("/api/announcements")
-                        .header("Authorization", "Bearer " + adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden());
@@ -298,7 +299,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto updateRequest = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", true);
 
         mockMvc.perform(put("/api/announcements/{id}", savedId)
-                        .header("Authorization", "Bearer " + modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk());
@@ -321,7 +322,7 @@ class AnnouncementIntegrationTest {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zmieniony tytuł", "Treść", false);
 
         mockMvc.perform(put("/api/announcements/{id}", announcement.getId())
-                        .header("Authorization", "Bearer " + breederToken)
+                        .with(cookieAuth(breederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden());
@@ -339,7 +340,7 @@ class AnnouncementIntegrationTest {
         Long savedId = announcement.getId();
         assertEquals(1, announcementRepository.count());
 
-        mockMvc.perform(delete("/api/announcements/{id}", savedId).header("Authorization", "Bearer " + adminToken)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/announcements/{id}", savedId).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertEquals(0, announcementRepository.count());
     }
 }

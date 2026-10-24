@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,8 +79,8 @@ class BoardIntegrationTest {
         breederZagan2 = createRealUser("hodowca2_zagan@test.pl", "444444444", Role.BREEDER, sectionZagan);
         breederWymiarki = createRealUser("hodowca_wymiarki@test.pl", "555555555", Role.BREEDER, sectionWymiarki);
 
-        adminToken = "Bearer " + jwtService.generateToken(admin);
-        modToken = "Bearer " + jwtService.generateToken(moderator);
+        adminToken = jwtService.generateToken(admin);
+        modToken = jwtService.generateToken(moderator);
     }
 
     private Breeder createRealUser(String email, String phoneNumber, Role role, Section section) {
@@ -141,7 +141,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, modToken)
+                        .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -153,7 +153,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -168,7 +168,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_GOSPODARCZYCH, null, null, "Tomasz", "Zewnętrzny", null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -184,7 +184,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.SEKRETARZ, null, null, "Tomasz", "Zewnętrzny", "987654321");
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -199,7 +199,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_LOTOWYCH, sectionZagan.getId(), breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -214,7 +214,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.SKARBNIK, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -233,7 +233,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederZagan2.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -252,7 +252,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -265,7 +265,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, sectionZagan.getId(), breederWymiarki.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -278,7 +278,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, -1L, null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -291,7 +291,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), "Jan", "Ręczny", null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -309,7 +309,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -327,7 +327,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -348,7 +348,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.SKARBNIK, sectionZagan.getId(), breederZagan.getId(), null, null, "111222333");
 
         mockMvc.perform(put("/api/board/" + existingMember.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -372,7 +372,7 @@ class BoardIntegrationTest {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, breederZagan2.getId(), null, null, null);
 
         mockMvc.perform(put("/api/board/" + existingMember.getId())
-                        .header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -391,7 +391,7 @@ class BoardIntegrationTest {
         member.setBreeder(breederZagan);
         member = boardMemberRepository.save(member);
 
-        mockMvc.perform(delete("/api/board/" + member.getId()).header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/board/" + member.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertTrue(boardMemberRepository.findById(member.getId()).isEmpty());
     }
 }

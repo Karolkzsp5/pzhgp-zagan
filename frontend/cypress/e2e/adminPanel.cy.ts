@@ -1,4 +1,4 @@
-import { createFakeToken } from '../support/testUtils';
+import { createTestUser } from '../support/testUtils';
 
 const mockSections = [
     { id: 1, name: 'Żagań' },
@@ -35,7 +35,7 @@ const mockRegistered = [
 ];
 
 describe('Panel Administratora - Testy E2E', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
 
     beforeEach(() => {
         cy.intercept('GET', '**/api/admin/pending', {
@@ -54,7 +54,7 @@ describe('Panel Administratora - Testy E2E', () => {
         }).as('getSections');
 
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/admin', adminToken);
+        cy.visitAsUser('/admin', adminUser);
 
         cy.wait([
             '@getPending',
@@ -542,13 +542,22 @@ describe('Panel Administratora - Testy E2E', () => {
 
 describe('AdminGuard', () => {
     it('Should redirect unauthenticated user to the login page', () => {
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('getUnauthenticatedUser');
+
         cy.visit('/admin');
+
+        cy.wait('@getUnauthenticatedUser')
+            .its('response.statusCode')
+            .should('eq', 401);
 
         cy.location('pathname').should('eq', '/login');
     });
 
     it('Should redirect a non-administrator user to the home page', () => {
-        const breederToken = createFakeToken('BREEDER', 'hodowca@test.pl', 'Hodowca');
+        const breederUser = createTestUser('BREEDER', 'hodowca@test.pl', 'Hodowca');
 
         cy.intercept('GET', '**/api/admin/pending', {
             statusCode: 403,
@@ -577,7 +586,7 @@ describe('AdminGuard', () => {
         });
 
         cy.mockNavbarNotifications();
-        cy.visitWithToken('/admin', breederToken);
+        cy.visitAsUser('/admin', breederUser);
 
         cy.location('pathname').should('eq', '/');
     });

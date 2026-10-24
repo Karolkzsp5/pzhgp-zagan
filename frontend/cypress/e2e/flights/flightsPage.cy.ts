@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 interface MockFlightSummary {
     id: number;
@@ -26,7 +26,7 @@ interface MockFlightsPage {
 }
 
 describe('Flights Page Tests', () => {
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createFlightsPage = (): MockFlightsPage => ({
         content: [
@@ -102,7 +102,7 @@ describe('Flights Page Tests', () => {
             }).as('getFlights');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flights', breederToken);
+            cy.visitAsUser('/flights', breederUser);
 
             cy.wait(['@getFlights', '@getNotifications', '@getUnreadCount']);
         });
@@ -536,6 +536,11 @@ describe('Flights Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept({
                 method: 'GET',
                 pathname: '/api/flights',
@@ -549,6 +554,10 @@ describe('Flights Page Tests', () => {
             });
 
             cy.visit('/flights');
+
+            cy.wait('@getUnauthenticatedUser')
+                .its('response.statusCode')
+                .should('eq', 401);
 
             cy.location('pathname').should('eq', '/login');
         });

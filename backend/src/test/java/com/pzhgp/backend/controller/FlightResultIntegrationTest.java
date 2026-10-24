@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -202,13 +203,13 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken)))
+                        .with(cookieAuth(moderatorToken)))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isForbidden());
 
         assertEquals(0, flightResultRepository.count());
@@ -223,7 +224,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isForbidden());
 
         assertEquals(0, flightResultRepository.count());
@@ -237,7 +238,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("oddzial2.txt", "Druga lista"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Wyniki oddziałowe dla tego lotu zostały już wgrane."));
 
@@ -252,7 +253,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("sekcja3-v2.txt", "Druga lista"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId())))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Wyniki tej sekcji dla wybranego lotu zostały już wgrane."));
 
@@ -265,7 +266,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, sectionOne.getId())))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Wyniki oddziałowe nie mogą być przypisane do konkretnej sekcji."));
     }
@@ -276,7 +277,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.SECTION, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Dla wyników sekcyjnych należy wybrać sekcję."));
     }
@@ -287,7 +288,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.SECTION, -1L)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("ID sekcji musi być liczbą dodatnią."));
     }
@@ -298,7 +299,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.SECTION, 999999L)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -308,7 +309,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/999999")
                         .file(textFile("wyniki.txt", "Treść"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -320,7 +321,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(file)
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Dozwolone są wyłącznie pliki z rozszerzeniem .txt."));
     }
@@ -331,7 +332,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "   \n\t   "))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Przesłany plik wyników nie zawiera żadnej treści."));
     }
@@ -342,7 +343,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "ABC\0DEF"))
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Przesłany plik nie jest prawidłowym plikiem tekstowym."));
     }
@@ -356,7 +357,7 @@ class FlightResultIntegrationTest {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(file)
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Plik jest za duży. Maksymalny rozmiar pliku z wynikami to 5 MB."));
     }
@@ -366,7 +367,7 @@ class FlightResultIntegrationTest {
     void rejectsMissingFilePart() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(metadataPart(new FlightResultUploadRequest(FlightResultScope.BRANCH, null)))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Żądanie jest niekompletne — brakuje części \"file\"."));
     }
@@ -376,7 +377,7 @@ class FlightResultIntegrationTest {
     void rejectsMissingMetadataPart() throws Exception {
         mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(textFile("wyniki.txt", "Treść"))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Żądanie jest niekompletne — brakuje części \"metadata\"."));
     }
@@ -388,7 +389,7 @@ class FlightResultIntegrationTest {
         Long resultId = uploadResult(textFile("wyniki-dahme.txt", originalContent), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
         mockMvc.perform(get("/api/flight-results/" + resultId + "/file")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
@@ -404,7 +405,7 @@ class FlightResultIntegrationTest {
         uploadResult(textFile("sekcja1.txt", "Sekcja 1"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionOne.getId()));
 
         mockMvc.perform(get("/api/flight-plans/2026")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.adultFlights[0].results.length()").value(3))
                 .andExpect(jsonPath("$.adultFlights[0].results[0].scope").value("BRANCH"))
@@ -419,7 +420,7 @@ class FlightResultIntegrationTest {
     void deletesResult() throws Exception {
         Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
-        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/flight-results/" + resultId).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertTrue(flightResultRepository.findById(resultId).isEmpty());
     }
 
@@ -428,7 +429,7 @@ class FlightResultIntegrationTest {
     void rejectsDeletingResultByModerator() throws Exception {
         Long resultId = uploadResult(textFile("wyniki.txt", "Treść"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
-        mockMvc.perform(delete("/api/flight-results/" + resultId).header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/flight-results/" + resultId).with(cookieAuth(moderatorToken))).andExpect(status().isForbidden());
         assertTrue(flightResultRepository.findById(resultId).isPresent());
     }
 
@@ -457,15 +458,11 @@ class FlightResultIntegrationTest {
         MvcResult result = mockMvc.perform(multipart("/api/flight-results/entries/" + flight.getId())
                         .file(file)
                         .file(metadataPart(metadata))
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andReturn();
 
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
-    }
-
-    private String bearer(String token) {
-        return "Bearer " + token;
     }
 }

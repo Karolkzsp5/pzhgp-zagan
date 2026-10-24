@@ -41,7 +41,7 @@ declare namespace Cypress {
         checkLoggedInNavbar(userName: string): Chainable<void>;
         checkLoggedOutNavbar(): Chainable<void>;
         mockNavbarNotifications(): Chainable<void>;
-        visitWithToken(url: string, token: string): Chainable<void>;
+        visitAsUser(url: string, user: import('./testUtils').MockCurrentUser): Chainable<void>;
     }
 }
 
@@ -93,13 +93,16 @@ Cypress.Commands.add('mockNavbarNotifications', () => {
     }).as('getUnreadCount');
 });
 
-Cypress.Commands.add('visitWithToken', (url: string, token: string) => {
+Cypress.Commands.add('visitAsUser', (url: string, user: import('./testUtils').MockCurrentUser) => {
+    cy.intercept('GET', '**/api/auth/me', {
+        statusCode: 200,
+        body: user
+    }).as('getCurrentUser');
+
     cy.visit(url, {
         onBeforeLoad: (win) => {
-            win.localStorage.setItem('auth_persistence', 'persistent');
-            win.localStorage.setItem('jwt_token', token);
-            win.sessionStorage.removeItem('jwt_token');
-            win.document.cookie = 'pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict';
+            // Mockowany token CSRF dla żądań POST/PUT/DELETE wykonywanych przez fetchApi.
+            win.document.cookie = 'XSRF-TOKEN=cypress-test-csrf; Path=/; SameSite=Lax';
         }
     });
 });

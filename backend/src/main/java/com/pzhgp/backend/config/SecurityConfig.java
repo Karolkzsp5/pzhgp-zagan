@@ -1,6 +1,8 @@
 package com.pzhgp.backend.config;
 
 import com.pzhgp.backend.entity.Role;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -40,11 +42,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.spa()
+                        .requireCsrfProtectionMatcher(this::requiresCsrfProtection))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/sections").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login-cookie", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
@@ -80,10 +83,37 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN", "X-CSRF-TOKEN"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private boolean requiresCsrfProtection(HttpServletRequest request) {
+        String method = request.getMethod();
+        if ("GET".equals(method) || "HEAD".equals(method)
+                || "OPTIONS".equals(method) || "TRACE".equals(method)) {
+            return false;
+        }
+
+        // Te operacje zawsze wymagają tokenu CSRF, także przed zalogowaniem.
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        if ("/api/auth/login-cookie".equals(path) || "/api/auth/logout".equals(path)) {
+            return true;
+        }
+
+        // Wszystkie operacje z ciasteczkiem uwierzytelniającym wymagają CSRF.
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (AuthCookieService.COOKIE_NAME.equals(cookie.getName())) {
+                    return true;
+                }
+            }
+        }
+
+        // Żądania bez cookie uwierzytelniającego nie wykorzystują sesji użytkownika.
+        return false;
     }
 }

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -134,7 +134,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return category threads with mapped permissions and reply counts")
     void getThreadsByCategory_ShouldReturnRealData() throws Exception {
         mockMvc.perform(get("/api/forum/categories/" + category.getId() + "/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                        .with(cookieAuth(authorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Tytuł początkowy"))
@@ -146,7 +146,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return 404 when listing threads in a non-existent category")
     void getThreadsByCategory_WhenCategoryNotFound_ShouldReturn404() throws Exception {
         mockMvc.perform(get("/api/forum/categories/9999/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                        .with(cookieAuth(authorToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -156,17 +156,17 @@ class ForumThreadIntegrationTest {
         Long threadId = thread.getId();
 
         mockMvc.perform(get("/api/forum/threads/" + threadId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .with(cookieAuth(otherBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.views").value(1));
 
         mockMvc.perform(get("/api/forum/threads/" + threadId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .with(cookieAuth(otherBreederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.views").value(2));
 
         mockMvc.perform(get("/api/forum/threads/" + threadId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                        .with(cookieAuth(authorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.views").value(2));
 
@@ -174,6 +174,33 @@ class ForumThreadIntegrationTest {
         entityManager.clear();
 
         assertEquals(2, threadRepository.findById(threadId).orElseThrow().getViews());
+    }
+
+    @Test
+    @DisplayName("Should refresh thread details without incrementing views when countView is false")
+    void getThread_ShouldSkipViewIncrementWhenRequested() throws Exception {
+        Long threadId = thread.getId();
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .param("countView", "false")
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(0));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(1));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .param("countView", "false")
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(1));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertEquals(1, threadRepository.findById(threadId).orElseThrow().getViews());
     }
 
     @Test
@@ -186,7 +213,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Nowy temat", "Zupełnie nowa treść startowa");
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
@@ -219,7 +246,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(9999L, "Wątek w pustkę", "Treść testowa");
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -231,7 +258,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(0L, "Poprawny tytuł", "Poprawna treść pierwszej wiadomości");
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -244,7 +271,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "", "Prawidłowa treść");
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -256,7 +283,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Prawidłowy tytuł", "");
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -268,7 +295,7 @@ class ForumThreadIntegrationTest {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "Poprawny tytuł", "a".repeat(20_001));
 
         mockMvc.perform(post("/api/forum/threads")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -292,7 +319,7 @@ class ForumThreadIntegrationTest {
         Map<String, String> payload = Map.of("title", "Zaktualizowany piękny tytuł");
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk());
@@ -306,7 +333,7 @@ class ForumThreadIntegrationTest {
     void updateThreadTitle_WithInvalidLengthBoundary_ShouldReturn400() throws Exception {
         Map<String, String> shortPayload = Map.of("title", "1234");
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(shortPayload)))
                 .andExpect(status().isBadRequest());
@@ -314,7 +341,7 @@ class ForumThreadIntegrationTest {
         String longTitle = "a".repeat(151);
         Map<String, String> longPayload = Map.of("title", longTitle);
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(longPayload)))
                 .andExpect(status().isBadRequest());
@@ -326,7 +353,7 @@ class ForumThreadIntegrationTest {
         Map<String, String> payload = Map.of("title", "Włamuję się na twój wątek");
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken)
+                        .with(cookieAuth(otherBreederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isForbidden());
@@ -341,7 +368,7 @@ class ForumThreadIntegrationTest {
         Map<String, String> payload = Map.of("title", "Gdzie ja jestem?");
 
         mockMvc.perform(put("/api/forum/threads/9999/title")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken)
+                        .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
@@ -353,13 +380,13 @@ class ForumThreadIntegrationTest {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isOk());
 
         assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isOk());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
@@ -371,13 +398,13 @@ class ForumThreadIntegrationTest {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                        .with(cookieAuth(modToken)))
                 .andExpect(status().isOk());
 
         assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
 
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + modToken))
+                        .with(cookieAuth(modToken)))
                 .andExpect(status().isOk());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
@@ -387,7 +414,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return 403 when a breeder pins a thread")
     void pinThread_AsBreeder_ShouldReturn403() throws Exception {
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .with(cookieAuth(otherBreederToken)))
                 .andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
@@ -397,7 +424,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return 403 when a breeder attempts to lock their own thread")
     void lockThread_AsBreederAuthor_ShouldReturn403() throws Exception {
         mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                        .with(cookieAuth(authorToken)))
                 .andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
@@ -407,7 +434,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should allow the author to delete a thread and its posts")
     void deleteThread_AsAuthor_ShouldRemoveFromDb() throws Exception {
         mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + authorToken))
+                        .with(cookieAuth(authorToken)))
                 .andExpect(status().isNoContent());
 
         assertTrue(threadRepository.findById(thread.getId()).isEmpty());
@@ -417,7 +444,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return 403 when another breeder deletes a thread")
     void deleteThread_AsOtherBreeder_ShouldReturn403() throws Exception {
         mockMvc.perform(delete("/api/forum/threads/" + thread.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherBreederToken))
+                        .with(cookieAuth(otherBreederToken)))
                 .andExpect(status().isForbidden());
 
         assertTrue(threadRepository.existsById(thread.getId()));
@@ -427,7 +454,7 @@ class ForumThreadIntegrationTest {
     @DisplayName("Should return 404 when deleting a non-existent thread")
     void deleteThread_WhenThreadDoesNotExist_ShouldReturn404() throws Exception {
         mockMvc.perform(delete("/api/forum/threads/9999")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                        .with(cookieAuth(adminToken)))
                 .andExpect(status().isNotFound());
     }
 }

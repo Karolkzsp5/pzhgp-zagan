@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 interface MockForumThread {
     id: number;
@@ -36,8 +36,8 @@ interface MockPostsPage {
 }
 
 describe('Forum Thread Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createThread = (): MockForumThread => ({
         id: 11,
@@ -118,7 +118,7 @@ describe('Forum Thread Page Tests', () => {
             }).as('getPosts');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum/thread/11', adminToken);
+            cy.visitAsUser('/forum/thread/11', adminUser);
 
             cy.wait(['@getThread', '@getPosts', '@getNotifications', '@getUnreadCount']);
         });
@@ -863,7 +863,7 @@ describe('Forum Thread Page Tests', () => {
             }).as('getLockedThreadPosts');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum/thread/11', adminToken);
+            cy.visitAsUser('/forum/thread/11', adminUser);
 
             cy.wait(['@getLockedThread', '@getLockedThreadPosts', '@getNotifications', '@getUnreadCount']);
 
@@ -917,7 +917,7 @@ describe('Forum Thread Page Tests', () => {
             }).as('getReadOnlyPosts');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum/thread/11', breederToken);
+            cy.visitAsUser('/forum/thread/11', breederUser);
 
             cy.wait(['@getReadOnlyThread', '@getReadOnlyPosts', '@getNotifications', '@getUnreadCount']);
 
@@ -936,7 +936,7 @@ describe('Forum Thread Page Tests', () => {
 
     describe('Invalid Thread ID', () => {
         it('Should display an error for an invalid thread identifier', () => {
-            cy.visitWithToken('/forum/thread/abc', breederToken);
+            cy.visitAsUser('/forum/thread/abc', breederUser);
             cy.contains('Nieprawidłowy adres URL. Wątek nie istnieje.').should('be.visible');
         });
     });
@@ -947,6 +947,11 @@ describe('Forum Thread Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/forum/threads/11', {
                 statusCode: 200,
                 body: createThread()
@@ -965,7 +970,7 @@ describe('Forum Thread Page Tests', () => {
             });
 
             cy.visit('/forum/thread/11');
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

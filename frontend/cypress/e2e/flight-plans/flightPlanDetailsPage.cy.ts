@@ -1,4 +1,4 @@
-import { createFakeTokenForUser, TEST_USERS } from '../../support/testUtils';
+import { createTestUserFor, TEST_USERS } from '../../support/testUtils';
 
 type MockPigeonAgeGroup = 'ADULT' | 'YOUNG';
 type MockFlightResultScope = 'BRANCH' | 'SECTION';
@@ -36,9 +36,9 @@ interface MockSection {
 }
 
 describe('Flight Plan Details Page Tests', () => {
-    const adminToken = createFakeTokenForUser(TEST_USERS.admin);
-    const moderatorToken = createFakeTokenForUser(TEST_USERS.moderator);
-    const breederToken = createFakeTokenForUser(TEST_USERS.breeder);
+    const adminUser = createTestUserFor(TEST_USERS.admin);
+    const moderatorUser = createTestUserFor(TEST_USERS.moderator);
+    const breederUser = createTestUserFor(TEST_USERS.breeder);
 
     const sections: MockSection[] = [
         {id: 1, name: 'Żagań'},
@@ -165,7 +165,7 @@ describe('Flight Plan Details Page Tests', () => {
             mockSectionsRequest();
             cy.mockNavbarNotifications();
 
-            cy.visitWithToken('/flight-plans/2026', adminToken);
+            cy.visitAsUser('/flight-plans/2026', adminUser);
             cy.wait(['@getFlightPlan', '@getNotifications', '@getUnreadCount']);
         });
 
@@ -1008,7 +1008,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         it('Should allow a Moderator to view the plan without management controls', () => {
-            cy.visitWithToken('/flight-plans/2026', moderatorToken);
+            cy.visitAsUser('/flight-plans/2026', moderatorUser);
 
             cy.wait(['@getFlightPlan', '@getNotifications', '@getUnreadCount']);
             cy.checkLoggedInNavbar('Moderator');
@@ -1023,7 +1023,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         it('Should allow a Breeder to view the plan without management controls', () => {
-            cy.visitWithToken('/flight-plans/2026', breederToken);
+            cy.visitAsUser('/flight-plans/2026', breederUser);
 
             cy.wait(['@getFlightPlan', '@getNotifications', '@getUnreadCount']);
             cy.checkLoggedInNavbar('Hodowca');
@@ -1046,7 +1046,7 @@ describe('Flight Plan Details Page Tests', () => {
     describe('Invalid Year', () => {
         it('Should display an error for an invalid flight plan year', () => {
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/flight-plans/abc', breederToken);
+            cy.visitAsUser('/flight-plans/abc', breederUser);
 
             cy.wait(['@getNotifications', '@getUnreadCount']);
 
@@ -1061,12 +1061,18 @@ describe('Flight Plan Details Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/flight-plans/2026', {
                 statusCode: 401,
                 body: ''
             });
 
             cy.visit('/flight-plans/2026');
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

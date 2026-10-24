@@ -45,6 +45,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
+    const viewedThreadIdRef = useRef<number | null>(null);
 
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitleContent, setEditTitleContent] = useState('');
@@ -78,12 +79,14 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     const loadThreadData = useCallback(async () => {
         const requestId = beginRequest();
+        const countView = viewedThreadIdRef.current !== threadId;
+        viewedThreadIdRef.current = threadId;
 
         setIsLoading(true);
         setError('');
 
         try {
-            const [threadData, postsData] = await Promise.all([fetchThreadById(threadId), fetchPostsByThread(threadId, currentPage)]);
+            const [threadData, postsData] = await Promise.all([fetchThreadById(threadId, countView), fetchPostsByThread(threadId, currentPage)]);
 
             if (!isLatestRequest(requestId)) {
                 return;
@@ -149,7 +152,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await createPost(threadId, replyContent);
             setReplyContent('');
 
-            const updatedThread = await fetchThreadById(threadId);
+            const updatedThread = await fetchThreadById(threadId, false);
             setThread(updatedThread);
 
             const totalPostsCount = (updatedThread.repliesCount || 0) + 1;
@@ -519,7 +522,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                 ) : (
                                                     <>
                                                         <div className="prose prose-sm sm:prose-base max-w-none text-gray-800 break-words grow prose-p:my-0"
-                                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
+                                                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
                                                         />
 
                                                         {(post.canEdit || post.canDelete) && (

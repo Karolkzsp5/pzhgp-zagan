@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -106,20 +106,20 @@ class FlightPlanIntegrationTest {
         createPlan(2026);
 
         mockMvc.perform(get("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+                        .with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].year").value(2026));
 
-        mockMvc.perform(get("/api/flight-plans").header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))).andExpect(status().isOk());
-        mockMvc.perform(get("/api/flight-plans").header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/flight-plans").with(cookieAuth(moderatorToken))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/flight-plans").with(cookieAuth(adminToken))).andExpect(status().isOk());
     }
 
     @Test
     @DisplayName("Should allow an administrator to create a flight plan")
     void createsPlan() throws Exception {
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
                 .andExpect(status().isCreated())
@@ -133,7 +133,7 @@ class FlightPlanIntegrationTest {
     @DisplayName("Should persist notifications for active users other than the flight plan creator")
     void createsNotificationsForNewPlan() throws Exception {
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
                 .andExpect(status().isCreated());
@@ -154,13 +154,13 @@ class FlightPlanIntegrationTest {
         FlightPlanCreateRequest request = new FlightPlanCreateRequest(2026);
 
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))
+                        .with(cookieAuth(moderatorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(breederToken))
+                        .with(cookieAuth(breederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -175,7 +175,7 @@ class FlightPlanIntegrationTest {
         breederRepository.save(administrator);
 
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
                 .andExpect(status().isForbidden());
@@ -187,13 +187,13 @@ class FlightPlanIntegrationTest {
     @DisplayName("Should reject a flight plan year outside the allowed range")
     void validatesPlanYear() throws Exception {
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(1999))))
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2101))))
                 .andExpect(status().isBadRequest());
@@ -207,7 +207,7 @@ class FlightPlanIntegrationTest {
         createPlan(2026);
 
         mockMvc.perform(post("/api/flight-plans")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new FlightPlanCreateRequest(2026))))
                 .andExpect(status().isConflict())
@@ -231,7 +231,7 @@ class FlightPlanIntegrationTest {
         );
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -258,7 +258,7 @@ class FlightPlanIntegrationTest {
         FlightPlanEntryRequest request = request(PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(moderatorToken))
+                        .with(cookieAuth(moderatorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -274,7 +274,7 @@ class FlightPlanIntegrationTest {
         FlightPlanEntryRequest request = request(PigeonAgeGroup.ADULT, LocalDate.of(2025, 12, 31), "Dahme");
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -296,7 +296,7 @@ class FlightPlanIntegrationTest {
         );
 
         mockMvc.perform(post("/api/flight-plans/2026/entries")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
@@ -313,7 +313,7 @@ class FlightPlanIntegrationTest {
         createFlight(plan, PigeonAgeGroup.YOUNG, LocalDate.of(2026, 8, 2), "Young Jessen");
         createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
-        mockMvc.perform(get("/api/flight-plans/2026").header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+        mockMvc.perform(get("/api/flight-plans/2026").with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.year").value(2026))
                 .andExpect(jsonPath("$.adultFlights.length()").value(2))
@@ -342,7 +342,7 @@ class FlightPlanIntegrationTest {
         );
 
         mockMvc.perform(put("/api/flight-plans/entries/" + entry.getId())
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -363,7 +363,7 @@ class FlightPlanIntegrationTest {
         FlightPlan plan = createPlan(2026);
         FlightPlanEntry entry = createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
-        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertFalse(flightPlanEntryRepository.existsById(entry.getId()));
     }
 
@@ -381,7 +381,7 @@ class FlightPlanIntegrationTest {
         result.setUploadedBy(administrator);
         flightResultRepository.save(result);
 
-        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+        mockMvc.perform(delete("/api/flight-plans/entries/" + entry.getId()).with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu."));
 
@@ -393,7 +393,7 @@ class FlightPlanIntegrationTest {
     void deletesEmptyPlan() throws Exception {
         createPlan(2026);
 
-        mockMvc.perform(delete("/api/flight-plans/2026").header(HttpHeaders.AUTHORIZATION, bearer(adminToken))).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/flight-plans/2026").with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertTrue(flightPlanRepository.findByYear(2026).isEmpty());
     }
 
@@ -403,7 +403,7 @@ class FlightPlanIntegrationTest {
         FlightPlan plan = createPlan(2026);
         createFlight(plan, PigeonAgeGroup.ADULT, LocalDate.of(2026, 4, 26), "Dahme");
 
-        mockMvc.perform(delete("/api/flight-plans/2026").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+        mockMvc.perform(delete("/api/flight-plans/2026").with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu."));
 
@@ -413,7 +413,7 @@ class FlightPlanIntegrationTest {
     @Test
     @DisplayName("Should return 404 when requesting a non-existent flight plan")
     void returnsNotFoundForMissingPlan() throws Exception {
-        mockMvc.perform(get("/api/flight-plans/2099").header(HttpHeaders.AUTHORIZATION, bearer(breederToken)))
+        mockMvc.perform(get("/api/flight-plans/2099").with(cookieAuth(breederToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Nie znaleziono planu lotów dla roku 2099."));
     }
@@ -451,9 +451,5 @@ class FlightPlanIntegrationTest {
 
     private FlightPlanEntryRequest request(PigeonAgeGroup ageGroup, LocalDate date, String location) {
         return new FlightPlanEntryRequest(ageGroup, date, location, 150, "A", "Oddziałowa");
-    }
-
-    private String bearer(String token) {
-        return "Bearer " + token;
     }
 }

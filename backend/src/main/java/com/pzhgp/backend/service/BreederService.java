@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service;
 
+import com.pzhgp.backend.dto.CurrentUserResponseDto;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
@@ -34,7 +35,8 @@ public class BreederService {
             throw new ResourceConflictException("Użytkownik z podanym numerem telefonu już istnieje.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId().longValue()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o podanym ID: " + request.sectionId()));
+        Section section = sectionRepository.findById(request.sectionId().longValue()).orElseThrow(() ->
+                new EntityNotFoundException("Nie znaleziono sekcji o podanym ID: " + request.sectionId()));
 
         Breeder newBreeder = new Breeder();
         newBreeder.setName(request.name());
@@ -57,7 +59,8 @@ public class BreederService {
     }
 
     public String login(LoginRequest request) {
-        Breeder breeder = breederRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() -> new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło."));
+        Breeder breeder = breederRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() ->
+                new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło."));
 
         if (!passwordEncoder.matches(request.password(), breeder.getPasswordHash())) {
             throw new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło.");
@@ -72,5 +75,21 @@ public class BreederService {
         }
 
         return jwtService.generateToken(breeder);
+    }
+
+    public CurrentUserResponseDto getCurrentUser(String userEmail) {
+        Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
+
+        if (breeder.getStatus() != AccountStatus.ACTIVE) {
+            throw new BadCredentialsException("Wymagane jest uwierzytelnienie.");
+        }
+
+        return new CurrentUserResponseDto(
+                breeder.getId(),
+                breeder.getEmail(),
+                breeder.getName(),
+                breeder.getRole(),
+                breeder.getStatus()
+        );
     }
 }

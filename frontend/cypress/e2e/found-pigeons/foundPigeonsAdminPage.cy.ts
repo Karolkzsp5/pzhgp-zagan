@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 type MockReportLanguage = 'PL' | 'EN' | 'DE';
 type MockFoundPigeonStatus = 'PENDING' | 'APPROVED' | 'RESOLVED' | 'REJECTED';
@@ -27,8 +27,8 @@ interface MockReportsPage {
 }
 
 describe('Found Pigeons Admin Page Tests', () => {
-    const adminToken = createFakeToken('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createReportsPage = (): MockReportsPage => ({
         content: [
@@ -106,7 +106,7 @@ describe('Found Pigeons Admin Page Tests', () => {
             }).as('getReports');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/found-pigeons/admin', adminToken);
+            cy.visitAsUser('/found-pigeons/admin', adminUser);
 
             cy.wait(['@getReports', '@getNotifications', '@getUnreadCount']);
         });
@@ -710,8 +710,13 @@ describe('Found Pigeons Admin Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
-            cy.visit('/found-pigeons/admin');
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
 
+            cy.visit('/found-pigeons/admin');
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
 
@@ -728,7 +733,7 @@ describe('Found Pigeons Admin Page Tests', () => {
             });
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/found-pigeons/admin', breederToken);
+            cy.visitAsUser('/found-pigeons/admin', breederUser);
 
             cy.location('pathname').should('eq', '/');
         });

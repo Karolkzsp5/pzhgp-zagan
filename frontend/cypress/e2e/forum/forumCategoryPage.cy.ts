@@ -1,4 +1,4 @@
-import { createFakeToken } from '../../support/testUtils';
+import { createTestUser } from '../../support/testUtils';
 
 interface MockForumCategory {
     id: number;
@@ -34,7 +34,7 @@ interface MockThreadsPage {
 }
 
 describe('Forum Category Page Tests', () => {
-    const breederToken = createFakeToken('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
+    const breederUser = createTestUser('BREEDER', 'breeder@pzhgp.pl', 'Hodowca');
 
     const createCategory = (): MockForumCategory => ({
         id: 1,
@@ -125,7 +125,7 @@ describe('Forum Category Page Tests', () => {
             }).as('getThreads');
 
             cy.mockNavbarNotifications();
-            cy.visitWithToken('/forum/1', breederToken);
+            cy.visitAsUser('/forum/1', breederUser);
 
             cy.wait(['@getCategory', '@getThreads', '@getNotifications', '@getUnreadCount']);
         });
@@ -455,7 +455,7 @@ describe('Forum Category Page Tests', () => {
 
     describe('Invalid Category ID', () => {
         it('Should display an error for an invalid category identifier', () => {
-            cy.visitWithToken('/forum/abc', breederToken);
+            cy.visitAsUser('/forum/abc', breederUser);
             cy.contains('Nieprawidłowy adres URL. Kategoria nie istnieje.').should('be.visible');
         });
     });
@@ -466,6 +466,11 @@ describe('Forum Category Page Tests', () => {
 
     describe('Access Control', () => {
         it('Should redirect an unauthenticated user to the login page', () => {
+            cy.intercept('GET', '**/api/auth/me', {
+                statusCode: 401,
+                body: 'Wymagane jest uwierzytelnienie.'
+            }).as('getUnauthenticatedUser');
+
             cy.intercept('GET', '**/api/forum/categories/1', {
                 statusCode: 200,
                 body: createCategory()
@@ -484,7 +489,7 @@ describe('Forum Category Page Tests', () => {
             });
 
             cy.visit('/forum/1');
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

@@ -1,9 +1,17 @@
 export type TestUserRole = 'BREEDER' | 'MODERATOR' | 'ADMINISTRATOR';
 
-interface TestUser {
+export interface TestUser {
     role: TestUserRole;
     email: string;
     name: string;
+}
+
+export interface MockCurrentUser {
+    id: number;
+    sub: string;
+    name: string;
+    role: TestUserRole;
+    status: 'ACTIVE';
 }
 
 export const TEST_USERS = {
@@ -24,26 +32,13 @@ export const TEST_USERS = {
     }
 } satisfies Record<string, TestUser>;
 
-export const createFakeToken = (role: TestUserRole, email: string, name: string) => {
-    const header = {
-        alg: 'HS256',
-        typ: 'JWT'
-    };
+// Frontend pobiera użytkownika z /api/auth/me zamiast dekodować JWT.
+export const createTestUser = (role: TestUserRole, email: string, name: string): MockCurrentUser => ({
+    id: 1,
+    sub: email,
+    name,
+    role,
+    status: 'ACTIVE'
+});
 
-    const payload = {
-        sub: email,
-        name,
-        role,
-        exp: 9999999999
-    };
-
-    return [
-        btoa(JSON.stringify(header)),
-        btoa(JSON.stringify(payload)),
-        'mock-signature'
-    ].join('.');
-};
-
-export const createFakeTokenForUser = (user: TestUser) => {
-    return createFakeToken(user.role, user.email, user.name);
-};
+export const createTestUserFor = (user: TestUser): MockCurrentUser => createTestUser(user.role, user.email, user.name);
