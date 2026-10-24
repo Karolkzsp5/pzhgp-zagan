@@ -80,10 +80,15 @@ public class ForumThreadService {
 
     @Transactional
     public ForumThreadDto getThreadAndIncrementViews(Long threadId, String requesterEmail) {
+        return getThread(threadId, requesterEmail, true);
+    }
+
+    @Transactional
+    public ForumThreadDto getThread(Long threadId, String requesterEmail, boolean countView) {
         ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
 
-        if (!thread.getAuthor().getId().equals(requester.getId())) {
+        if (countView && !thread.getAuthor().getId().equals(requester.getId())) {
             threadRepository.incrementViews(threadId);
             thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         }

@@ -93,8 +93,9 @@ export const fetchThreadsByCategory = async (categoryId: number, page = 0): Prom
     return response.json();
 };
 
-export const fetchThreadById = async (threadId: number): Promise<ForumThreadDto & { categoryName?: string }> => {
-    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}`);
+export const fetchThreadById = async (threadId: number, countView = true): Promise<ForumThreadDto & { categoryName?: string }> => {
+    const query = countView ? '' : '?countView=false';
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}${query}`);
     await ensureOk(response, 'Nie udało się pobrać wątku.');
     return response.json();
 };

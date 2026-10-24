@@ -22,11 +22,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -53,6 +56,9 @@ class AuthIntegrationTest {
 
     @Autowired
     private JsonMapper objectMapper;
+
+    @Autowired
+    private RequestMappingHandlerMapping requestMappingHandlerMapping;
 
     private RegistrationRequest validRequest;
 
@@ -513,13 +519,14 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should not expose the removed legacy login endpoint")
-    void shouldRejectLegacyLoginEndpoint() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new LoginRequest(validRequest.email(), validRequest.password()))))
-                .andExpect(status().isUnauthorized());
+    @DisplayName("Should not register the removed legacy login endpoint")
+    void shouldNotRegisterLegacyLoginEndpoint() {
+        boolean legacyLoginRegistered = requestMappingHandlerMapping.getHandlerMethods().keySet().stream()
+                .anyMatch(mapping -> mapping.getPatternValues().contains("/api/auth/login")
+                        && (mapping.getMethodsCondition().getMethods().isEmpty()
+                        || mapping.getMethodsCondition().getMethods().contains(RequestMethod.POST)));
+
+        assertFalse(legacyLoginRegistered);
     }
 
     @Test
@@ -537,6 +544,19 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should reject state-changing cookie requests with an invalid CSRF token")
+    void shouldRejectCookieAuthenticatedChangesWithInvalidCsrf() throws Exception {
+        createActiveBreeder();
+        CsrfValues csrf = obtainCsrf();
+        Cookie authCookie = loginWithCookie(csrf, false);
+
+        mockMvc.perform(put("/api/notifications/123456789/read")
+                        .cookie(authCookie, csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token() + "-invalid"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("Should require CSRF even when an Authorization header accompanies the cookie")
     void shouldRequireCsrfWhenAuthCookieIsPresentWithAuthorizationHeader() throws Exception {
         createActiveBreeder();
@@ -545,6 +565,18 @@ class AuthIntegrationTest {
         mockMvc.perform(put("/api/notifications/123456789/read")
                         .cookie(authCookie)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + authCookie.getValue()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should reject logout without a CSRF token")
+    void shouldRejectLogoutWithoutCsrf() throws Exception {
+        createActiveBreeder();
+        CsrfValues csrf = obtainCsrf();
+        Cookie authCookie = loginWithCookie(csrf, false);
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .cookie(authCookie, csrf.cookie()))
                 .andExpect(status().isForbidden());
     }
 
@@ -563,5 +595,4 @@ class AuthIntegrationTest {
         org.junit.jupiter.api.Assertions.assertTrue(response.getHeaders(HttpHeaders.SET_COOKIE).stream()
                 .anyMatch(header -> header.startsWith(AuthCookieService.COOKIE_NAME + "=") && header.contains("Max-Age=0")));
     }
-
 }

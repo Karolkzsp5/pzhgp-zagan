@@ -8,6 +8,7 @@ interface AuthContextValue {
     user: CurrentUser | null;
     isLoggedIn: boolean;
     isAuthResolved: boolean;
+    authCheckFailed: boolean;
     refreshAuth: () => Promise<boolean>;
     signOut: () => Promise<void>;
 }
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export default function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<CurrentUser | null>(null);
     const [isAuthResolved, setIsAuthResolved] = useState(false);
+    const [authCheckFailed, setAuthCheckFailed] = useState(false);
     const latestAuthRequestRef = useRef(0);
 
     const refreshAuth = useCallback(async (): Promise<boolean> => {
@@ -29,6 +31,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
             if (response.status === 401) {
                 setUser(null);
+                setAuthCheckFailed(false);
                 setIsAuthResolved(true);
                 return false;
             }
@@ -39,12 +42,14 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
             const currentUser = await response.json() as CurrentUser;
             if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
             setUser(currentUser);
+            setAuthCheckFailed(false);
             setIsAuthResolved(true);
             return true;
         } catch (error) {
             if (requestId === latestAuthRequestRef.current && generation === getAuthGeneration()) {
                 // Awaria sieci nie oznacza wylogowania — zachowujemy dotychczasowy stan.
                 console.error('Błąd sprawdzania sesji:', error);
+                setAuthCheckFailed(true);
                 setIsAuthResolved(true);
             }
             return false;
@@ -59,6 +64,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         invalidateAuthSession(false);
         latestAuthRequestRef.current++;
         setUser(null);
+        setAuthCheckFailed(false);
         setIsAuthResolved(true);
 
         try {
@@ -96,9 +102,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoggedIn: user !== null,
         isAuthResolved,
+        authCheckFailed,
         refreshAuth,
         signOut
-    }), [user, isAuthResolved, refreshAuth, signOut]);
+    }), [user, isAuthResolved, authCheckFailed, refreshAuth, signOut]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

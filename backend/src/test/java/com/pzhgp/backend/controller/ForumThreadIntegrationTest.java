@@ -177,6 +177,33 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should refresh thread details without incrementing views when countView is false")
+    void getThread_ShouldSkipViewIncrementWhenRequested() throws Exception {
+        Long threadId = thread.getId();
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .param("countView", "false")
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(0));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(1));
+
+        mockMvc.perform(get("/api/forum/threads/" + threadId)
+                        .param("countView", "false")
+                        .with(cookieAuth(otherBreederToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.views").value(1));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertEquals(1, threadRepository.findById(threadId).orElseThrow().getViews());
+    }
+
+    @Test
     @DisplayName("Should save a new thread and opening post and notify relevant users")
     void createThread_ShouldSaveToDbAndNotify() throws Exception {
         long initialThreadCount = threadRepository.count();

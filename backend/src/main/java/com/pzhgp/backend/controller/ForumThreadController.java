@@ -34,9 +34,10 @@ public class ForumThreadController {
     @GetMapping("/threads/{threadId}")
     public ResponseEntity<ForumThreadDto> getThread(
             @PathVariable Long threadId,
+            @RequestParam(defaultValue = "true") boolean countView,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(threadService.getThreadAndIncrementViews(threadId, authentication.getName()));
+        return ResponseEntity.ok(threadService.getThread(threadId, authentication.getName(), countView));
     }
 
     @PostMapping("/threads")
