@@ -184,7 +184,9 @@ export default function HomePage() {
                                     >
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex items-center gap-3">
-                                                <h3 className="text-xl font-bold text-blue-700">{post.title}</h3>
+                                                <h3 className="text-xl font-bold text-blue-700 wrap-anywhere">
+                                                    {post.title}
+                                                </h3>
                                             </div>
 
                                             <div className="flex items-center gap-2 ml-4">
@@ -204,8 +206,8 @@ export default function HomePage() {
                                             </div>
                                         </div>
 
-                                        <div className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0"
-                                            dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(post.content)}}
+                                        <div className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0 wrap-anywhere"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                                         />
 
                                         <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">

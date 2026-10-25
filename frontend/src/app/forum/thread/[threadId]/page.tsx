@@ -321,12 +321,12 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                             <div className="bg-white p-6 rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div className="flex-grow w-full sm:w-auto">
                                     {isEditingTitle ? (
-                                        <div className="flex items-center gap-2 w-full max-w-2xl">
+                                        <div className="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] gap-2 w-full max-w-2xl">
                                             <input
                                                 type="text"
                                                 value={editTitleContent}
                                                 onChange={(e) => setEditTitleContent(e.target.value)}
-                                                className="flex-grow px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none font-bold text-xl text-gray-900"
+                                                className="col-span-2 sm:col-span-1 min-w-0 w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none font-bold text-xl text-gray-900"
                                                 disabled={isTitleSubmitting}
                                                 aria-label="Tytuł wątku"
                                                 autoFocus
@@ -336,7 +336,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                 type="button"
                                                 onClick={() => void handleTitleEditSubmit()}
                                                 disabled={isTitleSubmitting}
-                                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-md transition shadow-sm disabled:opacity-50"
+                                                className="h-10 px-4 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-md transition shadow-sm disabled:opacity-50"
                                             >
                                                 Zapisz
                                             </button>
@@ -345,13 +345,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                 type="button"
                                                 onClick={() => setIsEditingTitle(false)}
                                                 disabled={isTitleSubmitting}
-                                                className="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition disabled:opacity-50"
+                                                className="h-10 px-4 whitespace-nowrap border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition disabled:opacity-50"
                                             >
                                                 Anuluj
                                             </button>
                                         </div>
                                     ) : (
-                                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                                             {thread.isPinned && (
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
                                                     <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
@@ -364,7 +364,9 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                 </svg>
                                             )}
 
-                                            {thread.title}
+                                            <span className="min-w-0 max-w-full [overflow-wrap:anywhere]">
+                                                {thread.title}
+                                            </span>
 
                                             {thread.canEdit && (
                                                 <button
@@ -463,7 +465,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     {posts.map((post) => (
                                         <div key={post.id} className="flex flex-col sm:flex-row p-0">
                                             <div className="bg-gray-50 sm:w-48 p-4 sm:p-6 sm:border-r border-gray-100 shrink-0">
-                                                <div className="font-bold text-gray-900 break-words">
+                                                <div className="font-bold text-gray-900 wrap-anywhere">
                                                     {post.authorName}
                                                 </div>
 
@@ -521,7 +523,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div className="prose prose-sm sm:prose-base max-w-none text-gray-800 break-words grow prose-p:my-0"
+                                                        <div className="prose prose-sm sm:prose-base max-w-none text-gray-800 grow prose-p:my-0 wrap-anywhere"
                                                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
                                                         />
 

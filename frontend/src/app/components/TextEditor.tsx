@@ -3,7 +3,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 
@@ -254,7 +253,6 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
 const editorExtensions = [
     StarterKit,
-    Underline,
     Highlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
 ];
