@@ -96,7 +96,7 @@ describe('Forum Thread Page Tests', () => {
             thread = createThread();
             postsPage = createPostsPage();
 
-            cy.intercept('GET', '**/api/forum/threads/11', (req) => {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, (req) => {
                 req.reply({
                     statusCode: 200,
                     body: thread
@@ -120,7 +120,8 @@ describe('Forum Thread Page Tests', () => {
             cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/11', adminUser);
 
-            cy.wait(['@getThread', '@getPosts', '@getNotifications', '@getUnreadCount']);
+            cy.wait('@getThread').its('request.query').should('not.have.property', 'countView');
+            cy.wait(['@getPosts', '@getNotifications', '@getUnreadCount']);
         });
 
         // ==========================================
@@ -175,6 +176,28 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Opublikuj odpowiedź').should('be.visible').and('not.be.disabled');
 
             cy.checkFooter();
+        });
+
+        // ==========================================
+        // VIEW COUNTING
+        // ==========================================
+
+        it('Should count a new visit after a full page reload', () => {
+            const countViewFlags: string[] = [];
+
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, (req) => {
+                countViewFlags.push(String(req.query.countView ?? 'true'));
+                req.reply({ statusCode: 200, body: thread });
+            }).as('getThreadAfterReload');
+
+            cy.reload();
+            cy.wait('@getThreadAfterReload');
+            cy.get('h1').should('contain.text', 'Przygotowanie do lotu konkursowego');
+
+            cy.then(() => {
+                expect(countViewFlags[0]).to.eq('true');
+                expect(countViewFlags.filter(flag => flag === 'true')).to.have.length(1);
+            });
         });
 
         // ==========================================
@@ -351,7 +374,7 @@ describe('Forum Thread Page Tests', () => {
                 req.reply({ statusCode: 201 });
             }).as('createPost');
 
-            cy.intercept('GET', '**/api/forum/threads/11', (req) => {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, (req) => {
                 req.reply({
                     statusCode: 200,
                     body: thread
@@ -376,8 +399,8 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Opublikuj odpowiedź').click();
 
             cy.wait('@createPost');
-            cy.wait('@getThreadAfterReply');
-            cy.wait('@getThreadAfterReply');
+            cy.wait('@getThreadAfterReply').its('request.query.countView').should('eq', 'false');
+            cy.wait('@getThreadAfterReply').its('request.query.countView').should('eq', 'false');
             cy.wait('@getPostsAfterReply');
 
             cy.contains('.prose', 'Nowa odpowiedź testowa.').should('be.visible');
@@ -427,7 +450,7 @@ describe('Forum Thread Page Tests', () => {
                 req.reply({ statusCode: 200 });
             }).as('updatePost');
 
-            cy.intercept('GET', '**/api/forum/threads/11', {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
                 statusCode: 200,
                 body: thread
             }).as('getThreadAfterPostUpdate');
@@ -454,7 +477,8 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Zapisz zmiany').click();
 
             cy.wait('@updatePost');
-            cy.wait(['@getThreadAfterPostUpdate', '@getPostsAfterPostUpdate']);
+            cy.wait('@getThreadAfterPostUpdate').its('request.query.countView').should('eq', 'false');
+            cy.wait('@getPostsAfterPostUpdate');
 
             cy.contains('.prose', 'Zmieniona treść pierwszego wpisu.').should('be.visible');
             cy.contains('.prose', 'Pierwszy wpis w wątku.').should('not.exist');
@@ -506,7 +530,7 @@ describe('Forum Thread Page Tests', () => {
                 req.reply({ statusCode: 204 });
             }).as('deletePost');
 
-            cy.intercept('GET', '**/api/forum/threads/11', {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
                 statusCode: 200,
                 body: thread
             }).as('getThreadAfterPostDelete');
@@ -534,7 +558,8 @@ describe('Forum Thread Page Tests', () => {
             });
 
             cy.wait('@deletePost');
-            cy.wait(['@getThreadAfterPostDelete', '@getPostsAfterPostDelete']);
+            cy.wait('@getThreadAfterPostDelete').its('request.query.countView').should('eq', 'false');
+            cy.wait('@getPostsAfterPostDelete');
 
             cy.contains('.prose', 'Odpowiedź hodowcy na pierwszy wpis.').should('not.exist');
             cy.contains('.prose', 'Pierwszy wpis w wątku.').should('be.visible');
@@ -610,6 +635,11 @@ describe('Forum Thread Page Tests', () => {
             cy.reload();
             cy.wait('@getFirstPostsPage');
 
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
+                statusCode: 200,
+                body: thread
+            }).as('getThreadAfterPagination');
+
             cy.contains('Strona 1 z 2').should('be.visible');
             cy.contains('button', 'Poprzednia').should('be.disabled');
             cy.contains('button', 'Następna').should('not.be.disabled');
@@ -627,6 +657,7 @@ describe('Forum Thread Page Tests', () => {
             }).as('getSecondPostsPage');
 
             cy.contains('button', 'Następna').click();
+            cy.wait('@getThreadAfterPagination').its('request.query.countView').should('eq', 'false');
             cy.wait('@getSecondPostsPage');
 
             cy.contains('Strona 2 z 2').should('be.visible');
@@ -648,6 +679,7 @@ describe('Forum Thread Page Tests', () => {
             }).as('getFirstPostsPageAgain');
 
             cy.contains('button', 'Poprzednia').click();
+            cy.wait('@getThreadAfterPagination').its('request.query.countView').should('eq', 'false');
             cy.wait('@getFirstPostsPageAgain');
 
             cy.contains('Strona 1 z 2').should('be.visible');
@@ -707,7 +739,7 @@ describe('Forum Thread Page Tests', () => {
         it('Should display an error and successfully retry loading the discussion', () => {
             let shouldFail = true;
 
-            cy.intercept('GET', '**/api/forum/threads/11', (req) => {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, (req) => {
                 if (shouldFail) {
                     req.reply({
                         statusCode: 500,
@@ -845,7 +877,7 @@ describe('Forum Thread Page Tests', () => {
                 isLocked: true
             };
 
-            cy.intercept('GET', '**/api/forum/threads/11', {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
                 statusCode: 200,
                 body: lockedThread
             }).as('getLockedThread');
@@ -899,7 +931,7 @@ describe('Forum Thread Page Tests', () => {
                 number: 0
             };
 
-            cy.intercept('GET', '**/api/forum/threads/11', {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
                 statusCode: 200,
                 body: readOnlyThread
             }).as('getReadOnlyThread');
@@ -952,7 +984,7 @@ describe('Forum Thread Page Tests', () => {
                 body: 'Wymagane jest uwierzytelnienie.'
             }).as('getUnauthenticatedUser');
 
-            cy.intercept('GET', '**/api/forum/threads/11', {
+            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
                 statusCode: 200,
                 body: createThread()
             });

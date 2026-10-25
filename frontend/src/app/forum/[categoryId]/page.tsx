@@ -93,10 +93,12 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                 <Navbar />
 
                 <main className="grow max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
-                    <nav className="flex text-sm text-gray-500 mb-6 font-medium">
-                        <Link href="/forum" className="hover:text-blue-600 transition">Forum</Link>
-                        <span className="mx-2">/</span>
-                        <span className="text-gray-800">{category?.name ?? 'Kategoria'}</span>
+                    <nav className="flex min-w-0 text-sm text-gray-500 mb-6 font-medium">
+                        <Link href="/forum" className="shrink-0 hover:text-blue-600 transition">Forum</Link>
+                        <span className="mx-2 shrink-0">/</span>
+                        <span className="min-w-0 flex-1 truncate text-gray-800">
+                            {category?.name ?? 'Kategoria'}
+                        </span>
                     </nav>
 
                     {isLoading ? (
@@ -106,9 +108,13 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     ) : (
                         <>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">{category?.name}</h1>
-                                    <p className="mt-1 text-sm text-gray-500">{category?.description}</p>
+                                <div className="min-w-0">
+                                    <h1 className="text-2xl font-bold text-gray-900 [overflow-wrap:anywhere]">
+                                        {category?.name}
+                                    </h1>
+                                    <p className="mt-1 text-sm text-gray-500 [overflow-wrap:anywhere]">
+                                        {category?.description}
+                                    </p>
                                 </div>
 
                                 <button

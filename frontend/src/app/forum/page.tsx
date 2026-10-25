@@ -112,9 +112,11 @@ export default function ForumPage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {categories.map(category => (
-                                <article key={category.id} className="relative bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition group">
+                                <article key={category.id} className="relative min-w-0 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition group">
                                     <Link href={`/forum/${category.id}`} className="block p-6 pr-24 h-full">
-                                        <h2 className="text-xl font-bold text-blue-700 group-hover:text-blue-800">{category.name}</h2>
+                                        <h2 className="text-xl font-bold text-blue-700 group-hover:text-blue-800 wrap-anywhere">
+                                            {category.name}
+                                        </h2>
                                         {category.description && <p className="text-gray-600 text-sm mt-3">{category.description}</p>}
                                     </Link>
 
