@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 const nextConfig: NextConfig = {
-    allowedDevOrigins: ['192.168.0.100'],
+    allowedDevOrigins: apiUrl ? [new URL(apiUrl).hostname] : [],
 };
 
 export default nextConfig;
