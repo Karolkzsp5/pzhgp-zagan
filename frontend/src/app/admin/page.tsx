@@ -294,7 +294,7 @@ export default function AdminPanelPage() {
                                         <div data-cy="no-pending-accounts">
                                             <EmptyState>
                                                 {hasActiveFilters
-                                                    ? 'Brak kont oczekujących spełniających podane kryteria.'
+                                                    ? 'Brak oczekujących kont spełniających podane kryteria.'
                                                     : 'Brak kont oczekujących na akceptację.'}
                                             </EmptyState>
                                         </div>
