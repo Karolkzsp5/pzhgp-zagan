@@ -280,7 +280,10 @@ class ForumCategoryServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 categoryService.updateCategory(1L, request, "moderator@test.pl"));
 
-        assertEquals("Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.", exception.getMessage());
+        assertEquals(
+                "Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.",
+                exception.getMessage()
+        );
         verify(categoryRepository, never()).save(any());
     }
 

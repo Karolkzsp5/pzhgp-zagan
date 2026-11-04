@@ -22,7 +22,9 @@ public record BoardMemberRequest(
         @Pattern(regexp = "^\\d{9}$", message = "Numer telefonu musi mieć dokładnie 9 cyfr")
         String contactPhone
 ) {
-    @AssertTrue(message = "Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie.")
+    @AssertTrue(
+            message = "Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie."
+    )
     public boolean isPersonDataValid() {
         boolean accountSelected = breederId != null;
         boolean customNameProvided = customName != null && !customName.isBlank();

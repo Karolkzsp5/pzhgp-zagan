@@ -56,7 +56,8 @@ public class BreederService {
         try {
             breederRepository.saveAndFlush(newBreeder);
         } catch (DataIntegrityViolationException ex) {
-            throw new ResourceConflictException("Użytkownik z podanym adresem e-mail lub numerem telefonu już istnieje.", ex);
+            throw new ResourceConflictException(
+                    "Użytkownik z podanym adresem e-mail lub numerem telefonu już istnieje.", ex);
         }
     }
 
@@ -82,7 +83,8 @@ public class BreederService {
 
     @Transactional(readOnly = true)
     public CurrentUserResponseDto getCurrentUser(String userEmail) {
-        Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
+        Breeder breeder = breederRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
 
         if (breeder.getStatus() != AccountStatus.ACTIVE) {
             throw new BadCredentialsException("Wymagane jest uwierzytelnienie.");

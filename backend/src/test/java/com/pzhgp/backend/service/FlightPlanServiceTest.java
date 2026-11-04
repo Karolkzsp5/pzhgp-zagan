@@ -125,7 +125,8 @@ class FlightPlanServiceTest {
         );
 
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
-        when(flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId())).thenReturn(List.of(adultFlight, secondAdultFlight, youngFlight));
+        when(flightPlanEntryRepository.findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(plan.getId()))
+                .thenReturn(List.of(adultFlight, secondAdultFlight, youngFlight));
         when(flightResultRepository.findSummariesByFlightPlanId(plan.getId())).thenReturn(List.of());
 
         FlightPlanDetailsDto result = flightPlanService.getPlanByYear(2026);
@@ -408,7 +409,10 @@ class FlightPlanServiceTest {
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
 
         FlightPlanEntryRequest request = request(LocalDate.of(2025, 12, 31));
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> flightPlanService.addEntry(2026, request, administrator.getEmail()));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> flightPlanService.addEntry(2026, request, administrator.getEmail())
+        );
 
         assertEquals("Data lotu musi należeć do roku planu: 2026.", exception.getMessage());
         verify(flightPlanEntryRepository, never()).save(any());
@@ -509,7 +513,10 @@ class FlightPlanServiceTest {
         when(flightPlanEntryRepository.findById(adultFlight.getId())).thenReturn(Optional.of(adultFlight));
         when(flightResultRepository.existsByFlightPlanEntryId(adultFlight.getId())).thenReturn(true);
 
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> flightPlanService.deleteEntry(adultFlight.getId(), administrator.getEmail()));
+        ResourceConflictException exception = assertThrows(
+                ResourceConflictException.class,
+                () -> flightPlanService.deleteEntry(adultFlight.getId(), administrator.getEmail())
+        );
 
         assertEquals("Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu.", exception.getMessage());
         verify(flightPlanEntryRepository, never()).delete(any());
@@ -544,7 +551,10 @@ class FlightPlanServiceTest {
         when(flightPlanRepository.findByYear(2026)).thenReturn(Optional.of(plan));
         when(flightPlanEntryRepository.existsByFlightPlanId(plan.getId())).thenReturn(true);
 
-        ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> flightPlanService.deletePlan(2026, administrator.getEmail()));
+        ResourceConflictException exception = assertThrows(
+                ResourceConflictException.class,
+                () -> flightPlanService.deletePlan(2026, administrator.getEmail())
+        );
 
         assertEquals("Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.", exception.getMessage());
         verify(flightPlanRepository, never()).delete(any());

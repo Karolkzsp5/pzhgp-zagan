@@ -135,7 +135,10 @@ class AdminIntegrationTest {
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification approvalNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED).findFirst().orElseThrow();
+        Notification approvalNotification = notifications.stream()
+                .filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED)
+                .findFirst()
+                .orElseThrow();
 
         assertEquals(pendingBreeder.getId(), approvalNotification.getRecipient().getId());
     }
@@ -198,7 +201,10 @@ class AdminIntegrationTest {
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification roleChangeNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ROLE_CHANGED).findFirst().orElseThrow();
+        Notification roleChangeNotification = notifications.stream()
+                .filter(n -> n.getType() == NotificationType.ROLE_CHANGED)
+                .findFirst()
+                .orElseThrow();
 
         assertEquals(activeBreeder.getId(), roleChangeNotification.getRecipient().getId());
     }

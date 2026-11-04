@@ -132,7 +132,10 @@ class BoardIntegrationTest {
     void shouldDenyAccessToCreateBoardMemberForAnonymousUser() throws Exception {
         BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, breederZagan.getId(), null, null, null);
 
-        mockMvc.perform(post("/api/board").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/board")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -196,7 +199,8 @@ class BoardIntegrationTest {
     @Test
     @DisplayName("Should return 400 when assigning a vice president to a section board")
     void shouldRejectVicePresidentInSection() throws Exception {
-        BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_LOTOWYCH, sectionZagan.getId(), breederZagan.getId(), null, null, null);
+        BoardMemberRequest request = new BoardMemberRequest(
+                BoardRole.WICEPREZES_DS_LOTOWYCH, sectionZagan.getId(), breederZagan.getId(), null, null, null);
 
         mockMvc.perform(post("/api/board")
                         .with(cookieAuth(adminToken))
@@ -295,7 +299,8 @@ class BoardIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie."));
+                .andExpect(content().string(
+                        "Wymagane jest wybranie konta hodowcy ALBO podanie imienia i nazwiska dla osoby, która nie ma konta w systemie."));
 
         assertEquals(0, boardMemberRepository.count());
     }

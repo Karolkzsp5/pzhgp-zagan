@@ -90,14 +90,16 @@ public class FlightResultService {
 
     @Transactional(readOnly = true)
     public FlightResultFileDto getResultFile(Long resultId) {
-        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
+        FlightResult result = flightResultRepository.findById(resultId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
         return new FlightResultFileDto(result.getOriginalFileName(), result.getContent());
     }
 
     @Transactional
     public void deleteResult(Long resultId, String userEmail) {
         requireAdministrator(userEmail);
-        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
+        FlightResult result = flightResultRepository.findById(resultId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
         flightResultRepository.delete(result);
     }
 
@@ -118,9 +120,11 @@ public class FlightResultService {
             throw new IllegalArgumentException("Dla wyników sekcyjnych należy wybrać sekcję.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.sectionId()));
+        Section section = sectionRepository.findById(request.sectionId())
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.sectionId()));
 
-        if (flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(entryId, FlightResultScope.SECTION, section.getId())) {
+        if (flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
+                entryId, FlightResultScope.SECTION, section.getId())) {
             throw new ResourceConflictException("Wyniki tej sekcji dla wybranego lotu zostały już wgrane.");
         }
 

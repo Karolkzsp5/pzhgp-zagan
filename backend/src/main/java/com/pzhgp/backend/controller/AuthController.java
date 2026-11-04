@@ -30,7 +30,10 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<Void> register(
+            @Valid @RequestBody RegistrationRequest request,
+            HttpServletRequest httpRequest
+    ) {
         if (!authRateLimiter.tryAcquireRegistration(httpRequest.getRemoteAddr())) {
             throw new AuthRateLimitException("Zbyt wiele prób rejestracji. Spróbuj ponownie później.");
         }

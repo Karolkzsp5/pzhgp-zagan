@@ -148,7 +148,10 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Should allow an administrator to upload flight results for a selected section")
     void uploadsSectionResult() throws Exception {
-        Long resultId = uploadResult(textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
+        Long resultId = uploadResult(
+                textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"),
+                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId())
+        );
 
         FlightResult saved = flightResultRepository.findById(resultId).orElseThrow();
 

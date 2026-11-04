@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,9 +20,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.springframework.http.HttpMethod.*;
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private static final String ADMINISTRATOR = Role.ADMINISTRATOR.name();
+    private static final String MODERATOR = Role.MODERATOR.name();
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
@@ -45,32 +49,35 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.spa()
                         .requireCsrfProtectionMatcher(this::requiresCsrfProtection))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login-cookie", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        .requestMatchers("/api/auth/register", "/api/auth/login-cookie", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/csrf", "/api/sections").permitAll()
+                        .requestMatchers(GET, "/api/announcements").permitAll()
+                        .requestMatchers(POST, "/api/announcements").hasAnyAuthority(ADMINISTRATOR, MODERATOR)
+                        .requestMatchers(PUT, "/api/announcements/**").hasAnyAuthority(ADMINISTRATOR, MODERATOR)
 
-                        .requestMatchers(HttpMethod.POST, "/api/forum/categories").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/forum/categories/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(POST, "/api/forum/categories").hasAnyAuthority(ADMINISTRATOR, MODERATOR)
+                        .requestMatchers(PUT, "/api/forum/categories/**").hasAnyAuthority(ADMINISTRATOR, MODERATOR)
+                        .requestMatchers(DELETE, "/api/forum/categories/**").hasAuthority(ADMINISTRATOR)
 
-                        .requestMatchers(HttpMethod.POST, "/api/found-pigeons").permitAll()
+                        .requestMatchers(POST, "/api/found-pigeons").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/board").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/board").hasAuthority(Role.ADMINISTRATOR.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(GET, "/api/board").permitAll()
+                        .requestMatchers(POST, "/api/board").hasAuthority(ADMINISTRATOR)
+                        .requestMatchers(PUT, "/api/board/**").hasAuthority(ADMINISTRATOR)
+                        .requestMatchers(DELETE, "/api/board/**").hasAuthority(ADMINISTRATOR)
 
-                        .requestMatchers(HttpMethod.POST, "/api/flight-plans", "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
-                        .requestMatchers(HttpMethod.PUT, "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/flight-plans/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(POST, "/api/flight-plans", "/api/flight-plans/**").hasAuthority(ADMINISTRATOR)
+                        .requestMatchers(PUT, "/api/flight-plans/**").hasAuthority(ADMINISTRATOR)
+                        .requestMatchers(DELETE, "/api/flight-plans/**").hasAuthority(ADMINISTRATOR)
 
-                        .requestMatchers(HttpMethod.POST, "/api/flight-results/**").hasAuthority(Role.ADMINISTRATOR.name())
-                        .requestMatchers(HttpMethod.DELETE, "/api/flight-results/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers(POST, "/api/flight-results/**").hasAuthority(ADMINISTRATOR)
+                        .requestMatchers(DELETE, "/api/flight-results/**").hasAuthority(ADMINISTRATOR)
 
-                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMINISTRATOR.name())
+                        .requestMatchers("/api/admin/**").hasAuthority(ADMINISTRATOR)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

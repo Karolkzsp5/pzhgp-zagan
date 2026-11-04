@@ -10,7 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "flight_plans", uniqueConstraints = {@UniqueConstraint(name = "uk_flight_plans_year", columnNames = "plan_year")})
+@Table(
+        name = "flight_plans",
+        uniqueConstraints = @UniqueConstraint(name = "uk_flight_plans_year", columnNames = "plan_year")
+)
 @Getter
 @Setter
 @NoArgsConstructor

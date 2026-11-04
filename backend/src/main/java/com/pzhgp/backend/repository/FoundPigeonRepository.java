@@ -32,10 +32,15 @@ public interface FoundPigeonRepository extends JpaRepository<FoundPigeonReport, 
             WHERE (:status IS NULL OR r.status = :status)
               AND r.ringNumberNormalized LIKE CONCAT('%', :ringNumber, '%')
             """)
-    Page<FoundPigeonReport> search(@Param("status") FoundPigeonStatus status, @Param("ringNumber") String ringNumber, Pageable pageable);
+    Page<FoundPigeonReport> search(
+            @Param("status") FoundPigeonStatus status,
+            @Param("ringNumber") String ringNumber,
+            Pageable pageable
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM FoundPigeonReport r WHERE r.id = :id")
     Optional<FoundPigeonReport> findByIdForUpdate(@Param("id") Long id);
+
     long countByStatus(FoundPigeonStatus status);
 }

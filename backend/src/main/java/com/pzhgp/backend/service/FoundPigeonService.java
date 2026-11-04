@@ -64,7 +64,8 @@ public class FoundPigeonService {
         report.setFoundLocation(request.foundLocation());
         report.setFoundCountry(request.foundCountry());
         report.setDescription(request.description());
-        report.setPreferredLanguage(request.preferredLanguage() == null ? ReportLanguage.PL : request.preferredLanguage());
+        report.setPreferredLanguage(
+                request.preferredLanguage() == null ? ReportLanguage.PL : request.preferredLanguage());
         report.setStatus(FoundPigeonStatus.PENDING);
 
         FoundPigeonReport saved = foundPigeonRepository.save(report);
@@ -72,7 +73,8 @@ public class FoundPigeonService {
         notifyAdministrators(saved);
 
         // W logu wyłącznie identyfikatory — żadnych danych kontaktowych znalazcy.
-        log.info("Przyjęto zgłoszenie odnalezienia gołębia (ID: {}, obrączka: {}).", saved.getId(), saved.getRingNumber());
+        log.info("Przyjęto zgłoszenie odnalezienia gołębia (ID: {}, obrączka: {}).",
+                saved.getId(), saved.getRingNumber());
 
         return saved.getId();
     }
@@ -112,7 +114,8 @@ public class FoundPigeonService {
         FoundPigeonReport report = findReportForUpdate(id);
 
         if (!report.getStatus().canTransitionTo(newStatus)) {
-            throw new InvalidStatusTransitionException(String.format("Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
+            throw new InvalidStatusTransitionException(
+                    String.format("Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
         }
 
         report.setStatus(newStatus);
@@ -163,15 +166,18 @@ public class FoundPigeonService {
 
         String message = "Nowe zgłoszenie odnalezienia gołębia o numerze obrączki " + report.getRingNumber() + ".";
 
-        notificationService.createBulkNotifications(administrators, message, "/found-pigeons/admin", NotificationType.NEW_FOUND_PIGEON_REPORT);
+        notificationService.createBulkNotifications(
+                administrators, message, "/found-pigeons/admin", NotificationType.NEW_FOUND_PIGEON_REPORT);
     }
 
     private FoundPigeonReport findReport(Long id) {
-        return foundPigeonRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
+        return foundPigeonRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
     }
 
     private FoundPigeonReport findReportForUpdate(Long id) {
-        return foundPigeonRepository.findByIdForUpdate(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
+        return foundPigeonRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono zgłoszenia o ID: " + id));
     }
 
     private FoundPigeonDto mapToDto(FoundPigeonReport report) {

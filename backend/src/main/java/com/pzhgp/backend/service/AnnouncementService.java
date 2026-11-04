@@ -49,7 +49,8 @@ public class AnnouncementService {
 
         String notificationMessage = author.getFullName() + " dodał/a ogłoszenie na stronie głównej";
 
-        notificationService.createBulkNotifications(recipients, notificationMessage, "/", NotificationType.NEW_ANNOUNCEMENT);
+        notificationService.createBulkNotifications(
+                recipients, notificationMessage, "/", NotificationType.NEW_ANNOUNCEMENT);
     }
 
     @Transactional
@@ -87,7 +88,8 @@ public class AnnouncementService {
             String message = String.format("Twoje ogłoszenie \"%s\" zostało usunięte przez administratora %s.",
                     announcement.getTitle(), editor.getFullName());
 
-            notificationService.createNotification(announcement.getAuthor(), message, "/", NotificationType.ANNOUNCEMENT_DELETED);
+            notificationService.createNotification(
+                    announcement.getAuthor(), message, "/", NotificationType.ANNOUNCEMENT_DELETED);
         }
 
         announcementRepository.delete(announcement);
@@ -95,7 +97,9 @@ public class AnnouncementService {
 
     @Transactional(readOnly = true)
     public Page<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail, int page, int size) {
-        Breeder currentUser = currentUserEmail == null ? null : breederRepository.findByEmail(currentUserEmail).orElse(null);
+        Breeder currentUser = currentUserEmail == null
+                ? null
+                : breederRepository.findByEmail(currentUserEmail).orElse(null);
 
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size);
@@ -113,7 +117,10 @@ public class AnnouncementService {
         return hasEditorRole && announcement.getAuthor().getId().equals(requester.getId());
     }
 
-    /** Autor może usunąć własne ogłoszenie, a administrator — ogłoszenie każdego, kto nie jest administratorem. */
+    /**
+     * Autor może usunąć własne ogłoszenie, a administrator — ogłoszenie każdego,
+     * kto nie jest administratorem.
+     */
     private boolean canDeleteAnnouncement(Announcement announcement, Breeder requester) {
         if (requester == null) {
             return false;

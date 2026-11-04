@@ -43,7 +43,7 @@ public class ForumPostService {
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")));
 
         return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));
     }
@@ -118,8 +118,10 @@ public class ForumPostService {
                     "Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.");
         }
 
-        ForumPost latestRemainingPost = postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId)
-                .orElseThrow(() -> new ResourceConflictException("Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
+        ForumPost latestRemainingPost = postRepository
+                .findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId)
+                .orElseThrow(() -> new ResourceConflictException(
+                        "Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
 
         postRepository.delete(post);
         thread.setLastPostAt(latestRemainingPost.getCreatedAt());

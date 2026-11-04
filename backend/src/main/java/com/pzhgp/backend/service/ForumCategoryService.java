@@ -37,7 +37,8 @@ public class ForumCategoryService {
 
     @Transactional(readOnly = true)
     public ForumCategoryDto getCategoryById(Long id, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        ForumCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         return mapToDto(category, requester);
@@ -62,11 +63,13 @@ public class ForumCategoryService {
 
     @Transactional
     public void updateCategory(Long id, ForumCategoryRequest request, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        ForumCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!canEditCategory(category.getAuthor(), requester)) {
-            throw new ForbiddenOperationException("Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.");
+            throw new ForbiddenOperationException(
+                    "Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.");
         }
 
         category.setName(request.name());
@@ -78,11 +81,13 @@ public class ForumCategoryService {
 
     @Transactional
     public void deleteCategory(Long id, String requesterEmail) {
-        ForumCategory category = categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
+        ForumCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii o ID: " + id));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!canDeleteCategory(category.getAuthor(), requester)) {
-            throw new ForbiddenOperationException("Brak uprawnień. Tylko administrator może usuwać kategorie (z wyjątkiem tych utworzonych przez innych administratorów).");
+            throw new ForbiddenOperationException(
+                    "Brak uprawnień. Tylko administrator może usuwać kategorie (z wyjątkiem tych utworzonych przez innych administratorów).");
         }
 
         if (threadRepository.existsByCategoryId(id)) {

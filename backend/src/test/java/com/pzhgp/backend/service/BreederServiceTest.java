@@ -102,7 +102,10 @@ class BreederServiceTest {
     void shouldThrowExceptionWhenEmailAlreadyExists() {
         when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(true);
 
-        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
+        ResourceConflictException ex = assertThrows(
+                ResourceConflictException.class,
+                () -> breederService.registerNewBreeder(validRegistrationRequest)
+        );
 
         assertEquals("Użytkownik z podanym adresem e-mail już istnieje.", ex.getMessage());
         verify(breederRepository, never()).saveAndFlush(any(Breeder.class));
@@ -114,7 +117,10 @@ class BreederServiceTest {
         when(breederRepository.existsByEmailIgnoreCase(validRegistrationRequest.email())).thenReturn(false);
         when(breederRepository.existsByPhoneNumber(validRegistrationRequest.phoneNumber())).thenReturn(true);
 
-        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
+        ResourceConflictException ex = assertThrows(
+                ResourceConflictException.class,
+                () -> breederService.registerNewBreeder(validRegistrationRequest)
+        );
 
         assertEquals("Użytkownik z podanym numerem telefonu już istnieje.", ex.getMessage());
         verify(breederRepository, never()).saveAndFlush(any(Breeder.class));
@@ -144,7 +150,10 @@ class BreederServiceTest {
         when(passwordEncoder.encode(validRegistrationRequest.password())).thenReturn("hashedPassword123");
         when(breederRepository.saveAndFlush(any(Breeder.class))).thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
-        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> breederService.registerNewBreeder(validRegistrationRequest));
+        ResourceConflictException ex = assertThrows(
+                ResourceConflictException.class,
+                () -> breederService.registerNewBreeder(validRegistrationRequest)
+        );
         assertEquals("Użytkownik z podanym adresem e-mail lub numerem telefonu już istnieje.", ex.getMessage());
     }
 

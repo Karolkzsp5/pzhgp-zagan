@@ -52,7 +52,11 @@ public class AdminController {
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<String> changeRole(@PathVariable Long id, @RequestBody Map<String, String> requestBody, Authentication authentication) {
+    public ResponseEntity<String> changeRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> requestBody,
+            Authentication authentication
+    ) {
         String newRole = requestBody.get("role");
         if (newRole == null || newRole.trim().isEmpty()) {
             throw new IllegalArgumentException("Nie podano nowej roli.");

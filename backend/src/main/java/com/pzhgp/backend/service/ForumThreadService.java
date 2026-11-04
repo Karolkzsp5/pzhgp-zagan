@@ -77,7 +77,8 @@ public class ForumThreadService {
                 .toList();
 
         if (!recipients.isEmpty()) {
-            notificationService.createBulkNotifications(recipients, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
+            notificationService.createBulkNotifications(
+                    recipients, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
         }
     }
 

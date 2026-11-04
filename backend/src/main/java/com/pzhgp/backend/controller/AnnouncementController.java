@@ -25,7 +25,9 @@ public class AnnouncementController {
             @RequestParam(defaultValue = "10") int size
     ) {
         String currentUserEmail = null;
-        if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !authentication.getName().equals("anonymousUser")) {
             currentUserEmail = authentication.getName();
         }
 

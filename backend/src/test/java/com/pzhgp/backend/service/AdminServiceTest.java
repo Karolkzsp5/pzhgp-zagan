@@ -82,7 +82,8 @@ class AdminServiceTest {
     @DisplayName("Should return only ACTIVE and BLOCKED registered accounts")
     void shouldReturnRegisteredAccounts() {
         Breeder blockedBreeder = createBreeder(4L, "Zly", "Hodowca", AccountStatus.BLOCKED, Role.BREEDER);
-        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))).thenReturn(List.of(activeBreeder, blockedBreeder));
+        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)))
+                .thenReturn(List.of(activeBreeder, blockedBreeder));
 
         List<BreederResponseDto> result = adminService.getAllRegisteredAccounts();
 
@@ -292,7 +293,10 @@ class AdminServiceTest {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
+        ForbiddenOperationException ex = assertThrows(
+                ForbiddenOperationException.class,
+                () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl")
+        );
 
         assertEquals("Nie możesz zmieniać uprawnień innym administratorom.", ex.getMessage());
         verify(breederRepository, never()).save(any());

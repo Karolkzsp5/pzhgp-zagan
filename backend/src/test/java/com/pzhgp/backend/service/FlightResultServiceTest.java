@@ -670,7 +670,10 @@ class FlightResultServiceTest {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightResultRepository.findById(999L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> flightResultService.deleteResult(999L, administrator.getEmail()));
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> flightResultService.deleteResult(999L, administrator.getEmail())
+        );
 
         assertEquals("Nie znaleziono wyników lotu o ID: 999", exception.getMessage());
         verify(flightResultRepository, never()).delete(any());
@@ -681,7 +684,10 @@ class FlightResultServiceTest {
     void rejectsDeletingResultByModerator() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
-        ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () -> flightResultService.deleteResult(500L, moderator.getEmail()));
+        ForbiddenOperationException exception = assertThrows(
+                ForbiddenOperationException.class,
+                () -> flightResultService.deleteResult(500L, moderator.getEmail())
+        );
         assertEquals("Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.", exception.getMessage());
 
         verify(flightResultRepository, never()).findById(any());
