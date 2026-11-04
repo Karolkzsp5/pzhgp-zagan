@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -25,18 +25,18 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getPendingAccounts() {
-        return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).collect(Collectors.toList());
+        return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getAllRegisteredAccounts() {
-        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).collect(Collectors.toList());
+        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).toList();
     }
 
     @Transactional
     public void approveAccount(Long id, String adminEmail) {
         Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new ResourceConflictException("Konto nie ma statusu oczekującego na akceptację.");
@@ -45,10 +45,9 @@ public class AdminService {
         breeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(breeder);
 
-        String adminFullName = admin.getName() + " " + admin.getSurname();
         notificationService.createNotification(
-                breeder.getId(),
-                "Administrator " + adminFullName + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
+                breeder,
+                "Administrator " + admin.getFullName() + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
                 "/",
                 NotificationType.ACCOUNT_APPROVED
         );
@@ -96,7 +95,7 @@ public class AdminService {
     @Transactional
     public void changeRole(Long id, String newRoleStr, String adminEmail) {
         Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new ForbiddenOperationException("Nie możesz zmieniać uprawnień innym administratorom.");
@@ -107,7 +106,7 @@ public class AdminService {
         }
 
         try {
-            Role newRole = Role.valueOf(newRoleStr.toUpperCase());
+            Role newRole = Role.valueOf(newRoleStr.toUpperCase(Locale.ROOT));
             if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
                 throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
             }
@@ -115,11 +114,10 @@ public class AdminService {
             breederRepository.save(breeder);
 
             String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
-            String adminFullName = admin.getName() + " " + admin.getSurname();
 
             notificationService.createNotification(
-                    breeder.getId(),
-                    "Administrator " + adminFullName + " zmienił twoją rolę na: " + roleNamePL,
+                    breeder,
+                    "Administrator " + admin.getFullName() + " zmienił twoją rolę na: " + roleNamePL,
                     "/settings",
                     NotificationType.ROLE_CHANGED
             );

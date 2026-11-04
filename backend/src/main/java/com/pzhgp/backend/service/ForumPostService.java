@@ -2,7 +2,10 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumPostDto;
 import com.pzhgp.backend.dto.ForumPostRequest;
-import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.ForumPost;
+import com.pzhgp.backend.entity.ForumThread;
+import com.pzhgp.backend.entity.NotificationType;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -24,6 +27,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ForumPostService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ForumPostRepository postRepository;
     private final ForumThreadRepository threadRepository;
     private final BreederRepository breederRepository;
@@ -35,9 +40,9 @@ public class ForumPostService {
             throw new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId);
         }
 
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
 
         return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));
@@ -45,13 +50,14 @@ public class ForumPostService {
 
     @Transactional
     public void addPost(Long threadId, ForumPostRequest request, String authorEmail) {
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         if (thread.getIsLocked()) {
             throw new ResourceConflictException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
         }
 
-        Breeder author = breederRepository.findByEmail(authorEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder author = breederRepository.requireByEmail(authorEmail);
 
         ForumPost post = new ForumPost();
         post.setThread(thread);
@@ -63,10 +69,9 @@ public class ForumPostService {
         threadRepository.save(thread);
 
         if (!thread.getAuthor().getId().equals(author.getId())) {
-            String authorFullName = author.getName() + " " + author.getSurname();
             notificationService.createNotification(
-                    thread.getAuthor().getId(),
-                    authorFullName + " dodał/a odpowiedź w twoim wątku na forum",
+                    thread.getAuthor(),
+                    author.getFullName() + " dodał/a odpowiedź w twoim wątku na forum",
                     "/forum/thread/" + thread.getId(),
                     NotificationType.NEW_REPLY
             );
@@ -75,10 +80,11 @@ public class ForumPostService {
 
     @Transactional
     public void updatePost(Long postId, ForumPostRequest request, String requesterEmail) {
-        ForumPost post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        ForumPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        if (!canEditContent(post.getAuthor(), requester)) {
+        if (!PermissionRules.canEditForumContent(post.getAuthor(), requester)) {
             throw new ForbiddenOperationException("Brak uprawnień. Nikt nie może edytować cudzych postów.");
         }
 
@@ -89,15 +95,17 @@ public class ForumPostService {
 
     @Transactional
     public void deletePost(Long postId, String requesterEmail) {
-        ForumPost post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        ForumPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        if (!canDeleteContent(post.getAuthor(), requester)) {
+        if (!PermissionRules.canDeleteForumContent(post.getAuthor(), requester)) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego wpisu.");
         }
 
         Long threadId = post.getThread().getId();
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         if (!postRepository.existsById(postId)) {
             throw new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId);
@@ -106,49 +114,28 @@ public class ForumPostService {
         ForumPost firstPost = postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(threadId).orElse(post);
 
         if (firstPost.getId().equals(post.getId())) {
-            throw new ResourceConflictException("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.");
+            throw new ResourceConflictException(
+                    "Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.");
         }
 
-        ForumPost latestRemainingPost = postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId).orElseThrow(() ->
-                new ResourceConflictException("Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
+        ForumPost latestRemainingPost = postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId)
+                .orElseThrow(() -> new ResourceConflictException("Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
 
         postRepository.delete(post);
         thread.setLastPostAt(latestRemainingPost.getCreatedAt());
         threadRepository.save(thread);
     }
 
-    private boolean canEditContent(Breeder author, Breeder requester) {
-        return author.getId().equals(requester.getId());
-    }
-
-    private boolean canDeleteContent(Breeder author, Breeder requester) {
-        if (author.getId().equals(requester.getId())) {
-            return true;
-        }
-
-        if (requester.getRole() == Role.ADMINISTRATOR) {
-            return author.getRole() != Role.ADMINISTRATOR;
-        }
-
-        if (requester.getRole() == Role.MODERATOR) {
-            return author.getRole() == Role.BREEDER;
-        }
-
-        return false;
-    }
-
     private ForumPostDto mapToDto(ForumPost post, Breeder requester) {
-        String authorFullName = post.getAuthor().getName() + " " + post.getAuthor().getSurname();
-
         return new ForumPostDto(
                 post.getId(),
-                authorFullName,
+                post.getAuthor().getFullName(),
                 post.getAuthor().getRole().name(),
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),
-                canEditContent(post.getAuthor(), requester),
-                canDeleteContent(post.getAuthor(), requester)
+                PermissionRules.canEditForumContent(post.getAuthor(), requester),
+                PermissionRules.canDeleteForumContent(post.getAuthor(), requester)
         );
     }
 }

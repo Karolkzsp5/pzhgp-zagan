@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -37,7 +38,8 @@ class ForumCategoryServiceTest {
     @Mock
     private ForumThreadRepository threadRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @InjectMocks

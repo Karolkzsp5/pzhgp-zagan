@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,26 +29,8 @@ public class NotificationService {
     private final BreederRepository breederRepository;
 
     @Transactional
-    public void createNotification(Long recipientId, String message, String link, NotificationType type) {
-        Breeder recipient = breederRepository.findById(recipientId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono odbiorcy o ID: " + recipientId));
-
-        Notification notification = new Notification();
-        notification.setRecipient(recipient);
-        notification.setMessage(message);
-        notification.setLink(link);
-        notification.setType(type);
-        notification.setRead(false);
-
-        notificationRepository.save(notification);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<NotificationDto> getUserNotifications(String userEmail, int page, int size) {
-        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
-        Breeder breeder = getBreederByEmail(userEmail);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
-
-        return notificationRepository.findByRecipientId(breeder.getId(), pageable).map(this::mapToDto);
+    public void createNotification(Breeder recipient, String message, String link, NotificationType type) {
+        notificationRepository.save(buildNotification(recipient, message, link, type));
     }
 
     @Transactional
@@ -58,29 +39,32 @@ public class NotificationService {
             return;
         }
 
-        List<Notification> notifications = recipients.stream().map(recipient -> {
-            Notification notification = new Notification();
-            notification.setRecipient(recipient);
-            notification.setMessage(message);
-            notification.setLink(link);
-            notification.setType(type);
-            notification.setRead(false);
-            return notification;
-        }).collect(Collectors.toList());
+        List<Notification> notifications = recipients.stream()
+                .map(recipient -> buildNotification(recipient, message, link, type))
+                .toList();
 
         notificationRepository.saveAll(notifications);
     }
 
     @Transactional(readOnly = true)
+    public Page<NotificationDto> getUserNotifications(String userEmail, int page, int size) {
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+
+        return notificationRepository.findByRecipientId(breeder.getId(), pageable).map(this::mapToDto);
+    }
+
+    @Transactional(readOnly = true)
     public long getUnreadCount(String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
         return notificationRepository.countByRecipientIdAndIsReadFalse(breeder.getId());
     }
 
     @Transactional
     public void markAsRead(Long notificationId, String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
+        Notification notification = findNotification(notificationId);
 
         if (!notification.getRecipient().getId().equals(breeder.getId())) {
             throw new ForbiddenOperationException("Brak uprawnień do modyfikacji tego powiadomienia.");
@@ -92,14 +76,14 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
         notificationRepository.markAllAsReadByRecipientId(breeder.getId());
     }
 
     @Transactional
     public void deleteNotification(Long notificationId, String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
+        Notification notification = findNotification(notificationId);
 
         if (!notification.getRecipient().getId().equals(breeder.getId())) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego powiadomienia.");
@@ -108,8 +92,18 @@ public class NotificationService {
         notificationRepository.delete(notification);
     }
 
-    private Breeder getBreederByEmail(String email) {
-        return breederRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika: " + email));
+    private Notification buildNotification(Breeder recipient, String message, String link, NotificationType type) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setMessage(message);
+        notification.setLink(link);
+        notification.setType(type);
+        return notification;
+    }
+
+    private Notification findNotification(Long notificationId) {
+        return notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
     }
 
     private NotificationDto mapToDto(Notification notification) {

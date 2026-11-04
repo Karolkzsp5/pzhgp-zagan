@@ -3,12 +3,12 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
 import com.pzhgp.backend.entity.*;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
 import com.pzhgp.backend.repository.SectionRepository;
+import com.pzhgp.backend.utils.FileNameUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -61,7 +62,7 @@ public class FlightResultService {
         result.setFlightPlanEntry(entry);
         result.setScope(request.scope());
         result.setSection(section);
-        result.setOriginalFileName(sanitizeFileName(file.getOriginalFilename()));
+        result.setOriginalFileName(FileNameUtils.sanitize(file.getOriginalFilename(), "wyniki.txt"));
         result.setContent(content);
         result.setUploadedBy(uploader);
 
@@ -137,7 +138,7 @@ public class FlightResultService {
 
         String fileName = file.getOriginalFilename();
 
-        if (fileName == null || !fileName.toLowerCase().endsWith(".txt")) {
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".txt")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .txt.");
         }
     }
@@ -150,27 +151,8 @@ public class FlightResultService {
         }
     }
 
-    private String sanitizeFileName(String fileName) {
-        if (fileName == null || fileName.isBlank()) {
-            return "wyniki.txt";
-        }
-
-        String bare = fileName.replaceAll(".*[/\\\\]", "").trim();
-
-        if (bare.isBlank()) {
-            return "wyniki.txt";
-        }
-
-        return bare.length() > 255 ? bare.substring(bare.length() - 255) : bare;
-    }
-
     private Breeder requireAdministrator(String userEmail) {
-        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
-
-        if (user.getRole() != Role.ADMINISTRATOR) {
-            throw new ForbiddenOperationException("Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.");
-        }
-
-        return user;
+        return PermissionRules.requireAdministrator(breederRepository.requireByEmail(userEmail),
+                "Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.");
     }
 }

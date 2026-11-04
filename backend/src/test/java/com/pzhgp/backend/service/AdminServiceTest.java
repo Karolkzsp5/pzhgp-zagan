@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,7 +29,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AdminServiceTest {
 
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @Mock
@@ -98,7 +100,7 @@ class AdminServiceTest {
 
         assertEquals(AccountStatus.ACTIVE, pendingBreeder.getStatus());
         verify(breederRepository, times(1)).save(pendingBreeder);
-        verify(notificationService, times(1)).createNotification(eq(1L), contains("Prezes Oddzialu"), anyString(), any());
+        verify(notificationService, times(1)).createNotification(eq(pendingBreeder), contains("Prezes Oddzialu"), anyString(), any());
     }
 
     @Test
@@ -120,7 +122,7 @@ class AdminServiceTest {
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.approveAccount(1L, "unknown@test.pl"));
-        assertEquals("Nie znaleziono administratora.", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
     }
 
     @Test
@@ -240,7 +242,7 @@ class AdminServiceTest {
         assertEquals(Role.MODERATOR, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
         verify(notificationService, times(1)).createNotification(
-                eq(2L),
+                eq(activeBreeder),
                 contains("Prezes Oddzialu"),
                 anyString(),
                 any()
@@ -310,6 +312,6 @@ class AdminServiceTest {
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(2L, "MODERATOR", "unknown@test.pl"));
-        assertEquals("Nie znaleziono administratora.", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
     }
 }

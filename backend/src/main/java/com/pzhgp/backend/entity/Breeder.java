@@ -64,6 +64,11 @@ public class Breeder {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /** Imię i nazwisko w postaci wyświetlanej innym użytkownikom. */
+    public String getFullName() {
+        return name + " " + surname;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {

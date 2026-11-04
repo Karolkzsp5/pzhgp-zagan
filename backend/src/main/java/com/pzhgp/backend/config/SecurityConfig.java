@@ -1,7 +1,6 @@
 package com.pzhgp.backend.config;
 
 import com.pzhgp.backend.entity.Role;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +28,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final AuthCookieService authCookieService;
 
-    @Value("${cors.allowed-origins:http://localhost:3000}")
+    @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
 
     @Bean
@@ -105,15 +105,7 @@ public class SecurityConfig {
         }
 
         // Wszystkie operacje z ciasteczkiem uwierzytelniającym wymagają CSRF.
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (AuthCookieService.COOKIE_NAME.equals(cookie.getName())) {
-                    return true;
-                }
-            }
-        }
-
-        // Żądania bez cookie uwierzytelniającego nie wykorzystują sesji użytkownika.
-        return false;
+        // Żądania bez tego ciasteczka nie wykorzystują sesji użytkownika.
+        return authCookieService.hasAuthenticationCookie(request);
     }
 }

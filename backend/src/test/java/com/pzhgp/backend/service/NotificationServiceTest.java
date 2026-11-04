@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -32,7 +33,8 @@ class NotificationServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @InjectMocks
@@ -65,9 +67,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Should successfully create a single notification")
     void shouldCreateNotification() {
-        when(breederRepository.findById(1L)).thenReturn(Optional.of(testBreeder));
-
-        assertDoesNotThrow(() -> notificationService.createNotification(1L, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
+        assertDoesNotThrow(() -> notificationService.createNotification(testBreeder, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository, times(1)).save(captor.capture());
@@ -197,7 +197,7 @@ class NotificationServiceTest {
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.getUnreadCount("unknown@test.pl"));
-        assertEquals("Nie znaleziono użytkownika: unknown@test.pl", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
     }
 
     @Test
@@ -233,7 +233,7 @@ class NotificationServiceTest {
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> notificationService.markAsRead(100L, "ghost@test.pl"));
 
-        assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
         verify(notificationRepository, never()).save(any());
     }
 
@@ -290,7 +290,7 @@ class NotificationServiceTest {
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.markAllAsRead("ghost@test.pl"));
 
-        assertEquals("Nie znaleziono użytkownika: ghost@test.pl", ex.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
         verify(notificationRepository, never()).markAllAsReadByRecipientId(anyLong());
     }
 }

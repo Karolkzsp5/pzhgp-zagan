@@ -17,9 +17,6 @@ public interface PigeonFlightRepository extends JpaRepository<PigeonFlight, Long
     Page<PigeonFlight> findByOwnerOrderByUploadedAtDescIdDesc(Breeder owner, Pageable pageable);
 
     @EntityGraph(attributePaths = {"owner"})
-    Page<PigeonFlight> findAllByOrderByUploadedAtDescIdDesc(Pageable pageable);
-
-    @EntityGraph(attributePaths = {"owner"})
     Optional<PigeonFlight> findWithOwnerById(Long id);
 
     long countByOwner(Breeder owner);

@@ -16,11 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AnnouncementService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final AnnouncementRepository announcementRepository;
     private final BreederRepository breederRepository;
@@ -28,7 +29,7 @@ public class AnnouncementService {
 
     @Transactional
     public void createAnnouncement(AnnouncementRequestDto requestDto, String authorEmail) {
-        Breeder author = breederRepository.findByEmail(authorEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono autora."));
+        Breeder author = breederRepository.requireByEmail(authorEmail);
 
         if (author.getRole() == Role.BREEDER) {
             throw new ForbiddenOperationException("Zwykły hodowca nie może dodawać ogłoszeń.");
@@ -42,22 +43,24 @@ public class AnnouncementService {
 
         announcementRepository.save(announcement);
 
-        List<Breeder> activeBreeders = breederRepository.findByStatus(AccountStatus.ACTIVE);
-        List<Breeder> recipients = activeBreeders.stream().filter(b -> !b.getId().equals(author.getId())).collect(Collectors.toList());
+        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
+                .filter(breeder -> !breeder.getId().equals(author.getId()))
+                .toList();
 
-        String authorFullName = author.getName() + " " + author.getSurname();
-        String notificationMessage = authorFullName + " dodał/a ogłoszenie na stronie głównej";
+        String notificationMessage = author.getFullName() + " dodał/a ogłoszenie na stronie głównej";
 
         notificationService.createBulkNotifications(recipients, notificationMessage, "/", NotificationType.NEW_ANNOUNCEMENT);
     }
 
     @Transactional
     public void updateAnnouncement(Long id, AnnouncementRequestDto requestDto, String userEmail) {
-        Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
-        Breeder editor = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono edytującego."));
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
+        Breeder editor = breederRepository.requireByEmail(userEmail);
 
         if (!canEditAnnouncement(announcement, editor)) {
-            throw new ForbiddenOperationException("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.");
+            throw new ForbiddenOperationException(
+                    "Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.");
         }
 
         announcement.setTitle(requestDto.title());
@@ -69,27 +72,22 @@ public class AnnouncementService {
 
     @Transactional
     public void deleteAnnouncement(Long id, String userEmail) {
-        Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
-        Breeder editor = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono usuwającego."));
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
+        Breeder editor = breederRepository.requireByEmail(userEmail);
 
-        boolean isAuthor = announcement.getAuthor().getId().equals(editor.getId());
-        boolean isAdmin = editor.getRole() == Role.ADMINISTRATOR;
-        boolean isAuthorAdmin = announcement.getAuthor().getRole() == Role.ADMINISTRATOR;
-
-        if (!isAuthor) {
-            if (!isAdmin) {
-                throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego ogłoszenia.");
-            }
-            if (isAuthorAdmin) {
-                throw new ForbiddenOperationException("Administrator nie może usuwać ogłoszeń należących do innych administratorów.");
-            }
+        if (!canDeleteAnnouncement(announcement, editor)) {
+            throw new ForbiddenOperationException(editor.getRole() == Role.ADMINISTRATOR
+                    ? "Administrator nie może usuwać ogłoszeń należących do innych administratorów."
+                    : "Brak uprawnień do usunięcia tego ogłoszenia.");
         }
 
-        if (!isAuthor && isAdmin) {
-            String adminFullName = editor.getName() + " " + editor.getSurname();
-            String message = String.format("Twoje ogłoszenie \"%s\" zostało usunięte przez administratora %s.", announcement.getTitle(), adminFullName);
+        boolean deletedByAdministrator = !announcement.getAuthor().getId().equals(editor.getId());
+        if (deletedByAdministrator) {
+            String message = String.format("Twoje ogłoszenie \"%s\" zostało usunięte przez administratora %s.",
+                    announcement.getTitle(), editor.getFullName());
 
-            notificationService.createBulkNotifications(List.of(announcement.getAuthor()), message, "/", NotificationType.ANNOUNCEMENT_DELETED);
+            notificationService.createNotification(announcement.getAuthor(), message, "/", NotificationType.ANNOUNCEMENT_DELETED);
         }
 
         announcementRepository.delete(announcement);
@@ -97,16 +95,13 @@ public class AnnouncementService {
 
     @Transactional(readOnly = true)
     public Page<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail, int page, int size) {
-        Breeder currentUser = null;
-        if (currentUserEmail != null) {
-            currentUser = breederRepository.findByEmail(currentUserEmail).orElse(null);
-        }
+        Breeder currentUser = currentUserEmail == null ? null : breederRepository.findByEmail(currentUserEmail).orElse(null);
 
-        Breeder finalCurrentUser = currentUser;
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size);
 
-        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(pageable).map(announcement -> mapToDto(announcement, finalCurrentUser));
+        return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(pageable)
+                .map(announcement -> mapToDto(announcement, currentUser));
     }
 
     private boolean canEditAnnouncement(Announcement announcement, Breeder requester) {
@@ -118,32 +113,30 @@ public class AnnouncementService {
         return hasEditorRole && announcement.getAuthor().getId().equals(requester.getId());
     }
 
-    private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {
-        boolean canEdit = canEditAnnouncement(announcement, currentUser);
-        boolean canDelete = false;
-
-        if (currentUser != null) {
-            boolean isAuthor = announcement.getAuthor().getId().equals(currentUser.getId());
-            boolean isAdmin = currentUser.getRole() == Role.ADMINISTRATOR;
-            boolean isAuthorAdmin = announcement.getAuthor().getRole() == Role.ADMINISTRATOR;
-
-            if (isAuthor) {
-                canDelete = true;
-            } else if (isAdmin && !isAuthorAdmin) {
-                canDelete = true;
-            }
+    /** Autor może usunąć własne ogłoszenie, a administrator — ogłoszenie każdego, kto nie jest administratorem. */
+    private boolean canDeleteAnnouncement(Announcement announcement, Breeder requester) {
+        if (requester == null) {
+            return false;
         }
 
+        boolean isAuthor = announcement.getAuthor().getId().equals(requester.getId());
+        boolean isAdmin = requester.getRole() == Role.ADMINISTRATOR;
+        boolean isAuthorAdmin = announcement.getAuthor().getRole() == Role.ADMINISTRATOR;
+
+        return isAuthor || (isAdmin && !isAuthorAdmin);
+    }
+
+    private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {
         return new AnnouncementResponseDto(
                 announcement.getId(),
                 announcement.getTitle(),
                 announcement.getContent(),
-                announcement.getAuthor().getName() + " " + announcement.getAuthor().getSurname(),
+                announcement.getAuthor().getFullName(),
                 announcement.isPinned(),
                 announcement.getCreatedAt(),
                 announcement.getUpdatedAt(),
-                canEdit,
-                canDelete
+                canEditAnnouncement(announcement, currentUser),
+                canDeleteAnnouncement(announcement, currentUser)
         );
     }
 }

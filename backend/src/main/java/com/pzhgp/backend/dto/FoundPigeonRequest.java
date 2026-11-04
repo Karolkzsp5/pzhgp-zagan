@@ -1,6 +1,7 @@
 package com.pzhgp.backend.dto;
 
 import com.pzhgp.backend.entity.ReportLanguage;
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.*;
 
 /**
@@ -53,11 +54,11 @@ public record FoundPigeonRequest(
 
     public FoundPigeonRequest {
         ringNumber = trim(ringNumber);
-        contactPhone = trimToNull(contactPhone);
-        contactEmail = trimToNull(contactEmail);
-        foundLocation = trimToNull(foundLocation);
-        foundCountry = trimToNull(foundCountry);
-        description = trimToNull(description);
+        contactPhone = TextUtils.trimToNull(contactPhone);
+        contactEmail = TextUtils.trimToNull(contactEmail);
+        foundLocation = TextUtils.trimToNull(foundLocation);
+        foundCountry = TextUtils.trimToNull(foundCountry);
+        description = TextUtils.trimToNull(description);
     }
 
     @AssertTrue(message = "Podaj numer telefonu lub adres e-mail, aby administrator mógł się z Tobą skontaktować.")
@@ -77,14 +78,5 @@ public record FoundPigeonRequest(
 
     private static String trim(String value) {
         return value == null ? null : value.trim();
-    }
-
-    private static String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }

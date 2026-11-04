@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,7 +34,8 @@ class AnnouncementServiceTest {
     @Mock
     private AnnouncementRepository announcementRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @Mock
@@ -228,7 +230,7 @@ class AnnouncementServiceTest {
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
                 announcementService.createAnnouncement(request, unknownEmail)
         );
-        assertEquals("Nie znaleziono autora.", exception.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
 
@@ -307,7 +309,7 @@ class AnnouncementServiceTest {
         announcementService.deleteAnnouncement(announcement.getId(), moderator.getEmail());
 
         verify(announcementRepository, times(1)).delete(announcement);
-        verify(notificationService, never()).createBulkNotifications(any(), anyString(), anyString(), any());
+        verify(notificationService, never()).createNotification(any(), anyString(), anyString(), any());
     }
 
     @Test
@@ -319,8 +321,8 @@ class AnnouncementServiceTest {
         announcementService.deleteAnnouncement(announcement.getId(), admin1.getEmail());
 
         verify(announcementRepository, times(1)).delete(announcement);
-        verify(notificationService, times(1)).createBulkNotifications(
-                argThat(list -> list.size() == 1 && list.contains(moderator)),
+        verify(notificationService, times(1)).createNotification(
+                eq(moderator),
                 eq("Twoje ogłoszenie \"Test title\" zostało usunięte przez administratora Jan Kowalski."),
                 eq("/"),
                 eq(NotificationType.ANNOUNCEMENT_DELETED)

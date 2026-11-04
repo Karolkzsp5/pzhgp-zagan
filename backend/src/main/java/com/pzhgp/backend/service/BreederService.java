@@ -16,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class BreederService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    @Transactional
     public void registerNewBreeder(RegistrationRequest request) {
         if (breederRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ResourceConflictException("Użytkownik z podanym adresem e-mail już istnieje.");
@@ -58,6 +60,7 @@ public class BreederService {
         }
     }
 
+    @Transactional(readOnly = true)
     public String login(LoginRequest request) {
         Breeder breeder = breederRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() ->
                 new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło."));
@@ -77,6 +80,7 @@ public class BreederService {
         return jwtService.generateToken(breeder);
     }
 
+    @Transactional(readOnly = true)
     public CurrentUserResponseDto getCurrentUser(String userEmail) {
         Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
 

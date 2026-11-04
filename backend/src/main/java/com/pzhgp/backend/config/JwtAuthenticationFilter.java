@@ -7,12 +7,11 @@ import com.pzhgp.backend.service.JwtService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final BreederRepository breederRepository;
+    private final AuthCookieService authCookieService;
 
     @Override
     protected void doFilterInternal(
@@ -39,27 +39,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String jwt = null;
-        String userEmail = null;
-
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (AuthCookieService.COOKIE_NAME.equals(cookie.getName())) {
-                    jwt = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String jwt = authCookieService.readToken(request);
 
         if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        String userEmail = null;
         try {
-            if (jwtService.isTokenValid(jwt)) {
-                userEmail = jwtService.extractEmail(jwt);
-            }
+            userEmail = jwtService.extractEmail(jwt);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Odrzucono nieprawidłowy token JWT: {}", e.getMessage());
         }

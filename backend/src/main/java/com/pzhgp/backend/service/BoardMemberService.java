@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class BoardMemberService {
 
     @Transactional(readOnly = true)
     public List<BoardMemberDto> getAllBoardMembers() {
-        return boardMemberRepository.findAllWithDetails().stream().map(this::mapToDto).collect(Collectors.toList());
+        return boardMemberRepository.findAllWithDetails().stream().map(this::mapToDto).toList();
     }
 
     @Transactional

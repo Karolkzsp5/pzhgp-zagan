@@ -11,7 +11,9 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightTrackPointRepository;
 import com.pzhgp.backend.repository.PigeonFlightRepository;
 import com.pzhgp.backend.service.gpx.*;
+import com.pzhgp.backend.utils.FileNameUtils;
 import com.pzhgp.backend.utils.PaginationUtils;
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Obsługa modułu "Mapy lotów": wgrywanie plików GPX, analiza trasy i udostępnianie wyników.
@@ -39,11 +42,17 @@ public class PigeonFlightService {
     /** Maksymalny rozmiar wgrywanego pliku GPX w bajtach. */
     private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
 
+    /** Największa dopuszczalna liczba lotów na stronie listy. */
+    private static final int MAX_PAGE_SIZE = 50;
+
     /** Maksymalna liczba lotów przypadająca na jednego hodowcę. */
     private static final long MAX_FLIGHTS_PER_BREEDER = 200;
 
     /** Okno czasowe wygładzania prędkości chwilowej, w sekundach. */
     private static final long SPEED_SMOOTHING_WINDOW_SECONDS = 10;
+
+    /** Nazwa zapisywana, gdy przeglądarka nie przesłała nazwy pliku. */
+    private static final String DEFAULT_FILE_NAME = "trasa.gpx";
 
     /** Domyślna tolerancja upraszczania trasy dla widoku mapy, w metrach. */
     private static final double DEFAULT_SIMPLIFY_TOLERANCE_METERS = 10.0;
@@ -61,7 +70,7 @@ public class PigeonFlightService {
      */
     @Transactional
     public Long uploadFlight(MultipartFile file, FlightUploadRequest request, String userEmail) {
-        Breeder owner = requireBreeder(userEmail);
+        Breeder owner = breederRepository.requireByEmail(userEmail);
         validateFile(file);
 
         if (flightRepository.countByOwner(owner) >= MAX_FLIGHTS_PER_BREEDER) {
@@ -81,8 +90,8 @@ public class PigeonFlightService {
         flight.setOwner(owner);
         flight.setName(resolveName(request, track, file));
         flight.setRingNumber(resolveRingNumber(request, track));
-        flight.setReleaseSite(trimToNull(request != null ? request.releaseSite() : null));
-        flight.setOriginalFileName(sanitizeFileName(file.getOriginalFilename()));
+        flight.setReleaseSite(TextUtils.trimToNull(request != null ? request.releaseSite() : null));
+        flight.setOriginalFileName(FileNameUtils.sanitize(file.getOriginalFilename(), DEFAULT_FILE_NAME));
         applyAnalysis(flight, analysis);
 
         List<Double> speeds = computeSmoothedSpeeds(track.points());
@@ -106,8 +115,8 @@ public class PigeonFlightService {
      */
     @Transactional(readOnly = true)
     public Page<FlightSummaryDto> getMyFlights(String userEmail, int page, int size) {
-        Breeder owner = requireBreeder(userEmail);
-        PaginationUtils.validate(page, size, 50);
+        Breeder owner = breederRepository.requireByEmail(userEmail);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size);
 
         return flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(owner, pageable).map(flight -> toSummary(flight, owner));
@@ -121,7 +130,7 @@ public class PigeonFlightService {
      */
     @Transactional(readOnly = true)
     public FlightDetailsDto getFlightDetails(Long flightId, String userEmail, Double simplifyToleranceMeters) {
-        Breeder viewer = requireBreeder(userEmail);
+        Breeder viewer = breederRepository.requireByEmail(userEmail);
         PigeonFlight flight = flightRepository.findWithOwnerById(flightId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
 
         requireAccess(flight, viewer);
@@ -136,7 +145,7 @@ public class PigeonFlightService {
                 flight.getName(),
                 flight.getRingNumber(),
                 flight.getReleaseSite(),
-                fullName(flight.getOwner()),
+                flight.getOwner().getFullName(),
                 flight.getOriginalFileName(),
                 flight.getStartTime(),
                 flight.getEndTime(),
@@ -148,7 +157,7 @@ public class PigeonFlightService {
                 trackPoints,
                 trackPoints.size(),
                 flight.getUploadedAt(),
-                canDelete(flight, viewer)
+                isOwnerOrAdministrator(flight, viewer)
         );
     }
 
@@ -157,10 +166,10 @@ public class PigeonFlightService {
      */
     @Transactional
     public void deleteFlight(Long flightId, String userEmail) {
-        Breeder viewer = requireBreeder(userEmail);
+        Breeder viewer = breederRepository.requireByEmail(userEmail);
         PigeonFlight flight = flightRepository.findWithOwnerById(flightId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
 
-        if (!canDelete(flight, viewer)) {
+        if (!isOwnerOrAdministrator(flight, viewer)) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego lotu.");
         }
 
@@ -281,7 +290,7 @@ public class PigeonFlightService {
                 flight.getName(),
                 flight.getRingNumber(),
                 flight.getReleaseSite(),
-                fullName(flight.getOwner()),
+                flight.getOwner().getFullName(),
                 flight.getStartTime(),
                 flight.getEndTime(),
                 round(flight.getStraightLineDistanceMeters() / 1000.0, 2),
@@ -290,7 +299,7 @@ public class PigeonFlightService {
                 flight.getTotalPoints(),
                 flight.isTimestampsAvailable(),
                 flight.getUploadedAt(),
-                canDelete(flight, viewer)
+                isOwnerOrAdministrator(flight, viewer)
         );
     }
 
@@ -320,21 +329,21 @@ public class PigeonFlightService {
         }
 
         String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.toLowerCase().endsWith(".gpx")) {
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".gpx")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .gpx.");
         }
     }
 
     private String resolveName(FlightUploadRequest request, GpxTrack track, MultipartFile file) {
-        String provided = trimToNull(request != null ? request.name() : null);
+        String provided = TextUtils.trimToNull(request != null ? request.name() : null);
         if (provided != null) {
             return provided;
         }
 
-        String fileName = sanitizeFileName(file.getOriginalFilename());
+        String fileName = FileNameUtils.sanitize(file.getOriginalFilename(), DEFAULT_FILE_NAME);
         String withoutExtension = fileName.replaceFirst("(?i)\\.gpx$", "");
 
-        String fallback = trimToNull(withoutExtension) != null ? withoutExtension : track.trackName();
+        String fallback = TextUtils.trimToNull(withoutExtension) != null ? withoutExtension : track.trackName();
         if (fallback == null || fallback.isBlank()) {
             fallback = "Lot gołębia";
         }
@@ -343,7 +352,7 @@ public class PigeonFlightService {
     }
 
     private String resolveRingNumber(FlightUploadRequest request, GpxTrack track) {
-        String provided = trimToNull(request != null ? request.ringNumber() : null);
+        String provided = TextUtils.trimToNull(request != null ? request.ringNumber() : null);
         if (provided != null) {
             return provided;
         }
@@ -356,49 +365,15 @@ public class PigeonFlightService {
         return fromFile.length() > 32 ? fromFile.substring(0, 32) : fromFile;
     }
 
-    /**
-     * Usuwa z nazwy pliku elementy ścieżki, aby nazwa pochodząca od użytkownika
-     * nie mogła wskazywać na inny katalog.
-     */
-    private String sanitizeFileName(String fileName) {
-        if (fileName == null || fileName.isBlank()) {
-            return "trasa.gpx";
-        }
-
-        String bare = fileName.replaceAll(".*[/\\\\]", "").trim();
-        if (bare.isBlank()) {
-            return "trasa.gpx";
-        }
-
-        return bare.length() > 255 ? bare.substring(bare.length() - 255) : bare;
-    }
-
-    private Breeder requireBreeder(String email) {
-        return breederRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono konta hodowcy."));
-    }
-
     private void requireAccess(PigeonFlight flight, Breeder viewer) {
-        boolean isOwner = flight.getOwner().getId().equals(viewer.getId());
-        if (!isOwner && viewer.getRole() != Role.ADMINISTRATOR) {
+        if (!isOwnerOrAdministrator(flight, viewer)) {
             throw new ForbiddenOperationException("Brak uprawnień do przeglądania tego lotu.");
         }
     }
 
-    private boolean canDelete(PigeonFlight flight, Breeder viewer) {
+    /** Lot może przeglądać i usuwać jego właściciel oraz administrator. */
+    private boolean isOwnerOrAdministrator(PigeonFlight flight, Breeder viewer) {
         return flight.getOwner().getId().equals(viewer.getId()) || viewer.getRole() == Role.ADMINISTRATOR;
-    }
-
-    private String fullName(Breeder breeder) {
-        return breeder.getName() + " " + breeder.getSurname();
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private double round(double value, int decimals) {

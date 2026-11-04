@@ -1,10 +1,10 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.PasswordUtils;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public record LoginRequest(
@@ -23,6 +23,6 @@ public record LoginRequest(
 
     @AssertTrue(message = "Hasło może mieć maksymalnie 72 bajty (UTF-8).")
     public boolean isPasswordLengthValid() {
-        return password == null || (password.length() <= 72 && password.getBytes(StandardCharsets.UTF_8).length <= 72);
+        return PasswordUtils.fitsBcryptLimit(password);
     }
 }

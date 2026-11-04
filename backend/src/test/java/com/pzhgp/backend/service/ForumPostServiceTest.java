@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,7 +39,8 @@ class ForumPostServiceTest {
     private ForumPostRepository postRepository;
     @Mock
     private ForumThreadRepository threadRepository;
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
     @Mock
     private NotificationService notificationService;
@@ -183,7 +185,7 @@ class ForumPostServiceTest {
         assertTrue(thread.getLastPostAt().isAfter(oldLastPostAt));
 
         verify(notificationService, times(1)).createNotification(
-                eq(1L),
+                eq(threadAuthor),
                 contains("Piotr Nowak dodał/a odpowiedź"),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_REPLY)

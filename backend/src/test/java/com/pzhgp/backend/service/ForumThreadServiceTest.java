@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -39,7 +40,8 @@ class ForumThreadServiceTest {
     private ForumThreadRepository threadRepository;
     @Mock
     private ForumCategoryRepository categoryRepository;
-    @Mock
+    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
     @Mock
     private ForumPostRepository postRepository;
@@ -150,7 +152,7 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should invoke atomic view increment and map moderator permissions")
-    void getThreadAndIncrementViews_WithModeratorPermissions() {
+    void getThreadCountingView_WithModeratorPermissions() {
         thread.setRepliesCount(4);
 
         ForumThread updatedThread = new ForumThread();
@@ -167,7 +169,7 @@ class ForumThreadServiceTest {
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
         when(threadRepository.incrementViews(100L)).thenReturn(1);
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "moderator@test.com", true);
 
         assertNotNull(result);
         assertEquals(1, result.views());
@@ -182,14 +184,14 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should not increment views and should grant full permissions to an administrator viewing their own thread")
-    void getThreadAndIncrementViews_WhenAdminIsAuthor_ShouldMapAllTrue() {
+    void getThreadCountingView_WhenAdminIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(admin);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "admin@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "admin@test.com", true);
 
         assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
@@ -200,14 +202,14 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should not increment views and should grant full permissions to a moderator viewing their own thread")
-    void getThreadAndIncrementViews_WhenModeratorIsAuthor_ShouldMapAllTrue() {
+    void getThreadCountingView_WhenModeratorIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(moderator);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "moderator@test.com", true);
 
         assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
@@ -218,11 +220,11 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should throw EntityNotFoundException when thread is not found")
-    void getThreadAndIncrementViews_WhenThreadNotFound_ShouldThrowException() {
+    void getThreadCountingView_WhenThreadNotFound_ShouldThrowException() {
         when(threadRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> {
-            threadService.getThreadAndIncrementViews(999L, "author@test.com");
+            threadService.getThread(999L, "author@test.com", true);
         });
     }
 

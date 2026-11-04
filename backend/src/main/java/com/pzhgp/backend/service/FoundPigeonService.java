@@ -9,6 +9,7 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
 import com.pzhgp.backend.utils.RingNumberNormalizer;
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,13 +56,14 @@ public class FoundPigeonService {
         }
 
         FoundPigeonReport report = new FoundPigeonReport();
-        report.setRingNumber(request.ringNumber().trim());
+        // Białe znaki usuwa już konstruktor FoundPigeonRequest.
+        report.setRingNumber(request.ringNumber());
         report.setRingNumberNormalized(RingNumberNormalizer.normalize(request.ringNumber()));
-        report.setContactPhone(trimToNull(request.contactPhone()));
-        report.setContactEmail(trimToNull(request.contactEmail()));
-        report.setFoundLocation(trimToNull(request.foundLocation()));
-        report.setFoundCountry(trimToNull(request.foundCountry()));
-        report.setDescription(trimToNull(request.description()));
+        report.setContactPhone(request.contactPhone());
+        report.setContactEmail(request.contactEmail());
+        report.setFoundLocation(request.foundLocation());
+        report.setFoundCountry(request.foundCountry());
+        report.setDescription(request.description());
         report.setPreferredLanguage(request.preferredLanguage() == null ? ReportLanguage.PL : request.preferredLanguage());
         report.setStatus(FoundPigeonStatus.PENDING);
 
@@ -125,7 +127,7 @@ public class FoundPigeonService {
     @Transactional
     public FoundPigeonDto updateAdminNote(Long id, String adminNote) {
         FoundPigeonReport report = findReportForUpdate(id);
-        report.setAdminNote(trimToNull(adminNote));
+        report.setAdminNote(TextUtils.trimToNull(adminNote));
 
         return mapToDto(foundPigeonRepository.save(report));
     }
@@ -187,14 +189,5 @@ public class FoundPigeonService {
                 report.getCreatedAt(),
                 report.getUpdatedAt()
         );
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }
