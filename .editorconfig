@@ -1,0 +1,34 @@
+# Shared editor settings (IntelliJ IDEA, VS Code and others). See https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,css,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[pom.xml]
+indent_style = tab
+
+[*.cmd]
+end_of_line = crlf
+
+# Sample GPX files are kept byte-for-byte as exported by the ring software.
+[*.gpx]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+[*.java]
+max_line_length = 120
+# Same as IntelliJ IDEA "Optimize Imports" with default settings.
+ij_java_imports_layout = *, |, javax.**, java.**, |, $*
+ij_java_class_count_to_use_import_on_demand = 5

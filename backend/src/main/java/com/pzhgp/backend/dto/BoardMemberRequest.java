@@ -1,11 +1,7 @@
 package com.pzhgp.backend.dto;
 
 import com.pzhgp.backend.entity.BoardRole;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public record BoardMemberRequest(
         @NotNull(message = "Rola jest wymagana")

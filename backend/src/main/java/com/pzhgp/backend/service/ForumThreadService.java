@@ -141,7 +141,7 @@ public class ForumThreadService {
         threadRepository.delete(thread);
     }
 
-    // Permission logic
+    // Uprawnienia
 
     private boolean canEditContent(Breeder author, Breeder requester) {
         return author.getId().equals(requester.getId());

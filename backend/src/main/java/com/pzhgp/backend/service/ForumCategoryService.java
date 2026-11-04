@@ -93,7 +93,6 @@ public class ForumCategoryService {
         categoryRepository.delete(category);
     }
 
-
     private boolean canEditCategory(Breeder author, Breeder requester) {
         if (requester.getRole() == Role.BREEDER) {
             return false;

@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface SectionRepository extends JpaRepository<Section, Long> {
+
     Optional<Section> findByName(String name);
     boolean existsByName(String name);
     List<Section> findAllByOrderBySortOrderAsc();

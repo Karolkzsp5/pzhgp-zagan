@@ -1,6 +1,5 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.*;
@@ -15,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;

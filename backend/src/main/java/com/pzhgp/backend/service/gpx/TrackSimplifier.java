@@ -15,8 +15,7 @@ import java.util.List;
  */
 public final class TrackSimplifier {
 
-    private TrackSimplifier() {
-    }
+    private TrackSimplifier() {}
 
     /**
      * Zwraca indeksy punktów, które należy zachować, aby uproszczona trasa nie odbiegała

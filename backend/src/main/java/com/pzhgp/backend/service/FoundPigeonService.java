@@ -3,12 +3,12 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.FoundPigeonDto;
 import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.InvalidStatusTransitionException;
+import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
 import com.pzhgp.backend.utils.RingNumberNormalizer;
-import com.pzhgp.backend.exception.SubmissionRateLimitException;
-import com.pzhgp.backend.exception.InvalidStatusTransitionException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ public class FoundPigeonService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
 
         // Fraza wyszukiwania przechodzi przez tę samą normalizację co zapisany numer,
-        // dzięki czemu "pl 0208" odnajduje zgłoszenie zapisane jako "PL-0208-24-1234".
+        // dzięki czemu "0369 24" odnajduje zgłoszenie zapisane jako "PL-0369-24-1234".
         // Brak frazy daje pusty tekst, a nie null — patrz komentarz przy zapytaniu repozytorium.
         String normalizedQuery = RingNumberNormalizer.normalize(ringNumber);
 
@@ -103,7 +103,7 @@ public class FoundPigeonService {
     /**
      * Zmienia status zgłoszenia, pilnując dozwolonej kolejności przejść.
      *
-     * @throws IllegalStateException gdy przejście nie jest dozwolone
+     * @throws InvalidStatusTransitionException gdy przejście nie jest dozwolone
      */
     @Transactional
     public FoundPigeonDto updateStatus(Long id, FoundPigeonStatus newStatus) {

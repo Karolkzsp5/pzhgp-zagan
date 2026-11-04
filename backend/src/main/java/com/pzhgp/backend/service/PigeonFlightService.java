@@ -64,7 +64,6 @@ public class PigeonFlightService {
         Breeder owner = requireBreeder(userEmail);
         validateFile(file);
 
-
         if (flightRepository.countByOwner(owner) >= MAX_FLIGHTS_PER_BREEDER) {
             throw new ResourceConflictException("Osiągnięto limit " + MAX_FLIGHTS_PER_BREEDER + " zapisanych lotów. Usuń starsze loty, aby wgrać kolejny.");
         }

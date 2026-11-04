@@ -1,8 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.config.AuthCookieService;
-import jakarta.servlet.http.Cookie;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
@@ -10,6 +8,7 @@ import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.service.AuthRateLimiter;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,9 +21,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 
@@ -397,7 +397,6 @@ class AuthIntegrationTest {
         mockMvc.perform(get("/api/auth/me").cookie(authCookie))
                 .andExpect(status().isUnauthorized());
     }
-
 
     private org.springframework.test.web.servlet.ResultActions loginWithCookieJson(
             String json, String remoteAddress) throws Exception {

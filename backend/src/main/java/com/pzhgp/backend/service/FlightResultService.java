@@ -2,14 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
-import com.pzhgp.backend.entity.AccountStatus;
-import com.pzhgp.backend.entity.Breeder;
-import com.pzhgp.backend.entity.FlightPlanEntry;
-import com.pzhgp.backend.entity.FlightResult;
-import com.pzhgp.backend.entity.FlightResultScope;
-import com.pzhgp.backend.entity.NotificationType;
-import com.pzhgp.backend.entity.Role;
-import com.pzhgp.backend.entity.Section;
+import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;

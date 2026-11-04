@@ -233,6 +233,5 @@ public class FlightAnalyzer {
         return seconds > 0 ? meters / (seconds / SECONDS_PER_MINUTE) : 0.0;
     }
 
-    private record ElevationStats(Double min, Double max, Double gain) {
-    }
+    private record ElevationStats(Double min, Double max, Double gain) {}
 }

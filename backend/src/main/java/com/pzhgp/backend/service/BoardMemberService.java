@@ -105,7 +105,9 @@ public class BoardMemberService {
     }
 
     private void validateUniqueRole(BoardRole role, Section section, Long excludeId) {
-        if (!role.isUniquePerBoard()) return;
+        if (!role.isUniquePerBoard()) {
+            return;
+        }
 
         Long safeExcludeId = (excludeId != null) ? excludeId : -1L;
         boolean existsConflict;

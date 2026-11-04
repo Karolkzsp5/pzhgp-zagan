@@ -10,5 +10,4 @@ import java.util.List;
  * @param creator    zawartość atrybutu {@code creator} lub tekstu z {@code <metadata><link>}
  * @param points     punkty trasy w kolejności występowania w pliku
  */
-public record GpxTrack(String trackName, String ringNumber, String creator, List<GpxPoint> points) {
-}
+public record GpxTrack(String trackName, String ringNumber, String creator, List<GpxPoint> points) {}

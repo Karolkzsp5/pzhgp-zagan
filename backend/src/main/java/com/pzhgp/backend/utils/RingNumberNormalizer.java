@@ -5,18 +5,17 @@ import java.util.Locale;
 /**
  * Sprowadza numer obrączki do postaci porównywalnej.
  * <p>
- * Znalazcy zapisują ten sam numer na wiele sposobów — "PL-0208-24-1234",
- * "pl 0208 24 1234", "PL/0208/24/1234". Aby wyszukiwanie działało niezależnie od
- * zapisu, obok wartości oryginalnej przechowywana jest postać znormalizowana:
- * wielkie litery bez znaków rozdzielających.
+ * Zgłoszenia przyjmowane są wyłącznie w formacie PL-0369-RR-NNNN, ale administrator
+ * wyszukuje je po dowolnym fragmencie numeru, wpisanym np. jako "0369 24" albo "241234".
+ * Dlatego obok numeru zapisywana jest postać znormalizowana — wielkie litery bez znaków
+ * rozdzielających — i w ten sam sposób normalizowana jest szukana fraza.
  * <p>
  * Usuwane są wyłącznie separatory. Litery, cyfry i zera wiodące pozostają nietknięte,
  * ponieważ niosą informację o kraju, oddziale i roku obrączkowania.
  */
 public final class RingNumberNormalizer {
 
-    private RingNumberNormalizer() {
-    }
+    private RingNumberNormalizer() {}
 
     /**
      * Zwraca numer obrączki bez znaków rozdzielających, zapisany wielkimi literami.

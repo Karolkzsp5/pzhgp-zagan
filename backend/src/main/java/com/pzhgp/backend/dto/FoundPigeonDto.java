@@ -24,5 +24,4 @@ public record FoundPigeonDto(
         String adminNote,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
-}
+) {}

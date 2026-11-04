@@ -31,14 +31,14 @@ public class FoundPigeonReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Numer obrączki w postaci wpisanej przez znalazcę — służy do wyświetlania. */
+    /** Numer obrączki w obowiązującym formacie PL-0369-RR-NNNN — służy do wyświetlania. */
     @Column(name = "ring_number", nullable = false, length = 64)
     private String ringNumber;
 
     /**
      * Numer obrączki sprowadzony do postaci porównywalnej: wielkie litery, bez znaków
-     * rozdzielających. Pozwala odnaleźć zgłoszenie niezależnie od tego, czy znalazca
-     * zapisał numer jako "PL-0208-24-1234", "pl 0208 24 1234" czy "PL0208241234".
+     * rozdzielających. Pozwala odnaleźć zgłoszenie po dowolnym fragmencie numeru,
+     * np. "0369 24" albo "241234".
      */
     @Column(name = "ring_number_normalized", nullable = false, length = 64)
     private String ringNumberNormalized;

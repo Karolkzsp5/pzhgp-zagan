@@ -2,7 +2,6 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightPlanCreateRequest;
 import com.pzhgp.backend.dto.FlightPlanDetailsDto;
-import com.pzhgp.backend.dto.FlightPlanEntryDto;
 import com.pzhgp.backend.dto.FlightPlanEntryRequest;
 import com.pzhgp.backend.dto.FlightPlanSummaryDto;
 import com.pzhgp.backend.entity.*;
@@ -279,7 +278,6 @@ class FlightPlanServiceTest {
         verifyNoInteractions(notificationService);
     }
 
-
     @Test
     @DisplayName("Should throw ResourceConflictException when database detects duplicate plan year")
     void rejectsDuplicatePlanYearDetectedByDatabase() {
@@ -306,7 +304,6 @@ class FlightPlanServiceTest {
 
         verify(flightPlanRepository).saveAndFlush(any(FlightPlan.class));
     }
-
 
     @Test
     @DisplayName("Should reject creating another flight plan for the same year")
