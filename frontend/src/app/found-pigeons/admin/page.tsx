@@ -4,14 +4,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import AdminGuard from '@/app/components/AdminGuard';
+import Pagination from '@/app/components/Pagination';
+import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import { useAuth } from '@/app/components/AuthProvider';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
-import { formatGlobalDate } from '@/app/utils/formatters';
+import { formatDateTime } from '@/app/utils/formatters';
 import {
     ALLOWED_STATUS_TRANSITIONS,
     FoundPigeonDto,
@@ -21,6 +22,7 @@ import {
     formatReportStatus,
     formatStatusAction
 } from '@/app/types/foundPigeon';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 const PAGE_SIZE = 10;
 
@@ -65,18 +67,7 @@ export default function FoundPigeonsAdminPage() {
 
     const isMutating = isSavingNote || isChangingStatus || isDeleting;
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
-
-    const closeModal = () => setModalConfig((previous) => ({ ...previous, isOpen: false }));
-
-    const showAlert = (title: string, message: string) =>
-        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeModal });
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const fetchReports = useCallback(
         async (targetPage: number, status: FoundPigeonStatus | null, ringNumber: string) => {
@@ -209,15 +200,12 @@ export default function FoundPigeonsAdminPage() {
         if (isMutating) {
             return;
         }
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń zgłoszenie',
             message:
                 `Czy na pewno chcesz trwale usunąć zgłoszenie obrączki ${report.ringNumber} ` +
                 'razem z danymi kontaktowymi znalazcy? Tej operacji nie można cofnąć.',
-            isAlert: false,
             onConfirm: async () => {
-                closeModal();
                 setIsDeleting(true);
 
                 try {
@@ -235,7 +223,7 @@ export default function FoundPigeonsAdminPage() {
     };
 
     return (
-        <AdminGuard>
+        <AuthGuard requiredRole="ADMINISTRATOR">
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
 
@@ -390,7 +378,7 @@ export default function FoundPigeonsAdminPage() {
                                                             .join(', ') || '—'}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                                                        {formatGlobalDate(report.createdAt)}
+                                                        {formatDateTime(report.createdAt)}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -400,29 +388,12 @@ export default function FoundPigeonsAdminPage() {
 
                                 <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
                                     <span className="text-sm text-gray-600">Zgłoszeń: {totalElements}</span>
-                                    {totalPages > 1 && (
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => changePage(page - 1)}
-                                                disabled={isMutating || page === 0}
-                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                            >
-                                                Poprzednia
-                                            </button>
-                                            <span className="text-sm text-gray-600">
-                                                Strona {page + 1} z {totalPages}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => changePage(page + 1)}
-                                                disabled={isMutating || page >= totalPages - 1}
-                                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                            >
-                                                Następna
-                                            </button>
-                                        </div>
-                                    )}
+                                    <Pagination
+                                        page={page}
+                                        totalPages={totalPages}
+                                        onPageChange={changePage}
+                                        disabled={isMutating}
+                                    />
                                 </div>
                             </div>
 
@@ -435,9 +406,9 @@ export default function FoundPigeonsAdminPage() {
                                                     {selected.ringNumber}
                                                 </h2>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Zgłoszono {formatGlobalDate(selected.createdAt)}
+                                                    Zgłoszono {formatDateTime(selected.createdAt)}
                                                     {selected.updatedAt &&
-                                                        ` · zmieniono ${formatGlobalDate(selected.updatedAt)}`}
+                                                        ` · zmieniono ${formatDateTime(selected.updatedAt)}`}
                                                 </p>
                                             </div>
                                             <StatusBadge status={selected.status} />
@@ -590,15 +561,8 @@ export default function FoundPigeonsAdminPage() {
 
                 <Footer />
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
-        </AdminGuard>
+        </AuthGuard>
     );
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import './globals.css';
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
     description: 'System do obsługi oddziału PZHGP Żagań'
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
     return (
         <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
             <body className="min-h-full flex flex-col font-sans">

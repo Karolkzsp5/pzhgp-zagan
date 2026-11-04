@@ -11,22 +11,12 @@ import {
     SECTION_ROLES
 } from '@/app/types/board';
 import { boardService } from '@/app/services/boardService';
+import { sectionService } from '@/app/services/sectionService';
+import { BreederDto } from '@/app/types/breeder';
+import { SectionDto } from '@/app/types/section';
 import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 import Modal from '@/app/components/Modal';
-
-interface Section {
-    id: number;
-    name: string;
-}
-
-interface Breeder {
-    id: number;
-    name: string;
-    surname: string;
-    status: string;
-    sectionId: number;
-}
 
 interface BoardMemberModalProps {
     isOpen: boolean;
@@ -45,8 +35,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [customSurname, setCustomSurname] = useState('');
     const [contactPhone, setContactPhone] = useState('');
 
-    const [sections, setSections] = useState<Section[]>([]);
-    const [breeders, setBreeders] = useState<Breeder[]>([]);
+    const [sections, setSections] = useState<SectionDto[]>([]);
+    const [breeders, setBreeders] = useState<BreederDto[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
@@ -104,21 +94,18 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             setError(null);
 
             try {
-                const [sectionsRes, breedersRes] = await Promise.all([
-                    fetchWithAuth(`${API_URL}/api/sections`, {
-                        signal: controller.signal
-                    }),
+                const [sectionsData, breedersRes] = await Promise.all([
+                    sectionService.getSections(controller.signal),
                     fetchWithAuth(`${API_URL}/api/admin/registered`, {
                         signal: controller.signal
                     })
                 ]);
 
-                if (!sectionsRes.ok || !breedersRes.ok) {
+                if (!breedersRes.ok) {
                     throw new Error('Nie udało się pobrać danych formularza. Spróbuj ponownie.');
                 }
 
-                const sectionsData: Section[] = await sectionsRes.json();
-                const allBreeders: Breeder[] = await breedersRes.json();
+                const allBreeders: BreederDto[] = await breedersRes.json();
 
                 if (controller.signal.aborted) {
                     return;

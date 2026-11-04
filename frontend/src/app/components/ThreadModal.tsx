@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, type FormEvent } from 'react';
-import TextEditor from './TextEditor';
+import TextEditor from '@/app/components/TextEditor';
 import Modal from '@/app/components/Modal';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
 
 interface ThreadModalProps {
@@ -61,7 +61,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         } catch (error) {
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
+                    ? CONNECTION_ERROR_MESSAGE
                     : error instanceof Error
                       ? error.message
                       : 'Wystąpił błąd podczas tworzenia wątku.'

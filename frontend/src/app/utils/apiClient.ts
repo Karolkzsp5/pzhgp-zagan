@@ -1,4 +1,4 @@
-import { getAuthGeneration, invalidateAuthSession } from './authSession';
+import { getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 export const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
@@ -64,6 +64,13 @@ export const fetchApi = async (url: string, options: RequestInit = {}): Promise<
 export const readApiError = async (response: Response, fallback: string): Promise<string> => {
     const message = await response.text();
     return message.trim().length > 0 ? message : fallback;
+};
+
+/** Zgłasza błąd z komunikatem serwera (albo podanym zastępczym), gdy odpowiedź nie jest poprawna. */
+export const ensureOk = async (response: Response, fallback: string): Promise<void> => {
+    if (!response.ok) {
+        throw new Error(await readApiError(response, fallback));
+    }
 };
 
 export const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {

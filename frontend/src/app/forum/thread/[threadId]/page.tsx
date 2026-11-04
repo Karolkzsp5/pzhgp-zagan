@@ -5,16 +5,19 @@ import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
+import Pagination from '@/app/components/Pagination';
 import TextEditor from '@/app/components/TextEditor';
-import ForumGuard from '@/app/components/ForumGuard';
+import AuthGuard from '@/app/components/AuthGuard';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
-import { formatGlobalDate, formatRole } from '@/app/utils/formatters';
+import { formatDateTime, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import {
     fetchThreadById,
     fetchPostsByThread,
@@ -23,10 +26,9 @@ import {
     toggleThreadStatus,
     deletePost,
     updatePost,
-    updateThreadTitle,
-    ForumThreadDto,
-    ForumPostDto
+    updateThreadTitle
 } from '@/app/services/forumService';
+import { ForumPostDto, ForumThreadDto } from '@/app/types/forum';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const { isLoggedIn } = useAuth();
@@ -36,7 +38,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     const isValidThreadId = Number.isInteger(threadId) && threadId > 0;
     const router = useRouter();
 
-    const [thread, setThread] = useState<(ForumThreadDto & { categoryName?: string }) | null>(null);
+    const [thread, setThread] = useState<ForumThreadDto | null>(null);
     const [posts, setPosts] = useState<ForumPostDto[]>([]);
 
     const [currentPage, setCurrentPage] = useState(0);
@@ -62,25 +64,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     const [editTitleContent, setEditTitleContent] = useState('');
     const [isTitleSubmitting, setIsTitleSubmitting] = useState(false);
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
-
-    const closeConfirmModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
-
-    const showAlert = (title: string, message: string) => {
-        setModalConfig({
-            isOpen: true,
-            title,
-            message,
-            isAlert: true,
-            onConfirm: closeConfirmModal
-        });
-    };
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const cancelEditing = () => {
         setEditingPostId(null);
@@ -125,7 +109,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
+                    ? CONNECTION_ERROR_MESSAGE
                     : error instanceof Error
                       ? error.message
                       : 'Nie udało się pobrać dyskusji.'
@@ -190,15 +174,11 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const handleDeleteThread = () => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń wątek',
             message:
                 'Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.',
-            isAlert: false,
             onConfirm: async () => {
-                closeConfirmModal();
-
                 try {
                     await deleteThread(threadId);
                     router.push(thread ? `/forum/${thread.categoryId}` : '/forum');
@@ -278,14 +258,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const handleDeletePost = (postId: number) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń wpis',
             message: 'Czy na pewno chcesz usunąć ten wpis?',
-            isAlert: false,
             onConfirm: async () => {
-                closeConfirmModal();
-
                 try {
                     await deletePost(postId);
                     await loadThreadData();
@@ -303,18 +279,18 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     if (!isValidThreadId) {
         return (
-            <ForumGuard>
+            <AuthGuard>
                 <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                     <div className="text-center py-16 text-red-600 font-medium text-xl">
                         Nieprawidłowy adres URL. Wątek nie istnieje.
                     </div>
                 </div>
-            </ForumGuard>
+            </AuthGuard>
         );
     }
 
     return (
-        <ForumGuard>
+        <AuthGuard>
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
 
@@ -435,7 +411,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     <div className="mt-2 text-sm text-gray-500">
                                         Rozpoczęte przez{' '}
                                         <span className="font-semibold text-gray-700">{thread.authorName}</span>,{' '}
-                                        {formatGlobalDate(thread.createdAt)}
+                                        {formatDateTime(thread.createdAt)}
                                     </div>
                                 </div>
 
@@ -528,13 +504,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                             <div className="p-4 sm:p-6 grow flex flex-col min-w-0">
                                                 <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100 flex justify-between">
-                                                    <span>Napisano: {formatGlobalDate(post.createdAt)}</span>
+                                                    <span>Napisano: {formatDateTime(post.createdAt)}</span>
 
                                                     {post.editedAt && (
-                                                        <span
-                                                            className="italic"
-                                                            title={formatGlobalDate(post.editedAt)}
-                                                        >
+                                                        <span className="italic" title={formatDateTime(post.editedAt)}>
                                                             (Edytowano)
                                                         </span>
                                                     )}
@@ -621,31 +594,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                 </div>
                             </div>
 
-                            {totalPages > 1 && (
-                                <div className="flex justify-center items-center space-x-4 mt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage((prev) => prev - 1)}
-                                        disabled={isLoading || currentPage === 0}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    >
-                                        Poprzednia
-                                    </button>
-
-                                    <span className="text-sm text-gray-600 font-medium">
-                                        Strona {currentPage + 1} z {totalPages}
-                                    </span>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage((prev) => prev + 1)}
-                                        disabled={isLoading || currentPage === totalPages - 1}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    >
-                                        Następna
-                                    </button>
-                                </div>
-                            )}
+                            <Pagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                disabled={isLoading}
+                                className="mt-6"
+                            />
 
                             <div className="mt-8 pt-8 border-t border-gray-200">
                                 {thread.isLocked ? (
@@ -711,16 +666,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                 <Footer />
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    variant={modalConfig.isAlert ? 'primary' : 'danger'}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeConfirmModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
-        </ForumGuard>
+        </AuthGuard>
     );
 }

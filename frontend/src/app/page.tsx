@@ -2,26 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { formatGlobalDate } from '@/app/utils/formatters';
 import AnnouncementModal from '@/app/components/AnnouncementModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import Pagination from '@/app/components/Pagination';
+import LoadingState from '@/app/components/LoadingState';
+import ErrorState from '@/app/components/ErrorState';
+import EmptyState from '@/app/components/EmptyState';
 import { useAuth } from '@/app/components/AuthProvider';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
-
-interface Announcement {
-    id: number;
-    title: string;
-    content: string;
-    authorName: string;
-    isPinned: boolean;
-    createdAt: string;
-    updatedAt: string | null;
-    canEdit: boolean;
-    canDelete: boolean;
-}
+import { AnnouncementDto } from '@/app/types/announcement';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { formatDate, formatDateTime } from '@/app/utils/formatters';
 
 export default function HomePage() {
     const { user, isAuthResolved } = useAuth();
@@ -30,8 +23,8 @@ export default function HomePage() {
     const [actionError, setActionError] = useState<string | null>(null);
     const { beginRequest, isLatestRequest } = useLatestRequest();
 
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+    const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<AnnouncementDto | null>(null);
     const [announcementError, setAnnouncementError] = useState('');
 
     const [postToDelete, setPostToDelete] = useState<number | null>(null);
@@ -70,7 +63,7 @@ export default function HomePage() {
 
                 setAnnouncementError(
                     error instanceof TypeError
-                        ? 'Nie udało się połączyć z serwerem.'
+                        ? CONNECTION_ERROR_MESSAGE
                         : error instanceof Error
                           ? error.message
                           : 'Wystąpił błąd podczas pobierania ogłoszeń.'
@@ -160,22 +153,14 @@ export default function HomePage() {
 
                     <div className="space-y-6">
                         {isLoading ? (
-                            <div className="text-center py-12 text-gray-500">Ładowanie ogłoszeń...</div>
+                            <LoadingState />
                         ) : announcementError ? (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                                <p className="text-sm text-red-700">{announcementError}</p>
-                                <button
-                                    type="button"
-                                    onClick={() => void fetchAnnouncements(currentPage)}
-                                    className="mt-4 px-4 py-2 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 transition"
-                                >
-                                    Spróbuj ponownie
-                                </button>
-                            </div>
+                            <ErrorState
+                                message={announcementError}
+                                onRetry={() => void fetchAnnouncements(currentPage)}
+                            />
                         ) : announcements.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500">
-                                Brak aktualnych ogłoszeń.
-                            </div>
+                            <EmptyState>Brak aktualnych ogłoszeń.</EmptyState>
                         ) : (
                             <>
                                 {announcements.map((post) => (
@@ -207,11 +192,7 @@ export default function HomePage() {
                                                     </svg>
                                                 )}
                                                 <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                                                    {new Date(post.createdAt).toLocaleDateString('pl-PL', {
-                                                        day: '2-digit',
-                                                        month: '2-digit',
-                                                        year: 'numeric'
-                                                    })}
+                                                    {formatDate(post.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
@@ -228,7 +209,7 @@ export default function HomePage() {
                                                 </div>
                                                 {post.updatedAt && (
                                                     <div className="text-xs text-gray-400 italic">
-                                                        Edytowano: {formatGlobalDate(post.updatedAt)}
+                                                        Edytowano: {formatDateTime(post.updatedAt)}
                                                     </div>
                                                 )}
                                             </div>
@@ -263,30 +244,13 @@ export default function HomePage() {
                                     </article>
                                 ))}
 
-                                {/* Pagination buttons */}
-                                {totalPages > 1 && (
-                                    <div className="flex justify-center items-center space-x-4 mt-8 pt-4 border-t border-gray-200">
-                                        <button
-                                            type="button"
-                                            onClick={() => void fetchAnnouncements(currentPage - 1)}
-                                            disabled={isLoading || currentPage === 0}
-                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                        >
-                                            Poprzednia
-                                        </button>
-                                        <span className="text-sm text-gray-600 font-medium">
-                                            Strona {currentPage + 1} z {totalPages}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => void fetchAnnouncements(currentPage + 1)}
-                                            disabled={isLoading || currentPage === totalPages - 1}
-                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                        >
-                                            Następna
-                                        </button>
-                                    </div>
-                                )}
+                                <Pagination
+                                    page={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={(target) => void fetchAnnouncements(target)}
+                                    disabled={isLoading}
+                                    className="mt-8 pt-4 border-t border-gray-200"
+                                />
                             </>
                         )}
                     </div>

@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/app/components/AuthProvider';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { sectionService } from '@/app/services/sectionService';
+import { BreederDto } from '@/app/types/breeder';
+import { SectionDto } from '@/app/types/section';
 import {
     formatAccountStatus,
     formatDate,
-    formatGlobalDate,
+    formatDateTime,
     formatLocalDate,
     formatPhoneNumber,
     formatRole
 } from '@/app/utils/formatters';
-import AdminGuard from '@/app/components/AdminGuard';
+import AuthGuard from '@/app/components/AuthGuard';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import ConfirmModal from '@/app/components/ConfirmModal';
@@ -23,31 +26,13 @@ import ActionMenu from '@/app/components/ActionMenu';
 
 type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
 
-interface BreederDto {
-    id: number;
-    name: string;
-    surname: string;
-    email: string;
-    phoneNumber: string;
-    dateOfBirth: string;
-    postalCode: string;
-    city: string;
-    street: string;
-    houseNumber: string;
-    sectionId: number;
-    sectionName: string;
-    status: 'PENDING' | 'ACTIVE' | 'BLOCKED';
-    createdAt: string;
-    role: string;
-}
-
 export default function AdminPanelPage() {
     const { user } = useAuth();
     const currentUserEmail = user?.sub ?? '';
 
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);
-    const [sectionsList, setSectionsList] = useState<{ id: number; name: string }[]>([]);
+    const [sectionsList, setSectionsList] = useState<SectionDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -93,13 +78,13 @@ export default function AdminPanelPage() {
         setError('');
 
         try {
-            const [pendingRes, registeredRes, sectionsRes] = await Promise.all([
+            const [pendingRes, registeredRes, sectionsData] = await Promise.all([
                 fetchWithAuth(`${API_URL}/api/admin/pending`),
                 fetchWithAuth(`${API_URL}/api/admin/registered`),
-                fetchApi(`${API_URL}/api/sections`)
+                sectionService.getSections()
             ]);
 
-            if (!pendingRes.ok || !registeredRes.ok || !sectionsRes.ok) {
+            if (!pendingRes.ok || !registeredRes.ok) {
                 if (pendingRes.status === 403 || registeredRes.status === 403) {
                     setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
                 } else {
@@ -108,11 +93,7 @@ export default function AdminPanelPage() {
                 return;
             }
 
-            const [pendingData, registeredData, sectionsData] = await Promise.all([
-                pendingRes.json(),
-                registeredRes.json(),
-                sectionsRes.json()
-            ]);
+            const [pendingData, registeredData] = await Promise.all([pendingRes.json(), registeredRes.json()]);
 
             setPendingBreeders(pendingData);
             setRegisteredBreeders(registeredData);
@@ -223,7 +204,7 @@ export default function AdminPanelPage() {
     const hasActiveFilters = searchTerm.trim().length > 0 || filterSection !== 'ALL';
 
     return (
-        <AdminGuard>
+        <AuthGuard requiredRole="ADMINISTRATOR">
             <div className="flex flex-col min-h-screen">
                 <Navbar />
                 <main className="grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -377,7 +358,7 @@ export default function AdminPanelPage() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {formatGlobalDate(breeder.createdAt)}
+                                                                {formatDateTime(breeder.createdAt)}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                                                 <button
@@ -548,7 +529,7 @@ export default function AdminPanelPage() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {formatGlobalDate(breeder.createdAt)}
+                                                                {formatDateTime(breeder.createdAt)}
                                                             </td>
 
                                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -818,6 +799,6 @@ export default function AdminPanelPage() {
                 onConfirm={confirmAdminAction}
                 onCancel={closeConfirmDialog}
             />
-        </AdminGuard>
+        </AuthGuard>
     );
 }

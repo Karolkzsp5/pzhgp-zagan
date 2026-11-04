@@ -13,8 +13,10 @@ import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
 import { useAuth } from '@/app/components/AuthProvider';
 import { flightService } from '@/app/services/flightService';
-import { FlightDetailsDto, formatDateTime, formatDuration, formatSpeed, formatTime } from '@/app/types/flight';
+import { FlightDetailsDto } from '@/app/types/flight';
+import { formatDateTimeWithSeconds, formatDuration, formatSpeed, formatTime } from '@/app/utils/formatters';
 import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 /**
  * Leaflet operuje bezpośrednio na obiekcie window, dlatego mapa ładowana jest wyłącznie
@@ -104,16 +106,9 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     const [playbackSpeed, setPlaybackSpeed] = useState(PLAYBACK_SPEEDS[1]);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const loadRequestRef = useRef(0);
-    const closeModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
 
     const loadFlight = useCallback(async () => {
         if (!isValidId) return;
@@ -211,24 +206,15 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     const handleDelete = () => {
         if (!flight) return;
 
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń lot',
             message: `Czy na pewno chcesz usunąć lot "${flight.name}" wraz z zapisaną trasą? Tej operacji nie można cofnąć.`,
-            isAlert: false,
             onConfirm: async () => {
-                closeModal();
                 try {
                     await flightService.deleteFlight(flight.id);
                     router.push('/flights');
                 } catch (caught) {
-                    setModalConfig({
-                        isOpen: true,
-                        title: 'Błąd',
-                        message: caught instanceof Error ? caught.message : 'Nie udało się usunąć lotu.',
-                        isAlert: true,
-                        onConfirm: closeModal
-                    });
+                    showAlert('Błąd', caught instanceof Error ? caught.message : 'Nie udało się usunąć lotu.');
                 }
             }
         });
@@ -531,8 +517,8 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                             <h2 className="text-lg font-bold text-gray-900 mb-3">Szczegóły lotu</h2>
 
-                            <StatRow label="Początek nagrania" value={formatDateTime(flight.startTime)} />
-                            <StatRow label="Koniec nagrania" value={formatDateTime(flight.endTime)} />
+                            <StatRow label="Początek nagrania" value={formatDateTimeWithSeconds(flight.startTime)} />
+                            <StatRow label="Koniec nagrania" value={formatDateTimeWithSeconds(flight.endTime)} />
                             <StatRow
                                 label="Pokonany dystans"
                                 value={`${stats.trackDistanceKm.toFixed(2)} km`}
@@ -571,15 +557,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                 <Footer />
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    variant={modalConfig.isAlert ? 'primary' : 'danger'}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
         </AuthGuard>
     );

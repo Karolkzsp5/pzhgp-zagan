@@ -5,9 +5,11 @@ import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi } from '@/app/utils/apiClient';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { useAuth } from '@/app/components/AuthProvider';
 import { boardService } from '@/app/services/boardService';
+import { sectionService } from '@/app/services/sectionService';
+import { SectionDto } from '@/app/types/section';
 import {
     BoardMemberDto,
     BoardRole,
@@ -19,11 +21,7 @@ import { formatPhoneNumber } from '@/app/utils/formatters';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
-
-interface SectionDto {
-    id: number;
-    name: string;
-}
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 export default function BoardPage() {
     const [members, setMembers] = useState<BoardMemberDto[]>([]);
@@ -36,34 +34,17 @@ export default function BoardPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<BoardMemberDto | null>(null);
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
-
-    const closeConfirmModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
-    const showAlert = (title: string, message: string) => {
-        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
-    };
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError('');
 
         try {
-            const [boardData, sectionsResponse] = await Promise.all([
+            const [boardData, sectionsData] = await Promise.all([
                 boardService.getAllBoardMembers(),
-                fetchApi(`${API_URL}/api/sections`)
+                sectionService.getSections()
             ]);
-
-            if (!sectionsResponse.ok) {
-                throw new Error('Nie udało się pobrać listy sekcji.');
-            }
-
-            const sectionsData: SectionDto[] = await sectionsResponse.json();
 
             setMembers(boardData);
             setSections(sectionsData);
@@ -79,13 +60,10 @@ export default function BoardPage() {
     }, [fetchData]);
 
     const handleDelete = (id: number) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń członka zarządu',
             message: 'Czy na pewno chcesz usunąć tę osobę ze stanowiska w zarządzie?',
-            isAlert: false,
             onConfirm: async () => {
-                closeConfirmModal();
                 try {
                     await boardService.deleteBoardMember(id);
                     void fetchData();
@@ -285,14 +263,7 @@ export default function BoardPage() {
                 />
             )}
 
-            <ConfirmModal
-                isOpen={modalConfig.isOpen}
-                title={modalConfig.title}
-                message={modalConfig.message}
-                isAlert={modalConfig.isAlert}
-                onConfirm={modalConfig.onConfirm}
-                onCancel={closeConfirmModal}
-            />
+            <ConfirmModal {...dialog} />
 
             <Footer />
         </div>

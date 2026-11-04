@@ -1,5 +1,6 @@
-import { API_URL, fetchApi, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus, PageResponse } from '@/app/types/foundPigeon';
+import { API_URL, ensureOk, fetchApi, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { PageResponse } from '@/app/types/common';
+import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus } from '@/app/types/foundPigeon';
 
 export class FoundPigeonApiError extends Error {
     constructor(
@@ -49,9 +50,7 @@ export const foundPigeonService = {
         if (ringNumber.trim()) params.set('ringNumber', ringNumber.trim());
 
         const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons?${params}`, { signal });
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się pobrać zgłoszeń.'));
-        }
+        await ensureOk(response, 'Nie udało się pobrać zgłoszeń.');
         return response.json();
     },
 
@@ -62,9 +61,7 @@ export const foundPigeonService = {
             body: JSON.stringify({ status })
         });
 
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się zmienić statusu zgłoszenia.'));
-        }
+        await ensureOk(response, 'Nie udało się zmienić statusu zgłoszenia.');
         return response.json();
     },
 
@@ -75,17 +72,13 @@ export const foundPigeonService = {
             body: JSON.stringify({ adminNote })
         });
 
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się zapisać notatki.'));
-        }
+        await ensureOk(response, 'Nie udało się zapisać notatki.');
         return response.json();
     },
 
     deleteReport: async (id: number): Promise<void> => {
         const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons/${id}`, { method: 'DELETE' });
 
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się usunąć zgłoszenia.'));
-        }
+        await ensureOk(response, 'Nie udało się usunąć zgłoszenia.');
     }
 };

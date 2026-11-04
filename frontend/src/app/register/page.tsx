@@ -4,6 +4,8 @@ import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
+import { sectionService } from '@/app/services/sectionService';
+import { SectionDto } from '@/app/types/section';
 import { formatPhoneInput } from '@/app/utils/formatters';
 import Modal from '@/app/components/Modal';
 
@@ -20,11 +22,6 @@ interface RegistrationFormData {
     phoneNumber: string;
     password: string;
     confirmPassword: string;
-}
-
-interface SectionDto {
-    id: number;
-    name: string;
 }
 
 export default function RegisterPage() {
@@ -55,17 +52,12 @@ export default function RegisterPage() {
             setSectionsError('');
 
             try {
-                const response = await fetchApi(`${API_URL}/api/sections`);
-
-                if (!response.ok) {
-                    setSectionsError('Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.');
-                    return;
-                }
-
-                setSections(await response.json());
+                setSections(await sectionService.getSections());
             } catch (error) {
                 setSectionsError(
-                    error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać listy sekcji.'
+                    error instanceof TypeError
+                        ? CONNECTION_ERROR_MESSAGE
+                        : 'Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.'
                 );
             }
         };

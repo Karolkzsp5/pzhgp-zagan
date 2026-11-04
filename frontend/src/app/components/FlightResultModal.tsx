@@ -3,14 +3,10 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { flightPlanService } from '@/app/services/flightPlanService';
+import { sectionService } from '@/app/services/sectionService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { SectionDto } from '@/app/types/section';
 import { formatLocalDate } from '@/app/utils/formatters';
-
-interface SectionDto {
-    id: number;
-    name: string;
-}
 
 interface FlightResultModalProps {
     isOpen: boolean;
@@ -78,15 +74,7 @@ export default function FlightResultModal({ isOpen, entry, onClose, onChanged }:
             setError('');
 
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/sections`, {
-                    signal: controller.signal
-                });
-
-                if (!response.ok) {
-                    throw new Error(await readApiError(response, 'Nie udało się pobrać listy sekcji.'));
-                }
-
-                const data: SectionDto[] = await response.json();
+                const data = await sectionService.getSections(controller.signal);
 
                 if (!controller.signal.aborted) {
                     setSections(data);

@@ -27,12 +27,3 @@ export const invalidateAuthSession = (notify = true, broadcast = true) => {
         localStorage.setItem(AUTH_SYNC_KEY, `${Date.now()}-${authGeneration}`);
     }
 };
-
-export const clearLegacyAuthStorage = () => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('auth_persistence');
-    sessionStorage.removeItem('jwt_token');
-    // Usuwamy dawny znacznik sesji, a nie ciasteczko JWT HttpOnly.
-    document.cookie = `pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict${window.location.protocol === 'https:' ? '; Secure' : ''}`;
-};

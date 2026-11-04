@@ -7,7 +7,7 @@ import Footer from '@/app/components/Footer';
 import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
 import { useAuth } from '@/app/components/AuthProvider';
-import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
+import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from '@/app/found-pigeons/translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
 const MAX_RING_NUMBER_LENGTH = 15;

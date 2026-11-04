@@ -627,7 +627,7 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 });
 
-describe('AdminGuard', () => {
+describe('Administrator route guard', () => {
     it('Should redirect unauthenticated user to the login page', () => {
         cy.intercept('GET', '**/api/auth/me', {
             statusCode: 401,

@@ -16,11 +16,6 @@
 // Import commands.js using ES2015 syntax:
 import './commands';
 
-import { slowCypressDown } from 'cypress-slow-down';
-import 'cypress-slow-down/commands';
-
-slowCypressDown(false);
-
 Cypress.on('window:before:load', (win) => {
     win.document.cookie = 'XSRF-TOKEN=cypress-test-csrf; Path=/; SameSite=Lax';
 });

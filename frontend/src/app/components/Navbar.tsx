@@ -3,27 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { formatGlobalDate } from '@/app/utils/formatters';
+import { formatDateTime } from '@/app/utils/formatters';
 import { useAuth } from '@/app/components/AuthProvider';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { getAuthGeneration } from '@/app/utils/authSession';
-
-interface NotificationDto {
-    id: number;
-    message: string;
-    link: string | null;
-    isRead: boolean;
-    type: string;
-    createdAt: string;
-}
-
-interface NotificationPage {
-    content: NotificationDto[];
-    totalElements: number;
-    totalPages: number;
-    number: number;
-    size: number;
-}
+import { PageResponse } from '@/app/types/common';
+import { NotificationDto } from '@/app/types/notification';
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
@@ -79,7 +64,7 @@ export default function Navbar() {
                     );
                 }
 
-                const pageData = (await notifRes.json()) as NotificationPage;
+                const pageData = (await notifRes.json()) as PageResponse<NotificationDto>;
                 const count = (await countRes.json()) as number;
 
                 if (
@@ -124,7 +109,7 @@ export default function Navbar() {
                 throw new Error(await readApiError(response, 'Nie udało się pobrać wcześniejszych powiadomień.'));
             }
 
-            const pageData = (await response.json()) as NotificationPage;
+            const pageData = (await response.json()) as PageResponse<NotificationDto>;
 
             if (
                 !isCurrentNotificationSession(sessionId, generation) ||
@@ -281,7 +266,7 @@ export default function Navbar() {
             if (isCurrentNotificationSession(sessionId, generation)) {
                 setNotificationDeleteError(
                     error instanceof TypeError
-                        ? 'Nie udało się połączyć z serwerem.'
+                        ? CONNECTION_ERROR_MESSAGE
                         : error instanceof Error
                           ? error.message
                           : 'Nie udało się usunąć powiadomienia.'
@@ -515,7 +500,7 @@ export default function Navbar() {
                                                                     >
                                                                         <span className="flex justify-between items-start mb-1">
                                                                             <span className="text-[10px] text-gray-400 font-medium">
-                                                                                {formatGlobalDate(notif.createdAt)}
+                                                                                {formatDateTime(notif.createdAt)}
                                                                             </span>
                                                                             {!notif.isRead && (
                                                                                 <span className="h-2 w-2 bg-blue-600 rounded-full"></span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useCallback, useEffect, useState } from 'react';
+import { ReactNode, use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -21,6 +21,7 @@ import {
 } from '@/app/types/flightPlan';
 import { useAuth } from '@/app/components/AuthProvider';
 import { formatLocalDate } from '@/app/utils/formatters';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 interface FlightPlanYearPageProps {
     params: Promise<{
@@ -44,35 +45,12 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     const [editingEntry, setEditingEntry] = useState<FlightPlanEntryDto | null>(null);
     const [resultEntryId, setResultEntryId] = useState<number | null>(null);
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const isAdministrator = user?.role === 'ADMINISTRATOR';
     const resultEntry = plan
         ? ([...plan.adultFlights, ...plan.youngFlights].find((flight) => flight.id === resultEntryId) ?? null)
         : null;
-
-    const closeModal = () => {
-        setModalConfig((previous) => ({
-            ...previous,
-            isOpen: false
-        }));
-    };
-
-    const showAlert = (title: string, message: string) => {
-        setModalConfig({
-            isOpen: true,
-            title,
-            message,
-            isAlert: true,
-            onConfirm: closeModal
-        });
-    };
 
     const loadPlan = useCallback(async () => {
         if (!Number.isInteger(year)) {
@@ -151,14 +129,10 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     };
 
     const handleDeleteFlight = (flight: FlightPlanEntryDto) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń lot',
             message: `Czy na pewno chcesz usunąć lot ${flight.location} z dnia ${formatLocalDate(flight.scheduledDate)}?`,
-            isAlert: false,
             onConfirm: async () => {
-                closeModal();
-
                 try {
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
@@ -270,14 +244,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     />
                 )}
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
         </AuthGuard>
     );
@@ -374,7 +341,7 @@ function FlightTableSection({
     );
 }
 
-function TableHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function TableHeader({ children, className = '' }: { children: ReactNode; className?: string }) {
     return (
         <th
             scope="col"

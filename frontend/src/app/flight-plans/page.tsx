@@ -13,6 +13,7 @@ import EmptyState from '@/app/components/EmptyState';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanSummaryDto } from '@/app/types/flightPlan';
 import { useAuth } from '@/app/components/AuthProvider';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 export default function FlightPlansPage() {
     const { user, isLoggedIn } = useAuth();
@@ -26,32 +27,9 @@ export default function FlightPlansPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [formError, setFormError] = useState('');
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const isAdministrator = user?.role === 'ADMINISTRATOR';
-
-    const closeConfirmModal = () => {
-        setModalConfig((previous) => ({
-            ...previous,
-            isOpen: false
-        }));
-    };
-
-    const showAlert = (title: string, message: string) => {
-        setModalConfig({
-            isOpen: true,
-            title,
-            message,
-            isAlert: true,
-            onConfirm: closeConfirmModal
-        });
-    };
 
     const loadPlans = useCallback(async () => {
         setIsLoading(true);
@@ -110,14 +88,10 @@ export default function FlightPlansPage() {
     };
 
     const handleDeletePlan = (plan: FlightPlanSummaryDto) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń plan lotów',
             message: `Czy na pewno chcesz usunąć plan lotów na rok ${plan.year}?`,
-            isAlert: false,
             onConfirm: async () => {
-                closeConfirmModal();
-
                 try {
                     await flightPlanService.deletePlan(plan.year);
                     await loadPlans();
@@ -278,14 +252,7 @@ export default function FlightPlansPage() {
                     </form>
                 </Modal>
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeConfirmModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
         </AuthGuard>
     );

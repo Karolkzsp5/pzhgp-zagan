@@ -1,5 +1,6 @@
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { FlightDetailsDto, FlightSummaryDto, FlightUploadRequest, PageResponse } from '@/app/types/flight';
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
+import { PageResponse } from '@/app/types/common';
+import { FlightDetailsDto, FlightSummaryDto, FlightUploadRequest } from '@/app/types/flight';
 
 export const flightService = {
     /**
@@ -14,9 +15,7 @@ export const flightService = {
         formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
 
         const response = await fetchWithAuth(`${API_URL}/api/flights`, { method: 'POST', body: formData });
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się wgrać pliku GPX.'));
-        }
+        await ensureOk(response, 'Nie udało się wgrać pliku GPX.');
 
         const body = await response.json();
         return body.id as number;
@@ -24,9 +23,7 @@ export const flightService = {
 
     getMyFlights: async (page = 0, size = 10): Promise<PageResponse<FlightSummaryDto>> => {
         const response = await fetchWithAuth(`${API_URL}/api/flights?page=${page}&size=${size}`);
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się pobrać listy lotów.'));
-        }
+        await ensureOk(response, 'Nie udało się pobrać listy lotów.');
         return response.json();
     },
 
@@ -38,16 +35,12 @@ export const flightService = {
     getFlight: async (id: number, toleranceMeters?: number): Promise<FlightDetailsDto> => {
         const query = toleranceMeters !== undefined ? `?tolerance=${toleranceMeters}` : '';
         const response = await fetchWithAuth(`${API_URL}/api/flights/${id}${query}`);
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się pobrać danych lotu.'));
-        }
+        await ensureOk(response, 'Nie udało się pobrać danych lotu.');
         return response.json();
     },
 
     deleteFlight: async (id: number): Promise<void> => {
         const response = await fetchWithAuth(`${API_URL}/api/flights/${id}`, { method: 'DELETE' });
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się usunąć lotu.'));
-        }
+        await ensureOk(response, 'Nie udało się usunąć lotu.');
     }
 };

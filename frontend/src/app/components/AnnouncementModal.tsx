@@ -1,23 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import TextEditor from './TextEditor';
-import Modal from './Modal';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import TextEditor from '@/app/components/TextEditor';
+import Modal from '@/app/components/Modal';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
-
-interface Announcement {
-    id: number;
-    title: string;
-    content: string;
-    isPinned: boolean;
-}
+import { AnnouncementDto } from '@/app/types/announcement';
 
 interface AnnouncementModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    announcementToEdit?: Announcement | null;
+    announcementToEdit?: Pick<AnnouncementDto, 'id' | 'title' | 'content' | 'isPinned'> | null;
 }
 
 export default function AnnouncementModal({ isOpen, onClose, onSuccess, announcementToEdit }: AnnouncementModalProps) {
@@ -83,7 +77,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         } catch (error) {
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
+                    ? CONNECTION_ERROR_MESSAGE
                     : error instanceof Error
                       ? error.message
                       : 'Wystąpił błąd podczas zapisywania ogłoszenia.'

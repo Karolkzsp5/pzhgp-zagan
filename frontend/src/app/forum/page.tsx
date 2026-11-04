@@ -5,13 +5,15 @@ import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import { useAuth } from '@/app/components/AuthProvider';
-import { fetchCategories, deleteCategory, ForumCategoryDto } from '@/app/services/forumService';
+import { fetchCategories, deleteCategory } from '@/app/services/forumService';
+import { ForumCategoryDto } from '@/app/types/forum';
 import CategoryModal from '@/app/components/CategoryModal';
-import ForumGuard from '@/app/components/ForumGuard';
+import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 export default function ForumPage() {
     const { user, isLoggedIn } = useAuth();
@@ -21,18 +23,7 @@ export default function ForumPage() {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ForumCategoryDto | null>(null);
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
-
-    const closeConfirmModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
-    const showAlert = (title: string, message: string) => {
-        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
-    };
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const loadCategories = useCallback(async () => {
         setIsLoading(true);
@@ -55,13 +46,10 @@ export default function ForumPage() {
     }, [isLoggedIn, loadCategories]);
 
     const handleDeleteCategory = (id: number) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń kategorię',
             message: 'Czy na pewno chcesz usunąć tę kategorię? Upewnij się, że nie zawiera ona żadnych wątków.',
-            isAlert: false,
             onConfirm: async () => {
-                closeConfirmModal();
                 try {
                     await deleteCategory(id);
                     void loadCategories();
@@ -78,7 +66,7 @@ export default function ForumPage() {
     const canCreateCategory = user?.role === 'ADMINISTRATOR' || user?.role === 'MODERATOR';
 
     return (
-        <ForumGuard>
+        <AuthGuard>
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
 
@@ -186,16 +174,9 @@ export default function ForumPage() {
                     categoryToEdit={editingCategory}
                 />
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeConfirmModal}
-                />
+                <ConfirmModal {...dialog} />
                 <Footer />
             </div>
-        </ForumGuard>
+        </AuthGuard>
     );
 }

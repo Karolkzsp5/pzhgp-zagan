@@ -1,54 +1,6 @@
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-
-export interface ForumCategoryDto {
-    id: number;
-    name: string;
-    description: string;
-    sortOrder: number;
-    createdAt: string;
-    canEdit: boolean;
-    canDelete: boolean;
-}
-
-export interface ForumThreadDto {
-    id: number;
-    categoryId: number;
-    title: string;
-    authorName: string;
-    repliesCount: number;
-    views: number;
-    createdAt: string;
-    lastPostAt: string;
-    isPinned: boolean;
-    isLocked: boolean;
-    canEdit: boolean;
-    canDelete: boolean;
-    canModerate: boolean;
-}
-
-export interface ForumPostDto {
-    id: number;
-    authorName: string;
-    authorRole: string;
-    body: string;
-    createdAt: string;
-    editedAt: string | null;
-    canEdit: boolean;
-    canDelete: boolean;
-}
-
-export interface PageResponse<T> {
-    content: T[];
-    totalPages: number;
-    totalElements: number;
-    number: number;
-}
-
-const ensureOk = async (response: Response, fallback: string): Promise<void> => {
-    if (!response.ok) {
-        throw new Error(await readApiError(response, fallback));
-    }
-};
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
+import { PageResponse } from '@/app/types/common';
+import { ForumCategoryDto, ForumPostDto, ForumThreadDto } from '@/app/types/forum';
 
 export const fetchCategories = async (): Promise<ForumCategoryDto[]> => {
     const response = await fetchWithAuth(`${API_URL}/api/forum/categories`);
@@ -98,10 +50,7 @@ export const fetchThreadsByCategory = async (categoryId: number, page = 0): Prom
     return response.json();
 };
 
-export const fetchThreadById = async (
-    threadId: number,
-    countView = true
-): Promise<ForumThreadDto & { categoryName?: string }> => {
+export const fetchThreadById = async (threadId: number, countView = true): Promise<ForumThreadDto> => {
     const query = countView ? '' : '?countView=false';
     const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}${query}`);
     await ensureOk(response, 'Nie udało się pobrać wątku.');

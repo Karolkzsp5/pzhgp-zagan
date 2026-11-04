@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
+import Pagination from '@/app/components/Pagination';
 import AuthGuard from '@/app/components/AuthGuard';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import LoadingState from '@/app/components/LoadingState';
@@ -12,8 +13,10 @@ import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import { useAuth } from '@/app/components/AuthProvider';
 import { flightService } from '@/app/services/flightService';
-import { FlightSummaryDto, formatDateTime, formatDuration, formatSpeed } from '@/app/types/flight';
+import { FlightSummaryDto } from '@/app/types/flight';
+import { formatDateTimeWithSeconds, formatDuration, formatSpeed } from '@/app/utils/formatters';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 const PAGE_SIZE = 10;
 const MAX_GPX_FILE_SIZE = 10 * 1024 * 1024;
@@ -38,20 +41,9 @@ export default function FlightsPage() {
     const [ringNumber, setRingNumber] = useState('');
     const [releaseSite, setReleaseSite] = useState('');
 
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        isAlert: false,
-        onConfirm: () => {}
-    });
+    const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const { beginRequest, isLatestRequest } = useLatestRequest();
-    const closeModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
-
-    const showAlert = (title: string, message: string) =>
-        setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeModal });
-
     const fetchFlights = useCallback(
         async (targetPage: number) => {
             const requestId = beginRequest();
@@ -141,13 +133,10 @@ export default function FlightsPage() {
     };
 
     const handleDelete = (flight: FlightSummaryDto) => {
-        setModalConfig({
-            isOpen: true,
+        showConfirm({
             title: 'Usuń lot',
             message: `Czy na pewno chcesz usunąć lot "${flight.name}" wraz z zapisaną trasą? Tej operacji nie można cofnąć.`,
-            isAlert: false,
             onConfirm: async () => {
-                closeModal();
                 try {
                     await flightService.deleteFlight(flight.id);
                     const isLastOnPage = flights.length === 1 && page > 0;
@@ -373,7 +362,7 @@ export default function FlightsPage() {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                                                    {formatDateTime(flight.uploadedAt)}
+                                                    {formatDateTimeWithSeconds(flight.uploadedAt)}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
                                                     {flight.canDelete && (
@@ -402,43 +391,20 @@ export default function FlightsPage() {
                                 </table>
                             </div>
 
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-center gap-3 mt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => void fetchFlights(page - 1)}
-                                        disabled={isLoading || page === 0}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                    >
-                                        Poprzednia
-                                    </button>
-                                    <span className="text-sm text-gray-600">
-                                        Strona {page + 1} z {totalPages}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => void fetchFlights(page + 1)}
-                                        disabled={isLoading || page >= totalPages - 1}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                    >
-                                        Następna
-                                    </button>
-                                </div>
-                            )}
+                            <Pagination
+                                page={page}
+                                totalPages={totalPages}
+                                onPageChange={(target) => void fetchFlights(target)}
+                                disabled={isLoading}
+                                className="mt-6"
+                            />
                         </>
                     )}
                 </main>
 
                 <Footer />
 
-                <ConfirmModal
-                    isOpen={modalConfig.isOpen}
-                    title={modalConfig.title}
-                    message={modalConfig.message}
-                    isAlert={modalConfig.isAlert}
-                    onConfirm={modalConfig.onConfirm}
-                    onCancel={closeModal}
-                />
+                <ConfirmModal {...dialog} />
             </div>
         </AuthGuard>
     );

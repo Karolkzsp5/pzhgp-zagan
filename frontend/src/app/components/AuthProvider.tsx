@@ -5,7 +5,6 @@ import { API_URL, fetchApi, fetchWithAuth, readApiError, refreshCsrfToken } from
 import {
     AUTH_CHANGED_EVENT,
     AUTH_SYNC_KEY,
-    clearLegacyAuthStorage,
     CurrentUser,
     getAuthGeneration,
     invalidateAuthSession
@@ -82,7 +81,6 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        clearLegacyAuthStorage();
         void refreshAuth();
 
         const onStorage = (event: StorageEvent) => {

@@ -2,22 +2,20 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import Link from 'next/link';
-import { formatGlobalDate } from '@/app/utils/formatters';
+import { formatDateTime } from '@/app/utils/formatters';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
+import Pagination from '@/app/components/Pagination';
 import ThreadModal from '@/app/components/ThreadModal';
-import ForumGuard from '@/app/components/ForumGuard';
+import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
-import {
-    fetchCategoryById,
-    fetchThreadsByCategory,
-    ForumCategoryDto,
-    ForumThreadDto
-} from '@/app/services/forumService';
+import { fetchCategoryById, fetchThreadsByCategory } from '@/app/services/forumService';
+import { ForumCategoryDto, ForumThreadDto } from '@/app/types/forum';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const { isLoggedIn } = useAuth();
@@ -67,7 +65,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
 
             setError(
                 error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
+                    ? CONNECTION_ERROR_MESSAGE
                     : error instanceof Error
                       ? error.message
                       : 'Nie udało się pobrać danych forum.'
@@ -89,18 +87,18 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
 
     if (!Number.isInteger(categoryId)) {
         return (
-            <ForumGuard>
+            <AuthGuard>
                 <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                     <div className="text-center py-16 text-red-600 font-medium text-xl">
                         Nieprawidłowy adres URL. Kategoria nie istnieje.
                     </div>
                 </div>
-            </ForumGuard>
+            </AuthGuard>
         );
     }
 
     return (
-        <ForumGuard>
+        <AuthGuard>
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
 
@@ -213,7 +211,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                                                             {thread.authorName}
                                                                         </span>
                                                                         {' • '}
-                                                                        {formatGlobalDate(thread.createdAt)}
+                                                                        {formatDateTime(thread.createdAt)}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -230,7 +228,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
 
                                                         <td className="px-6 py-4 text-right whitespace-nowrap">
                                                             <div className="text-sm text-gray-900 font-medium">
-                                                                {formatGlobalDate(thread.lastPostAt)}
+                                                                {formatDateTime(thread.lastPostAt)}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -241,31 +239,13 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                                 </div>
                             )}
 
-                            {totalPages > 1 && (
-                                <div className="flex justify-center items-center space-x-4 mt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage((prev) => prev - 1)}
-                                        disabled={isLoading || currentPage === 0}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    >
-                                        Poprzednia
-                                    </button>
-
-                                    <span className="text-sm text-gray-600 font-medium">
-                                        Strona {currentPage + 1} z {totalPages}
-                                    </span>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage((prev) => prev + 1)}
-                                        disabled={isLoading || currentPage === totalPages - 1}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    >
-                                        Następna
-                                    </button>
-                                </div>
-                            )}
+                            <Pagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                disabled={isLoading}
+                                className="mt-8"
+                            />
                         </>
                     )}
                 </main>
@@ -285,6 +265,6 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     categoryId={categoryId}
                 />
             </div>
-        </ForumGuard>
+        </AuthGuard>
     );
 }

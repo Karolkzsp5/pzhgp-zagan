@@ -4,7 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { FlightDetailsDto, formatTime } from '@/app/types/flight';
+import { FlightDetailsDto } from '@/app/types/flight';
+import { formatTime } from '@/app/utils/formatters';
 import {
     SPEED_RAMP,
     REFERENCE_COLOR,
