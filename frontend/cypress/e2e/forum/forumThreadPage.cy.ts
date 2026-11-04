@@ -103,19 +103,22 @@ describe('Forum Thread Page Tests', () => {
                 });
             }).as('getThread');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                (req) => {
+                    req.reply({
+                        statusCode: 200,
+                        body: postsPage
+                    });
                 }
-            }, (req) => {
-                req.reply({
-                    statusCode: 200,
-                    body: postsPage
-                });
-            }).as('getPosts');
+            ).as('getPosts');
 
             cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/11', adminUser);
@@ -142,29 +145,35 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Zarządzaj').should('be.visible').and('have.attr', 'aria-expanded', 'false');
 
             cy.contains('button', 'Zarządzaj').click();
-            cy.get('[role="menu"]').should('be.visible').within(() => {
-                cy.contains('[role="menuitem"]', 'Przypnij wątek').should('be.visible');
-                cy.contains('[role="menuitem"]', 'Zablokuj wątek').should('be.visible');
-                cy.contains('[role="menuitem"]', 'Usuń wątek').should('be.visible');
-            });
+            cy.get('[role="menu"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('[role="menuitem"]', 'Przypnij wątek').should('be.visible');
+                    cy.contains('[role="menuitem"]', 'Zablokuj wątek').should('be.visible');
+                    cy.contains('[role="menuitem"]', 'Usuń wątek').should('be.visible');
+                });
             cy.contains('button', 'Zarządzaj').click();
 
-            getPostByContent('Pierwszy wpis w wątku.').should('be.visible').within(() => {
-                cy.contains('Admin Testowy').should('be.visible');
-                cy.contains('Administrator').should('be.visible');
-                cy.contains('Pierwszy wpis w wątku.').should('be.visible');
-                cy.contains('button', 'Edytuj').should('be.visible');
-                cy.contains('button', 'Usuń').should('be.visible');
-            });
+            getPostByContent('Pierwszy wpis w wątku.')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('Admin Testowy').should('be.visible');
+                    cy.contains('Administrator').should('be.visible');
+                    cy.contains('Pierwszy wpis w wątku.').should('be.visible');
+                    cy.contains('button', 'Edytuj').should('be.visible');
+                    cy.contains('button', 'Usuń').should('be.visible');
+                });
 
-            getPostByContent('Odpowiedź hodowcy na pierwszy wpis.').should('be.visible').within(() => {
-                cy.contains('Jan Kowalski').should('be.visible');
-                cy.contains('Hodowca').should('be.visible');
-                cy.contains('Odpowiedź hodowcy na pierwszy wpis.').should('be.visible');
-                cy.contains('(Edytowano)').should('be.visible');
-                cy.contains('button', 'Edytuj').should('not.exist');
-                cy.contains('button', 'Usuń').should('be.visible');
-            });
+            getPostByContent('Odpowiedź hodowcy na pierwszy wpis.')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('Jan Kowalski').should('be.visible');
+                    cy.contains('Hodowca').should('be.visible');
+                    cy.contains('Odpowiedź hodowcy na pierwszy wpis.').should('be.visible');
+                    cy.contains('(Edytowano)').should('be.visible');
+                    cy.contains('button', 'Edytuj').should('not.exist');
+                    cy.contains('button', 'Usuń').should('be.visible');
+                });
 
             cy.contains('button', 'Poprzednia').should('not.exist');
             cy.contains('button', 'Następna').should('not.exist');
@@ -196,7 +205,7 @@ describe('Forum Thread Page Tests', () => {
 
             cy.then(() => {
                 expect(countViewFlags[0]).to.eq('true');
-                expect(countViewFlags.filter(flag => flag === 'true')).to.have.length(1);
+                expect(countViewFlags.filter((flag) => flag === 'true')).to.have.length(1);
             });
         });
 
@@ -207,7 +216,9 @@ describe('Forum Thread Page Tests', () => {
         it('Should allow cancelling thread title editing', () => {
             cy.get('button[aria-label="Edytuj tytuł wątku"]').click();
 
-            cy.get('input[aria-label="Tytuł wątku"]').should('be.visible').and('have.value', 'Przygotowanie do lotu konkursowego');
+            cy.get('input[aria-label="Tytuł wątku"]')
+                .should('be.visible')
+                .and('have.value', 'Przygotowanie do lotu konkursowego');
             cy.contains('button', 'Zapisz').should('be.visible');
             cy.contains('button', 'Anuluj').click();
 
@@ -244,11 +255,13 @@ describe('Forum Thread Page Tests', () => {
             cy.get('input[aria-label="Tytuł wątku"]').clear().type('abc');
             cy.contains('button', 'Zapisz').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd walidacji').should('be.visible');
-                cy.contains('Tytuł wątku musi mieć od 5 do 150 znaków.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd walidacji').should('be.visible');
+                    cy.contains('Tytuł wątku musi mieć od 5 do 150 znaków.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('input[aria-label="Tytuł wątku"]').should('be.visible');
         });
@@ -265,11 +278,13 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@updateThreadTitleError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd edycji').should('be.visible');
-                cy.contains('Nie udało się zaktualizować testowego tytułu.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd edycji').should('be.visible');
+                    cy.contains('Nie udało się zaktualizować testowego tytułu.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('input[aria-label="Tytuł wątku"]').should('be.visible');
         });
@@ -308,7 +323,9 @@ describe('Forum Thread Page Tests', () => {
             cy.wait('@toggleLock');
 
             cy.contains('h3', 'Wątek zablokowany').should('be.visible');
-            cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should('be.visible');
+            cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should(
+                'be.visible'
+            );
             cy.get('[role="textbox"][aria-label="Treść odpowiedzi"]').should('not.exist');
 
             cy.contains('button', 'Zarządzaj').click();
@@ -332,11 +349,13 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@togglePinError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd').should('be.visible');
-                cy.contains('Brak uprawnień do moderacji tego wątku.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd').should('be.visible');
+                    cy.contains('Brak uprawnień do moderacji tego wątku.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
         });
 
         // ==========================================
@@ -381,19 +400,22 @@ describe('Forum Thread Page Tests', () => {
                 });
             }).as('getThreadAfterReply');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                (req) => {
+                    req.reply({
+                        statusCode: 200,
+                        body: postsPage
+                    });
                 }
-            }, (req) => {
-                req.reply({
-                    statusCode: 200,
-                    body: postsPage
-                });
-            }).as('getPostsAfterReply');
+            ).as('getPostsAfterReply');
 
             cy.get('[role="textbox"][aria-label="Treść odpowiedzi"]').click().type('Nowa odpowiedź testowa.');
             cy.contains('button', 'Opublikuj odpowiedź').click();
@@ -418,7 +440,9 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@createPostError');
 
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się opublikować testowej odpowiedzi.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nie udało się opublikować testowej odpowiedzi.');
             cy.get('[role="textbox"][aria-label="Treść odpowiedzi"]').should('contain.text', 'Treść odpowiedzi.');
         });
 
@@ -441,39 +465,51 @@ describe('Forum Thread Page Tests', () => {
             cy.intercept('PUT', '**/api/forum/posts/101', (req) => {
                 expect(req.body.body).to.contain('Zmieniona treść pierwszego wpisu.');
 
-                postsPage.content = postsPage.content.map(post => post.id === 101 ? {
-                    ...post,
-                    body: '<p>Zmieniona treść pierwszego wpisu.</p>',
-                    editedAt: '2026-09-22T11:00:00'
-                } : post);
+                postsPage.content = postsPage.content.map((post) =>
+                    post.id === 101
+                        ? {
+                              ...post,
+                              body: '<p>Zmieniona treść pierwszego wpisu.</p>',
+                              editedAt: '2026-09-22T11:00:00'
+                          }
+                        : post
+                );
 
                 req.reply({ statusCode: 200 });
             }).as('updatePost');
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: thread
-            }).as('getThreadAfterPostUpdate');
-
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
-                }
-            }, (req) => {
-                req.reply({
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
                     statusCode: 200,
-                    body: postsPage
-                });
-            }).as('getPostsAfterPostUpdate');
+                    body: thread
+                }
+            ).as('getThreadAfterPostUpdate');
+
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                (req) => {
+                    req.reply({
+                        statusCode: 200,
+                        body: postsPage
+                    });
+                }
+            ).as('getPostsAfterPostUpdate');
 
             getPostByContent('Pierwszy wpis w wątku.').within(() => {
                 cy.contains('button', 'Edytuj').click();
             });
 
-            cy.get('[role="textbox"][aria-label="Edytowana treść wpisu"]').clear().type('Zmieniona treść pierwszego wpisu.');
+            cy.get('[role="textbox"][aria-label="Edytowana treść wpisu"]')
+                .clear()
+                .type('Zmieniona treść pierwszego wpisu.');
             cy.contains('button', 'Zapisz zmiany').click();
 
             cy.wait('@updatePost');
@@ -500,7 +536,9 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@updatePostError');
 
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się zaktualizować testowego wpisu.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nie udało się zaktualizować testowego wpisu.');
             cy.get('[role="textbox"][aria-label="Edytowana treść wpisu"]').should('contain.text', 'Nowa treść wpisu.');
         });
 
@@ -513,11 +551,13 @@ describe('Forum Thread Page Tests', () => {
                 cy.contains('button', 'Usuń').click();
             });
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Usuń wpis').should('be.visible');
-                cy.contains('Czy na pewno chcesz usunąć ten wpis?').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Usuń wpis').should('be.visible');
+                    cy.contains('Czy na pewno chcesz usunąć ten wpis?').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('.prose', 'Odpowiedź hodowcy na pierwszy wpis.').should('be.visible');
@@ -525,29 +565,35 @@ describe('Forum Thread Page Tests', () => {
 
         it('Should successfully delete a post and refresh the discussion', () => {
             cy.intercept('DELETE', '**/api/forum/posts/102', (req) => {
-                postsPage.content = postsPage.content.filter(post => post.id !== 102);
+                postsPage.content = postsPage.content.filter((post) => post.id !== 102);
                 postsPage.totalElements = postsPage.content.length;
                 req.reply({ statusCode: 204 });
             }).as('deletePost');
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: thread
-            }).as('getThreadAfterPostDelete');
-
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
-                }
-            }, (req) => {
-                req.reply({
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
                     statusCode: 200,
-                    body: postsPage
-                });
-            }).as('getPostsAfterPostDelete');
+                    body: thread
+                }
+            ).as('getThreadAfterPostDelete');
+
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                (req) => {
+                    req.reply({
+                        statusCode: 200,
+                        body: postsPage
+                    });
+                }
+            ).as('getPostsAfterPostDelete');
 
             getPostByContent('Odpowiedź hodowcy na pierwszy wpis.').within(() => {
                 cy.contains('button', 'Usuń').click();
@@ -581,11 +627,13 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@deletePostError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Nie można usunąć').should('be.visible');
-                cy.contains('Nie można usunąć testowego wpisu.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Nie można usunąć').should('be.visible');
+                    cy.contains('Nie można usunąć testowego wpisu.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.contains('.prose', 'Odpowiedź hodowcy na pierwszy wpis.').should('be.visible');
         });
@@ -620,41 +668,50 @@ describe('Forum Thread Page Tests', () => {
                 number: 1
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getFirstPostsPage');
+            ).as('getFirstPostsPage');
 
             cy.reload();
             cy.wait('@getFirstPostsPage');
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: thread
-            }).as('getThreadAfterPagination');
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
+                    statusCode: 200,
+                    body: thread
+                }
+            ).as('getThreadAfterPagination');
 
             cy.contains('Strona 1 z 2').should('be.visible');
             cy.contains('button', 'Poprzednia').should('be.disabled');
             cy.contains('button', 'Następna').should('not.be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '1',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '1',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: secondPage
                 }
-            }, {
-                statusCode: 200,
-                body: secondPage
-            }).as('getSecondPostsPage');
+            ).as('getSecondPostsPage');
 
             cy.contains('button', 'Następna').click();
             cy.wait('@getThreadAfterPagination').its('request.query.countView').should('eq', 'false');
@@ -666,17 +723,20 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Poprzednia').should('not.be.disabled');
             cy.contains('button', 'Następna').should('be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getFirstPostsPageAgain');
+            ).as('getFirstPostsPageAgain');
 
             cy.contains('button', 'Poprzednia').click();
             cy.wait('@getThreadAfterPagination').its('request.query.countView').should('eq', 'false');
@@ -709,17 +769,20 @@ describe('Forum Thread Page Tests', () => {
                 number: 0
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: unsafePostsPage
                 }
-            }, {
-                statusCode: 200,
-                body: unsafePostsPage
-            }).as('getUnsafePost');
+            ).as('getUnsafePost');
 
             cy.reload();
             cy.wait('@getUnsafePost');
@@ -753,17 +816,20 @@ describe('Forum Thread Page Tests', () => {
                 }
             }).as('getThreadRetry');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: postsPage
                 }
-            }, {
-                statusCode: 200,
-                body: postsPage
-            }).as('getPostsRetry');
+            ).as('getPostsRetry');
 
             cy.reload();
             cy.wait(['@getThreadRetry', '@getPostsRetry']);
@@ -791,12 +857,16 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Usuń wątek').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Usuń wątek').should('be.visible');
-                cy.contains('Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami?').should('be.visible');
-                cy.contains('Operacja jest nieodwracalna.').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Usuń wątek').should('be.visible');
+                    cy.contains('Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami?').should(
+                        'be.visible'
+                    );
+                    cy.contains('Operacja jest nieodwracalna.').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.get('h1').should('contain.text', 'Przygotowanie do lotu konkursowego');
@@ -856,11 +926,13 @@ describe('Forum Thread Page Tests', () => {
 
             cy.wait('@deleteThreadError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd').should('be.visible');
-                cy.contains('Nie udało się usunąć testowego wątku.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd').should('be.visible');
+                    cy.contains('Nie udało się usunąć testowego wątku.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('h1').should('contain.text', 'Przygotowanie do lotu konkursowego');
         });
@@ -877,22 +949,28 @@ describe('Forum Thread Page Tests', () => {
                 isLocked: true
             };
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: lockedThread
-            }).as('getLockedThread');
-
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
+                    statusCode: 200,
+                    body: lockedThread
                 }
-            }, {
-                statusCode: 200,
-                body: createPostsPage()
-            }).as('getLockedThreadPosts');
+            ).as('getLockedThread');
+
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createPostsPage()
+                }
+            ).as('getLockedThreadPosts');
 
             cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/11', adminUser);
@@ -900,7 +978,9 @@ describe('Forum Thread Page Tests', () => {
             cy.wait(['@getLockedThread', '@getLockedThreadPosts', '@getNotifications', '@getUnreadCount']);
 
             cy.contains('h3', 'Wątek zablokowany').should('be.visible');
-            cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should('be.visible');
+            cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should(
+                'be.visible'
+            );
             cy.get('[role="textbox"][aria-label="Treść odpowiedzi"]').should('not.exist');
             cy.contains('button', 'Opublikuj odpowiedź').should('not.exist');
         });
@@ -921,7 +1001,7 @@ describe('Forum Thread Page Tests', () => {
             };
 
             const readOnlyPosts: MockPostsPage = {
-                content: createPostsPage().content.map(post => ({
+                content: createPostsPage().content.map((post) => ({
                     ...post,
                     canEdit: false,
                     canDelete: false
@@ -931,22 +1011,28 @@ describe('Forum Thread Page Tests', () => {
                 number: 0
             };
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: readOnlyThread
-            }).as('getReadOnlyThread');
-
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
+                    statusCode: 200,
+                    body: readOnlyThread
                 }
-            }, {
-                statusCode: 200,
-                body: readOnlyPosts
-            }).as('getReadOnlyPosts');
+            ).as('getReadOnlyThread');
+
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: readOnlyPosts
+                }
+            ).as('getReadOnlyPosts');
 
             cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/11', breederUser);
@@ -984,22 +1070,28 @@ describe('Forum Thread Page Tests', () => {
                 body: 'Wymagane jest uwierzytelnienie.'
             }).as('getUnauthenticatedUser');
 
-            cy.intercept({ method: 'GET', pathname: '/api/forum/threads/11' }, {
-                statusCode: 200,
-                body: createThread()
-            });
-
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/threads/11/posts',
-                query: {
-                    page: '0',
-                    size: '20'
+            cy.intercept(
+                { method: 'GET', pathname: '/api/forum/threads/11' },
+                {
+                    statusCode: 200,
+                    body: createThread()
                 }
-            }, {
-                statusCode: 200,
-                body: createPostsPage()
-            });
+            );
+
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/threads/11/posts',
+                    query: {
+                        page: '0',
+                        size: '20'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createPostsPage()
+                }
+            );
 
             cy.visit('/forum/thread/11');
             cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);

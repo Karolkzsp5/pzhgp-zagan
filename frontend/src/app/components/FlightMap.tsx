@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
 import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { FlightDetailsDto, formatTime } from '@/app/types/flight';
-import { SPEED_RAMP, REFERENCE_COLOR, CURSOR_COLOR, computeSpeedThresholds, speedBucket } from '@/app/utils/flightScale';
+import {
+    SPEED_RAMP,
+    REFERENCE_COLOR,
+    CURSOR_COLOR,
+    computeSpeedThresholds,
+    speedBucket
+} from '@/app/utils/flightScale';
 
 type LatLng = [number, number];
 
@@ -91,13 +97,11 @@ export default function FlightMap({ flight, activeIndex, showStraightLine }: Fli
 
     const bounds = useMemo<L.LatLngBoundsExpression | null>(() => {
         if (points.length === 0) return null;
-        return points.map(point => [point.latitude, point.longitude] as LatLng);
+        return points.map((point) => [point.latitude, point.longitude] as LatLng);
     }, [points]);
 
     const activePoint =
-        activeIndex !== null && activeIndex >= 0 && activeIndex < points.length
-            ? points[activeIndex]
-            : null;
+        activeIndex !== null && activeIndex >= 0 && activeIndex < points.length ? points[activeIndex] : null;
 
     const startIcon = useMemo(() => pinIcon('#1baf7a', '🏁'), []);
     const endIcon = useMemo(() => pinIcon('#e34948', '🏠'), []);

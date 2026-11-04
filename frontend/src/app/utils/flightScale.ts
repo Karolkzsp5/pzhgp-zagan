@@ -29,14 +29,15 @@ export const CURSOR_COLOR = '#eb6834';
  */
 export const computeSpeedThresholds = (points: FlightTrackPointDto[]): number[] | null => {
     const speeds = points
-        .map(point => point.speedMetersPerMinute)
+        .map((point) => point.speedMetersPerMinute)
         .filter((speed): speed is number => speed !== null && Number.isFinite(speed))
         .sort((a, b) => a - b);
 
     if (speeds.length < SPEED_RAMP.length) return null;
 
-    return Array.from({ length: SPEED_RAMP.length - 1 }, (_, i) =>
-        speeds[Math.floor(((i + 1) / SPEED_RAMP.length) * (speeds.length - 1))]
+    return Array.from(
+        { length: SPEED_RAMP.length - 1 },
+        (_, i) => speeds[Math.floor(((i + 1) / SPEED_RAMP.length) * (speeds.length - 1))]
     );
 };
 

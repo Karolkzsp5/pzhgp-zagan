@@ -110,19 +110,22 @@ describe('Forum Category Page Tests', () => {
                 });
             }).as('getCategory');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                (req) => {
+                    req.reply({
+                        statusCode: 200,
+                        body: threadsPage
+                    });
                 }
-            }, (req) => {
-                req.reply({
-                    statusCode: 200,
-                    body: threadsPage
-                });
-            }).as('getThreads');
+            ).as('getThreads');
 
             cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/1', breederUser);
@@ -148,20 +151,28 @@ describe('Forum Category Page Tests', () => {
             cy.contains('th', 'Statystyki').should('be.visible');
             cy.contains('th', 'Ostatni wpis').should('be.visible');
 
-            getThreadRow('Przygotowanie do lotu konkursowego').should('be.visible').within(() => {
-                cy.contains('a', 'Przygotowanie do lotu konkursowego').should('have.attr', 'href', '/forum/thread/11');
-                cy.contains('Autor:').should('be.visible');
-                cy.contains('Jan Kowalski').should('be.visible');
-                cy.contains('2 odp.').should('be.visible');
-                cy.contains('35 wyśw.').should('be.visible');
-            });
+            getThreadRow('Przygotowanie do lotu konkursowego')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('a', 'Przygotowanie do lotu konkursowego').should(
+                        'have.attr',
+                        'href',
+                        '/forum/thread/11'
+                    );
+                    cy.contains('Autor:').should('be.visible');
+                    cy.contains('Jan Kowalski').should('be.visible');
+                    cy.contains('2 odp.').should('be.visible');
+                    cy.contains('35 wyśw.').should('be.visible');
+                });
 
-            getThreadRow('Pierwszy trening młodych gołębi').should('be.visible').within(() => {
-                cy.contains('a', 'Pierwszy trening młodych gołębi').should('have.attr', 'href', '/forum/thread/12');
-                cy.contains('Anna Nowak').should('be.visible');
-                cy.contains('5 odp.').should('be.visible');
-                cy.contains('84 wyśw.').should('be.visible');
-            });
+            getThreadRow('Pierwszy trening młodych gołębi')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('a', 'Pierwszy trening młodych gołębi').should('have.attr', 'href', '/forum/thread/12');
+                    cy.contains('Anna Nowak').should('be.visible');
+                    cy.contains('5 odp.').should('be.visible');
+                    cy.contains('84 wyśw.').should('be.visible');
+                });
 
             cy.contains('button', 'Poprzednia').should('not.exist');
             cy.contains('button', 'Następna').should('not.exist');
@@ -176,27 +187,33 @@ describe('Forum Category Page Tests', () => {
         it('Should correctly render the new thread modal and text editor controls', () => {
             cy.contains('button', '+ Nowy wątek').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Utwórz nowy wątek').should('be.visible');
-                cy.contains('label', 'Tytuł wątku').should('be.visible');
-                cy.get('#thread-title').should('be.visible').and('have.attr', 'minlength', '5').and('have.attr', 'maxlength', '150').and('have.attr', 'placeholder', 'Jasno opisz swój problem lub myśl...');
-                cy.contains('Treść pierwszej wiadomości').should('be.visible');
-                cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]').should('be.visible');
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Utwórz nowy wątek').should('be.visible');
+                    cy.contains('label', 'Tytuł wątku').should('be.visible');
+                    cy.get('#thread-title')
+                        .should('be.visible')
+                        .and('have.attr', 'minlength', '5')
+                        .and('have.attr', 'maxlength', '150')
+                        .and('have.attr', 'placeholder', 'Jasno opisz swój problem lub myśl...');
+                    cy.contains('Treść pierwszej wiadomości').should('be.visible');
+                    cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]').should('be.visible');
 
-                cy.get('button[aria-label="Cofnij"]').should('be.visible');
-                cy.get('button[aria-label="Ponów"]').should('be.visible');
-                cy.get('button[aria-label="Pogrubienie"]').should('be.visible');
-                cy.get('button[aria-label="Kursywa"]').should('be.visible');
-                cy.get('button[aria-label="Podkreślenie"]').should('be.visible');
-                cy.get('button[aria-label="Przekreślenie"]').should('be.visible');
-                cy.get('button[aria-label="Kolor zaznaczenia"]').should('be.visible');
-                cy.get('button[aria-label="Lista punktowana"]').should('be.visible');
-                cy.get('button[aria-label="Lista numerowana"]').should('be.visible');
-                cy.get('button[aria-label="Wyrównanie tekstu"]').should('be.visible');
+                    cy.get('button[aria-label="Cofnij"]').should('be.visible');
+                    cy.get('button[aria-label="Ponów"]').should('be.visible');
+                    cy.get('button[aria-label="Pogrubienie"]').should('be.visible');
+                    cy.get('button[aria-label="Kursywa"]').should('be.visible');
+                    cy.get('button[aria-label="Podkreślenie"]').should('be.visible');
+                    cy.get('button[aria-label="Przekreślenie"]').should('be.visible');
+                    cy.get('button[aria-label="Kolor zaznaczenia"]').should('be.visible');
+                    cy.get('button[aria-label="Lista punktowana"]').should('be.visible');
+                    cy.get('button[aria-label="Lista numerowana"]').should('be.visible');
+                    cy.get('button[aria-label="Wyrównanie tekstu"]').should('be.visible');
 
-                cy.contains('button', 'Anuluj').should('be.visible');
-                cy.contains('button', 'Opublikuj wątek').should('be.visible').and('not.be.disabled');
-            });
+                    cy.contains('button', 'Anuluj').should('be.visible');
+                    cy.contains('button', 'Opublikuj wątek').should('be.visible').and('not.be.disabled');
+                });
         });
 
         it('Should close the new thread modal without creating a thread', () => {
@@ -213,7 +230,9 @@ describe('Forum Category Page Tests', () => {
             cy.get('#thread-title').type('     ');
             cy.contains('button', 'Opublikuj wątek').click();
 
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Tytuł wątku musi mieć od 5 do 150 znaków.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Tytuł wątku musi mieć od 5 do 150 znaków.');
         });
 
         it('Should require content for the first thread message', () => {
@@ -221,7 +240,9 @@ describe('Forum Category Page Tests', () => {
             cy.get('#thread-title').type('Testowy wątek');
             cy.contains('button', 'Opublikuj wątek').click();
 
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Treść pierwszej wiadomości nie może być pusta.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Treść pierwszej wiadomości nie może być pusta.');
         });
 
         it('Should successfully create a new thread', () => {
@@ -252,7 +273,9 @@ describe('Forum Category Page Tests', () => {
 
             cy.contains('button', '+ Nowy wątek').click();
             cy.get('#thread-title').type('  Nowy temat testowy  ');
-            cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]').click().type('Pierwsza wiadomość testowego wątku.');
+            cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]')
+                .click()
+                .type('Pierwsza wiadomość testowego wątku.');
             cy.contains('button', 'Opublikuj wątek').click();
 
             cy.wait('@createThread');
@@ -276,7 +299,9 @@ describe('Forum Category Page Tests', () => {
             cy.wait('@createThreadError');
 
             cy.get('[role="dialog"]').should('be.visible');
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się utworzyć testowego wątku.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nie udało się utworzyć testowego wątku.');
         });
 
         // ==========================================
@@ -284,17 +309,20 @@ describe('Forum Category Page Tests', () => {
         // ==========================================
 
         it('Should display an empty state when the category has no threads', () => {
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createEmptyThreadsPage()
                 }
-            }, {
-                statusCode: 200,
-                body: createEmptyThreadsPage()
-            }).as('getEmptyThreads');
+            ).as('getEmptyThreads');
 
             cy.reload();
             cy.wait('@getEmptyThreads');
@@ -338,17 +366,20 @@ describe('Forum Category Page Tests', () => {
                 number: 1
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getFirstThreadsPage');
+            ).as('getFirstThreadsPage');
 
             cy.reload();
             cy.wait('@getFirstThreadsPage');
@@ -357,17 +388,20 @@ describe('Forum Category Page Tests', () => {
             cy.contains('button', 'Poprzednia').should('be.disabled');
             cy.contains('button', 'Następna').should('not.be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '1',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '1',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: secondPage
                 }
-            }, {
-                statusCode: 200,
-                body: secondPage
-            }).as('getSecondThreadsPage');
+            ).as('getSecondThreadsPage');
 
             cy.contains('button', 'Następna').click();
             cy.wait('@getSecondThreadsPage');
@@ -378,17 +412,20 @@ describe('Forum Category Page Tests', () => {
             cy.contains('button', 'Poprzednia').should('not.be.disabled');
             cy.contains('button', 'Następna').should('be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getFirstThreadsPageAgain');
+            ).as('getFirstThreadsPageAgain');
 
             cy.contains('button', 'Poprzednia').click();
             cy.wait('@getFirstThreadsPageAgain');
@@ -418,17 +455,20 @@ describe('Forum Category Page Tests', () => {
                 }
             }).as('getCategoryRetry');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: threadsPage
                 }
-            }, {
-                statusCode: 200,
-                body: threadsPage
-            }).as('getThreadsRetry');
+            ).as('getThreadsRetry');
 
             cy.reload();
             cy.wait(['@getCategoryRetry', '@getThreadsRetry']);
@@ -476,17 +516,20 @@ describe('Forum Category Page Tests', () => {
                 body: createCategory()
             });
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/forum/categories/1/threads',
-                query: {
-                    page: '0',
-                    size: '15'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/forum/categories/1/threads',
+                    query: {
+                        page: '0',
+                        size: '15'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createEmptyThreadsPage()
                 }
-            }, {
-                statusCode: 200,
-                body: createEmptyThreadsPage()
-            });
+            );
 
             cy.visit('/forum/1');
             cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);

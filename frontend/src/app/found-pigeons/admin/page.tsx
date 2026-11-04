@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -12,7 +12,15 @@ import EmptyState from '@/app/components/EmptyState';
 import { useAuth } from '@/app/components/AuthProvider';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { formatGlobalDate } from '@/app/utils/formatters';
-import { ALLOWED_STATUS_TRANSITIONS, FoundPigeonDto, FoundPigeonStatus, STATUS_BADGE_CLASSES, formatReportLanguage, formatReportStatus, formatStatusAction } from '@/app/types/foundPigeon';
+import {
+    ALLOWED_STATUS_TRANSITIONS,
+    FoundPigeonDto,
+    FoundPigeonStatus,
+    STATUS_BADGE_CLASSES,
+    formatReportLanguage,
+    formatReportStatus,
+    formatStatusAction
+} from '@/app/types/foundPigeon';
 
 const PAGE_SIZE = 10;
 
@@ -26,7 +34,9 @@ const STATUS_FILTERS: { value: FoundPigeonStatus | null; label: string }[] = [
 
 function StatusBadge({ status }: { status: FoundPigeonStatus }) {
     return (
-        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${STATUS_BADGE_CLASSES[status]}`}>
+        <span
+            className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${STATUS_BADGE_CLASSES[status]}`}
+        >
             {formatReportStatus(status)}
         </span>
     );
@@ -63,7 +73,7 @@ export default function FoundPigeonsAdminPage() {
         onConfirm: () => {}
     });
 
-    const closeModal = () => setModalConfig(previous => ({ ...previous, isOpen: false }));
+    const closeModal = () => setModalConfig((previous) => ({ ...previous, isOpen: false }));
 
     const showAlert = (title: string, message: string) =>
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeModal });
@@ -79,7 +89,13 @@ export default function FoundPigeonsAdminPage() {
             setLoadError('');
 
             try {
-                const result = await foundPigeonService.getReports(status, ringNumber, targetPage, PAGE_SIZE, controller.signal);
+                const result = await foundPigeonService.getReports(
+                    status,
+                    ringNumber,
+                    targetPage,
+                    PAGE_SIZE,
+                    controller.signal
+                );
 
                 if (controller.signal.aborted) {
                     return;
@@ -104,7 +120,8 @@ export default function FoundPigeonsAdminPage() {
                     }
                 }
             }
-        }, []
+        },
+        []
     );
 
     useEffect(() => {
@@ -146,7 +163,7 @@ export default function FoundPigeonsAdminPage() {
 
     const applyUpdate = (updated: FoundPigeonDto) => {
         setSelected(updated);
-        setReports(previous => previous.map(item => (item.id === updated.id ? updated : item)));
+        setReports((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
     };
 
     const handleStatusChange = async (report: FoundPigeonDto, status: FoundPigeonStatus) => {
@@ -195,8 +212,9 @@ export default function FoundPigeonsAdminPage() {
         setModalConfig({
             isOpen: true,
             title: 'Usuń zgłoszenie',
-            message: `Czy na pewno chcesz trwale usunąć zgłoszenie obrączki ${report.ringNumber} `
-                + 'razem z danymi kontaktowymi znalazcy? Tej operacji nie można cofnąć.',
+            message:
+                `Czy na pewno chcesz trwale usunąć zgłoszenie obrączki ${report.ringNumber} ` +
+                'razem z danymi kontaktowymi znalazcy? Tej operacji nie można cofnąć.',
             isAlert: false,
             onConfirm: async () => {
                 closeModal();
@@ -226,18 +244,23 @@ export default function FoundPigeonsAdminPage() {
                         href="/found-pigeons"
                         className="inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline mb-4"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"/>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-4 h-4"
+                            viewBox="0 -960 960 960"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z" />
                         </svg>
-
                         Formularz zgłoszeń
                     </Link>
 
                     <div className="border-b border-gray-200 pb-5 mb-6">
                         <h1 className="text-3xl font-bold text-gray-900">Zgłoszenia znalezionych gołębi</h1>
                         <p className="mt-2 text-sm text-gray-600">
-                            Dane kontaktowe znalazców są widoczne wyłącznie na tej stronie. Usuń zgłoszenie,
-                            gdy przestanie być potrzebne.
+                            Dane kontaktowe znalazców są widoczne wyłącznie na tej stronie. Usuń zgłoszenie, gdy
+                            przestanie być potrzebne.
                         </p>
                     </div>
 
@@ -246,7 +269,7 @@ export default function FoundPigeonsAdminPage() {
                             <div className="grow">
                                 <span className="block text-sm font-medium text-gray-700 mb-2">Status</span>
                                 <div className="flex flex-wrap gap-2">
-                                    {STATUS_FILTERS.map(filter => (
+                                    {STATUS_FILTERS.map((filter) => (
                                         <button
                                             type="button"
                                             key={filter.label}
@@ -267,20 +290,23 @@ export default function FoundPigeonsAdminPage() {
 
                             <form
                                 className="flex items-end gap-2 lg:w-96"
-                                onSubmit={event => {
+                                onSubmit={(event) => {
                                     event.preventDefault();
                                     applyFilters(statusFilter, searchTerm);
                                 }}
                             >
                                 <div className="grow">
-                                    <label htmlFor="ring-search" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label
+                                        htmlFor="ring-search"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
                                         Numer obrączki
                                     </label>
                                     <input
                                         id="ring-search"
                                         type="search"
                                         value={searchTerm}
-                                        onChange={event => setSearchTerm(event.target.value)}
+                                        onChange={(event) => setSearchTerm(event.target.value)}
                                         className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     />
                                 </div>
@@ -297,7 +323,10 @@ export default function FoundPigeonsAdminPage() {
                     {isLoading ? (
                         <LoadingState />
                     ) : loadError ? (
-                        <ErrorState message={loadError} onRetry={() => void fetchReports(page, statusFilter, appliedSearch)} />
+                        <ErrorState
+                            message={loadError}
+                            onRetry={() => void fetchReports(page, statusFilter, appliedSearch)}
+                        />
                     ) : reports.length === 0 ? (
                         <EmptyState>Brak zgłoszeń spełniających wybrane kryteria.</EmptyState>
                     ) : (
@@ -307,18 +336,40 @@ export default function FoundPigeonsAdminPage() {
                                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead className="bg-blue-100">
                                             <tr>
-                                                <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Obrączka</th>
-                                                <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
-                                                <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Miejsce</th>
-                                                <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-700">Zgłoszono</th>
+                                                <th
+                                                    scope="col"
+                                                    className="px-4 py-3 text-left font-semibold text-gray-700"
+                                                >
+                                                    Obrączka
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    className="px-4 py-3 text-left font-semibold text-gray-700"
+                                                >
+                                                    Status
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    className="px-4 py-3 text-left font-semibold text-gray-700"
+                                                >
+                                                    Miejsce
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    className="px-4 py-3 text-left font-semibold text-gray-700"
+                                                >
+                                                    Zgłoszono
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            {reports.map(report => (
+                                            {reports.map((report) => (
                                                 <tr
                                                     key={report.id}
                                                     className={`transition duration-150 ${
-                                                        selected?.id === report.id ? 'bg-blue-50' : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
+                                                        selected?.id === report.id
+                                                            ? 'bg-blue-50'
+                                                            : 'bg-white even:bg-slate-50 hover:bg-blue-50/40'
                                                     }`}
                                                 >
                                                     <td className="px-4 py-3 [overflow-wrap:anywhere]">
@@ -334,7 +385,9 @@ export default function FoundPigeonsAdminPage() {
                                                         <StatusBadge status={report.status} />
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-700 [overflow-wrap:anywhere]">
-                                                        {[report.foundLocation, report.foundCountry].filter(Boolean).join(', ') || '—'}
+                                                        {[report.foundLocation, report.foundCountry]
+                                                            .filter(Boolean)
+                                                            .join(', ') || '—'}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                                                         {formatGlobalDate(report.createdAt)}
@@ -357,7 +410,9 @@ export default function FoundPigeonsAdminPage() {
                                             >
                                                 Poprzednia
                                             </button>
-                                            <span className="text-sm text-gray-600">Strona {page + 1} z {totalPages}</span>
+                                            <span className="text-sm text-gray-600">
+                                                Strona {page + 1} z {totalPages}
+                                            </span>
                                             <button
                                                 type="button"
                                                 onClick={() => changePage(page + 1)}
@@ -381,7 +436,8 @@ export default function FoundPigeonsAdminPage() {
                                                 </h2>
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     Zgłoszono {formatGlobalDate(selected.createdAt)}
-                                                    {selected.updatedAt && ` · zmieniono ${formatGlobalDate(selected.updatedAt)}`}
+                                                    {selected.updatedAt &&
+                                                        ` · zmieniono ${formatGlobalDate(selected.updatedAt)}`}
                                                 </p>
                                             </div>
                                             <StatusBadge status={selected.status} />
@@ -397,30 +453,48 @@ export default function FoundPigeonsAdminPage() {
                                             <div className="flex justify-between gap-4 py-2 border-b border-gray-100">
                                                 <dt className="text-gray-600">Telefon</dt>
                                                 <dd className="font-semibold text-gray-900 [overflow-wrap:anywhere] text-right">
-                                                    {selected.contactPhone
-                                                        ? <a href={`tel:${selected.contactPhone.replace(/\s/g, '')}`} className="hover:text-blue-700">{selected.contactPhone}</a>
-                                                        : '—'}
+                                                    {selected.contactPhone ? (
+                                                        <a
+                                                            href={`tel:${selected.contactPhone.replace(/\s/g, '')}`}
+                                                            className="hover:text-blue-700"
+                                                        >
+                                                            {selected.contactPhone}
+                                                        </a>
+                                                    ) : (
+                                                        '—'
+                                                    )}
                                                 </dd>
                                             </div>
                                             <div className="flex justify-between gap-4 py-2 border-b border-gray-100">
                                                 <dt className="text-gray-600">E-mail</dt>
                                                 <dd className="font-semibold text-gray-900 [overflow-wrap:anywhere] text-right">
-                                                    {selected.contactEmail
-                                                        ? <a href={`mailto:${selected.contactEmail}`} className="hover:text-blue-700">{selected.contactEmail}</a>
-                                                        : '—'}
+                                                    {selected.contactEmail ? (
+                                                        <a
+                                                            href={`mailto:${selected.contactEmail}`}
+                                                            className="hover:text-blue-700"
+                                                        >
+                                                            {selected.contactEmail}
+                                                        </a>
+                                                    ) : (
+                                                        '—'
+                                                    )}
                                                 </dd>
                                             </div>
                                             <div className="flex justify-between gap-4 py-2 border-b border-gray-100">
                                                 <dt className="text-gray-600">Miejsce</dt>
                                                 <dd className="font-semibold text-gray-900 [overflow-wrap:anywhere] text-right">
-                                                    {[selected.foundLocation, selected.foundCountry].filter(Boolean).join(', ') || '—'}
+                                                    {[selected.foundLocation, selected.foundCountry]
+                                                        .filter(Boolean)
+                                                        .join(', ') || '—'}
                                                 </dd>
                                             </div>
                                         </dl>
 
                                         {selected.description && (
                                             <div className="mt-4">
-                                                <h3 className="text-sm font-semibold text-gray-700 mb-1">Opis od znalazcy</h3>
+                                                <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                                                    Opis od znalazcy
+                                                </h3>
                                                 <p className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-3 whitespace-pre-wrap [overflow-wrap:anywhere]">
                                                     {selected.description}
                                                 </p>
@@ -429,17 +503,21 @@ export default function FoundPigeonsAdminPage() {
 
                                         {/* Dozwolone przejścia statusów; pusta lista oznacza sprawę zamkniętą. */}
                                         <div className="mt-5">
-                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">Obsługa zgłoszenia</h3>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                                                Obsługa zgłoszenia
+                                            </h3>
                                             {ALLOWED_STATUS_TRANSITIONS[selected.status].length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
-                                                    {ALLOWED_STATUS_TRANSITIONS[selected.status].map(status => (
+                                                    {ALLOWED_STATUS_TRANSITIONS[selected.status].map((status) => (
                                                         <button
                                                             type="button"
                                                             key={status}
                                                             disabled={isMutating}
                                                             onClick={() => void handleStatusChange(selected, status)}
                                                             className={`px-3 py-1.5 rounded-md text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                                                                status === 'REJECTED' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'
+                                                                status === 'REJECTED'
+                                                                    ? 'bg-gray-600 hover:bg-gray-700'
+                                                                    : 'bg-blue-600 hover:bg-blue-700'
                                                             }`}
                                                         >
                                                             {formatStatusAction(status)}
@@ -454,7 +532,10 @@ export default function FoundPigeonsAdminPage() {
                                         </div>
 
                                         <div className="mt-5">
-                                            <label htmlFor="admin-note" className="block text-sm font-semibold text-gray-700 mb-1">
+                                            <label
+                                                htmlFor="admin-note"
+                                                className="block text-sm font-semibold text-gray-700 mb-1"
+                                            >
                                                 Notatka administratora
                                             </label>
                                             <textarea
@@ -462,7 +543,7 @@ export default function FoundPigeonsAdminPage() {
                                                 rows={4}
                                                 maxLength={2000}
                                                 value={noteDraft}
-                                                onChange={event => setNoteDraft(event.target.value)}
+                                                onChange={(event) => setNoteDraft(event.target.value)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"
                                             />
                                             <div className="flex justify-end mt-2">
@@ -478,7 +559,10 @@ export default function FoundPigeonsAdminPage() {
                                         </div>
 
                                         {detailsError && (
-                                            <p role="alert" className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                                            <p
+                                                role="alert"
+                                                className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2"
+                                            >
                                                 {detailsError}
                                             </p>
                                         )}
@@ -495,7 +579,9 @@ export default function FoundPigeonsAdminPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <EmptyState>Wybierz zgłoszenie z listy, aby zobaczyć dane kontaktowe znalazcy.</EmptyState>
+                                    <EmptyState>
+                                        Wybierz zgłoszenie z listy, aby zobaczyć dane kontaktowe znalazcy.
+                                    </EmptyState>
                                 )}
                             </div>
                         </div>

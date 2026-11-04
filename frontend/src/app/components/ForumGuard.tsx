@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import AuthGuard from '@/app/components/AuthGuard';
 

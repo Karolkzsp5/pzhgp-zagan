@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, use, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -15,7 +15,18 @@ import ErrorState from '@/app/components/ErrorState';
 import { formatGlobalDate, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
-import { fetchThreadById, fetchPostsByThread, createPost, deleteThread, toggleThreadStatus, deletePost, updatePost, updateThreadTitle, ForumThreadDto, ForumPostDto} from '@/app/services/forumService';
+import {
+    fetchThreadById,
+    fetchPostsByThread,
+    createPost,
+    deleteThread,
+    toggleThreadStatus,
+    deletePost,
+    updatePost,
+    updateThreadTitle,
+    ForumThreadDto,
+    ForumPostDto
+} from '@/app/services/forumService';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const { isLoggedIn } = useAuth();
@@ -59,7 +70,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         onConfirm: () => {}
     });
 
-    const closeConfirmModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    const closeConfirmModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
 
     const showAlert = (title: string, message: string) => {
         setModalConfig({
@@ -86,7 +97,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setError('');
 
         try {
-            const [threadData, postsData] = await Promise.all([fetchThreadById(threadId, countView), fetchPostsByThread(threadId, currentPage)]);
+            const [threadData, postsData] = await Promise.all([
+                fetchThreadById(threadId, countView),
+                fetchPostsByThread(threadId, currentPage)
+            ]);
 
             if (!isLatestRequest(requestId)) {
                 return;
@@ -96,7 +110,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             setTotalPages(postsData.totalPages);
 
             if (postsData.content.length === 0 && currentPage > 0) {
-                setCurrentPage(prev => prev - 1);
+                setCurrentPage((prev) => prev - 1);
                 return;
             }
 
@@ -109,8 +123,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 return;
             }
 
-            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' :
-                error instanceof Error ? error.message : 'Nie udało się pobrać dyskusji.');
+            setError(
+                error instanceof TypeError
+                    ? 'Nie udało się połączyć z serwerem.'
+                    : error instanceof Error
+                      ? error.message
+                      : 'Nie udało się pobrać dyskusji.'
+            );
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -174,7 +193,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setModalConfig({
             isOpen: true,
             title: 'Usuń wątek',
-            message: 'Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.',
+            message:
+                'Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.',
             isAlert: false,
             onConfirm: async () => {
                 closeConfirmModal();
@@ -193,7 +213,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         try {
             await toggleThreadStatus(threadId, action);
 
-            setThread(prev => {
+            setThread((prev) => {
                 if (!prev) return prev;
 
                 return {
@@ -219,10 +239,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
         try {
             await updateThreadTitle(threadId, cleanTitle);
-            setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
+            setThread((prev) => (prev ? { ...prev, title: cleanTitle } : prev));
             setIsEditingTitle(false);
         } catch (error) {
-            showAlert('Błąd edycji', error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania tytułu.');
+            showAlert(
+                'Błąd edycji',
+                error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania tytułu.'
+            );
         } finally {
             setIsTitleSubmitting(false);
         }
@@ -267,7 +290,12 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     await deletePost(postId);
                     await loadThreadData();
                 } catch (error) {
-                    showAlert('Nie można usunąć', error instanceof Error ? error.message : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
+                    showAlert(
+                        'Nie można usunąć',
+                        error instanceof Error
+                            ? error.message
+                            : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.'
+                    );
                 }
             }
         });
@@ -303,9 +331,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                 Wróć do kategorii
                             </Link>
                         ) : (
-                            <span className="text-gray-400">
-                                Kategoria
-                            </span>
+                            <span className="text-gray-400">Kategoria</span>
                         )}
 
                         <span className="mx-2">/</span>
@@ -353,14 +379,26 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                     ) : (
                                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                                             {thread.isPinned && (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
-                                                    <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-6 h-6 text-blue-500 shrink-0"
+                                                    fill="currentColor"
+                                                    viewBox="0 -960 960 960"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z" />
                                                 </svg>
                                             )}
 
                                             {thread.isLocked && (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-500 shrink-0" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
-                                                    <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-6 h-6 text-amber-500 shrink-0"
+                                                    fill="currentColor"
+                                                    viewBox="0 -960 960 960"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
                                                 </svg>
                                             )}
 
@@ -379,8 +417,15 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                     aria-label="Edytuj tytuł wątku"
                                                     title="Edytuj tytuł wątku"
                                                 >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor" aria-hidden="true">
-                                                        <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        height="24px"
+                                                        viewBox="0 -960 960 960"
+                                                        width="24px"
+                                                        fill="currentColor"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
                                                     </svg>
                                                 </button>
                                             )}
@@ -389,8 +434,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
                                     <div className="mt-2 text-sm text-gray-500">
                                         Rozpoczęte przez{' '}
-                                        <span className="font-semibold text-gray-700">{thread.authorName}</span>
-                                        , {formatGlobalDate(thread.createdAt)}
+                                        <span className="font-semibold text-gray-700">{thread.authorName}</span>,{' '}
+                                        {formatGlobalDate(thread.createdAt)}
                                     </div>
                                 </div>
 
@@ -404,15 +449,22 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                             aria-haspopup="menu"
                                         >
                                             Zarządzaj
-
-                                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 transition-transform duration-200 ${isOptionsOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className={`w-6 h-6 transition-transform duration-200 ${isOptionsOpen ? 'rotate-180' : ''}`}
+                                                viewBox="0 -960 960 960"
+                                                fill="currentColor"
+                                                aria-hidden="true"
+                                            >
                                                 <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
                                             </svg>
                                         </button>
 
                                         {isOptionsOpen && (
-                                            <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-max min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden"
-                                                 role="menu">
+                                            <div
+                                                className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-max min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden"
+                                                role="menu"
+                                            >
                                                 {thread.canModerate && (
                                                     <>
                                                         <button
@@ -479,7 +531,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                     <span>Napisano: {formatGlobalDate(post.createdAt)}</span>
 
                                                     {post.editedAt && (
-                                                        <span className="italic" title={formatGlobalDate(post.editedAt)}>
+                                                        <span
+                                                            className="italic"
+                                                            title={formatGlobalDate(post.editedAt)}
+                                                        >
                                                             (Edytowano)
                                                         </span>
                                                     )}
@@ -494,7 +549,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                         />
 
                                                         {editError && (
-                                                            <div className="mt-3 bg-red-50 text-red-600 p-2 rounded text-sm border border-red-100" role="alert">
+                                                            <div
+                                                                className="mt-3 bg-red-50 text-red-600 p-2 rounded text-sm border border-red-100"
+                                                                role="alert"
+                                                            >
                                                                 {editError}
                                                             </div>
                                                         )}
@@ -514,7 +572,9 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                                 onClick={() => void handleEditSubmit(post.id)}
                                                                 disabled={isEditSubmitting}
                                                                 className={`px-4 py-1.5 rounded text-sm font-medium text-white transition shadow-sm ${
-                                                                    isEditSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                                                    isEditSubmitting
+                                                                        ? 'bg-blue-400 cursor-not-allowed'
+                                                                        : 'bg-blue-600 hover:bg-blue-700'
                                                                 }`}
                                                             >
                                                                 {isEditSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
@@ -523,8 +583,11 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div className="prose prose-sm sm:prose-base max-w-none text-gray-800 grow prose-p:my-0 wrap-anywhere"
-                                                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.body) }}
+                                                        <div
+                                                            className="prose prose-sm sm:prose-base max-w-none text-gray-800 grow prose-p:my-0 wrap-anywhere"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: DOMPurify.sanitize(post.body)
+                                                            }}
                                                         />
 
                                                         {(post.canEdit || post.canDelete) && (
@@ -562,18 +625,20 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                 <div className="flex justify-center items-center space-x-4 mt-6">
                                     <button
                                         type="button"
-                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                        onClick={() => setCurrentPage((prev) => prev - 1)}
                                         disabled={isLoading || currentPage === 0}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                     >
                                         Poprzednia
                                     </button>
 
-                                    <span className="text-sm text-gray-600 font-medium">Strona {currentPage + 1} z {totalPages}</span>
+                                    <span className="text-sm text-gray-600 font-medium">
+                                        Strona {currentPage + 1} z {totalPages}
+                                    </span>
 
                                     <button
                                         type="button"
-                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                        onClick={() => setCurrentPage((prev) => prev + 1)}
                                         disabled={isLoading || currentPage === totalPages - 1}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                     >
@@ -585,23 +650,29 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                             <div className="mt-8 pt-8 border-t border-gray-200">
                                 {thread.isLocked ? (
                                     <div className="bg-amber-50 p-6 rounded-lg text-center border border-amber-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-amber-500 mx-auto mb-2" fill="currentColor" viewBox="0 -960 960 960" aria-hidden="true">
-                                            <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="w-8 h-8 text-amber-500 mx-auto mb-2"
+                                            fill="currentColor"
+                                            viewBox="0 -960 960 960"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
                                         </svg>
 
-                                        <h3 className="text-lg font-bold text-amber-800">
-                                            Wątek zablokowany
-                                        </h3>
+                                        <h3 className="text-lg font-bold text-amber-800">Wątek zablokowany</h3>
 
                                         <p className="text-sm text-amber-700 mt-1">
-                                            Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.
+                                            Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych
+                                            odpowiedzi.
                                         </p>
                                     </div>
                                 ) : (
-                                    <form onSubmit={handleReplySubmit} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-4">
-                                            Dodaj odpowiedź
-                                        </h3>
+                                    <form
+                                        onSubmit={handleReplySubmit}
+                                        className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
+                                    >
+                                        <h3 className="text-lg font-bold text-gray-900 mb-4">Dodaj odpowiedź</h3>
 
                                         <TextEditor
                                             content={replyContent}
@@ -610,7 +681,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                         />
 
                                         {replyError && (
-                                            <div className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100" role="alert">
+                                            <div
+                                                className="mt-3 bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
+                                                role="alert"
+                                            >
                                                 {replyError}
                                             </div>
                                         )}

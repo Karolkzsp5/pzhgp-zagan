@@ -172,41 +172,55 @@ describe('Board Page Tests', () => {
         cy.contains('h2', 'Zarząd Sekcji: Wymiarki').should('be.visible');
         cy.contains('h2', 'Zarząd Sekcji: Chotków').should('be.visible');
 
-        getMemberCard('Jan Kowalski').should('be.visible').within(() => {
-            cy.contains('Prezes').should('be.visible');
-            cy.contains('111 222 333').should('be.visible');
-            cy.get('a[href="tel:+48111222333"]').should('be.visible');
-            cy.get('button[aria-label="Edytuj Jan Kowalski"]').should('be.visible');
-            cy.get('button[aria-label="Usuń Jan Kowalski"]').should('be.visible');
-        });
+        getMemberCard('Jan Kowalski')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Prezes').should('be.visible');
+                cy.contains('111 222 333').should('be.visible');
+                cy.get('a[href="tel:+48111222333"]').should('be.visible');
+                cy.get('button[aria-label="Edytuj Jan Kowalski"]').should('be.visible');
+                cy.get('button[aria-label="Usuń Jan Kowalski"]').should('be.visible');
+            });
 
-        getMemberCard('Adam Nowak').should('be.visible').within(() => {
-            cy.contains('V-ce Prezes ds. lotowych').should('be.visible');
-            cy.get('a[href^="tel:"]').should('not.exist');
-        });
+        getMemberCard('Adam Nowak')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('V-ce Prezes ds. lotowych').should('be.visible');
+                cy.get('a[href^="tel:"]').should('not.exist');
+            });
 
-        getMemberCard('Zbigniew Wiśniewski').should('be.visible').within(() => {
-            cy.contains('Członek Zarządu').should('be.visible');
-        });
+        getMemberCard('Zbigniew Wiśniewski')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Członek Zarządu').should('be.visible');
+            });
 
-        getMemberCard('Anna Zielińska').should('be.visible').within(() => {
-            cy.contains('Prezes').should('be.visible');
-            cy.contains('444 555 666').should('be.visible');
-        });
+        getMemberCard('Anna Zielińska')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Prezes').should('be.visible');
+                cy.contains('444 555 666').should('be.visible');
+            });
 
-        getMemberCard('Barbara Kowalska').should('be.visible').within(() => {
-            cy.contains('Skarbnik').should('be.visible');
-            cy.contains('555 666 777').should('be.visible');
-        });
+        getMemberCard('Barbara Kowalska')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Skarbnik').should('be.visible');
+                cy.contains('555 666 777').should('be.visible');
+            });
 
-        getMemberCard('Celina Adamczyk').should('be.visible').within(() => {
-            cy.contains('Sekretarz').should('be.visible');
-        });
+        getMemberCard('Celina Adamczyk')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Sekretarz').should('be.visible');
+            });
 
-        getMemberCard('Piotr Testowy').should('be.visible').within(() => {
-            cy.contains('Prezes').should('be.visible');
-            cy.contains('222 333 444').should('be.visible');
-        });
+        getMemberCard('Piotr Testowy')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('Prezes').should('be.visible');
+                cy.contains('222 333 444').should('be.visible');
+            });
 
         getBoardSection('Zarząd Sekcji: Chotków').within(() => {
             cy.contains('Brak dodanych członków zarządu sekcji.').should('be.visible');
@@ -413,30 +427,32 @@ describe('Board Page Tests', () => {
         openAddMemberModal();
         cy.wait('@getRegisteredBreeders');
 
-        cy.get('[role="dialog"]').should('be.visible').within(() => {
-            cy.contains('h2', 'Dodaj członka zarządu').should('be.visible');
+        cy.get('[role="dialog"]')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('h2', 'Dodaj członka zarządu').should('be.visible');
 
-            cy.contains('label', 'Zarząd (Oddział czy Sekcja)').should('be.visible');
-            cy.get('#board-type').should('be.visible').and('have.value', '0');
+                cy.contains('label', 'Zarząd (Oddział czy Sekcja)').should('be.visible');
+                cy.get('#board-type').should('be.visible').and('have.value', '0');
 
-            cy.contains('label', 'Stanowisko').should('be.visible');
-            cy.get('#board-role').should('be.visible').and('have.value', 'CZLONEK_ZARZADU');
+                cy.contains('label', 'Stanowisko').should('be.visible');
+                cy.get('#board-role').should('be.visible').and('have.value', 'CZLONEK_ZARZADU');
 
-            cy.contains('Dane osoby pełniącej funkcję').should('be.visible');
-            cy.contains('Konto w systemie').should('be.visible');
-            cy.contains('Osoba bez konta').should('be.visible');
+                cy.contains('Dane osoby pełniącej funkcję').should('be.visible');
+                cy.contains('Konto w systemie').should('be.visible');
+                cy.contains('Osoba bez konta').should('be.visible');
 
-            cy.get('#board-breeder').should('be.checked');
-            cy.contains('option', '-- Wybierz hodowcę --').should('exist');
+                cy.get('#board-breeder').should('be.checked');
+                cy.contains('option', '-- Wybierz hodowcę --').should('exist');
 
-            cy.contains('label', 'Publiczny nr telefonu (opcjonalny)').should('be.visible');
-            cy.get('#contact-phone').should('be.visible').and('have.attr', 'placeholder', 'np. 123 456 789');
+                cy.contains('label', 'Publiczny nr telefonu (opcjonalny)').should('be.visible');
+                cy.get('#contact-phone').should('be.visible').and('have.attr', 'placeholder', 'np. 123 456 789');
 
-            cy.contains('button', 'Anuluj').should('be.visible');
-            cy.contains('button', 'Zapisz').should('be.visible').and('not.be.disabled');
+                cy.contains('button', 'Anuluj').should('be.visible');
+                cy.contains('button', 'Zapisz').should('be.visible').and('not.be.disabled');
 
-            cy.contains('button', 'Anuluj').click();
-        });
+                cy.contains('button', 'Anuluj').click();
+            });
 
         cy.get('[role="dialog"]').should('not.exist');
     });
@@ -540,7 +556,9 @@ describe('Board Page Tests', () => {
         cy.get('#contact-phone').clear().type('123');
         cy.contains('button', 'Zapisz').click();
 
-        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Numer telefonu musi składać się dokładnie z 9 cyfr.');
+        cy.get('[role="alert"]')
+            .should('be.visible')
+            .and('contain.text', 'Numer telefonu musi składać się dokładnie z 9 cyfr.');
 
         cy.get('[role="dialog"]').should('be.visible');
     });
@@ -674,7 +692,9 @@ describe('Board Page Tests', () => {
 
         cy.wait('@createBoardMemberError');
 
-        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.');
+        cy.get('[role="alert"]')
+            .should('be.visible')
+            .and('contain.text', 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.');
 
         cy.get('[role="dialog"]').should('be.visible');
     });
@@ -694,13 +714,14 @@ describe('Board Page Tests', () => {
                 contactPhone: '999888777'
             });
 
-            boardMembers = boardMembers.map((member) => member.id === 1
-                ? {
-                    ...member,
-                    role: 'WICEPREZES_DS_FINANSOWYCH',
-                    publicPhoneNumber: '999888777'
-                }
-                : member
+            boardMembers = boardMembers.map((member) =>
+                member.id === 1
+                    ? {
+                          ...member,
+                          role: 'WICEPREZES_DS_FINANSOWYCH',
+                          publicPhoneNumber: '999888777'
+                      }
+                    : member
             );
 
             req.reply({
@@ -762,11 +783,13 @@ describe('Board Page Tests', () => {
     it('Should cancel board member deletion without removing the member', () => {
         cy.get('button[aria-label="Usuń Adam Nowak"]').click();
 
-        cy.get('[role="dialog"]').should('be.visible').within(() => {
-            cy.contains('h2', 'Usuń członka zarządu').should('be.visible');
-            cy.contains('Czy na pewno chcesz usunąć tę osobę ze stanowiska w zarządzie?').should('be.visible');
-            cy.contains('button', 'Anuluj').click();
-        });
+        cy.get('[role="dialog"]')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('h2', 'Usuń członka zarządu').should('be.visible');
+                cy.contains('Czy na pewno chcesz usunąć tę osobę ze stanowiska w zarządzie?').should('be.visible');
+                cy.contains('button', 'Anuluj').click();
+            });
 
         cy.get('[role="dialog"]').should('not.exist');
         getMemberCard('Adam Nowak').should('be.visible');
@@ -820,11 +843,13 @@ describe('Board Page Tests', () => {
 
         cy.wait('@deleteBoardMemberError');
 
-        cy.get('[role="dialog"]').should('be.visible').within(() => {
-            cy.contains('h2', 'Błąd').should('be.visible');
-            cy.contains('Wystąpił błąd podczas usuwania. Spróbuj ponownie.').should('be.visible');
-            cy.contains('button', 'OK').click();
-        });
+        cy.get('[role="dialog"]')
+            .should('be.visible')
+            .within(() => {
+                cy.contains('h2', 'Błąd').should('be.visible');
+                cy.contains('Wystąpił błąd podczas usuwania. Spróbuj ponownie.').should('be.visible');
+                cy.contains('button', 'OK').click();
+            });
 
         cy.get('[role="dialog"]').should('not.exist');
         getMemberCard('Adam Nowak').should('be.visible');

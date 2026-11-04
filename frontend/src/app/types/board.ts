@@ -9,13 +9,13 @@ export enum BoardRole {
 }
 
 export const BoardRoleTranslations: Record<BoardRole, string> = {
-    [BoardRole.PREZES]: "Prezes",
-    [BoardRole.WICEPREZES_DS_LOTOWYCH]: "V-ce Prezes ds. lotowych",
-    [BoardRole.WICEPREZES_DS_FINANSOWYCH]: "V-ce Prezes ds. finansowych",
-    [BoardRole.WICEPREZES_DS_GOSPODARCZYCH]: "V-ce Prezes ds. gospodarczych",
-    [BoardRole.SEKRETARZ]: "Sekretarz",
-    [BoardRole.SKARBNIK]: "Skarbnik",
-    [BoardRole.CZLONEK_ZARZADU]: "Członek Zarządu"
+    [BoardRole.PREZES]: 'Prezes',
+    [BoardRole.WICEPREZES_DS_LOTOWYCH]: 'V-ce Prezes ds. lotowych',
+    [BoardRole.WICEPREZES_DS_FINANSOWYCH]: 'V-ce Prezes ds. finansowych',
+    [BoardRole.WICEPREZES_DS_GOSPODARCZYCH]: 'V-ce Prezes ds. gospodarczych',
+    [BoardRole.SEKRETARZ]: 'Sekretarz',
+    [BoardRole.SKARBNIK]: 'Skarbnik',
+    [BoardRole.CZLONEK_ZARZADU]: 'Członek Zarządu'
 };
 
 export const BRANCH_ROLE_ORDER: Record<BoardRole, number> = {

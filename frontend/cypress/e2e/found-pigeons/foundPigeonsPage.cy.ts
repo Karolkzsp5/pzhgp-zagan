@@ -33,7 +33,8 @@ describe('Found Pigeons Page Tests', () => {
         cy.contains('h2', 'Formularz zgłoszenia').should('be.visible');
 
         cy.contains('label', 'Numer obrączki').should('be.visible');
-        cy.get('#ring-number').should('be.visible')
+        cy.get('#ring-number')
+            .should('be.visible')
             .and('have.attr', 'type', 'text')
             .and('have.attr', 'maxlength', '15')
             .and('have.attr', 'placeholder', 'np. PL-0369-24-1234');
@@ -42,10 +43,16 @@ describe('Found Pigeons Page Tests', () => {
         cy.contains('Podaj przynajmniej jeden sposób kontaktu - telefon albo adres e-mail.').should('be.visible');
 
         cy.contains('label', 'Telefon').should('be.visible');
-        cy.get('#contact-phone').should('be.visible').and('have.attr', 'type', 'tel').and('have.attr', 'maxlength', '15');
+        cy.get('#contact-phone')
+            .should('be.visible')
+            .and('have.attr', 'type', 'tel')
+            .and('have.attr', 'maxlength', '15');
 
         cy.contains('label', 'Adres e-mail').should('be.visible');
-        cy.get('#contact-email').should('be.visible').and('have.attr', 'type', 'email').and('have.attr', 'maxlength', '320');
+        cy.get('#contact-email')
+            .should('be.visible')
+            .and('have.attr', 'type', 'email')
+            .and('have.attr', 'maxlength', '320');
 
         cy.contains('label', 'Kraj odnalezienia').should('be.visible');
         cy.get('#found-country').should('be.visible').and('have.attr', 'maxlength', '100');
@@ -215,7 +222,7 @@ describe('Found Pigeons Page Tests', () => {
 
             req.reply({
                 statusCode: 201,
-                body: {id: 10}
+                body: { id: 10 }
             });
         }).as('submitReport');
 
@@ -259,7 +266,7 @@ describe('Found Pigeons Page Tests', () => {
 
             req.reply({
                 statusCode: 201,
-                body: {id: 11}
+                body: { id: 11 }
             });
         }).as('submitEmailReport');
 
@@ -285,7 +292,7 @@ describe('Found Pigeons Page Tests', () => {
 
             req.reply({
                 statusCode: 201,
-                body: {id: 12}
+                body: { id: 12 }
             });
         }).as('submitPhoneReport');
 
@@ -303,7 +310,7 @@ describe('Found Pigeons Page Tests', () => {
 
             req.reply({
                 statusCode: 201,
-                body: {id: 13}
+                body: { id: 13 }
             });
         }).as('submitGermanReport');
 
@@ -335,7 +342,8 @@ describe('Found Pigeons Page Tests', () => {
 
         cy.wait('@submitReportError');
 
-        cy.get('[role="alert"]').should('be.visible')
+        cy.get('[role="alert"]')
+            .should('be.visible')
             .and('contain.text', 'The report could not be sent. Please try again in a moment.');
 
         cy.contains('h2', 'Report form').should('be.visible');
@@ -354,7 +362,8 @@ describe('Found Pigeons Page Tests', () => {
 
         cy.wait('@submitReportRateLimit');
 
-        cy.get('[role="alert"]').should('be.visible')
+        cy.get('[role="alert"]')
+            .should('be.visible')
             .and('contain.text', 'Es wurden zu viele Meldungen gesendet. Bitte versuchen Sie es später erneut.');
     });
 });

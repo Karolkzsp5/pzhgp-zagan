@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import TextEditor from './TextEditor';
@@ -62,11 +62,16 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(announcementToEdit ? `${API_URL}/api/announcements/${announcementToEdit.id}` : `${API_URL}/api/announcements`, {
-                method: announcementToEdit ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: cleanTitle, content, isPinned })
-            });
+            const response = await fetchWithAuth(
+                announcementToEdit
+                    ? `${API_URL}/api/announcements/${announcementToEdit.id}`
+                    : `${API_URL}/api/announcements`,
+                {
+                    method: announcementToEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: cleanTitle, content, isPinned })
+                }
+            );
 
             if (!response.ok) {
                 setError(await readApiError(response, 'Wystąpił błąd podczas zapisywania ogłoszenia.'));
@@ -80,8 +85,8 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                 error instanceof TypeError
                     ? 'Nie udało się połączyć z serwerem.'
                     : error instanceof Error
-                        ? error.message
-                        : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
+                      ? error.message
+                      : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
             );
         } finally {
             setIsLoading(false);
@@ -89,11 +94,19 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
     };
 
     return (
-        <Modal isOpen={isOpen} title={announcementToEdit ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie'} onClose={onClose} closeDisabled={isLoading} maxWidthClass="max-w-4xl">
+        <Modal
+            isOpen={isOpen}
+            title={announcementToEdit ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie'}
+            onClose={onClose}
+            closeDisabled={isLoading}
+            maxWidthClass="max-w-4xl"
+        >
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="announcement-title" className="block text-sm font-bold text-gray-700 mb-1">Tytuł ogłoszenia</label>
+                        <label htmlFor="announcement-title" className="block text-sm font-bold text-gray-700 mb-1">
+                            Tytuł ogłoszenia
+                        </label>
                         <input
                             id="announcement-title"
                             type="text"
@@ -122,11 +135,16 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                             disabled={isLoading}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
                         />
-                        <label htmlFor="isPinned" className="ml-2 block text-sm font-medium text-gray-700">Przypnij ogłoszenie</label>
+                        <label htmlFor="isPinned" className="ml-2 block text-sm font-medium text-gray-700">
+                            Przypnij ogłoszenie
+                        </label>
                     </div>
 
                     {error && (
-                        <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">
+                        <div
+                            role="alert"
+                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
+                        >
                             {error}
                         </div>
                     )}
@@ -137,13 +155,15 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50">
+                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                    >
                         Anuluj
                     </button>
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className={`px-6 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        className={`px-6 py-2 rounded-md text-sm font-bold text-white shadow-sm transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    >
                         {isLoading ? 'Zapisywanie...' : announcementToEdit ? 'Zapisz zmiany' : 'Opublikuj'}
                     </button>
                 </div>

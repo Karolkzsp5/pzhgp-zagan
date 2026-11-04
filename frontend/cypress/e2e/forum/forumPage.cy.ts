@@ -70,19 +70,23 @@ describe('Forum Page Tests', () => {
             cy.contains('Wybierz kategorię, aby przeglądać tematy lub rozpocząć nową dyskusję.').should('be.visible');
             cy.contains('button', '+ Dodaj kategorię').should('be.visible');
 
-            getCategoryCard('Loty i treningi').should('be.visible').within(() => {
-                cy.contains('a', 'Loty i treningi').should('have.attr', 'href', '/forum/1');
-                cy.contains('Dyskusje o lotach, treningach i przygotowaniu gołębi.').should('be.visible');
-                cy.get('button[aria-label="Edytuj kategorię Loty i treningi"]').should('be.visible');
-                cy.get('button[aria-label="Usuń kategorię Loty i treningi"]').should('be.visible');
-            });
+            getCategoryCard('Loty i treningi')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('a', 'Loty i treningi').should('have.attr', 'href', '/forum/1');
+                    cy.contains('Dyskusje o lotach, treningach i przygotowaniu gołębi.').should('be.visible');
+                    cy.get('button[aria-label="Edytuj kategorię Loty i treningi"]').should('be.visible');
+                    cy.get('button[aria-label="Usuń kategorię Loty i treningi"]').should('be.visible');
+                });
 
-            getCategoryCard('Zdrowie gołębi').should('be.visible').within(() => {
-                cy.contains('a', 'Zdrowie gołębi').should('have.attr', 'href', '/forum/2');
-                cy.contains('Profilaktyka, żywienie i zdrowie stada.').should('be.visible');
-                cy.get('button[aria-label="Edytuj kategorię Zdrowie gołębi"]').should('not.exist');
-                cy.get('button[aria-label="Usuń kategorię Zdrowie gołębi"]').should('not.exist');
-            });
+            getCategoryCard('Zdrowie gołębi')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('a', 'Zdrowie gołębi').should('have.attr', 'href', '/forum/2');
+                    cy.contains('Profilaktyka, żywienie i zdrowie stada.').should('be.visible');
+                    cy.get('button[aria-label="Edytuj kategorię Zdrowie gołębi"]').should('not.exist');
+                    cy.get('button[aria-label="Usuń kategorię Zdrowie gołębi"]').should('not.exist');
+                });
 
             cy.checkFooter();
         });
@@ -94,22 +98,34 @@ describe('Forum Page Tests', () => {
         it('Should correctly render the add category modal', () => {
             cy.contains('button', '+ Dodaj kategorię').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Dodaj nową kategorię').should('be.visible');
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Dodaj nową kategorię').should('be.visible');
 
-                cy.contains('label', 'Nazwa kategorii').should('be.visible');
-                cy.get('#category-name').should('be.visible').and('have.attr', 'minlength', '3').and('have.attr', 'maxlength', '100').and('have.attr', 'placeholder', 'np. Wystawy i Loty');
+                    cy.contains('label', 'Nazwa kategorii').should('be.visible');
+                    cy.get('#category-name')
+                        .should('be.visible')
+                        .and('have.attr', 'minlength', '3')
+                        .and('have.attr', 'maxlength', '100')
+                        .and('have.attr', 'placeholder', 'np. Wystawy i Loty');
 
-                cy.contains('label', 'Opis kategorii').should('be.visible');
-                cy.get('#category-description').should('be.visible').and('have.attr', 'placeholder', 'Krótki opis tego, o czym dyskutuje się w tym dziale...');
+                    cy.contains('label', 'Opis kategorii').should('be.visible');
+                    cy.get('#category-description')
+                        .should('be.visible')
+                        .and('have.attr', 'placeholder', 'Krótki opis tego, o czym dyskutuje się w tym dziale...');
 
-                cy.contains('label', 'Kolejność wyświetlania').should('be.visible');
-                cy.get('#category-sort-order').should('be.visible').and('have.attr', 'type', 'number').and('have.attr', 'min', '1').and('have.value', '1');
-                cy.contains('Mniejsza liczba oznacza wyższą pozycję kategorii na liście.').should('be.visible');
+                    cy.contains('label', 'Kolejność wyświetlania').should('be.visible');
+                    cy.get('#category-sort-order')
+                        .should('be.visible')
+                        .and('have.attr', 'type', 'number')
+                        .and('have.attr', 'min', '1')
+                        .and('have.value', '1');
+                    cy.contains('Mniejsza liczba oznacza wyższą pozycję kategorii na liście.').should('be.visible');
 
-                cy.contains('button', 'Anuluj').should('be.visible');
-                cy.contains('button', 'Dodaj kategorię').should('be.visible').and('not.be.disabled');
-            });
+                    cy.contains('button', 'Anuluj').should('be.visible');
+                    cy.contains('button', 'Dodaj kategorię').should('be.visible').and('not.be.disabled');
+                });
         });
 
         it('Should close the add category modal without creating a category', () => {
@@ -129,7 +145,9 @@ describe('Forum Page Tests', () => {
                 cy.contains('button', 'Dodaj kategorię').click();
             });
 
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nazwa kategorii musi mieć od 3 do 100 znaków.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nazwa kategorii musi mieć od 3 do 100 znaków.');
         });
 
         it('Should successfully create a category', () => {
@@ -186,7 +204,9 @@ describe('Forum Page Tests', () => {
             cy.wait('@createCategoryError');
 
             cy.get('[role="dialog"]').should('be.visible');
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się utworzyć testowej kategorii.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nie udało się utworzyć testowej kategorii.');
         });
 
         // ==========================================
@@ -196,14 +216,19 @@ describe('Forum Page Tests', () => {
         it('Should preload category data in the edit modal and allow cancellation', () => {
             cy.get('button[aria-label="Edytuj kategorię Loty i treningi"]').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Edytuj kategorię').should('be.visible');
-                cy.get('#category-name').should('have.value', 'Loty i treningi');
-                cy.get('#category-description').should('have.value', 'Dyskusje o lotach, treningach i przygotowaniu gołębi.');
-                cy.get('#category-sort-order').should('have.value', '1');
-                cy.contains('button', 'Zapisz zmiany').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Edytuj kategorię').should('be.visible');
+                    cy.get('#category-name').should('have.value', 'Loty i treningi');
+                    cy.get('#category-description').should(
+                        'have.value',
+                        'Dyskusje o lotach, treningach i przygotowaniu gołębi.'
+                    );
+                    cy.get('#category-sort-order').should('have.value', '1');
+                    cy.contains('button', 'Zapisz zmiany').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
         });
@@ -216,12 +241,16 @@ describe('Forum Page Tests', () => {
                     sortOrder: 2
                 });
 
-                categories = categories.map(category => category.id === 1 ? {
-                    ...category,
-                    name: 'Loty konkursowe',
-                    description: 'Zaktualizowany opis kategorii.',
-                    sortOrder: 2
-                } : category);
+                categories = categories.map((category) =>
+                    category.id === 1
+                        ? {
+                              ...category,
+                              name: 'Loty konkursowe',
+                              description: 'Zaktualizowany opis kategorii.',
+                              sortOrder: 2
+                          }
+                        : category
+                );
 
                 req.reply({ statusCode: 200 });
             }).as('updateCategory');
@@ -258,14 +287,19 @@ describe('Forum Page Tests', () => {
             cy.get('button[aria-label="Edytuj kategorię Loty i treningi"]').click();
             cy.get('[role="dialog"]').should('be.visible');
             cy.get('#category-name').should('have.value', 'Loty i treningi').clear().type('Loty konkursowe');
-            cy.get('#category-description').should('have.value', 'Dyskusje o lotach, treningach i przygotowaniu gołębi.').clear().type('Zaktualizowany opis kategorii.');
+            cy.get('#category-description')
+                .should('have.value', 'Dyskusje o lotach, treningach i przygotowaniu gołębi.')
+                .clear()
+                .type('Zaktualizowany opis kategorii.');
             cy.get('#category-sort-order').should('have.value', '1').clear().type('2');
             cy.get('[role="dialog"]').contains('button', 'Zapisz zmiany').should('not.be.disabled').click();
 
             cy.wait('@updateCategoryError');
 
             cy.get('[role="dialog"]').should('be.visible');
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Brak uprawnień do edycji tej kategorii.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Brak uprawnień do edycji tej kategorii.');
         });
 
         // ==========================================
@@ -275,12 +309,14 @@ describe('Forum Page Tests', () => {
         it('Should cancel category deletion without removing the category', () => {
             cy.get('button[aria-label="Usuń kategorię Loty i treningi"]').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Usuń kategorię').should('be.visible');
-                cy.contains('Czy na pewno chcesz usunąć tę kategorię?').should('be.visible');
-                cy.contains('Upewnij się, że nie zawiera ona żadnych wątków.').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Usuń kategorię').should('be.visible');
+                    cy.contains('Czy na pewno chcesz usunąć tę kategorię?').should('be.visible');
+                    cy.contains('Upewnij się, że nie zawiera ona żadnych wątków.').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('h2', 'Loty i treningi').should('be.visible');
@@ -288,7 +324,7 @@ describe('Forum Page Tests', () => {
 
         it('Should successfully delete a category', () => {
             cy.intercept('DELETE', '**/api/forum/categories/1', (req) => {
-                categories = categories.filter(category => category.id !== 1);
+                categories = categories.filter((category) => category.id !== 1);
                 req.reply({ statusCode: 204 });
             }).as('deleteCategory');
 
@@ -317,11 +353,13 @@ describe('Forum Page Tests', () => {
 
             cy.wait('@deleteCategoryError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd').should('be.visible');
-                cy.contains('Nie można usunąć kategorii, która zawiera wątki.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd').should('be.visible');
+                    cy.contains('Nie można usunąć kategorii, która zawiera wątki.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('h2', 'Loty i treningi').should('be.visible');
@@ -402,7 +440,7 @@ describe('Forum Page Tests', () => {
         });
 
         it('Should hide category creation controls from a breeder', () => {
-            const breederCategories = createCategories().map(category => ({
+            const breederCategories = createCategories().map((category) => ({
                 ...category,
                 canEdit: false,
                 canDelete: false

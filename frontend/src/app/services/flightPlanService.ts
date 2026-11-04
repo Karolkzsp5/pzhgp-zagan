@@ -1,5 +1,10 @@
 import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { FlightPlanDetailsDto, FlightPlanEntryRequest, FlightPlanSummaryDto, FlightResultUploadRequest } from '@/app/types/flightPlan';
+import {
+    FlightPlanDetailsDto,
+    FlightPlanEntryRequest,
+    FlightPlanSummaryDto,
+    FlightResultUploadRequest
+} from '@/app/types/flightPlan';
 
 const ensureOk = async (response: Response, fallback: string): Promise<void> => {
     if (!response.ok) {
@@ -76,7 +81,7 @@ export const flightPlanService = {
         const formData = new FormData();
 
         formData.append('file', file);
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
 
         const response = await fetchWithAuth(`${API_URL}/api/flight-results/entries/${entryId}`, {
             method: 'POST',

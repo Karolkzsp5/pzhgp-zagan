@@ -1,7 +1,15 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER, SECTION_ROLES } from '@/app/types/board';
+import {
+    BoardMemberDto,
+    BoardMemberRequest,
+    BoardRole,
+    BoardRoleTranslations,
+    BRANCH_ROLE_ORDER,
+    SECTION_ROLE_ORDER,
+    SECTION_ROLES
+} from '@/app/types/board';
 import { boardService } from '@/app/services/boardService';
 import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
@@ -44,18 +52,23 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const allowedRoles = managedSectionId === null
-        ? Object.entries(BoardRoleTranslations)
-            .filter(([key]) => key !== BoardRole.SKARBNIK)
-            .sort((a, b) => (BRANCH_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (BRANCH_ROLE_ORDER[b[0] as BoardRole] ?? 99))
-        : Object.entries(BoardRoleTranslations)
-            .filter(([key]) => SECTION_ROLES
-            .includes(key as BoardRole))
-            .sort((a, b) => (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99));
+    const allowedRoles =
+        managedSectionId === null
+            ? Object.entries(BoardRoleTranslations)
+                  .filter(([key]) => key !== BoardRole.SKARBNIK)
+                  .sort(
+                      (a, b) =>
+                          (BRANCH_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (BRANCH_ROLE_ORDER[b[0] as BoardRole] ?? 99)
+                  )
+            : Object.entries(BoardRoleTranslations)
+                  .filter(([key]) => SECTION_ROLES.includes(key as BoardRole))
+                  .sort(
+                      (a, b) =>
+                          (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99)
+                  );
 
-    const availableBreeders = managedSectionId !== null
-        ? breeders.filter(b => b.sectionId === managedSectionId)
-        : breeders;
+    const availableBreeders =
+        managedSectionId !== null ? breeders.filter((b) => b.sectionId === managedSectionId) : breeders;
 
     const handleBoardChange = (value: string) => {
         const newSectionId = Number(value) === 0 ? null : Number(value);
@@ -68,7 +81,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             }
 
             if (breederId) {
-                const selectedBreeder = breeders.find(b => b.id === breederId);
+                const selectedBreeder = breeders.find((b) => b.id === breederId);
 
                 if (selectedBreeder && selectedBreeder.sectionId !== newSectionId) {
                     setBreederId(null);
@@ -82,8 +95,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     useEffect(() => {
         if (!isOpen) return;
 
-        const controller =
-            new AbortController();
+        const controller = new AbortController();
 
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);
@@ -92,11 +104,12 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             setError(null);
 
             try {
-                const [sectionsRes, breedersRes] = await Promise.all([fetchWithAuth(`${API_URL}/api/sections`, {
-                    signal: controller.signal
-                }),
+                const [sectionsRes, breedersRes] = await Promise.all([
+                    fetchWithAuth(`${API_URL}/api/sections`, {
+                        signal: controller.signal
+                    }),
                     fetchWithAuth(`${API_URL}/api/admin/registered`, {
-                            signal: controller.signal
+                        signal: controller.signal
                     })
                 ]);
 
@@ -112,7 +125,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 }
 
                 setSections(sectionsData);
-                setBreeders(allBreeders.filter(breeder => breeder.status === 'ACTIVE'));
+                setBreeders(allBreeders.filter((breeder) => breeder.status === 'ACTIVE'));
             } catch (error) {
                 if (controller.signal.aborted) {
                     return;
@@ -228,8 +241,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                             >
                                 <option value={0}>Zarząd Oddziału</option>
-                                {sections.map(sec => (
-                                    <option key={sec.id} value={sec.id}>Zarząd Sekcji: {sec.name}</option>
+                                {sections.map((sec) => (
+                                    <option key={sec.id} value={sec.id}>
+                                        Zarząd Sekcji: {sec.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -246,7 +261,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                             >
                                 {allowedRoles.map(([key, label]) => (
-                                    <option key={key} value={key}>{label}</option>
+                                    <option key={key} value={key}>
+                                        {label}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -255,7 +272,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     <hr className="my-4 border-gray-200" />
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-3">Dane osoby pełniącej funkcję</label>
+                        <label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Dane osoby pełniącej funkcję
+                        </label>
                         <div className="flex gap-6 mb-4">
                             <label htmlFor="board-breeder" className="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -288,12 +307,18 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     onChange={(e) => setBreederId(Number(e.target.value))}
                                     className="w-full bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5"
                                 >
-                                    <option value="" disabled hidden>-- Wybierz hodowcę --</option>
+                                    <option value="" disabled hidden>
+                                        -- Wybierz hodowcę --
+                                    </option>
                                     {availableBreeders.length === 0 ? (
-                                        <option value="" disabled>Brak hodowców w tej sekcji</option>
+                                        <option value="" disabled>
+                                            Brak hodowców w tej sekcji
+                                        </option>
                                     ) : (
-                                        availableBreeders.map(b => (
-                                            <option key={b.id} value={b.id}>{b.name} {b.surname}</option>
+                                        availableBreeders.map((b) => (
+                                            <option key={b.id} value={b.id}>
+                                                {b.name} {b.surname}
+                                            </option>
                                         ))
                                     )}
                                 </select>
@@ -301,7 +326,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                         ) : (
                             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md border border-gray-200">
                                 <div>
-                                    <label htmlFor="custom-name" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="custom-name"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Imię
                                     </label>
                                     <input
@@ -315,7 +343,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="custom-surname" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="custom-surname"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Nazwisko
                                     </label>
                                     <input
@@ -353,7 +384,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     </div>
 
                     {error && (
-                        <div role="alert" className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700">
+                        <div
+                            role="alert"
+                            className="p-4 my-4 rounded transition-all duration-300 text-sm bg-red-100 text-red-700"
+                        >
                             {error}
                         </div>
                     )}

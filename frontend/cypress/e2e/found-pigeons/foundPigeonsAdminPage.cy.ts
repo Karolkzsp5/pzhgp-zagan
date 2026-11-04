@@ -140,15 +140,19 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('th', 'Miejsce').should('be.visible');
             cy.contains('th', 'Zgłoszono').should('be.visible');
 
-            getReportRow('PL-0369-26-1234').should('be.visible').within(() => {
-                cy.contains('Oczekujące').should('be.visible');
-                cy.contains('Cottbus, Niemcy').should('be.visible');
-            });
+            getReportRow('PL-0369-26-1234')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('Oczekujące').should('be.visible');
+                    cy.contains('Cottbus, Niemcy').should('be.visible');
+                });
 
-            getReportRow('PL-0369-26-5678').should('be.visible').within(() => {
-                cy.contains('W trakcie').should('be.visible');
-                cy.contains('Żagań, Polska').should('be.visible');
-            });
+            getReportRow('PL-0369-26-5678')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('W trakcie').should('be.visible');
+                    cy.contains('Żagań, Polska').should('be.visible');
+                });
 
             cy.contains('Zgłoszeń: 2').should('be.visible');
 
@@ -170,23 +174,31 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('h2', 'PL-0369-26-1234').should('be.visible');
             cy.contains('Oczekujące').should('be.visible');
 
-            cy.contains('dt', 'Język znalazcy').parent().within(() => {
-                cy.contains('niemiecki').should('be.visible');
-            });
+            cy.contains('dt', 'Język znalazcy')
+                .parent()
+                .within(() => {
+                    cy.contains('niemiecki').should('be.visible');
+                });
 
-            cy.contains('dt', 'Telefon').parent().within(() => {
-                cy.contains('+49 30 12345678').should('be.visible');
-                cy.get('a[href="tel:+493012345678"]').should('be.visible');
-            });
+            cy.contains('dt', 'Telefon')
+                .parent()
+                .within(() => {
+                    cy.contains('+49 30 12345678').should('be.visible');
+                    cy.get('a[href="tel:+493012345678"]').should('be.visible');
+                });
 
-            cy.contains('dt', 'E-mail').parent().within(() => {
-                cy.contains('finder@example.de').should('be.visible');
-                cy.get('a[href="mailto:finder@example.de"]').should('be.visible');
-            });
+            cy.contains('dt', 'E-mail')
+                .parent()
+                .within(() => {
+                    cy.contains('finder@example.de').should('be.visible');
+                    cy.get('a[href="mailto:finder@example.de"]').should('be.visible');
+                });
 
-            cy.contains('dt', 'Miejsce').parent().within(() => {
-                cy.contains('Cottbus, Niemcy').should('be.visible');
-            });
+            cy.contains('dt', 'Miejsce')
+                .parent()
+                .within(() => {
+                    cy.contains('Cottbus, Niemcy').should('be.visible');
+                });
 
             cy.contains('h3', 'Opis od znalazcy').should('be.visible');
             cy.contains('Gołąb siedzi na parapecie od wczoraj.').should('be.visible');
@@ -209,17 +221,23 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('h2', 'PL-0369-26-5678').should('be.visible');
             cy.contains('W trakcie').should('be.visible');
 
-            cy.contains('dt', 'Język znalazcy').parent().within(() => {
-                cy.contains('polski').should('be.visible');
-            });
+            cy.contains('dt', 'Język znalazcy')
+                .parent()
+                .within(() => {
+                    cy.contains('polski').should('be.visible');
+                });
 
-            cy.contains('dt', 'Telefon').parent().within(() => {
-                cy.contains('—').should('be.visible');
-            });
+            cy.contains('dt', 'Telefon')
+                .parent()
+                .within(() => {
+                    cy.contains('—').should('be.visible');
+                });
 
-            cy.contains('dt', 'E-mail').parent().within(() => {
-                cy.contains('znalazca@example.pl').should('be.visible');
-            });
+            cy.contains('dt', 'E-mail')
+                .parent()
+                .within(() => {
+                    cy.contains('znalazca@example.pl').should('be.visible');
+                });
 
             cy.contains('h3', 'Opis od znalazcy').should('not.exist');
             cy.get('#admin-note').should('have.value', 'Ustalono sekcję.');
@@ -232,18 +250,21 @@ describe('Found Pigeons Admin Page Tests', () => {
         it('Should filter reports by status', () => {
             const pendingReport = reportsPage.content[0];
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10',
-                    status: 'PENDING'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10',
+                        status: 'PENDING'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createSingleReportPage(pendingReport)
                 }
-            }, {
-                statusCode: 200,
-                body: createSingleReportPage(pendingReport)
-            }).as('getPendingReports');
+            ).as('getPendingReports');
 
             cy.contains('button', 'Oczekujące').click();
 
@@ -256,18 +277,21 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         it('Should display an empty state when no reports match the selected status', () => {
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10',
-                    status: 'REJECTED'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10',
+                        status: 'REJECTED'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createEmptyReportsPage()
                 }
-            }, {
-                statusCode: 200,
-                body: createEmptyReportsPage()
-            }).as('getRejectedReports');
+            ).as('getRejectedReports');
 
             cy.contains('button', 'Odrzucone').click();
 
@@ -283,18 +307,21 @@ describe('Found Pigeons Admin Page Tests', () => {
         it('Should search reports by ring number', () => {
             const report = reportsPage.content[0];
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10',
-                    ringNumber: 'PL-0369-26-1234'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10',
+                        ringNumber: 'PL-0369-26-1234'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createSingleReportPage(report)
                 }
-            }, {
-                statusCode: 200,
-                body: createSingleReportPage(report)
-            }).as('searchReports');
+            ).as('searchReports');
 
             cy.get('#ring-search').type('PL-0369-26-1234');
             cy.contains('button', 'Szukaj').click();
@@ -341,17 +368,20 @@ describe('Found Pigeons Admin Page Tests', () => {
                 size: 10
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getPaginationFirstPage');
+            ).as('getPaginationFirstPage');
 
             cy.reload();
             cy.wait('@getPaginationFirstPage');
@@ -359,17 +389,20 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('Strona 1 z 2').should('be.visible');
             cy.contains('button', 'Poprzednia').should('be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '1',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '1',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: secondPage
                 }
-            }, {
-                statusCode: 200,
-                body: secondPage
-            }).as('getPaginationSecondPage');
+            ).as('getPaginationSecondPage');
 
             cy.contains('button', 'Następna').should('be.visible').and('not.be.disabled').click();
 
@@ -380,17 +413,20 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('button', 'Następna').should('be.disabled');
             cy.contains('button', 'Poprzednia').should('not.be.disabled');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: firstPage
                 }
-            }, {
-                statusCode: 200,
-                body: firstPage
-            }).as('getPaginationBackToFirstPage');
+            ).as('getPaginationBackToFirstPage');
 
             cy.contains('button', 'Poprzednia').click();
 
@@ -407,22 +443,25 @@ describe('Found Pigeons Admin Page Tests', () => {
         it('Should display an error and successfully retry loading reports', () => {
             let shouldFail = true;
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons'
-            }, (req) => {
-                if (shouldFail) {
-                    req.reply({
-                        statusCode: 500,
-                        body: 'Nie udało się pobrać zgłoszeń testowych.'
-                    });
-                } else {
-                    req.reply({
-                        statusCode: 200,
-                        body: reportsPage
-                    });
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons'
+                },
+                (req) => {
+                    if (shouldFail) {
+                        req.reply({
+                            statusCode: 500,
+                            body: 'Nie udało się pobrać zgłoszeń testowych.'
+                        });
+                    } else {
+                        req.reply({
+                            statusCode: 200,
+                            body: reportsPage
+                        });
+                    }
                 }
-            }).as('getReportsRetry');
+            ).as('getReportsRetry');
 
             cy.reload();
             cy.wait('@getReportsRetry');
@@ -470,17 +509,20 @@ describe('Found Pigeons Admin Page Tests', () => {
                 status: 'RESOLVED'
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createSingleReportPage(resolvedReport)
                 }
-            }, {
-                statusCode: 200,
-                body: createSingleReportPage(resolvedReport)
-            }).as('getResolvedReport');
+            ).as('getResolvedReport');
 
             cy.reload();
             cy.wait('@getResolvedReport');
@@ -501,17 +543,20 @@ describe('Found Pigeons Admin Page Tests', () => {
                 status: 'REJECTED'
             };
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/admin/found-pigeons',
-                query: {
-                    page: '0',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/admin/found-pigeons',
+                    query: {
+                        page: '0',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: createSingleReportPage(rejectedReport)
                 }
-            }, {
-                statusCode: 200,
-                body: createSingleReportPage(rejectedReport)
-            }).as('getRejectedReport');
+            ).as('getRejectedReport');
 
             cy.reload();
             cy.wait('@getRejectedReport');
@@ -538,7 +583,7 @@ describe('Found Pigeons Admin Page Tests', () => {
                     updatedAt: '2026-09-20T11:00:00'
                 };
 
-                reportsPage.content = reportsPage.content.map(report => report.id === 1 ? updated : report);
+                reportsPage.content = reportsPage.content.map((report) => (report.id === 1 ? updated : report));
 
                 req.reply({
                     statusCode: 200,
@@ -573,7 +618,8 @@ describe('Found Pigeons Admin Page Tests', () => {
 
             cy.wait('@updateStatusError');
 
-            cy.get('[role="alert"]').should('be.visible')
+            cy.get('[role="alert"]')
+                .should('be.visible')
                 .and('contain.text', 'Nie można zmienić statusu tego zgłoszenia.');
 
             cy.contains('Oczekujące').should('be.visible');
@@ -625,7 +671,9 @@ describe('Found Pigeons Admin Page Tests', () => {
             cy.contains('button', 'Zapisz notatkę').click();
 
             cy.wait('@updateNoteError');
-            cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się zapisać notatki testowej.');
+            cy.get('[role="alert"]')
+                .should('be.visible')
+                .and('contain.text', 'Nie udało się zapisać notatki testowej.');
 
             cy.get('#admin-note').should('have.value', 'Testowa notatka');
         });
@@ -639,12 +687,16 @@ describe('Found Pigeons Admin Page Tests', () => {
 
             cy.contains('button', 'Usuń zgłoszenie').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Usuń zgłoszenie').should('be.visible');
-                cy.contains('Czy na pewno chcesz trwale usunąć zgłoszenie obrączki PL-0369-26-1234').should('be.visible');
-                cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Usuń zgłoszenie').should('be.visible');
+                    cy.contains('Czy na pewno chcesz trwale usunąć zgłoszenie obrączki PL-0369-26-1234').should(
+                        'be.visible'
+                    );
+                    cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('button', 'PL-0369-26-1234').should('be.visible');
@@ -653,7 +705,7 @@ describe('Found Pigeons Admin Page Tests', () => {
 
         it('Should successfully delete a report', () => {
             cy.intercept('DELETE', '**/api/admin/found-pigeons/1', (req) => {
-                reportsPage.content = reportsPage.content.filter(report => report.id !== 1);
+                reportsPage.content = reportsPage.content.filter((report) => report.id !== 1);
                 reportsPage.totalElements = reportsPage.content.length;
 
                 req.reply({
@@ -693,11 +745,13 @@ describe('Found Pigeons Admin Page Tests', () => {
 
             cy.wait('@deleteReportError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd').should('be.visible');
-                cy.contains('Nie udało się usunąć zgłoszenia testowego.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd').should('be.visible');
+                    cy.contains('Nie udało się usunąć zgłoszenia testowego.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('button', 'PL-0369-26-1234').should('be.visible');

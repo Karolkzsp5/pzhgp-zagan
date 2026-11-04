@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import {FormEvent, useEffect, useRef, useState} from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
@@ -21,7 +21,7 @@ interface FlightResultModalProps {
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
-export default function FlightResultModal({isOpen, entry, onClose, onChanged}: FlightResultModalProps) {
+export default function FlightResultModal({ isOpen, entry, onClose, onChanged }: FlightResultModalProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [sections, setSections] = useState<SectionDto[]>([]);
@@ -38,10 +38,12 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const hasBranchResult = entry.results.some(result => result.scope === 'BRANCH');
+    const hasBranchResult = entry.results.some((result) => result.scope === 'BRANCH');
 
-    const usedSectionIds = new Set(entry.results.filter(result =>
-        result.scope === 'SECTION' && result.sectionId !== null).map(result => result.sectionId as number)
+    const usedSectionIds = new Set(
+        entry.results
+            .filter((result) => result.scope === 'SECTION' && result.sectionId !== null)
+            .map((result) => result.sectionId as number)
     );
 
     useEffect(() => {
@@ -68,8 +70,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     useEffect(() => {
         if (!isOpen) return;
 
-        const controller =
-            new AbortController();
+        const controller = new AbortController();
 
         const loadSections = async () => {
             setIsLoadingSections(true);
@@ -226,7 +227,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
         }
     };
 
-    const availableSections = sections.filter(section => !usedSectionIds.has(section.id));
+    const availableSections = sections.filter((section) => !usedSectionIds.has(section.id));
     const noAvailableResultSlot = hasBranchResult && !isLoadingSections && availableSections.length === 0;
 
     return (
@@ -239,9 +240,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
         >
             <div className="p-6 space-y-6">
                 <div className="bg-gray-50 border border-gray-200 rounded-md px-4 py-3">
-                    <p className="font-semibold text-gray-900">
-                        {entry.location}
-                    </p>
+                    <p className="font-semibold text-gray-900">{entry.location}</p>
 
                     <p className="mt-1 text-sm text-gray-500">
                         {formatLocalDate(entry.scheduledDate)}
@@ -251,40 +250,33 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                 </div>
 
                 <section>
-                    <h3 className="text-sm font-bold text-gray-700 mb-3">
-                        Wgrane wyniki
-                    </h3>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3">Wgrane wyniki</h3>
 
                     {entry.results.length === 0 ? (
-                        <p className="text-sm text-gray-400">
-                            Dla tego lotu nie wgrano jeszcze żadnych wyników.
-                        </p>
+                        <p className="text-sm text-gray-400">Dla tego lotu nie wgrano jeszcze żadnych wyników.</p>
                     ) : (
                         <div className="border border-gray-200 rounded-md divide-y divide-gray-200">
-                            {entry.results.map(result => (
-                                <div key={result.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {entry.results.map((result) => (
+                                <div
+                                    key={result.id}
+                                    className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                >
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-gray-800">
                                             {formatResultLabel(result)}
                                         </p>
 
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {result.originalFileName}
-                                        </p>
+                                        <p className="text-xs text-gray-500 truncate">{result.originalFileName}</p>
                                     </div>
 
                                     {resultToDeleteId === result.id ? (
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-xs text-gray-500">
-                                                Usunąć?
-                                            </span>
+                                            <span className="text-xs text-gray-500">Usunąć?</span>
 
                                             <button
                                                 type="button"
                                                 disabled={deletingResultId !== null}
-                                                onClick={() =>
-                                                    setResultToDeleteId(null)
-                                                }
+                                                onClick={() => setResultToDeleteId(null)}
                                                 className="text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
                                             >
                                                 Anuluj
@@ -293,9 +285,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                             <button
                                                 type="button"
                                                 disabled={deletingResultId !== null}
-                                                onClick={() =>
-                                                    void handleDeleteResult(result)
-                                                }
+                                                onClick={() => void handleDeleteResult(result)}
                                                 className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
                                             >
                                                 {deletingResultId === result.id ? 'Usuwanie...' : 'Usuń'}
@@ -304,9 +294,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                     ) : (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setResultToDeleteId(result.id)
-                                            }
+                                            onClick={() => setResultToDeleteId(result.id)}
                                             disabled={isUploading || deletingResultId !== null}
                                             className="text-sm font-medium text-red-600 hover:text-red-800 transition shrink-0 disabled:opacity-50"
                                         >
@@ -319,32 +307,29 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                     )}
                 </section>
 
-                <div className="border-t border-gray-200"/>
+                <div className="border-t border-gray-200" />
 
                 <section>
-                    <h3 className="text-sm font-bold text-gray-700 mb-4">
-                        Dodaj wyniki
-                    </h3>
+                    <h3 className="text-sm font-bold text-gray-700 mb-4">Dodaj wyniki</h3>
 
                     {noAvailableResultSlot ? (
-                        <p className="text-sm text-gray-500">
-                            Dla tego lotu wgrano już wszystkie dostępne wyniki.
-                        </p>
+                        <p className="text-sm text-gray-500">Dla tego lotu wgrano już wszystkie dostępne wyniki.</p>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label htmlFor="flight-result-scope" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label
+                                    htmlFor="flight-result-scope"
+                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                >
                                     Rodzaj wyników
                                 </label>
 
                                 <select
                                     id="flight-result-scope"
                                     value={scope}
-                                    onChange={event => {
+                                    onChange={(event) => {
                                         clearMessages();
-                                        setScope(
-                                            event.target.value as FlightResultScope
-                                        );
+                                        setScope(event.target.value as FlightResultScope);
                                         setSectionId('');
                                     }}
                                     disabled={isUploading}
@@ -355,8 +340,9 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                         {hasBranchResult ? ' — wyniki już dodane' : ''}
                                     </option>
 
-                                    <option value="SECTION"
-                                            disabled={!isLoadingSections && availableSections.length === 0}
+                                    <option
+                                        value="SECTION"
+                                        disabled={!isLoadingSections && availableSections.length === 0}
                                     >
                                         Sekcja
                                     </option>
@@ -365,14 +351,17 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
                             {scope === 'SECTION' && (
                                 <div>
-                                    <label htmlFor="flight-result-section" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="flight-result-section"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Sekcja
                                     </label>
 
                                     <select
                                         id="flight-result-section"
                                         value={sectionId}
-                                        onChange={event => {
+                                        onChange={(event) => {
                                             clearMessages();
                                             setSectionId(event.target.value);
                                         }}
@@ -384,7 +373,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                             {isLoadingSections ? 'Ładowanie sekcji...' : 'Wybierz sekcję'}
                                         </option>
 
-                                        {availableSections.map(section => (
+                                        {availableSections.map((section) => (
                                             <option key={section.id} value={section.id}>
                                                 {section.name}
                                             </option>
@@ -394,26 +383,25 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                             )}
 
                             <div>
-                                <span className="block text-sm font-medium text-gray-700 mb-1">
-                                    Plik wyników
-                                </span>
+                                <span className="block text-sm font-medium text-gray-700 mb-1">Plik wyników</span>
 
-                                <label onDragOver={event => {
-                                    event.preventDefault();
+                                <label
+                                    onDragOver={(event) => {
+                                        event.preventDefault();
 
-                                    if (!isUploading) {
-                                        setIsDragging(true);
-                                    }
-                                }}
-                                       onDragLeave={() => setIsDragging(false)}
-                                       onDrop={handleDrop}
-                                       className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg p-6 transition ${
-                                           isUploading
-                                               ? 'border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed'
-                                               : isDragging
-                                                   ? 'border-blue-500 bg-blue-50 cursor-pointer'
-                                                   : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer'
-                                       }`}
+                                        if (!isUploading) {
+                                            setIsDragging(true);
+                                        }
+                                    }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={handleDrop}
+                                    className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg p-6 transition ${
+                                        isUploading
+                                            ? 'border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed'
+                                            : isDragging
+                                              ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                                              : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer'
+                                    }`}
                                 >
                                     <input
                                         ref={fileInputRef}
@@ -422,18 +410,21 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                         accept=".txt,text/plain"
                                         disabled={isUploading}
                                         className="sr-only"
-                                        onChange={event =>
-                                            selectFile(event.target.files?.[0] ?? null)
-                                        }
+                                        onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
                                     />
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-400 mb-3" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                                        <path d="M240-192q-80 0-136-56.5T48-385q0-76 51.5-131.5T227-576q23.43-85.75 93.7-138.87Q390.98-768 480-768q107 0 185.5 68.5T744-528q70 0 119 49t49 118q0 70.42-49 119.71Q814-192 744-192H516q-29.7 0-50.85-21.15Q444-234.3 444-264v-174l-57 57-51-51 144-144 144 144-51 51-57-57v174h228q40.32 0 68.16-27.77 27.84-27.78 27.84-68Q840-400 812.16-428q-27.84-28-68.16-28h-72v-72q0-73-57.5-120.5t-135-47.5Q402-696 348-639.5T283-504h-43q-49.71 0-84.86 35.2-35.14 35.2-35.14 85t35.14 84.8q35.15 35 84.86 35h132v72H240Zm240-246Z"/>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="w-10 h-10 text-gray-400 mb-3"
+                                        viewBox="0 -960 960 960"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M240-192q-80 0-136-56.5T48-385q0-76 51.5-131.5T227-576q23.43-85.75 93.7-138.87Q390.98-768 480-768q107 0 185.5 68.5T744-528q70 0 119 49t49 118q0 70.42-49 119.71Q814-192 744-192H516q-29.7 0-50.85-21.15Q444-234.3 444-264v-174l-57 57-51-51 144-144 144 144-51 51-57-57v174h228q40.32 0 68.16-27.77 27.84-27.78 27.84-68Q840-400 812.16-428q-27.84-28-68.16-28h-72v-72q0-73-57.5-120.5t-135-47.5Q402-696 348-639.5T283-504h-43q-49.71 0-84.86 35.2-35.14 35.2-35.14 85t35.14 84.8q35.15 35 84.86 35h132v72H240Zm240-246Z" />
                                     </svg>
 
                                     {file ? (
                                         <>
-                                            <span
-                                                className="text-sm font-semibold text-gray-900 text-center max-w-full [overflow-wrap:anywhere]">
+                                            <span className="text-sm font-semibold text-gray-900 text-center max-w-full [overflow-wrap:anywhere]">
                                                 {file.name}
                                             </span>
 
@@ -481,11 +472,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
                                 <button
                                     type="submit"
-                                    disabled={
-                                        isUploading ||
-                                        isLoadingSections ||
-                                        !file
-                                    }
+                                    disabled={isUploading || isLoadingSections || !file}
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isUploading ? 'Wgrywanie...' : 'Wgraj wyniki'}

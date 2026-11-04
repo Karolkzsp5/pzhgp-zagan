@@ -14,7 +14,7 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-import './commands'
+import './commands';
 
 import { slowCypressDown } from 'cypress-slow-down';
 import 'cypress-slow-down/commands';

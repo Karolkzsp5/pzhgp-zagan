@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
@@ -14,7 +14,14 @@ interface FlightPlanEntryModalProps {
     entryToEdit: FlightPlanEntryDto | null;
 }
 
-export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pigeonAgeGroup, entryToEdit}: FlightPlanEntryModalProps) {
+export default function FlightPlanEntryModal({
+    isOpen,
+    onClose,
+    onSaved,
+    year,
+    pigeonAgeGroup,
+    entryToEdit
+}: FlightPlanEntryModalProps) {
     const [scheduledDate, setScheduledDate] = useState('');
     const [location, setLocation] = useState('');
     const [distanceKm, setDistanceKm] = useState('');
@@ -111,9 +118,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
         >
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-1">
-                        Grupa
-                    </span>
+                    <span className="block text-sm font-medium text-gray-700 mb-1">Grupa</span>
 
                     <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
                         {ageGroupLabel}
@@ -121,10 +126,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                 </div>
 
                 <div>
-                    <label
-                        htmlFor="flight-date"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                    >
+                    <label htmlFor="flight-date" className="block text-sm font-medium text-gray-700 mb-1">
                         Data
                     </label>
 
@@ -134,7 +136,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                         min={`${year}-01-01`}
                         max={`${year}-12-31`}
                         value={scheduledDate}
-                        onChange={event => setScheduledDate(event.target.value)}
+                        onChange={(event) => setScheduledDate(event.target.value)}
                         disabled={isSaving}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
@@ -151,7 +153,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                         type="text"
                         maxLength={100}
                         value={location}
-                        onChange={event => setLocation(event.target.value)}
+                        onChange={(event) => setLocation(event.target.value)}
                         disabled={isSaving}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
@@ -170,7 +172,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                             min={1}
                             max={3000}
                             value={distanceKm}
-                            onChange={event => setDistanceKm(event.target.value)}
+                            onChange={(event) => setDistanceKm(event.target.value)}
                             disabled={isSaving}
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
@@ -180,9 +182,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                     <div>
                         <label htmlFor="flight-category" className="block text-sm font-medium text-gray-700 mb-1">
                             Kategoria
-                            <span className="ml-1 text-gray-400 font-normal">
-                                (opcjonalna)
-                            </span>
+                            <span className="ml-1 text-gray-400 font-normal">(opcjonalna)</span>
                         </label>
 
                         <input
@@ -190,7 +190,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                             type="text"
                             maxLength={30}
                             value={category}
-                            onChange={event => setCategory(event.target.value)}
+                            onChange={(event) => setCategory(event.target.value)}
                             disabled={isSaving}
                             placeholder="np. A/B"
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
@@ -208,7 +208,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                         type="text"
                         maxLength={100}
                         value={listType}
-                        onChange={event => setListType(event.target.value)}
+                        onChange={(event) => setListType(event.target.value)}
                         disabled={isSaving}
                         placeholder="np. Oddziałowa"
                         required

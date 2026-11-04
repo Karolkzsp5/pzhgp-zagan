@@ -1,23 +1,21 @@
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Geist } from 'next/font/google';
+import './globals.css';
 import AuthProvider from '@/app/components/AuthProvider';
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "PZHGP Żagań",
-  description: "System do obsługi oddziału PZHGP Żagań"
+    title: 'PZHGP Żagań',
+    description: 'System do obsługi oddziału PZHGP Żagań'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-      <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
-      <AuthProvider>
-          {children}
-      </AuthProvider>
-      </body>
-      </html>
-  );
+    return (
+        <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
+            <body className="min-h-full flex flex-col font-sans">
+                <AuthProvider>{children}</AuthProvider>
+            </body>
+        </html>
+    );
 }

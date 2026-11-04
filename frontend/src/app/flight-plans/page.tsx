@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ export default function FlightPlansPage() {
     const isAdministrator = user?.role === 'ADMINISTRATOR';
 
     const closeConfirmModal = () => {
-        setModalConfig(previous => ({
+        setModalConfig((previous) => ({
             ...previous,
             isOpen: false
         }));
@@ -122,7 +122,8 @@ export default function FlightPlansPage() {
                     await flightPlanService.deletePlan(plan.year);
                     await loadPlans();
                 } catch (error) {
-                    showAlert('Nie udało się usunąć planu',
+                    showAlert(
+                        'Nie udało się usunąć planu',
                         error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania planu lotów.'
                     );
                 }
@@ -162,17 +163,12 @@ export default function FlightPlansPage() {
                     {isLoading ? (
                         <LoadingState />
                     ) : loadError ? (
-                        <ErrorState
-                            message={loadError}
-                            onRetry={() => void loadPlans()}
-                        />
+                        <ErrorState message={loadError} onRetry={() => void loadPlans()} />
                     ) : plans.length === 0 ? (
-                        <EmptyState>
-                            Brak dostępnych planów lotów.
-                        </EmptyState>
+                        <EmptyState>Brak dostępnych planów lotów.</EmptyState>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {plans.map(plan => (
+                            {plans.map((plan) => (
                                 <article
                                     key={plan.id}
                                     data-cy={`flight-plan-card-${plan.year}`}
@@ -181,7 +177,13 @@ export default function FlightPlansPage() {
                                     <Link href={`/flight-plans/${plan.year}`} className="block p-6 pr-16">
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-50 text-blue-700 shrink-0">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-7 h-7"
+                                                    viewBox="0 -960 960 960"
+                                                    fill="currentColor"
+                                                    aria-hidden="true"
+                                                >
                                                     <path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z" />
                                                 </svg>
                                             </div>
@@ -203,7 +205,13 @@ export default function FlightPlansPage() {
                                             title="Usuń plan"
                                             className="absolute top-5 right-5 text-gray-400 hover:text-red-600 p-1 transition-colors"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-5 h-5"
+                                                viewBox="0 -960 960 960"
+                                                fill="currentColor"
+                                                aria-hidden="true"
+                                            >
                                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
                                             </svg>
                                         </button>
@@ -234,7 +242,7 @@ export default function FlightPlansPage() {
                                 min={2000}
                                 max={2100}
                                 value={newPlanYear}
-                                onChange={event => setNewPlanYear(event.target.value)}
+                                onChange={(event) => setNewPlanYear(event.target.value)}
                                 disabled={isSaving}
                                 data-cy="flight-plan-year-input"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"

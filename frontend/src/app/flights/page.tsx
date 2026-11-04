@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -46,40 +46,43 @@ export default function FlightsPage() {
         onConfirm: () => {}
     });
 
-    const {beginRequest, isLatestRequest} = useLatestRequest();
-    const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    const { beginRequest, isLatestRequest } = useLatestRequest();
+    const closeModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
 
     const showAlert = (title: string, message: string) =>
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeModal });
 
-    const fetchFlights = useCallback(async (targetPage: number) => {
-        const requestId = beginRequest();
+    const fetchFlights = useCallback(
+        async (targetPage: number) => {
+            const requestId = beginRequest();
 
-        setIsLoading(true);
-        setListError('');
+            setIsLoading(true);
+            setListError('');
 
-        try {
-            const result = await flightService.getMyFlights(targetPage, PAGE_SIZE);
+            try {
+                const result = await flightService.getMyFlights(targetPage, PAGE_SIZE);
 
-            if (!isLatestRequest(requestId)) {
-                return;
+                if (!isLatestRequest(requestId)) {
+                    return;
+                }
+
+                setFlights(result.content);
+                setTotalPages(result.totalPages);
+                setPage(result.number);
+            } catch (error) {
+                if (!isLatestRequest(requestId)) {
+                    return;
+                }
+
+                setListError(error instanceof Error ? error.message : 'Nie udało się pobrać listy lotów.');
+            } finally {
+                if (isLatestRequest(requestId)) {
+                    setIsLoading(false);
+                }
             }
-
-            setFlights(result.content);
-            setTotalPages(result.totalPages);
-            setPage(result.number);
-        } catch (error) {
-            if (!isLatestRequest(requestId)) {
-                return;
-            }
-
-            setListError(error instanceof Error ? error.message : 'Nie udało się pobrać listy lotów.');
-        } finally {
-            if (isLatestRequest(requestId)) {
-                setIsLoading(false);
-            }
-        }
-    }, [beginRequest, isLatestRequest]);
+        },
+        [beginRequest, isLatestRequest]
+    );
 
     useEffect(() => {
         if (!isLoggedIn) return;
@@ -178,7 +181,7 @@ export default function FlightsPage() {
                         <h2 className="text-lg font-bold text-gray-900 mb-4">Wgraj nowy lot</h2>
 
                         <label
-                            onDragOver={event => {
+                            onDragOver={(event) => {
                                 event.preventDefault();
                                 setIsDragging(true);
                             }}
@@ -195,10 +198,16 @@ export default function FlightsPage() {
                                 type="file"
                                 accept=".gpx"
                                 className="sr-only"
-                                onChange={event => selectFile(event.target.files?.[0] ?? null)}
+                                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
                             />
 
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-400 mb-3" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-10 h-10 text-gray-400 mb-3"
+                                viewBox="0 -960 960 960"
+                                fill="currentColor"
+                                aria-hidden="true"
+                            >
                                 <path d="M240-192q-80 0-136-56.5T48-385q0-76 51.5-131.5T227-576q23.43-85.75 93.7-138.87Q390.98-768 480-768q107 0 185.5 68.5T744-528q70 0 119 49t49 118q0 70.42-49 119.71Q814-192 744-192H516q-29.7 0-50.85-21.15Q444-234.3 444-264v-174l-57 57-51-51 144-144 144 144-51 51-57-57v174h228q40.32 0 68.16-27.77 27.84-27.78 27.84-68Q840-400 812.16-428q-27.84-28-68.16-28h-72v-72q0-73-57.5-120.5t-135-47.5Q402-696 348-639.5T283-504h-43q-49.71 0-84.86 35.2-35.14 35.2-35.14 85t35.14 84.8q35.15 35 84.86 35h132v72H240Zm240-246Z" />
                             </svg>
 
@@ -231,7 +240,7 @@ export default function FlightsPage() {
                                     type="text"
                                     maxLength={150}
                                     value={name}
-                                    onChange={event => setName(event.target.value)}
+                                    onChange={(event) => setName(event.target.value)}
                                     placeholder="np. Lot konkursowy Dessau"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 />
@@ -246,7 +255,7 @@ export default function FlightsPage() {
                                     type="text"
                                     maxLength={32}
                                     value={ringNumber}
-                                    onChange={event => setRingNumber(event.target.value)}
+                                    onChange={(event) => setRingNumber(event.target.value)}
                                     placeholder="odczytany z pliku"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 />
@@ -254,14 +263,15 @@ export default function FlightsPage() {
 
                             <div>
                                 <label htmlFor="release-site" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Miejsce wypuszczenia <span className="text-gray-400 font-normal">(opcjonalnie)</span>
+                                    Miejsce wypuszczenia{' '}
+                                    <span className="text-gray-400 font-normal">(opcjonalnie)</span>
                                 </label>
                                 <input
                                     id="release-site"
                                     type="text"
                                     maxLength={150}
                                     value={releaseSite}
-                                    onChange={event => setReleaseSite(event.target.value)}
+                                    onChange={(event) => setReleaseSite(event.target.value)}
                                     placeholder="np. Dessau"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 />
@@ -269,7 +279,10 @@ export default function FlightsPage() {
                         </div>
 
                         {uploadError && (
-                            <p role="alert" className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                            <p
+                                role="alert"
+                                className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"
+                            >
                                 {uploadError}
                             </p>
                         )}
@@ -296,7 +309,9 @@ export default function FlightsPage() {
                     ) : listError ? (
                         <ErrorState message={listError} onRetry={() => void fetchFlights(page)} />
                     ) : flights.length === 0 ? (
-                        <EmptyState>Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.</EmptyState>
+                        <EmptyState>
+                            Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.
+                        </EmptyState>
                     ) : (
                         <>
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
@@ -304,16 +319,24 @@ export default function FlightsPage() {
                                     <thead className="bg-blue-100">
                                         <tr>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Lot</th>
-                                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Obrączka</th>
-                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Dystans</th>
-                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Czas nagrania</th>
-                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Prędkość</th>
+                                            <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                                                Obrączka
+                                            </th>
+                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                                                Dystans
+                                            </th>
+                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                                                Czas nagrania
+                                            </th>
+                                            <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                                                Prędkość
+                                            </th>
                                             <th className="px-4 py-3 text-left font-semibold text-gray-700">Wgrano</th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {flights.map(flight => (
+                                        {flights.map((flight) => (
                                             <tr key={flight.id} className="hover:bg-blue-50/40 transition">
                                                 <td className="px-4 py-3 min-w-[16rem] max-w-[22rem]">
                                                     <Link
@@ -341,7 +364,10 @@ export default function FlightsPage() {
                                                             {formatSpeed(flight.averageSpeedMetersPerMinute)}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-400" title="Plik nie zawiera znaczników czasu">
+                                                        <span
+                                                            className="text-gray-400"
+                                                            title="Plik nie zawiera znaczników czasu"
+                                                        >
                                                             —
                                                         </span>
                                                     )}
@@ -358,7 +384,13 @@ export default function FlightsPage() {
                                                             title="Usuń lot"
                                                             aria-label={`Usuń lot ${flight.name}`}
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                className="w-5 h-5"
+                                                                viewBox="0 -960 960 960"
+                                                                fill="currentColor"
+                                                                aria-hidden="true"
+                                                            >
                                                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
                                                             </svg>
                                                         </button>

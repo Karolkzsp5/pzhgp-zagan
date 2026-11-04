@@ -1,17 +1,23 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Navbar from "@/app/components/Navbar";
+import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi } from '@/app/utils/apiClient';
 import { useAuth } from '@/app/components/AuthProvider';
 import { boardService } from '@/app/services/boardService';
-import { BoardMemberDto, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER } from '@/app/types/board';
+import {
+    BoardMemberDto,
+    BoardRole,
+    BoardRoleTranslations,
+    BRANCH_ROLE_ORDER,
+    SECTION_ROLE_ORDER
+} from '@/app/types/board';
 import { formatPhoneNumber } from '@/app/utils/formatters';
-import LoadingState from "@/app/components/LoadingState"
-import ErrorState from "@/app/components/ErrorState"
+import LoadingState from '@/app/components/LoadingState';
+import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
 
 interface SectionDto {
@@ -38,7 +44,7 @@ export default function BoardPage() {
         onConfirm: () => {}
     });
 
-    const closeConfirmModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    const closeConfirmModal = () => setModalConfig((prev) => ({ ...prev, isOpen: false }));
     const showAlert = (title: string, message: string) => {
         setModalConfig({ isOpen: true, title, message, isAlert: true, onConfirm: closeConfirmModal });
     };
@@ -84,7 +90,12 @@ export default function BoardPage() {
                     await boardService.deleteBoardMember(id);
                     void fetchData();
                 } catch (error) {
-                    showAlert('Błąd', error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
+                    showAlert(
+                        'Błąd',
+                        error instanceof TypeError
+                            ? CONNECTION_ERROR_MESSAGE
+                            : 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.'
+                    );
                 }
             }
         });
@@ -121,7 +132,10 @@ export default function BoardPage() {
         });
     };
 
-    const oddzialMembers = sortMembers(members.filter(m => m.managedSectionId === null), BRANCH_ROLE_ORDER);
+    const oddzialMembers = sortMembers(
+        members.filter((m) => m.managedSectionId === null),
+        BRANCH_ROLE_ORDER
+    );
 
     const MemberCard = ({ member }: { member: BoardMemberDto }) => (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col relative hover:shadow-md transition">
@@ -134,8 +148,14 @@ export default function BoardPage() {
                         onClick={() => openEditModal(member)}
                         className="text-gray-400 hover:text-blue-600 p-1 transition-colors"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                            <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z"/>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5"
+                            viewBox="0 -960 960 960"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z" />
                         </svg>
                     </button>
                     <button
@@ -145,8 +165,14 @@ export default function BoardPage() {
                         onClick={() => handleDelete(member.id)}
                         className="text-gray-400 hover:text-red-600 p-1 transition-colors"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5"
+                            viewBox="0 -960 960 960"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
                         </svg>
                     </button>
                 </div>
@@ -155,16 +181,23 @@ export default function BoardPage() {
             <h3 className="text-xl font-bold text-gray-900 pr-16">
                 {member.firstName} {member.lastName}
             </h3>
-            <p className="text-sm font-semibold text-blue-600 mt-1 mb-4">
-                {BoardRoleTranslations[member.role]}
-            </p>
+            <p className="text-sm font-semibold text-blue-600 mt-1 mb-4">{BoardRoleTranslations[member.role]}</p>
 
             {member.publicPhoneNumber ? (
                 <div className="flex items-center text-gray-700 text-sm mt-auto">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2 shrink-0" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                        <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-5 h-5 mr-2 shrink-0"
+                        viewBox="0 -960 960 960"
+                        fill="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z" />
                     </svg>
-                    <a href={`tel:+48${member.publicPhoneNumber.replace(/\D/g, '')}`} className="hover:text-blue-600 transition font-medium">
+                    <a
+                        href={`tel:+48${member.publicPhoneNumber.replace(/\D/g, '')}`}
+                        className="hover:text-blue-600 transition font-medium"
+                    >
                         {formatPhoneNumber(member.publicPhoneNumber)}
                     </a>
                 </div>
@@ -202,26 +235,22 @@ export default function BoardPage() {
                 ) : (
                     <>
                         <section className="mb-12">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">
-                                Zarząd Oddziału:
-                            </h2>
+                            <h2 className="text-xl font-bold text-gray-900 mb-6">Zarząd Oddziału:</h2>
 
                             {oddzialMembers.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {oddzialMembers.map(member => (
+                                    {oddzialMembers.map((member) => (
                                         <MemberCard key={member.id} member={member} />
                                     ))}
                                 </div>
                             ) : (
-                                <EmptyState>
-                                    Brak dodanych członków zarządu oddziału.
-                                </EmptyState>
+                                <EmptyState>Brak dodanych członków zarządu oddziału.</EmptyState>
                             )}
                         </section>
 
-                        {sections.map(section => {
+                        {sections.map((section) => {
                             const sectionMembers = sortMembers(
-                                members.filter(m => m.managedSectionId === section.id),
+                                members.filter((m) => m.managedSectionId === section.id),
                                 SECTION_ROLE_ORDER
                             );
 
@@ -233,14 +262,12 @@ export default function BoardPage() {
 
                                     {sectionMembers.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {sectionMembers.map(member => (
+                                            {sectionMembers.map((member) => (
                                                 <MemberCard key={member.id} member={member} />
                                             ))}
                                         </div>
                                     ) : (
-                                        <EmptyState>
-                                            Brak dodanych członków zarządu sekcji.
-                                        </EmptyState>
+                                        <EmptyState>Brak dodanych członków zarządu sekcji.</EmptyState>
                                     )}
                                 </section>
                             );

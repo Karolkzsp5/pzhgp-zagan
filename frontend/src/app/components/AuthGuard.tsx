@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,7 +6,7 @@ import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import { useAuth } from '@/app/components/AuthProvider';
 
-export default function AuthGuard({children}: { children: React.ReactNode; }) {
+export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const { isLoggedIn, isAuthResolved, authCheckFailed, refreshAuth } = useAuth();
     const router = useRouter();
 
@@ -22,7 +22,9 @@ export default function AuthGuard({children}: { children: React.ReactNode; }) {
                 <div className="w-full max-w-lg">
                     <ErrorState
                         message="Nie udało się sprawdzić sesji. Sprawdź połączenie z serwerem i spróbuj ponownie."
-                        onRetry={() => { void refreshAuth(); }}
+                        onRetry={() => {
+                            void refreshAuth();
+                        }}
                     />
                 </div>
             </div>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, type FormEvent } from 'react';
 import TextEditor from './TextEditor';
@@ -59,7 +59,13 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' : error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wątku.');
+            setError(
+                error instanceof TypeError
+                    ? 'Nie udało się połączyć z serwerem.'
+                    : error instanceof Error
+                      ? error.message
+                      : 'Wystąpił błąd podczas tworzenia wątku.'
+            );
         } finally {
             setIsLoading(false);
         }
@@ -79,7 +85,11 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                         <label htmlFor="thread-title" className="block text-sm font-bold text-gray-700 mb-1">
                             Tytuł wątku
                         </label>
-                        <input id="thread-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                        <input
+                            id="thread-title"
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                             minLength={5}
                             maxLength={150}
                             disabled={isLoading}
@@ -88,15 +98,16 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                             required
                         />
                     </div>
-                     <div>
-                         <p className="block text-sm font-bold text-gray-700 mb-1">
-                             Treść pierwszej wiadomości
-                         </p>
-                         <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości" />
-                     </div>
+                    <div>
+                        <p className="block text-sm font-bold text-gray-700 mb-1">Treść pierwszej wiadomości</p>
+                        <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości" />
+                    </div>
 
                     {error && (
-                        <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">
+                        <div
+                            role="alert"
+                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
+                        >
                             {error}
                         </div>
                     )}

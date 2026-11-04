@@ -54,10 +54,10 @@ describe('Flight Details Page Tests', () => {
         originalFileName: 'dessau-2026.gpx',
         startTime: '2026-09-20T08:00:00Z',
         endTime: '2026-09-20T08:04:00Z',
-        startLatitude: 51.6200,
-        startLongitude: 15.3100,
-        endLatitude: 51.6600,
-        endLongitude: 15.3900,
+        startLatitude: 51.62,
+        startLongitude: 15.31,
+        endLatitude: 51.66,
+        endLongitude: 15.39,
         statistics: {
             straightLineDistanceKm: 5.25,
             trackDistanceKm: 5.8,
@@ -73,36 +73,36 @@ describe('Flight Details Page Tests', () => {
         },
         trackPoints: [
             {
-                latitude: 51.6200,
-                longitude: 15.3100,
+                latitude: 51.62,
+                longitude: 15.31,
                 elevation: 100,
                 time: '2026-09-20T08:00:00Z',
                 speedMetersPerMinute: 900
             },
             {
-                latitude: 51.6300,
-                longitude: 15.3300,
+                latitude: 51.63,
+                longitude: 15.33,
                 elevation: 110,
                 time: '2026-09-20T08:01:00Z',
                 speedMetersPerMinute: 1000
             },
             {
-                latitude: 51.6400,
-                longitude: 15.3500,
+                latitude: 51.64,
+                longitude: 15.35,
                 elevation: 120,
                 time: '2026-09-20T08:02:00Z',
                 speedMetersPerMinute: 1100
             },
             {
-                latitude: 51.6500,
-                longitude: 15.3700,
+                latitude: 51.65,
+                longitude: 15.37,
                 elevation: 130,
                 time: '2026-09-20T08:03:00Z',
                 speedMetersPerMinute: 1200
             },
             {
-                latitude: 51.6600,
-                longitude: 15.3900,
+                latitude: 51.66,
+                longitude: 15.39,
                 elevation: 140,
                 time: '2026-09-20T08:04:00Z',
                 speedMetersPerMinute: 1300
@@ -158,10 +158,19 @@ describe('Flight Details Page Tests', () => {
             cy.contains('Wypuszczenie: Dessau').should('be.visible');
             cy.contains('button', 'Usuń lot').should('be.visible');
 
-            cy.contains('p', /^Dystans$/).parent().should('contain.text', '5.25').and('contain.text', 'km');
-            cy.contains('p', /^Czas nagrania$/).parent().should('contain.text', '4 min 0 s');
-            cy.contains('p', /^Prędkość średnia$/).parent().should('contain.text', 'm/min');
-            cy.contains('p', /^Prędkość maksymalna$/).parent().should('contain.text', 'm/min');
+            cy.contains('p', /^Dystans$/)
+                .parent()
+                .should('contain.text', '5.25')
+                .and('contain.text', 'km');
+            cy.contains('p', /^Czas nagrania$/)
+                .parent()
+                .should('contain.text', '4 min 0 s');
+            cy.contains('p', /^Prędkość średnia$/)
+                .parent()
+                .should('contain.text', 'm/min');
+            cy.contains('p', /^Prędkość maksymalna$/)
+                .parent()
+                .should('contain.text', 'm/min');
 
             cy.get('.leaflet-container').should('be.visible');
             cy.get('.leaflet-marker-icon').should('have.length', 2);
@@ -176,7 +185,8 @@ describe('Flight Details Page Tests', () => {
             cy.contains('label', 'Linia prosta start-meta').find('input[type="checkbox"]').should('be.checked');
 
             cy.get('button[aria-label="Odtwórz trasę"]').should('be.visible');
-            cy.get('input[aria-label="Pozycja na trasie lotu"]').should('be.visible')
+            cy.get('input[aria-label="Pozycja na trasie lotu"]')
+                .should('be.visible')
                 .and('have.attr', 'min', '0')
                 .and('have.attr', 'max', '4')
                 .and('have.value', '0');
@@ -193,21 +203,32 @@ describe('Flight Details Page Tests', () => {
             cy.contains('punkt 1 z 5').should('be.visible');
 
             cy.contains('h2', 'Przebieg lotu').should('be.visible');
-            cy.get('svg[role="img"][aria-label^="Profile wysokości i prędkości"]').should('be.visible')
+            cy.get('svg[role="img"][aria-label^="Profile wysokości i prędkości"]')
+                .should('be.visible')
                 .and('contain.text', 'Prędkość')
                 .and('contain.text', 'Wysokość n.p.m.');
 
             cy.contains('h2', 'Szczegóły lotu').should('be.visible');
 
-            cy.contains('span', 'Początek nagrania').parent().parent().should('contain.text', expectedTime(flight.startTime));
-            cy.contains('span', 'Koniec nagrania').parent().parent().should('contain.text', expectedTime(flight.endTime));
+            cy.contains('span', 'Początek nagrania')
+                .parent()
+                .parent()
+                .should('contain.text', expectedTime(flight.startTime));
+            cy.contains('span', 'Koniec nagrania')
+                .parent()
+                .parent()
+                .should('contain.text', expectedTime(flight.endTime));
             cy.contains('span', 'Pokonany dystans').parent().parent().should('contain.text', '5.80 km');
             cy.contains('span', 'Prędkość w linii prostej').parent().parent().should('contain.text', 'm/min');
-            cy.contains('span', 'Wysokość lotu').parent().parent()
+            cy.contains('span', 'Wysokość lotu')
+                .parent()
+                .parent()
                 .should('contain.text', '100–140 m n.p.m.')
                 .and('contain.text', 'suma wznosów 40 m');
 
-            cy.contains('span', 'Punkty trasy').parent().parent()
+            cy.contains('span', 'Punkty trasy')
+                .parent()
+                .parent()
                 .should('contain.text', '120')
                 .and('contain.text', 'na mapie wyświetlono 5');
 
@@ -224,13 +245,15 @@ describe('Flight Details Page Tests', () => {
             cy.get('.leaflet-marker-icon').should('have.length', 2);
 
             cy.get('.leaflet-marker-icon').eq(0).click({ force: true });
-            cy.get('.leaflet-popup-content').should('be.visible')
+            cy.get('.leaflet-popup-content')
+                .should('be.visible')
                 .and('contain.text', 'Początek trasy')
                 .and('contain.text', 'Dessau')
                 .and('contain.text', expectedTime(flight.startTime));
 
             cy.get('.leaflet-marker-icon').eq(1).click({ force: true });
-            cy.get('.leaflet-popup-content').should('be.visible')
+            cy.get('.leaflet-popup-content')
+                .should('be.visible')
                 .and('contain.text', 'Koniec trasy')
                 .and('contain.text', expectedTime(flight.endTime));
         });
@@ -252,10 +275,7 @@ describe('Flight Details Page Tests', () => {
                 const input = $input[0] as HTMLInputElement;
                 const win = input.ownerDocument.defaultView!;
 
-                const nativeValueSetter = Object.getOwnPropertyDescriptor(
-                    win.HTMLInputElement.prototype,
-                    'value'
-                )?.set;
+                const nativeValueSetter = Object.getOwnPropertyDescriptor(win.HTMLInputElement.prototype, 'value')?.set;
 
                 expect(nativeValueSetter).to.exist;
 
@@ -321,7 +341,7 @@ describe('Flight Details Page Tests', () => {
                     maxSpeedMetersPerMinute: 0,
                     timestampsAvailable: false
                 },
-                trackPoints: createFlightDetails().trackPoints.map(point => ({
+                trackPoints: createFlightDetails().trackPoints.map((point) => ({
                     ...point,
                     time: null,
                     speedMetersPerMinute: null
@@ -336,12 +356,17 @@ describe('Flight Details Page Tests', () => {
             cy.reload();
             cy.wait('@getFlightWithoutTimestamps');
 
-            cy.contains('p', /^Czas nagrania$/).parent()
+            cy.contains('p', /^Czas nagrania$/)
+                .parent()
                 .should('contain.text', '—')
                 .and('contain.text', 'plik bez znaczników czasu');
 
-            cy.contains('p', /^Prędkość średnia$/).parent().should('contain.text', '—');
-            cy.contains('p', /^Prędkość maksymalna$/).parent().should('contain.text', '—');
+            cy.contains('p', /^Prędkość średnia$/)
+                .parent()
+                .should('contain.text', '—');
+            cy.contains('p', /^Prędkość maksymalna$/)
+                .parent()
+                .should('contain.text', '—');
 
             cy.contains('span', 'Początek nagrania').parent().parent().should('contain.text', '—');
             cy.contains('span', 'Koniec nagrania').parent().parent().should('contain.text', '—');
@@ -398,12 +423,16 @@ describe('Flight Details Page Tests', () => {
         it('Should cancel flight deletion without removing the flight', () => {
             cy.contains('button', 'Usuń lot').click();
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Usuń lot').should('be.visible');
-                cy.contains('Czy na pewno chcesz usunąć lot "Lot konkursowy Dessau" wraz z zapisaną trasą?').should('be.visible');
-                cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Usuń lot').should('be.visible');
+                    cy.contains('Czy na pewno chcesz usunąć lot "Lot konkursowy Dessau" wraz z zapisaną trasą?').should(
+                        'be.visible'
+                    );
+                    cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
+                    cy.contains('button', 'Anuluj').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.get('h1').should('have.text', 'Lot konkursowy Dessau');
@@ -414,23 +443,26 @@ describe('Flight Details Page Tests', () => {
                 statusCode: 204
             }).as('deleteFlight');
 
-            cy.intercept({
-                method: 'GET',
-                pathname: '/api/flights',
-                query: {
-                    page: '0',
-                    size: '10'
+            cy.intercept(
+                {
+                    method: 'GET',
+                    pathname: '/api/flights',
+                    query: {
+                        page: '0',
+                        size: '10'
+                    }
+                },
+                {
+                    statusCode: 200,
+                    body: {
+                        content: [],
+                        totalElements: 0,
+                        totalPages: 0,
+                        number: 0,
+                        size: 10
+                    }
                 }
-            }, {
-                statusCode: 200,
-                body: {
-                    content: [],
-                    totalElements: 0,
-                    totalPages: 0,
-                    number: 0,
-                    size: 10
-                }
-            }).as('getFlightsAfterDelete');
+            ).as('getFlightsAfterDelete');
 
             cy.contains('button', 'Usuń lot').click();
             cy.get('[role="dialog"]').within(() => {
@@ -456,11 +488,13 @@ describe('Flight Details Page Tests', () => {
 
             cy.wait('@deleteFlightError');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Błąd').should('be.visible');
-                cy.contains('Nie udało się usunąć testowego lotu.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            cy.get('[role="dialog"]')
+                .should('be.visible')
+                .within(() => {
+                    cy.contains('h2', 'Błąd').should('be.visible');
+                    cy.contains('Nie udało się usunąć testowego lotu.').should('be.visible');
+                    cy.contains('button', 'OK').click();
+                });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.get('h1').should('have.text', 'Lot konkursowy Dessau');

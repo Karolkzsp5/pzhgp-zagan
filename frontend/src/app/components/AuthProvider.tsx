@@ -1,8 +1,15 @@
-"use client";
+'use client';
 
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL, fetchApi, fetchWithAuth, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
-import { AUTH_CHANGED_EVENT, AUTH_SYNC_KEY, clearLegacyAuthStorage, CurrentUser, getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
+import {
+    AUTH_CHANGED_EVENT,
+    AUTH_SYNC_KEY,
+    clearLegacyAuthStorage,
+    CurrentUser,
+    getAuthGeneration,
+    invalidateAuthSession
+} from '@/app/utils/authSession';
 
 interface AuthContextValue {
     user: CurrentUser | null;
@@ -39,7 +46,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error(await readApiError(response, 'Nie udało się pobrać danych użytkownika.'));
             }
 
-            const currentUser = await response.json() as CurrentUser;
+            const currentUser = (await response.json()) as CurrentUser;
             if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
             setUser(currentUser);
             setAuthCheckFailed(false);
@@ -84,8 +91,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
                 void refreshAuth();
             }
         };
-        const onAuthChanged = () => { void refreshAuth(); };
-        const onFocus = () => { void refreshAuth(); };
+        const onAuthChanged = () => {
+            void refreshAuth();
+        };
+        const onFocus = () => {
+            void refreshAuth();
+        };
 
         window.addEventListener('storage', onStorage);
         window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
@@ -98,14 +109,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         };
     }, [refreshAuth]);
 
-    const value = useMemo<AuthContextValue>(() => ({
-        user,
-        isLoggedIn: user !== null,
-        isAuthResolved,
-        authCheckFailed,
-        refreshAuth,
-        signOut
-    }), [user, isAuthResolved, authCheckFailed, refreshAuth, signOut]);
+    const value = useMemo<AuthContextValue>(
+        () => ({
+            user,
+            isLoggedIn: user !== null,
+            isAuthResolved,
+            authCheckFailed,
+            refreshAuth,
+            signOut
+        }),
+        [user, isAuthResolved, authCheckFailed, refreshAuth, signOut]
+    );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
