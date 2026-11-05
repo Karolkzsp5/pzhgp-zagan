@@ -1,4 +1,4 @@
-import { createTestUserFor, TEST_USERS } from '../support/testUtils';
+import { TEST_USERS, createTestUserFor } from '../support/testUtils';
 
 describe('Home Page - Announcements Tests', () => {
     const adminUser = createTestUserFor(TEST_USERS.admin);

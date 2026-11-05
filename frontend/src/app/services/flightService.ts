@@ -1,6 +1,6 @@
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 import { PageResponse } from '@/app/types/common';
 import { FlightDetailsDto, FlightSummaryDto, FlightUploadRequest } from '@/app/types/flight';
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const flightService = {
     /**

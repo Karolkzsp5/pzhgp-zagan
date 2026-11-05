@@ -2,7 +2,6 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightPlanCreateRequest;
 import com.pzhgp.backend.dto.FlightPlanDetailsDto;
-import com.pzhgp.backend.dto.FlightPlanEntryDto;
 import com.pzhgp.backend.dto.FlightPlanEntryRequest;
 import com.pzhgp.backend.dto.FlightPlanSummaryDto;
 import com.pzhgp.backend.entity.*;

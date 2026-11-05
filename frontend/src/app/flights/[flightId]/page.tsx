@@ -1,22 +1,22 @@
 "use client";
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
 import AuthGuard from '@/app/components/AuthGuard';
+import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
-import { useAuth } from '@/app/components/AuthProvider';
+import Footer from '@/app/components/Footer';
+import LoadingState from '@/app/components/LoadingState';
+import Navbar from '@/app/components/Navbar';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightService } from '@/app/services/flightService';
 import { FlightDetailsDto } from '@/app/types/flight';
-import { formatDateTimeWithSeconds, formatDuration, formatSpeed, formatTime } from '@/app/utils/formatters';
 import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
-import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import { formatDateTimeWithSeconds, formatDuration, formatSpeed, formatTime } from '@/app/utils/formatters';
 
 /**
  * Leaflet operuje bezpośrednio na obiekcie window, dlatego mapa ładowana jest wyłącznie

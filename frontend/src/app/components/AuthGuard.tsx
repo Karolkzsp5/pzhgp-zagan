@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import LoadingState from '@/app/components/LoadingState';
-import ErrorState from '@/app/components/ErrorState';
 import { useAuth } from '@/app/components/AuthProvider';
+import ErrorState from '@/app/components/ErrorState';
+import LoadingState from '@/app/components/LoadingState';
 import { UserRole } from '@/app/utils/authSession';
 
 interface AuthGuardProps {

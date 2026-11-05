@@ -1,5 +1,5 @@
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 import { BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const boardService = {
     getAllBoardMembers: async (): Promise<BoardMemberDto[]> => {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from 'react';
-import TextEditor from './TextEditor';
+import { type FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
+import TextEditor from './TextEditor';
 
 interface ThreadModalProps {
     isOpen: boolean;

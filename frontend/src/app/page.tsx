@@ -2,19 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { formatDate, formatDateTime } from '@/app/utils/formatters';
 import AnnouncementModal from '@/app/components/AnnouncementModal';
-import ConfirmModal from "@/app/components/ConfirmModal"
-import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import Pagination from '@/app/components/Pagination';
-import LoadingState from '@/app/components/LoadingState';
-import ErrorState from '@/app/components/ErrorState';
-import EmptyState from '@/app/components/EmptyState';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { useAuth } from '@/app/components/AuthProvider';
+import ConfirmModal from "@/app/components/ConfirmModal"
+import EmptyState from '@/app/components/EmptyState';
+import ErrorState from '@/app/components/ErrorState';
+import Footer from '@/app/components/Footer';
+import LoadingState from '@/app/components/LoadingState';
+import Navbar from '@/app/components/Navbar';
+import Pagination from '@/app/components/Pagination';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { AnnouncementDto } from '@/app/types/announcement';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { formatDate, formatDateTime } from '@/app/utils/formatters';
 
 export default function HomePage() {
     const { user, isAuthResolved } = useAuth();

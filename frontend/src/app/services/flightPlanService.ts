@@ -1,5 +1,5 @@
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 import { FlightPlanDetailsDto, FlightPlanEntryRequest, FlightPlanSummaryDto, FlightResultUploadRequest } from '@/app/types/flightPlan';
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const flightPlanService = {
     getAllPlans: async (): Promise<FlightPlanSummaryDto[]> => {

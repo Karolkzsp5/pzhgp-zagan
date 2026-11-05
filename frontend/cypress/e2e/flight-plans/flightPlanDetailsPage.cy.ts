@@ -1,4 +1,4 @@
-import { createTestUserFor, TEST_USERS } from '../../support/testUtils';
+import { TEST_USERS, createTestUserFor } from '../../support/testUtils';
 
 type MockPigeonAgeGroup = 'ADULT' | 'YOUNG';
 type MockFlightResultScope = 'BRANCH' | 'SECTION';

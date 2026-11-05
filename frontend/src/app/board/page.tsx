@@ -1,21 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import Navbar from "@/app/components/Navbar";
-import Footer from '@/app/components/Footer';
+import { useAuth } from '@/app/components/AuthProvider';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
-import { useAuth } from '@/app/components/AuthProvider';
+import EmptyState from '@/app/components/EmptyState';
+import ErrorState from "@/app/components/ErrorState"
+import Footer from '@/app/components/Footer';
+import LoadingState from "@/app/components/LoadingState"
+import Navbar from "@/app/components/Navbar";
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
+import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardRole, BoardRoleTranslations, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
-import { BoardMemberDto, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER } from '@/app/types/board';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatPhoneNumber } from '@/app/utils/formatters';
-import LoadingState from "@/app/components/LoadingState"
-import ErrorState from "@/app/components/ErrorState"
-import EmptyState from '@/app/components/EmptyState';
-import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 
 export default function BoardPage() {
     const [members, setMembers] = useState<BoardMemberDto[]>([]);

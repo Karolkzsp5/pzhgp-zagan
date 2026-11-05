@@ -1,5 +1,5 @@
-import { API_URL, ensureOk, fetchApi } from '@/app/utils/apiClient';
 import { SectionDto } from '@/app/types/section';
+import { API_URL, ensureOk, fetchApi } from '@/app/utils/apiClient';
 
 export const sectionService = {
     /** Lista sekcji oddziału w kolejności wyświetlania (endpoint publiczny). */

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import TextEditor from './TextEditor';
-import Modal from './Modal';
+import { AnnouncementDto } from '@/app/types/announcement';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
-import { AnnouncementDto } from '@/app/types/announcement';
+import Modal from './Modal';
+import TextEditor from './TextEditor';
 
 interface AnnouncementModalProps {
     isOpen: boolean;

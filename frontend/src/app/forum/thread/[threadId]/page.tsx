@@ -1,25 +1,25 @@
 "use client";
 
-import { useState, useEffect, use, useRef, useCallback } from 'react';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import DOMPurify from 'dompurify';
-import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import Pagination from '@/app/components/Pagination';
-import TextEditor from '@/app/components/TextEditor';
-import AuthGuard from '@/app/components/AuthGuard';
 import { useRouter } from 'next/navigation';
+import DOMPurify from 'dompurify';
+import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
+import Footer from '@/app/components/Footer';
+import LoadingState from '@/app/components/LoadingState';
+import Navbar from '@/app/components/Navbar';
+import Pagination from '@/app/components/Pagination';
+import TextEditor from '@/app/components/TextEditor';
+import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
+import { createPost, deletePost, deleteThread, fetchPostsByThread, fetchThreadById, toggleThreadStatus, updatePost, updateThreadTitle} from '@/app/services/forumService';
+import { ForumPostDto, ForumThreadDto } from '@/app/types/forum';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatDateTime, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
-import useLatestRequest from '@/app/hooks/useLatestRequest';
-import { fetchThreadById, fetchPostsByThread, createPost, deleteThread, toggleThreadStatus, deletePost, updatePost, updateThreadTitle} from '@/app/services/forumService';
-import useConfirmDialog from '@/app/hooks/useConfirmDialog';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
-import { ForumPostDto, ForumThreadDto } from '@/app/types/forum';
 
 export default function ThreadViewPage({ params }: { params: Promise<{ threadId: string }> }) {
     const { isLoggedIn } = useAuth();

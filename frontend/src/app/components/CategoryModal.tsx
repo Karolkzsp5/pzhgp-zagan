@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Modal from '@/app/components/Modal';
 import { createCategory, updateCategory } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
-import Modal from '@/app/components/Modal';
 
 interface CategoryModalProps {
     isOpen: boolean;

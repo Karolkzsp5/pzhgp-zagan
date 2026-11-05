@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect, use, useCallback } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatDateTime } from '@/app/utils/formatters';
-import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import Pagination from '@/app/components/Pagination';
-import ThreadModal from '@/app/components/ThreadModal';
 import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
+import EmptyState from '@/app/components/EmptyState';
+import ErrorState from '@/app/components/ErrorState';
+import Footer from '@/app/components/Footer';
+import LoadingState from '@/app/components/LoadingState';
+import Navbar from '@/app/components/Navbar';
+import Pagination from '@/app/components/Pagination';
+import ThreadModal from '@/app/components/ThreadModal';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { fetchCategoryById, fetchThreadsByCategory } from '@/app/services/forumService';
 import { ForumCategoryDto, ForumThreadDto } from '@/app/types/forum';
-import LoadingState from '@/app/components/LoadingState';
-import ErrorState from '@/app/components/ErrorState';
-import EmptyState from '@/app/components/EmptyState';
-import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { formatDateTime } from '@/app/utils/formatters';
 
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
     const { isLoggedIn } = useAuth();

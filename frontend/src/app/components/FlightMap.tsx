@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { FlightDetailsDto } from '@/app/types/flight';
+import { CURSOR_COLOR, REFERENCE_COLOR, SPEED_RAMP, computeSpeedThresholds, speedBucket } from '@/app/utils/flightScale';
 import { formatTime } from '@/app/utils/formatters';
-import { SPEED_RAMP, REFERENCE_COLOR, CURSOR_COLOR, computeSpeedThresholds, speedBucket } from '@/app/utils/flightScale';
+import 'leaflet/dist/leaflet.css';
 
 type LatLng = [number, number];
 

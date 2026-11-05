@@ -1,6 +1,6 @@
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 import { PageResponse } from '@/app/types/common';
 import { ForumCategoryDto, ForumPostDto, ForumThreadDto } from '@/app/types/forum';
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const fetchCategories = async (): Promise<ForumCategoryDto[]> => {
     const response = await fetchWithAuth(`${API_URL}/api/forum/categories`);

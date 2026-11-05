@@ -2,18 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import { useAuth } from '@/app/components/AuthProvider';
-import { fetchCategories, deleteCategory } from '@/app/services/forumService';
-import { ForumCategoryDto } from '@/app/types/forum';
-import CategoryModal from '@/app/components/CategoryModal';
 import AuthGuard from '@/app/components/AuthGuard';
+import { useAuth } from '@/app/components/AuthProvider';
+import CategoryModal from '@/app/components/CategoryModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
-import LoadingState from '@/app/components/LoadingState';
-import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import ErrorState from '@/app/components/ErrorState';
+import Footer from '@/app/components/Footer';
+import LoadingState from '@/app/components/LoadingState';
+import Navbar from '@/app/components/Navbar';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import { deleteCategory, fetchCategories } from '@/app/services/forumService';
+import { ForumCategoryDto } from '@/app/types/forum';
 
 export default function ForumPage() {
     const { user, isLoggedIn } = useAuth();

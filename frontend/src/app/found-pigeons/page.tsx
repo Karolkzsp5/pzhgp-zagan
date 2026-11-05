@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo,  useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import Navbar from '@/app/components/Navbar';
+import { useAuth } from '@/app/components/AuthProvider';
 import Footer from '@/app/components/Footer';
+import Navbar from '@/app/components/Navbar';
 import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
-import { useAuth } from '@/app/components/AuthProvider';
 import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;

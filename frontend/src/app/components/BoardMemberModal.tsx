@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER, SECTION_ROLES } from '@/app/types/board';
+import React, { useEffect, useState } from 'react';
+import Modal from '@/app/components/Modal';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
+import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { BreederDto } from '@/app/types/breeder';
 import { SectionDto } from '@/app/types/section';
 import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
-import Modal from '@/app/components/Modal';
 
 interface BoardMemberModalProps {
     isOpen: boolean;

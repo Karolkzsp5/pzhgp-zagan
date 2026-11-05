@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { formatDateTime } from '@/app/utils/formatters';
 import { useAuth } from '@/app/components/AuthProvider';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { getAuthGeneration } from '@/app/utils/authSession';
 import { PageResponse } from '@/app/types/common';
 import { NotificationDto } from '@/app/types/notification';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { getAuthGeneration } from '@/app/utils/authSession';
+import { formatDateTime } from '@/app/utils/formatters';
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 

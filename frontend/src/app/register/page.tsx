@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
+import Modal from '@/app/components/Modal';
 import { sectionService } from '@/app/services/sectionService';
 import { SectionDto } from '@/app/types/section';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
-import Modal from '@/app/components/Modal';
 
 interface RegistrationFormData {
     name: string;
