@@ -58,15 +58,23 @@ export const fetchApi = async (url: string, options: RequestInit = {}): Promise<
     }
 };
 
+/** Odpowiedź API z kodem błędu. Komunikat pochodzi z serwera albo jest zastępczy. */
+export class ApiError extends Error {
+    constructor(public readonly status: number, message: string) {
+        super(message);
+        this.name = 'ApiError';
+    }
+}
+
 export const readApiError = async (response: Response, fallback: string): Promise<string> => {
     const message = await response.text();
     return message.trim().length > 0 ? message : fallback;
 };
 
-/** Zgłasza błąd z komunikatem serwera (albo podanym zastępczym), gdy odpowiedź nie jest poprawna. */
+/** Zgłasza ApiError z komunikatem serwera (albo podanym zastępczym), gdy odpowiedź nie jest poprawna. */
 export const ensureOk = async (response: Response, fallback: string): Promise<void> => {
     if (!response.ok) {
-        throw new Error(await readApiError(response, fallback));
+        throw new ApiError(response.status, await readApiError(response, fallback));
     }
 };
 

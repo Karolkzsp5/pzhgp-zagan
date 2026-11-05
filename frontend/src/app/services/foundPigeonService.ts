@@ -1,13 +1,6 @@
 import { PageResponse } from '@/app/types/common';
 import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus } from '@/app/types/foundPigeon';
-import { API_URL, ensureOk, fetchApi, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-
-export class FoundPigeonApiError extends Error {
-    constructor(public readonly status: number, message: string) {
-        super(message);
-        this.name = 'FoundPigeonApiError';
-    }
-}
+import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const foundPigeonService = {
     /**
@@ -23,9 +16,7 @@ export const foundPigeonService = {
             body: JSON.stringify(request)
         });
 
-        if (!response.ok) {
-            throw new FoundPigeonApiError(response.status, await readApiError(response, 'Nie udało się wysłać zgłoszenia.'));
-        }
+        await ensureOk(response, 'Nie udało się wysłać zgłoszenia.');
 
         const body = await response.json();
         return body.id as number;

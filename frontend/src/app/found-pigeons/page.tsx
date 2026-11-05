@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useAuth } from '@/app/components/AuthProvider';
 import Footer from '@/app/components/Footer';
 import Navbar from '@/app/components/Navbar';
-import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
+import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
+import { ApiError } from '@/app/utils/apiClient';
 import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
@@ -128,7 +129,7 @@ export default function FoundPigeonsPage() {
         } catch (error) {
             // Serwer odpowiada po polsku, a formularz może być po angielsku lub niemiecku,
             // dlatego pokazujemy komunikat w języku wybranym przez użytkownika.
-            const isThrottled = error instanceof FoundPigeonApiError && error.status === 429;
+            const isThrottled = error instanceof ApiError && error.status === 429;
             setSubmitError(isThrottled ? text.errorTooManyRequests : text.errorSubmitFailed);
         } finally {
             setIsSubmitting(false);
