@@ -29,32 +29,32 @@ public class AdminController {
     }
 
     @PutMapping("/approve/{id}")
-    public ResponseEntity<String> approveAccount(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<Void> approveAccount(@PathVariable Long id, Authentication authentication) {
         adminService.approveAccount(id, authentication.getName());
-        return ResponseEntity.ok("Konto zostało pomyślnie zaakceptowane.");
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/reject/{id}")
-    public ResponseEntity<String> rejectAccount(@PathVariable Long id) {
+    public ResponseEntity<Void> rejectAccount(@PathVariable Long id) {
         adminService.rejectAccount(id);
-        return ResponseEntity.ok("Konto zostało odrzucone i usunięte.");
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/block/{id}")
-    public ResponseEntity<String> blockAccount(@PathVariable Long id) {
+    public ResponseEntity<Void> blockAccount(@PathVariable Long id) {
         adminService.blockAccount(id);
-        return ResponseEntity.ok("Konto zostało pomyślnie zablokowane.");
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/unblock/{id}")
-    public ResponseEntity<String> unblockAccount(@PathVariable Long id) {
+    public ResponseEntity<Void> unblockAccount(@PathVariable Long id) {
         adminService.unblockAccount(id);
-        return ResponseEntity.ok("Konto zostało pomyślnie odblokowane.");
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<String> changeRole(@PathVariable Long id, @Valid @RequestBody RoleChangeRequest request, Authentication authentication) {
+    public ResponseEntity<Void> changeRole(@PathVariable Long id, @Valid @RequestBody RoleChangeRequest request, Authentication authentication) {
         adminService.changeRole(id, request.role(), authentication.getName());
-        return ResponseEntity.ok("Rola została pomyślnie zmieniona.");
+        return ResponseEntity.noContent().build();
     }
 }

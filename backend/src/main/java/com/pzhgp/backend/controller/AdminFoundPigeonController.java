@@ -11,7 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
 /**
  * Panel obsługi zgłoszeń odnalezienia gołębi.
@@ -41,8 +40,8 @@ public class AdminFoundPigeonController {
 
     /** Liczba zgłoszeń oczekujących na weryfikację. */
     @GetMapping("/pending-count")
-    public ResponseEntity<Map<String, Long>> getPendingCount() {
-        return ResponseEntity.ok(Map.of("count", foundPigeonService.countPendingReports()));
+    public ResponseEntity<Long> getPendingCount() {
+        return ResponseEntity.ok(foundPigeonService.countPendingReports());
     }
 
     @GetMapping("/{id}")

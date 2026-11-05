@@ -442,7 +442,7 @@ class FoundPigeonIntegrationTest {
         mockMvc.perform(get("/api/admin/found-pigeons/pending-count")
                         .with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count").value(2));
+                .andExpect(content().string("2"));
     }
 
     @Test

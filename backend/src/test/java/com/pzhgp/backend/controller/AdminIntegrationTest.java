@@ -128,7 +128,7 @@ class AdminIntegrationTest {
     void shouldApproveAccount() throws Exception {
         long initialNotificationCount = notificationRepository.count();
 
-        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/approve/" + pendingBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
 
         Breeder updated = breederRepository.findById(pendingBreeder.getId()).get();
         assertEquals(AccountStatus.ACTIVE, updated.getStatus());
@@ -151,14 +151,14 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should reject a pending account and delete it from the database")
     void shouldRejectAccount() throws Exception {
-        mockMvc.perform(delete("/api/admin/reject/" + pendingBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/admin/reject/" + pendingBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertTrue(breederRepository.findById(pendingBreeder.getId()).isEmpty());
     }
 
     @Test
     @DisplayName("Should block an active account")
     void shouldBlockAccount() throws Exception {
-        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/block/" + activeBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
 
         Breeder updated = breederRepository.findById(activeBreeder.getId()).get();
         assertEquals(AccountStatus.BLOCKED, updated.getStatus());
@@ -175,7 +175,7 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should unblock a blocked account")
     void shouldUnblockAccount() throws Exception {
-        mockMvc.perform(put("/api/admin/unblock/" + blockedBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isOk());
+        mockMvc.perform(put("/api/admin/unblock/" + blockedBreeder.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
 
         Breeder updated = breederRepository.findById(blockedBreeder.getId()).get();
         assertEquals(AccountStatus.ACTIVE, updated.getStatus());
@@ -191,7 +191,7 @@ class AdminIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         Breeder updated = breederRepository.findById(activeBreeder.getId()).get();
         assertEquals(Role.MODERATOR, updated.getRole());
