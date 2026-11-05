@@ -237,7 +237,7 @@ class AdminServiceTest {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        assertDoesNotThrow(() -> adminService.changeRole(2L, "MODERATOR", "admin@test.pl"));
+        assertDoesNotThrow(() -> adminService.changeRole(2L, Role.MODERATOR, "admin@test.pl"));
 
         assertEquals(Role.MODERATOR, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
@@ -256,19 +256,19 @@ class AdminServiceTest {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        assertDoesNotThrow(() -> adminService.changeRole(2L, "BREEDER", "admin@test.pl"));
+        assertDoesNotThrow(() -> adminService.changeRole(2L, Role.BREEDER, "admin@test.pl"));
 
         assertEquals(Role.BREEDER, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when changing to invalid role")
-    void shouldThrowExceptionOnInvalidRole() {
+    @DisplayName("Should throw IllegalArgumentException when trying to grant the administrator role")
+    void shouldThrowExceptionOnAdministratorRole() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, "SUPERMAN", "admin@test.pl"));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> adminService.changeRole(2L, Role.ADMINISTRATOR, "admin@test.pl"));
 
         assertEquals("Przekazano nieprawidłową rolę.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -292,7 +292,7 @@ class AdminServiceTest {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.changeRole(3L, Role.BREEDER, "admin@test.pl"));
 
         assertEquals("Nie możesz zmieniać uprawnień innym administratorom.", ex.getMessage());
         verify(breederRepository, never()).save(any());
@@ -302,7 +302,7 @@ class AdminServiceTest {
     @DisplayName("Should throw EntityNotFoundException when changing role of non-existent account")
     void shouldChangeRole_WhenAccountDoesNotExist() {
         when(breederRepository.findById(99L)).thenReturn(Optional.empty());
-        assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(99L, "MODERATOR", "admin@test.pl"));
+        assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(99L, Role.MODERATOR, "admin@test.pl"));
     }
 
     @Test
@@ -311,7 +311,7 @@ class AdminServiceTest {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
         when(breederRepository.findByEmail("unknown@test.pl")).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(2L, "MODERATOR", "unknown@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> adminService.changeRole(2L, Role.MODERATOR, "unknown@test.pl"));
         assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
     }
 }

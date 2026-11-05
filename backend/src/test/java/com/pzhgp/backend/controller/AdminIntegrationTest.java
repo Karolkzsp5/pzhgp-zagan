@@ -226,7 +226,8 @@ class AdminIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Nie podano nowej roli."));
     }
 
     @Test
@@ -237,7 +238,8 @@ class AdminIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Nieprawidłowa wartość pola \"role\"."));
     }
 
     @Test

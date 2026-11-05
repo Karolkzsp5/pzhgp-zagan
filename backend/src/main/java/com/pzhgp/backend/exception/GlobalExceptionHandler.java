@@ -18,6 +18,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.util.Set;
 
@@ -102,6 +103,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<String> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        // Nieznana wartość pola wyliczeniowego (np. roli) to błąd danych, a nie struktury JSON.
+        if (ex.getCause() instanceof InvalidFormatException invalidFormat
+                && invalidFormat.getTargetType() != null
+                && invalidFormat.getTargetType().isEnum()
+                && !invalidFormat.getPath().isEmpty()) {
+            String field = invalidFormat.getPath().getLast().getPropertyName();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nieprawidłowa wartość pola \"" + field + "\".");
+        }
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nieprawidłowy format żądania (błąd struktury JSON).");
     }
 

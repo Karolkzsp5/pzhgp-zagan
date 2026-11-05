@@ -1,14 +1,15 @@
 package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.dto.BreederResponseDto;
+import com.pzhgp.backend.dto.RoleChangeRequest;
 import com.pzhgp.backend.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -52,12 +53,8 @@ public class AdminController {
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<String> changeRole(@PathVariable Long id, @RequestBody Map<String, String> requestBody, Authentication authentication) {
-        String newRole = requestBody.get("role");
-        if (newRole == null || newRole.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nie podano nowej roli.");
-        }
-        adminService.changeRole(id, newRole, authentication.getName());
+    public ResponseEntity<String> changeRole(@PathVariable Long id, @Valid @RequestBody RoleChangeRequest request, Authentication authentication) {
+        adminService.changeRole(id, request.role(), authentication.getName());
         return ResponseEntity.ok("Rola została pomyślnie zmieniona.");
     }
 }
