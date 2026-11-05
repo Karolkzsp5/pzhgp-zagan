@@ -68,6 +68,19 @@ class HttpErrorIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return error messages as plain text even when the client asks for JSON")
+    void shouldReturnPlainTextErrorsForJsonClients() throws Exception {
+        mockMvc.perform(get("/api/does-not-exist").with(cookieAuth(token)).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType("text/plain;charset=UTF-8"))
+                .andExpect(content().string("Nie znaleziono zasobu pod podanym adresem."));
+
+        mockMvc.perform(get("/api/forum/threads/999999").with(cookieAuth(token)).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType("text/plain;charset=UTF-8"));
+    }
+
+    @Test
     @DisplayName("Should return 405 with the Allow header for an unsupported HTTP method")
     void shouldReturnMethodNotAllowedForUnsupportedMethod() throws Exception {
         mockMvc.perform(delete("/api/sections"))
