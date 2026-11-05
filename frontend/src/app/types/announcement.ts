@@ -9,3 +9,10 @@ export interface AnnouncementDto {
     canEdit: boolean;
     canDelete: boolean;
 }
+
+/** Dane formularza ogłoszenia wysyłane przy dodawaniu i edycji. */
+export interface AnnouncementRequest {
+    title: string;
+    content: string;
+    isPinned: boolean;
+}

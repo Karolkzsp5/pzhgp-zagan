@@ -12,8 +12,9 @@ import LoadingState from '@/app/components/LoadingState';
 import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
+import { announcementService } from '@/app/services/announcementService';
 import { AnnouncementDto } from '@/app/types/announcement';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatDate, formatDateTime } from '@/app/utils/formatters';
 
 export default function HomePage() {
@@ -40,13 +41,7 @@ export default function HomePage() {
         setAnnouncementError('');
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/announcements?page=${page}&size=10`);
-
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się pobrać ogłoszeń.'));
-            }
-
-            const data = await response.json();
+            const data = await announcementService.getAnnouncements(page);
 
             if (!isLatestRequest(requestId)) {
                 return;
@@ -85,17 +80,7 @@ export default function HomePage() {
         setIsDeleting(true);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/announcements/${deletingId}`, {
-                    method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                const message = await readApiError(response, 'Nie udało się usunąć ogłoszenia.');
-
-                setPostToDelete(null);
-                setActionError(message);
-                return;
-            }
+            await announcementService.deleteAnnouncement(deletingId);
 
             const isLastOnPage = announcements.length === 1 && currentPage > 0;
             const targetPage = isLastOnPage ? currentPage - 1 : currentPage;

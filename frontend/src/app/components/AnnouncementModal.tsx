@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { announcementService } from '@/app/services/announcementService';
 import { AnnouncementDto } from '@/app/types/announcement';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import Modal from './Modal';
 import TextEditor from './TextEditor';
@@ -56,15 +57,12 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(announcementToEdit ? `${API_URL}/api/announcements/${announcementToEdit.id}` : `${API_URL}/api/announcements`, {
-                method: announcementToEdit ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: cleanTitle, content, isPinned })
-            });
+            const request = { title: cleanTitle, content, isPinned };
 
-            if (!response.ok) {
-                setError(await readApiError(response, 'Wystąpił błąd podczas zapisywania ogłoszenia.'));
-                return;
+            if (announcementToEdit) {
+                await announcementService.updateAnnouncement(announcementToEdit.id, request);
+            } else {
+                await announcementService.createAnnouncement(request);
             }
 
             onSuccess();
