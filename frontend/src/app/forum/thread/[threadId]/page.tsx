@@ -15,8 +15,8 @@ import Pagination from '@/app/components/Pagination';
 import TextEditor from '@/app/components/TextEditor';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
-import { ThreadStatusChange, createPost, deletePost, deleteThread, fetchPostsByThread, fetchThreadById, updatePost, updateThreadStatus, updateThreadTitle} from '@/app/services/forumService';
-import { ForumPostDto, ForumThreadDto } from '@/app/types/forum';
+import { forumService } from '@/app/services/forumService';
+import { ForumPostDto, ForumThreadDto, ThreadStatusChange } from '@/app/types/forum';
 import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatDateTime, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
@@ -72,7 +72,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setError('');
 
         try {
-            const [threadData, postsData] = await Promise.all([fetchThreadById(threadId, countView), fetchPostsByThread(threadId, currentPage)]);
+            const [threadData, postsData] = await Promise.all([forumService.getThreadById(threadId, countView), forumService.getPostsByThread(threadId, currentPage)]);
 
             if (!isLatestRequest(requestId)) {
                 return;
@@ -135,10 +135,10 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setIsReplying(true);
 
         try {
-            await createPost(threadId, replyContent);
+            await forumService.createPost(threadId, replyContent);
             setReplyContent('');
 
-            const updatedThread = await fetchThreadById(threadId, false);
+            const updatedThread = await forumService.getThreadById(threadId, false);
             setThread(updatedThread);
 
             const totalPostsCount = (updatedThread.repliesCount || 0) + 1;
@@ -162,7 +162,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             message: 'Czy na pewno chcesz usunąć ten wątek wraz ze wszystkimi odpowiedziami? Operacja jest nieodwracalna.',
             onConfirm: async () => {
                 try {
-                    await deleteThread(threadId);
+                    await forumService.deleteThread(threadId);
                     router.push(thread ? `/forum/${thread.categoryId}` : '/forum');
                 } catch (error) {
                     showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania wątku.');
@@ -177,7 +177,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         const status: ThreadStatusChange = action === 'LOCK' ? { isLocked: !thread.isLocked } : { isPinned: !thread.isPinned };
 
         try {
-            await updateThreadStatus(threadId, status);
+            await forumService.updateThreadStatus(threadId, status);
             setThread(prev => prev ? { ...prev, ...status } : prev);
         } catch (error) {
             showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas zmiany statusu wątku.');
@@ -195,7 +195,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setIsTitleSubmitting(true);
 
         try {
-            await updateThreadTitle(threadId, cleanTitle);
+            await forumService.updateThreadTitle(threadId, cleanTitle);
             setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
         } catch (error) {
@@ -221,7 +221,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
         setEditError('');
 
         try {
-            await updatePost(postId, editContent);
+            await forumService.updatePost(postId, editContent);
             cancelEditing();
             await loadThreadData();
         } catch (error) {
@@ -237,7 +237,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             message: 'Czy na pewno chcesz usunąć ten wpis?',
             onConfirm: async () => {
                 try {
-                    await deletePost(postId);
+                    await forumService.deletePost(postId);
                     await loadThreadData();
                 } catch (error) {
                     showAlert('Nie można usunąć', error instanceof Error ? error.message : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');

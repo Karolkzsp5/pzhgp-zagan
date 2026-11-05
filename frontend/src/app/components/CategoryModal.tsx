@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
-import { createCategory, updateCategory } from '@/app/services/forumService';
+import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
 
 interface CategoryModalProps {
@@ -56,9 +56,9 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
 
         try {
             if (categoryToEdit) {
-                await updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
+                await forumService.updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
             } else {
-                await createCategory(cleanName, description.trim(), finalSortOrder);
+                await forumService.createCategory(cleanName, description.trim(), finalSortOrder);
             }
             onSuccess();
             onClose();

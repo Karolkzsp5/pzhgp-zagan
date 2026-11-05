@@ -12,7 +12,7 @@ import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import ThreadModal from '@/app/components/ThreadModal';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
-import { fetchCategoryById, fetchThreadsByCategory } from '@/app/services/forumService';
+import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto, ForumThreadDto } from '@/app/types/forum';
 import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatDateTime } from '@/app/utils/formatters';
@@ -40,7 +40,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
         setError('');
 
         try {
-            const [categoryData, pageData] = await Promise.all([fetchCategoryById(categoryId), fetchThreadsByCategory(categoryId, currentPage)]);
+            const [categoryData, pageData] = await Promise.all([forumService.getCategoryById(categoryId), forumService.getThreadsByCategory(categoryId, currentPage)]);
 
             if (!isLatestRequest(requestId)) {
                 return;

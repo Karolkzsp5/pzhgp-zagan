@@ -2,7 +2,8 @@
 
 import { type FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { forumService } from '@/app/services/forumService';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import TextEditor from './TextEditor';
 
@@ -45,16 +46,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/forum/threads`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ categoryId, title: cleanTitle, initialPostContent: content })
-            });
-
-            if (!response.ok) {
-                setError(await readApiError(response, 'Wystąpił błąd podczas tworzenia wątku.'));
-                return;
-            }
+            await forumService.createThread(categoryId, cleanTitle, content);
 
             onSuccess();
             onClose();

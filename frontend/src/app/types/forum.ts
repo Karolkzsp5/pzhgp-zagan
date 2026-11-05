@@ -36,3 +36,6 @@ export interface ForumPostDto {
     canEdit: boolean;
     canDelete: boolean;
 }
+
+/** Nowa wartość blokady albo przypięcia wątku. */
+export type ThreadStatusChange = { isLocked: boolean } | { isPinned: boolean };

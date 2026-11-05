@@ -12,7 +12,7 @@ import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
 import Navbar from '@/app/components/Navbar';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
-import { deleteCategory, fetchCategories } from '@/app/services/forumService';
+import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
 
 export default function ForumPage() {
@@ -30,7 +30,7 @@ export default function ForumPage() {
         setError('');
 
         try {
-            const data = await fetchCategories();
+            const data = await forumService.getCategories();
             setCategories(data);
         } catch (error) {
             setError(error instanceof Error ? error.message : 'Nie udało się pobrać danych forum.');
@@ -52,7 +52,7 @@ export default function ForumPage() {
             message: 'Czy na pewno chcesz usunąć tę kategorię? Upewnij się, że nie zawiera ona żadnych wątków.',
             onConfirm: async () => {
                 try {
-                    await deleteCategory(id);
+                    await forumService.deleteCategory(id);
                     void loadCategories();
                 } catch (error) {
                     showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania kategorii.');
