@@ -15,6 +15,7 @@ import { sectionService } from '@/app/services/sectionService';
 import { BreederDto } from '@/app/types/breeder';
 import { SectionDto } from '@/app/types/section';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { UserRole } from '@/app/utils/authSession';
 import { formatAccountStatus, formatDate, formatDateTime, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 
 type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
@@ -44,7 +45,7 @@ export default function AdminPanelPage() {
     const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
     const [selectedBreeder, setSelectedBreeder] = useState<BreederDto | null>(null);
     const [roleChangeBreeder, setRoleChangeBreeder] = useState<BreederDto | null>(null);
-    const [newRole, setNewRole] = useState<string>('');
+    const [newRole, setNewRole] = useState<UserRole>('BREEDER');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSection, setFilterSection] = useState<string>('ALL');
@@ -605,7 +606,7 @@ export default function AdminPanelPage() {
                                     id="role-select"
                                     data-cy="role-select"
                                     value={newRole}
-                                    onChange={(e) => setNewRole(e.target.value)}
+                                    onChange={(e) => setNewRole(e.target.value as UserRole)}
                                     className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
                                 >
                                     <option value="BREEDER">Hodowca</option>

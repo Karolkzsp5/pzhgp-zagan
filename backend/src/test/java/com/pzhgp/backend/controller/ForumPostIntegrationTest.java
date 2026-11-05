@@ -98,7 +98,7 @@ class ForumPostIntegrationTest {
         thread.setCategory(category);
         thread.setAuthor(threadAuthor);
         thread.setTitle("Temat do dyskusji");
-        thread.setIsLocked(false);
+        thread.setLocked(false);
         thread.setLastPostAt(Instant.now().minus(1, ChronoUnit.DAYS));
         threadRepository.save(thread);
 
@@ -227,7 +227,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 409 when adding a post to a locked thread")
     void addPost_WhenThreadIsLocked_ShouldReturn409() throws Exception {
-        thread.setIsLocked(true);
+        thread.setLocked(true);
         threadRepository.save(thread);
 
         ForumPostRequest request = new ForumPostRequest("Próba odpisu");

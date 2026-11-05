@@ -1,3 +1,5 @@
+import { UserRole } from '@/app/utils/authSession';
+
 export type AccountStatus = 'PENDING' | 'ACTIVE' | 'BLOCKED';
 
 /** Konto hodowcy w postaci zwracanej przez panel administratora. */
@@ -16,5 +18,5 @@ export interface BreederDto {
     sectionName: string;
     status: AccountStatus;
     createdAt: string;
-    role: string;
+    role: UserRole;
 }

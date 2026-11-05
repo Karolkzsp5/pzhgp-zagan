@@ -38,7 +38,7 @@ public record RegistrationRequest(
 
         @NotNull(message = "ID sekcji nie może być puste")
         @Positive(message = "ID sekcji musi być liczbą dodatnią")
-        Integer sectionId,
+        Long sectionId,
 
         @NotBlank(message = "Adres e-mail nie może być pusty")
         @Size(max = 320, message = "Adres e-mail może mieć maksymalnie 320 znaków")

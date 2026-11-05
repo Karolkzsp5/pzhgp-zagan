@@ -101,11 +101,11 @@ public class ForumThreadService {
         }
 
         if (request.isLocked() != null) {
-            thread.setIsLocked(request.isLocked());
+            thread.setLocked(request.isLocked());
         }
 
         if (request.isPinned() != null) {
-            thread.setIsPinned(request.isPinned());
+            thread.setPinned(request.isPinned());
         }
     }
 
@@ -144,8 +144,8 @@ public class ForumThreadService {
                 thread.getTitle(),
                 thread.getAuthor().getFullName(),
                 repliesCount,
-                thread.getIsLocked(),
-                thread.getIsPinned(),
+                thread.isLocked(),
+                thread.isPinned(),
                 thread.getLastPostAt(),
                 thread.getViews(),
                 thread.getCreatedAt(),

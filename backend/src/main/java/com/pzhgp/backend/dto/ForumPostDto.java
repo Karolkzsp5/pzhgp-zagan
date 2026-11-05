@@ -1,11 +1,13 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.entity.Role;
+
 import java.time.Instant;
 
 public record ForumPostDto(
         Long id,
         String authorName,
-        String authorRole,
+        Role authorRole,
         String body,
         Instant createdAt,
         Instant editedAt,

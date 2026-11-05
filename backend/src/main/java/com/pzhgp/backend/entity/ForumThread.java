@@ -32,11 +32,11 @@ public class ForumThread {
     @Column(nullable = false, length = 150)
     private String title;
 
-    @Column(name = "is_locked")
-    private Boolean isLocked = false;
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
 
-    @Column(name = "is_pinned")
-    private Boolean isPinned = false;
+    @Column(name = "is_pinned", nullable = false)
+    private boolean isPinned = false;
 
     @Column(name = "last_post_at")
     private Instant lastPostAt;

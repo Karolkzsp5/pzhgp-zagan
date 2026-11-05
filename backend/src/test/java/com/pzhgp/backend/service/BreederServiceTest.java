@@ -54,7 +54,7 @@ class BreederServiceTest {
     void setUp() {
         validRegistrationRequest = new RegistrationRequest(
                 "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
-                "Testowa", "15b", 1, "testcypress@test.com", "444444444", "Testcypress1@"
+                "Testowa", "15b", 1L, "testcypress@test.com", "444444444", "Testcypress1@"
         );
 
         activeBreeder = new Breeder();
@@ -91,7 +91,7 @@ class BreederServiceTest {
     void shouldNormalizeEmailDuringRegistration() {
         RegistrationRequest request = new RegistrationRequest(
                 "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
-                "Testowa", "15b", 1, "  TestCypress@TEST.COM  ", "444444444", "Testcypress1@"
+                "Testowa", "15b", 1L, "  TestCypress@TEST.COM  ", "444444444", "Testcypress1@"
         );
 
         assertEquals("testcypress@test.com", request.email());

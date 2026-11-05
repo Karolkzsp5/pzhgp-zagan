@@ -94,7 +94,7 @@ class ForumPostServiceTest {
         thread.setId(100L);
         thread.setAuthor(threadAuthor);
         thread.setTitle("Tytuł Tematu");
-        thread.setIsLocked(false);
+        thread.setLocked(false);
         thread.setLastPostAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
         post = new ForumPost();
@@ -210,7 +210,7 @@ class ForumPostServiceTest {
     @Test
     @DisplayName("Should throw ResourceConflictException when trying to add post to a locked thread")
     void addPost_WhenThreadIsLocked_ShouldThrowException() {
-        thread.setIsLocked(true);
+        thread.setLocked(true);
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
 
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));

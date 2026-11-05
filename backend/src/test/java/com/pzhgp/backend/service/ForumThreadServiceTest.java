@@ -91,8 +91,8 @@ class ForumThreadServiceTest {
         thread.setAuthor(author);
         thread.setCategory(category);
         thread.setTitle("Testowy wątek");
-        thread.setIsLocked(false);
-        thread.setIsPinned(false);
+        thread.setLocked(false);
+        thread.setPinned(false);
         thread.setViews(0);
         thread.setRepliesCount(0);
     }
@@ -160,8 +160,8 @@ class ForumThreadServiceTest {
         updatedThread.setAuthor(author);
         updatedThread.setCategory(category);
         updatedThread.setTitle(thread.getTitle());
-        updatedThread.setIsLocked(false);
-        updatedThread.setIsPinned(false);
+        updatedThread.setLocked(false);
+        updatedThread.setPinned(false);
         updatedThread.setViews(1);
         updatedThread.setRepliesCount(4);
 
@@ -277,13 +277,13 @@ class ForumThreadServiceTest {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
-        assertFalse(thread.getIsLocked());
+        assertFalse(thread.isLocked());
 
         threadService.updateThreadStatus(100L, new ThreadStatusRequest(true, null), "admin@test.com");
-        assertTrue(thread.getIsLocked());
+        assertTrue(thread.isLocked());
 
         threadService.updateThreadStatus(100L, new ThreadStatusRequest(false, null), "admin@test.com");
-        assertFalse(thread.getIsLocked());
+        assertFalse(thread.isLocked());
     }
 
     @Test
@@ -292,13 +292,13 @@ class ForumThreadServiceTest {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
-        assertFalse(thread.getIsPinned());
+        assertFalse(thread.isPinned());
 
         threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, true), "moderator@test.com");
-        assertTrue(thread.getIsPinned());
+        assertTrue(thread.isPinned());
 
         threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, false), "moderator@test.com");
-        assertFalse(thread.getIsPinned());
+        assertFalse(thread.isPinned());
     }
 
     @Test

@@ -48,7 +48,7 @@ public class ForumPostService {
     public void addPost(Long threadId, ForumPostRequest request, String authorEmail) {
         ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
-        if (thread.getIsLocked()) {
+        if (thread.isLocked()) {
             throw new ResourceConflictException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
         }
 
@@ -121,7 +121,7 @@ public class ForumPostService {
         return new ForumPostDto(
                 post.getId(),
                 post.getAuthor().getFullName(),
-                post.getAuthor().getRole().name(),
+                post.getAuthor().getRole(),
                 post.getBody(),
                 post.getCreatedAt(),
                 post.getEditedAt(),

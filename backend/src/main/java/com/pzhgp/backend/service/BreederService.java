@@ -41,7 +41,7 @@ public class BreederService {
             throw new ResourceConflictException("Użytkownik z podanym numerem telefonu już istnieje.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId().longValue()).orElseThrow(() ->
+        Section section = sectionRepository.findById(request.sectionId()).orElseThrow(() ->
                 new EntityNotFoundException("Nie znaleziono sekcji o podanym ID: " + request.sectionId()));
 
         Breeder newBreeder = new Breeder();

@@ -1,6 +1,7 @@
 package com.pzhgp.backend.dto;
 
 import com.pzhgp.backend.entity.AccountStatus;
+import com.pzhgp.backend.entity.Role;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,9 +17,9 @@ public record BreederResponseDto(
         String city,
         String street,
         String houseNumber,
-        Integer sectionId,
+        Long sectionId,
         String sectionName,
         AccountStatus status,
-        String role,
+        Role role,
         Instant createdAt
 ) {}

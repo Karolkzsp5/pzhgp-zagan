@@ -97,8 +97,8 @@ class ForumThreadIntegrationTest {
         thread.setCategory(category);
         thread.setAuthor(author);
         thread.setTitle("Tytuł początkowy");
-        thread.setIsLocked(false);
-        thread.setIsPinned(false);
+        thread.setLocked(false);
+        thread.setPinned(false);
         thread.setViews(0);
         threadRepository.save(thread);
 
@@ -379,30 +379,30 @@ class ForumThreadIntegrationTest {
     @Test
     @DisplayName("Should allow an administrator to lock and unlock a thread")
     void lockThread_AsAdmin_ShouldSetStatus() throws Exception {
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertFalse(threadRepository.findById(thread.getId()).get().isLocked());
 
         patchStatus(adminToken, "{\"isLocked\": true}").andExpect(status().isNoContent());
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertTrue(threadRepository.findById(thread.getId()).get().isLocked());
 
         // Ponowne wysłanie tego samego statusu niczego nie przełącza.
         patchStatus(adminToken, "{\"isLocked\": true}").andExpect(status().isNoContent());
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertTrue(threadRepository.findById(thread.getId()).get().isLocked());
 
         patchStatus(adminToken, "{\"isLocked\": false}").andExpect(status().isNoContent());
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertFalse(threadRepository.findById(thread.getId()).get().isLocked());
     }
 
     @Test
     @DisplayName("Should allow a moderator to pin and unpin a thread")
     void pinThread_AsModerator_ShouldSetStatus() throws Exception {
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().isPinned());
 
         patchStatus(modToken, "{\"isPinned\": true}").andExpect(status().isNoContent());
-        assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertTrue(threadRepository.findById(thread.getId()).get().isPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().isLocked());
 
         patchStatus(modToken, "{\"isPinned\": false}").andExpect(status().isNoContent());
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().isPinned());
     }
 
     @Test
@@ -425,7 +425,7 @@ class ForumThreadIntegrationTest {
     void pinThread_AsBreeder_ShouldReturn403() throws Exception {
         patchStatus(otherBreederToken, "{\"isPinned\": true}").andExpect(status().isForbidden());
 
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().isPinned());
     }
 
     @Test
@@ -433,7 +433,7 @@ class ForumThreadIntegrationTest {
     void lockThread_AsBreederAuthor_ShouldReturn403() throws Exception {
         patchStatus(authorToken, "{\"isLocked\": true}").andExpect(status().isForbidden());
 
-        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
+        assertFalse(threadRepository.findById(thread.getId()).get().isLocked());
     }
 
     @Test

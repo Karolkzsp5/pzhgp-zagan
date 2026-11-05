@@ -67,7 +67,7 @@ class AuthIntegrationTest {
         authRateLimiter.reset();
         validRequest = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
+                "Słowackiego", "10", 1L, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
         );
     }
 
@@ -90,7 +90,7 @@ class AuthIntegrationTest {
     void shouldReportFirstInvalidFieldWhenSeveralAreInvalid() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jan", "", LocalDate.parse("1995-05-15"), "68100", "Żagań",
-                "Słowackiego", "10", 1, "not-an-email", "123", "SecurePass1!"
+                "Słowackiego", "10", 1L, "not-an-email", "123", "SecurePass1!"
         );
 
         for (int attempt = 0; attempt < 3; attempt++) {
@@ -107,7 +107,7 @@ class AuthIntegrationTest {
     void shouldAcceptAnyNonAlphanumericSpecialCharacter() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1, "special.char@pzhgp.pl", "444444446", "Haslo123;"
+                "Słowackiego", "10", 1L, "special.char@pzhgp.pl", "444444446", "Haslo123;"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -121,7 +121,7 @@ class AuthIntegrationTest {
     void shouldRegisterUserWithForeignLettersAndApostrophesIntegration() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jürgen", "O'Connor-Müller", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1, "foreign.name@pzhgp.pl", "444444445", "SecurePass1!"
+                "Słowackiego", "10", 1L, "foreign.name@pzhgp.pl", "444444445", "SecurePass1!"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -201,7 +201,7 @@ class AuthIntegrationTest {
 
         RegistrationRequest duplicateRequest = new RegistrationRequest(
                 "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
-                "Długa", "5", 1, "integration.test@pzhgp.pl", "111222333", "OtherPass1!"
+                "Długa", "5", 1L, "integration.test@pzhgp.pl", "111222333", "OtherPass1!"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -221,7 +221,7 @@ class AuthIntegrationTest {
 
         RegistrationRequest duplicatePhoneRequest = new RegistrationRequest(
                 "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
-                "Długa", "5", 1, "inny.mail@pzhgp.pl", "444444444", "InneHaslo1!"
+                "Długa", "5", 1L, "inny.mail@pzhgp.pl", "444444444", "InneHaslo1!"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -245,7 +245,7 @@ class AuthIntegrationTest {
                     "Żagań",
                     "Słowackiego",
                     "10",
-                    1,
+                    1L,
                     "rate-limit-" + i + "@pzhgp.pl",
                     "88888888" + i,
                     "SecurePass1!"

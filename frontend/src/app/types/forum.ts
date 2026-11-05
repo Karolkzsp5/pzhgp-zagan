@@ -1,3 +1,5 @@
+import { UserRole } from '@/app/utils/authSession';
+
 export interface ForumCategoryDto {
     id: number;
     name: string;
@@ -27,7 +29,7 @@ export interface ForumThreadDto {
 export interface ForumPostDto {
     id: number;
     authorName: string;
-    authorRole: string;
+    authorRole: UserRole;
     body: string;
     createdAt: string;
     editedAt: string | null;

@@ -8,12 +8,12 @@ public record ForumThreadDto(
         String title,
         String authorName,
         Integer repliesCount,
-        Boolean isLocked,
-        Boolean isPinned,
+        boolean isLocked,
+        boolean isPinned,
         Instant lastPostAt,
         Integer views,
         Instant createdAt,
-        Boolean canEdit,
-        Boolean canDelete,
-        Boolean canModerate
+        boolean canEdit,
+        boolean canDelete,
+        boolean canModerate
 ) {}
