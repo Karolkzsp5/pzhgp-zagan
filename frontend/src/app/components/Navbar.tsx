@@ -4,13 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
-import { PageResponse } from '@/app/types/common';
+import { notificationService } from '@/app/services/notificationService';
 import { NotificationDto } from '@/app/types/notification';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { getAuthGeneration } from '@/app/utils/authSession';
 import { formatDateTime } from '@/app/utils/formatters';
-
-const NOTIFICATIONS_PAGE_SIZE = 50;
 
 export default function Navbar() {
     const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
@@ -45,21 +43,10 @@ export default function Navbar() {
         const dataVersion = notificationDataVersionRef.current;
 
         try {
-            const [notifRes, countRes] = await Promise.all([
-                fetchWithAuth(`${API_URL}/api/notifications?page=0&size=${NOTIFICATIONS_PAGE_SIZE}`),
-                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
+            const [pageData, count] = await Promise.all([
+                notificationService.getNotifications(0),
+                notificationService.getUnreadCount()
             ]);
-
-            if (!notifRes.ok) {
-                throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
-            }
-
-            if (!countRes.ok) {
-                throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
-            }
-
-            const pageData = await notifRes.json() as PageResponse<NotificationDto>;
-            const count = await countRes.json() as number;
 
             if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
@@ -86,13 +73,7 @@ export default function Navbar() {
         setIsLoadingMoreNotifications(true);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications?page=${nextPage}&size=${NOTIFICATIONS_PAGE_SIZE}`);
-
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się pobrać wcześniejszych powiadomień.'));
-            }
-
-            const pageData = await response.json() as PageResponse<NotificationDto>;
+            const pageData = await notificationService.getNotifications(nextPage);
 
             if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
@@ -176,10 +157,7 @@ export default function Navbar() {
 
         if (!notif.isRead) {
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
-                if (!response.ok) {
-                    throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
-                }
+                await notificationService.markAsRead(notif.id);
 
                 if (!isCurrentNotificationSession(sessionId, generation)) return;
 
@@ -210,10 +188,7 @@ export default function Navbar() {
         setNotificationDeleteError(null);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}`, { method: 'DELETE' });
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się usunąć powiadomienia.'));
-            }
+            await notificationService.deleteNotification(notif.id);
 
             if (!isCurrentNotificationSession(sessionId, generation)) return;
 
@@ -246,10 +221,7 @@ export default function Navbar() {
         if (!isCurrentNotificationSession(sessionId, generation)) return;
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
-            }
+            await notificationService.markAllAsRead();
 
             if (!isCurrentNotificationSession(sessionId, generation)) return;
 
