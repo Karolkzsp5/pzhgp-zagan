@@ -867,7 +867,7 @@ describe('Flight Plan Details Page Tests', () => {
                 body: 'Oficjalne wyniki lotu Dahme'
             }).as('getResultFile');
 
-            let openedWindow: any;
+            let openedWindow: { location: { href: string }; close: () => void };
 
             cy.window().then((win) => {
                 openedWindow = {
@@ -930,7 +930,7 @@ describe('Flight Plan Details Page Tests', () => {
                 body: 'Nie udało się pobrać testowych wyników.'
             }).as('getResultFileError');
 
-            let openedWindow: any;
+            let openedWindow: { location: { href: string }; close: () => void };
             cy.window().then((win) => {
                 openedWindow = {
                     location: {

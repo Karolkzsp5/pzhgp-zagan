@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     files: ["cypress/**/*.ts", "cypress.config.ts"],
     rules: {
       "@typescript-eslint/no-namespace": "off",
+      // Asercje Chai (np. expect(value).to.be.true) są wyrażeniami, a nie wywołaniami.
+      "@typescript-eslint/no-unused-expressions": "off",
     },
   },
   globalIgnores([

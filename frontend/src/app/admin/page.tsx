@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ActionMenu from '@/app/components/ActionMenu';
 import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
@@ -46,33 +46,7 @@ export default function AdminPanelPage() {
     const [filterSection, setFilterSection] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<SortOption>('NEWEST');
 
-    useEffect(() => {
-        if (user?.role !== 'ADMINISTRATOR') {
-            return;
-        }
-
-        void fetchAllAccounts();
-    }, [user?.role]);
-
-    useEffect(() => {
-        const handleClickOutside = () => {
-            setOpenDropdownId(null);
-        };
-
-        window.addEventListener(
-            'click',
-            handleClickOutside
-        );
-
-        return () => {
-            window.removeEventListener(
-                'click',
-                handleClickOutside
-            );
-        };
-    }, []);
-
-    const fetchAllAccounts = async () => {
+    const fetchAllAccounts = useCallback(async () => {
         setIsLoading(true);
         setError('');
 
@@ -103,7 +77,33 @@ export default function AdminPanelPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (user?.role !== 'ADMINISTRATOR') {
+            return;
+        }
+
+        void fetchAllAccounts();
+    }, [user?.role, fetchAllAccounts]);
+
+    useEffect(() => {
+        const handleClickOutside = () => {
+            setOpenDropdownId(null);
+        };
+
+        window.addEventListener(
+            'click',
+            handleClickOutside
+        );
+
+        return () => {
+            window.removeEventListener(
+                'click',
+                handleClickOutside
+            );
+        };
+    }, []);
 
     const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
         const method = action === 'reject' ? 'DELETE' : 'PUT';
@@ -157,7 +157,7 @@ export default function AdminPanelPage() {
         }
     };
 
-    const processBreeders = (breeders: BreederDto[]) => {
+    const processBreeders = useCallback((breeders: BreederDto[]) => {
         return breeders.filter((b) => {
             const searchLower = searchTerm.trim().toLowerCase();
             const normalizedSearch = searchLower.replace(/\s+/g, '');
@@ -178,15 +178,15 @@ export default function AdminPanelPage() {
             if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
             return 0;
         });
-    };
+    }, [searchTerm, filterSection, sortBy]);
 
     const processedPending = useMemo(() => {
         return processBreeders(pendingBreeders);
-    }, [pendingBreeders, searchTerm, filterSection, sortBy]);
+    }, [pendingBreeders, processBreeders]);
 
     const processedRegistered = useMemo(() => {
         return processBreeders(registeredBreeders);
-    }, [registeredBreeders, searchTerm, filterSection, sortBy]);
+    }, [registeredBreeders, processBreeders]);
 
     const closeConfirmDialog = () => setConfirmDialog({ isOpen: false, message: '', action: null, breederId: null });
 
