@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -19,8 +21,7 @@ public class NotificationController {
     public ResponseEntity<Page<NotificationDto>> getUserNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         return ResponseEntity.ok(notificationService.getUserNotifications(authentication.getName(), page, size));
     }
 

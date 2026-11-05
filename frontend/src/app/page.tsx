@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
 import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
+import { formatDate, formatDateTime } from '@/app/utils/formatters';
 import AnnouncementModal from '@/app/components/AnnouncementModal';
-import ConfirmModal from '@/app/components/ConfirmModal';
+import ConfirmModal from "@/app/components/ConfirmModal"
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import Pagination from '@/app/components/Pagination';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
 import EmptyState from '@/app/components/EmptyState';
+import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { useAuth } from '@/app/components/AuthProvider';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { AnnouncementDto } from '@/app/types/announcement';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
-import { formatDate, formatDateTime } from '@/app/utils/formatters';
 
 export default function HomePage() {
     const { user, isAuthResolved } = useAuth();
@@ -33,49 +33,42 @@ export default function HomePage() {
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    const fetchAnnouncements = useCallback(
-        async (page = 0) => {
-            const requestId = beginRequest();
+    const fetchAnnouncements = useCallback(async (page = 0) => {
+        const requestId = beginRequest();
 
-            setIsLoading(true);
-            setAnnouncementError('');
+        setIsLoading(true);
+        setAnnouncementError('');
 
-            try {
-                const response = await fetchWithAuth(`${API_URL}/api/announcements?page=${page}&size=10`);
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/announcements?page=${page}&size=10`);
 
-                if (!response.ok) {
-                    throw new Error(await readApiError(response, 'Nie udało się pobrać ogłoszeń.'));
-                }
-
-                const data = await response.json();
-
-                if (!isLatestRequest(requestId)) {
-                    return;
-                }
-
-                setAnnouncements(data.content);
-                setTotalPages(data.totalPages);
-                setCurrentPage(data.number);
-            } catch (error) {
-                if (!isLatestRequest(requestId)) {
-                    return;
-                }
-
-                setAnnouncementError(
-                    error instanceof TypeError
-                        ? CONNECTION_ERROR_MESSAGE
-                        : error instanceof Error
-                          ? error.message
-                          : 'Wystąpił błąd podczas pobierania ogłoszeń.'
-                );
-            } finally {
-                if (isLatestRequest(requestId)) {
-                    setIsLoading(false);
-                }
+            if (!response.ok) {
+                throw new Error(await readApiError(response, 'Nie udało się pobrać ogłoszeń.'));
             }
-        },
-        [beginRequest, isLatestRequest]
-    );
+
+            const data = await response.json();
+
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
+            setAnnouncements(data.content);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.number);
+        } catch (error) {
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
+            setAnnouncementError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE :
+                error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania ogłoszeń.'
+            );
+        } finally {
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
+        }
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         if (!isAuthResolved) return;
@@ -93,7 +86,7 @@ export default function HomePage() {
 
         try {
             const response = await fetchWithAuth(`${API_URL}/api/announcements/${deletingId}`, {
-                method: 'DELETE'
+                    method: 'DELETE'
             });
 
             if (!response.ok) {
@@ -119,7 +112,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar />
+            <Navbar/>
 
             <header className="bg-white shadow">
                 <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
@@ -153,12 +146,9 @@ export default function HomePage() {
 
                     <div className="space-y-6">
                         {isLoading ? (
-                            <LoadingState />
+                            <LoadingState/>
                         ) : announcementError ? (
-                            <ErrorState
-                                message={announcementError}
-                                onRetry={() => void fetchAnnouncements(currentPage)}
-                            />
+                            <ErrorState message={announcementError} onRetry={() => void fetchAnnouncements(currentPage)}/>
                         ) : announcements.length === 0 ? (
                             <EmptyState>Brak aktualnych ogłoszeń.</EmptyState>
                         ) : (
@@ -179,30 +169,23 @@ export default function HomePage() {
 
                                             <div className="flex items-center gap-2 ml-4">
                                                 {post.isPinned && (
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        height="24px"
-                                                        viewBox="0 -960 960 960"
-                                                        width="24px"
-                                                        fill="#2b7fff"
-                                                        className="shrink-0"
-                                                        aria-hidden="true"
-                                                    >
-                                                        <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z" />
+                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#2b7fff" className="shrink-0" aria-hidden="true">
+                                                        <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
                                                     </svg>
                                                 )}
-                                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                                                    {formatDate(post.createdAt)}
+                                                <span
+                                                    className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                                                        {formatDate(post.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div
-                                            className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0 wrap-anywhere"
+                                        <div className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0 wrap-anywhere"
                                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                                         />
 
                                         <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
+
                                             <div className="flex flex-col gap-1">
                                                 <div className="text-sm text-gray-400 font-medium">
                                                     Dodał: <span className="text-gray-600">{post.authorName}</span>
@@ -257,7 +240,7 @@ export default function HomePage() {
                 </section>
             </main>
 
-            <Footer />
+            <Footer/>
 
             <AnnouncementModal
                 isOpen={isModalOpen}

@@ -8,7 +8,6 @@ import java.util.List;
 
 @Repository
 public interface SectionRepository extends JpaRepository<Section, Long> {
-
     boolean existsByName(String name);
     List<Section> findAllByOrderBySortOrderAsc();
 }

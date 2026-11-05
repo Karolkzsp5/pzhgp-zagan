@@ -5,11 +5,11 @@ import com.pzhgp.backend.dto.ForumCategoryRequest;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.ForumCategory;
 import com.pzhgp.backend.entity.Role;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
-import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -280,10 +280,7 @@ class ForumCategoryServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 categoryService.updateCategory(1L, request, "moderator@test.pl"));
 
-        assertEquals(
-                "Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.",
-                exception.getMessage()
-        );
+        assertEquals("Brak uprawnień. Administratorzy mogą edytować kategorie poniżej swojej rangi, a moderatorzy tylko własne.", exception.getMessage());
         verify(categoryRepository, never()).save(any());
     }
 

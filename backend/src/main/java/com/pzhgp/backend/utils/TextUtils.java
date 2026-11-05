@@ -2,7 +2,8 @@ package com.pzhgp.backend.utils;
 
 public final class TextUtils {
 
-    private TextUtils() {}
+    private TextUtils() {
+    }
 
     /**
      * Usuwa białe znaki z początku i końca tekstu.

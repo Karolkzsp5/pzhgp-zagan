@@ -10,4 +10,5 @@ import java.time.Instant;
  * @param elevation wysokość n.p.m. w metrach ({@code null} gdy plik jej nie zawiera)
  * @param time      znacznik czasu w UTC ({@code null} gdy plik jej nie zawiera)
  */
-public record GpxPoint(double latitude, double longitude, Double elevation, Instant time) {}
+public record GpxPoint(double latitude, double longitude, Double elevation, Instant time) {
+}

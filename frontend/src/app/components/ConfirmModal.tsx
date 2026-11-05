@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Modal from '@/app/components/Modal';
 
@@ -16,19 +16,7 @@ interface ConfirmModalProps {
     confirmButtonDataCy?: string;
 }
 
-export default function ConfirmModal({
-    isOpen,
-    title,
-    message,
-    onConfirm,
-    onCancel,
-    isAlert = false,
-    variant = 'danger',
-    confirmLabel,
-    isLoading = false,
-    error = null,
-    confirmButtonDataCy
-}: ConfirmModalProps) {
+export default function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, isAlert = false, variant = 'danger', confirmLabel, isLoading = false, error = null, confirmButtonDataCy }: ConfirmModalProps) {
     const buttonClass = variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
 
     return (
@@ -55,16 +43,12 @@ export default function ConfirmModal({
                     </button>
                 )}
 
-                <button
-                    type="button"
-                    data-cy={confirmButtonDataCy}
-                    onClick={onConfirm}
-                    disabled={isLoading}
-                    className={`px-5 py-2 rounded-md text-sm font-bold text-white transition disabled:opacity-50 ${
+                <button type="button" data-cy={confirmButtonDataCy} onClick={onConfirm} disabled={isLoading}
+                        className={`px-5 py-2 rounded-md text-sm font-bold text-white transition disabled:opacity-50 ${
                         isAlert ? 'bg-blue-600 hover:bg-blue-700' : buttonClass
                     }`}
                 >
-                    {isLoading ? 'Proszę czekać...' : (confirmLabel ?? (isAlert ? 'OK' : 'Potwierdź'))}
+                    {isLoading ? 'Proszę czekać...' : confirmLabel ?? (isAlert ? 'OK' : 'Potwierdź')}
                 </button>
             </div>
         </Modal>

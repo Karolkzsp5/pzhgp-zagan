@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Obsługa modułu "Mapy lotów": wgrywanie plików GPX, analiza trasy i udostępnianie wyników.
@@ -41,9 +40,6 @@ public class PigeonFlightService {
 
     /** Maksymalny rozmiar wgrywanego pliku GPX w bajtach. */
     private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
-
-    /** Największa dopuszczalna liczba lotów na stronie listy. */
-    private static final int MAX_PAGE_SIZE = 50;
 
     /** Maksymalna liczba lotów przypadająca na jednego hodowcę. */
     private static final long MAX_FLIGHTS_PER_BREEDER = 200;
@@ -73,10 +69,9 @@ public class PigeonFlightService {
         Breeder owner = breederRepository.requireByEmail(userEmail);
         validateFile(file);
 
+
         if (flightRepository.countByOwner(owner) >= MAX_FLIGHTS_PER_BREEDER) {
-            throw new ResourceConflictException(
-                    "Osiągnięto limit " + MAX_FLIGHTS_PER_BREEDER
-                            + " zapisanych lotów. Usuń starsze loty, aby wgrać kolejny.");
+            throw new ResourceConflictException("Osiągnięto limit " + MAX_FLIGHTS_PER_BREEDER + " zapisanych lotów. Usuń starsze loty, aby wgrać kolejny.");
         }
 
         GpxTrack track;
@@ -99,8 +94,7 @@ public class PigeonFlightService {
         List<Double> speeds = computeSmoothedSpeeds(track.points());
         for (int i = 0; i < track.points().size(); i++) {
             GpxPoint point = track.points().get(i);
-            flight.addTrackPoint(new FlightTrackPoint(
-                    i, point.latitude(), point.longitude(), point.elevation(), point.time(), speeds.get(i)));
+            flight.addTrackPoint(new FlightTrackPoint(i, point.latitude(), point.longitude(), point.elevation(), point.time(), speeds.get(i)));
         }
 
         PigeonFlight saved = flightRepository.save(flight);
@@ -119,11 +113,10 @@ public class PigeonFlightService {
     @Transactional(readOnly = true)
     public Page<FlightSummaryDto> getMyFlights(String userEmail, int page, int size) {
         Breeder owner = breederRepository.requireByEmail(userEmail);
-        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
+        PaginationUtils.validate(page, size, 50);
         Pageable pageable = PageRequest.of(page, size);
 
-        return flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(owner, pageable)
-                .map(flight -> toSummary(flight, owner));
+        return flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(owner, pageable).map(flight -> toSummary(flight, owner));
     }
 
     /**
@@ -135,15 +128,12 @@ public class PigeonFlightService {
     @Transactional(readOnly = true)
     public FlightDetailsDto getFlightDetails(Long flightId, String userEmail, Double simplifyToleranceMeters) {
         Breeder viewer = breederRepository.requireByEmail(userEmail);
-        PigeonFlight flight = flightRepository.findWithOwnerById(flightId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
+        PigeonFlight flight = flightRepository.findWithOwnerById(flightId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
 
         requireAccess(flight, viewer);
 
         List<FlightTrackPoint> storedPoints = trackPointRepository.findByFlightIdOrderByPointIndexAsc(flightId);
-        double tolerance = simplifyToleranceMeters != null
-                ? Math.max(0, simplifyToleranceMeters)
-                : DEFAULT_SIMPLIFY_TOLERANCE_METERS;
+        double tolerance = simplifyToleranceMeters != null ? Math.max(0, simplifyToleranceMeters) : DEFAULT_SIMPLIFY_TOLERANCE_METERS;
 
         List<FlightTrackPointDto> trackPoints = simplifyForDisplay(storedPoints, tolerance);
 
@@ -174,8 +164,7 @@ public class PigeonFlightService {
     @Transactional
     public void deleteFlight(Long flightId, String userEmail) {
         Breeder viewer = breederRepository.requireByEmail(userEmail);
-        PigeonFlight flight = flightRepository.findWithOwnerById(flightId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
+        PigeonFlight flight = flightRepository.findWithOwnerById(flightId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono lotu o ID: " + flightId));
 
         if (!isOwnerOrAdministrator(flight, viewer)) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego lotu.");
@@ -265,8 +254,7 @@ public class PigeonFlightService {
         for (int i = left + 1; i <= right; i++) {
             GpxPoint previous = points.get(i - 1);
             GpxPoint current = points.get(i);
-            distance += GeoMath.distance(
-                    previous.latitude(), previous.longitude(), current.latitude(), current.longitude());
+            distance += GeoMath.distance(previous.latitude(), previous.longitude(), current.latitude(), current.longitude());
         }
 
         return round(distance / (seconds / 60.0), 1);
@@ -334,12 +322,11 @@ public class PigeonFlightService {
         }
 
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new IllegalArgumentException(
-                    "Plik jest za duży. Maksymalny rozmiar to " + (MAX_FILE_SIZE_BYTES / (1024 * 1024)) + " MB.");
+            throw new IllegalArgumentException("Plik jest za duży. Maksymalny rozmiar to " + (MAX_FILE_SIZE_BYTES / (1024 * 1024)) + " MB.");
         }
 
         String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".gpx")) {
+        if (fileName == null || !fileName.toLowerCase().endsWith(".gpx")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .gpx.");
         }
     }

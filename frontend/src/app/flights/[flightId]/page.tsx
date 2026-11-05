@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -34,7 +34,12 @@ const FlightMap = dynamic(() => import('@/app/components/FlightMap'), {
 /** Prędkości odtwarzania trasy — liczba punktów pokazywanych na sekundę. */
 const PLAYBACK_SPEEDS = [8, 25, 60];
 
-function StatTile({ label, value, unit, hint }: { label: string; value: string; unit?: string; hint?: string }) {
+function StatTile({ label, value, unit, hint }: {
+    label: string;
+    value: string;
+    unit?: string;
+    hint?: string;
+}) {
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
@@ -52,12 +57,7 @@ function StatTile({ label, value, unit, hint }: { label: string; value: string; 
  * {@code wrapValue} pozwala zawinąć długi tekst — na przykład nazwę wgranego pliku,
  * która potrafi mieć kilkadziesiąt znaków bez spacji.
  */
-function StatRow({
-    label,
-    value,
-    hint,
-    wrapValue = false
-}: {
+function StatRow({ label, value, hint, wrapValue = false }: {
     label: string;
     value: string;
     hint?: string;
@@ -66,9 +66,7 @@ function StatRow({
     return (
         <div
             className={`py-2 border-b border-gray-100 last:border-0 gap-x-4 ${
-                wrapValue
-                    ? 'flex flex-col sm:flex-row sm:items-baseline sm:justify-between'
-                    : 'flex items-baseline justify-between'
+                wrapValue ? 'flex flex-col sm:flex-row sm:items-baseline sm:justify-between' : 'flex items-baseline justify-between'
             }`}
         >
             <div className="min-w-0">
@@ -153,7 +151,10 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
     const pointIndexes = useMemo(() => trackPoints.map((_, index) => index), [trackPoints]);
 
-    const speedLegend = useMemo(() => speedLegendLabels(computeSpeedThresholds(trackPoints)), [trackPoints]);
+    const speedLegend = useMemo(
+        () => speedLegendLabels(computeSpeedThresholds(trackPoints)),
+        [trackPoints]
+    );
 
     // Odtwarzanie trasy: znacznik przesuwa się po kolejnych punktach fazy lotu.
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -162,7 +163,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
         if (!isPlaying || pointIndexes.length === 0) return;
 
         intervalRef.current = setInterval(() => {
-            setPlaybackPosition((previous) => {
+            setPlaybackPosition(previous => {
                 if (previous >= pointIndexes.length - 1) {
                     setIsPlaying(false);
                     return previous;
@@ -177,7 +178,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     }, [isPlaying, playbackSpeed, pointIndexes.length]);
 
     const togglePlayback = useCallback(() => {
-        setIsPlaying((previous) => {
+        setIsPlaying(previous => {
             if (!previous && playbackPosition >= pointIndexes.length - 1) {
                 setPlaybackPosition(0);
             }
@@ -189,19 +190,16 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
      * Kliknięcie w wykres ustawia pozycję na pasku odtwarzania, dzięki czemu oba sposoby
      * wskazywania punktu trasy — wykres i suwak — działają wymiennie i pozostają zgodne.
      */
-    const selectPointFromChart = useCallback(
-        (originalIndex: number | null) => {
-            if (originalIndex === null) return;
+    const selectPointFromChart = useCallback((originalIndex: number | null) => {
+        if (originalIndex === null) return;
 
-            const position = pointIndexes.indexOf(originalIndex);
-            if (position < 0) return;
+        const position = pointIndexes.indexOf(originalIndex);
+        if (position < 0) return;
 
-            setIsPlaying(false);
-            setPlaybackPosition(position);
-            setHoveredIndex(null);
-        },
-        [pointIndexes]
-    );
+        setIsPlaying(false);
+        setPlaybackPosition(position);
+        setHoveredIndex(null);
+    }, [pointIndexes]);
 
     const handleDelete = () => {
         if (!flight) return;
@@ -248,8 +246,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4 text-center">
                         <h1 className="text-2xl font-bold text-gray-900 mb-3">Nie udało się otworzyć lotu</h1>
                         <p className="text-sm text-gray-600 mb-6">Nieprawidłowy identyfikator lotu.</p>
-                        <Link
-                            href="/flights"
+                        <Link href="/flights"
                             className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-bold hover:bg-blue-700 transition"
                         >
                             Wróć do listy lotów
@@ -269,7 +266,10 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     <Navbar />
 
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4">
-                        <ErrorState message={error || 'Lot nie istnieje.'} onRetry={() => void loadFlight()} />
+                        <ErrorState
+                            message={error || 'Lot nie istnieje.'}
+                            onRetry={() => void loadFlight()}
+                        />
                     </main>
 
                     <Footer />
@@ -290,14 +290,8 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                         href="/flights"
                         className="inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline mb-4"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-4 h-4"
-                            viewBox="0 -960 960 960"
-                            fill="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                            <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"/>
                         </svg>
                         Wszystkie loty
                     </Link>
@@ -307,9 +301,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             <h1 className="text-3xl font-bold text-gray-900 [overflow-wrap:anywhere]">{flight.name}</h1>
                             <p className="mt-2 text-sm text-gray-600 [overflow-wrap:anywhere]">
                                 {flight.ringNumber && (
-                                    <>
-                                        Obrączka <strong className="text-gray-900">{flight.ringNumber}</strong> ·{' '}
-                                    </>
+                                    <>Obrączka <strong className="text-gray-900">{flight.ringNumber}</strong> · </>
                                 )}
                                 Hodowca: {flight.ownerName}
                                 {flight.releaseSite && <> · Wypuszczenie: {flight.releaseSite}</>}
@@ -369,7 +361,11 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     {/* Mapa trasy */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
                         <div className="relative z-0 h-[460px] sm:h-[560px]">
-                            <FlightMap flight={flight} activeIndex={activeIndex} showStraightLine={showStraightLine} />
+                            <FlightMap
+                                flight={flight}
+                                activeIndex={activeIndex}
+                                showStraightLine={showStraightLine}
+                            />
                         </div>
 
                         {/* Legenda i przełączniki warstw */}
@@ -396,7 +392,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                     <input
                                         type="checkbox"
                                         checked={showStraightLine}
-                                        onChange={(event) => setShowStraightLine(event.target.checked)}
+                                        onChange={event => setShowStraightLine(event.target.checked)}
                                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     Linia prosta start-meta
@@ -415,23 +411,11 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         aria-label={isPlaying ? 'Zatrzymaj odtwarzanie trasy' : 'Odtwórz trasę'}
                                     >
                                         {isPlaying ? (
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5"
-                                                viewBox="0 -960 960 960"
-                                                fill="currentColor"
-                                                aria-hidden="true"
-                                            >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                 <path d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Z" />
                                             </svg>
                                         ) : (
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5 ml-0.5"
-                                                viewBox="0 -960 960 960"
-                                                fill="currentColor"
-                                                aria-hidden="true"
-                                            >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 ml-0.5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                 <path d="M320-200v-560l440 280-440 280Z" />
                                             </svg>
                                         )}
@@ -442,7 +426,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         min={0}
                                         max={pointIndexes.length - 1}
                                         value={playbackPosition}
-                                        onChange={(event) => {
+                                        onChange={event => {
                                             setIsPlaying(false);
                                             setPlaybackPosition(Number(event.target.value));
                                         }}
@@ -452,17 +436,13 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                                     <select
                                         value={playbackSpeed}
-                                        onChange={(event) => setPlaybackSpeed(Number(event.target.value))}
+                                        onChange={event => setPlaybackSpeed(Number(event.target.value))}
                                         className="shrink-0 text-sm border border-gray-300 rounded-md px-2 py-1.5 text-gray-700 bg-white"
                                         aria-label="Prędkość odtwarzania"
                                     >
-                                        {PLAYBACK_SPEEDS.map((speed) => (
+                                        {PLAYBACK_SPEEDS.map(speed => (
                                             <option key={speed} value={speed}>
-                                                {speed === PLAYBACK_SPEEDS[0]
-                                                    ? 'wolno'
-                                                    : speed === PLAYBACK_SPEEDS[1]
-                                                      ? 'normalnie'
-                                                      : 'szybko'}
+                                                {speed === PLAYBACK_SPEEDS[0] ? 'wolno' : speed === PLAYBACK_SPEEDS[1] ? 'normalnie' : 'szybko'}
                                             </option>
                                         ))}
                                     </select>
@@ -471,8 +451,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                 {activePoint && (
                                     <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-600">
                                         <span>
-                                            Godzina:{' '}
-                                            <strong className="text-gray-900">{formatTime(activePoint.time)}</strong>
+                                            Godzina: <strong className="text-gray-900">{formatTime(activePoint.time)}</strong>
                                         </span>
                                         {activePoint.speedMetersPerMinute !== null && (
                                             <span>
@@ -484,10 +463,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                                         )}
                                         {activePoint.elevation !== null && (
                                             <span>
-                                                Wysokość:{' '}
-                                                <strong className="text-gray-900">
-                                                    {Math.round(activePoint.elevation)} m n.p.m.
-                                                </strong>
+                                                Wysokość: <strong className="text-gray-900">{Math.round(activePoint.elevation)} m n.p.m.</strong>
                                             </span>
                                         )}
                                         <span className="text-gray-400">
@@ -519,18 +495,12 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                             <StatRow label="Początek nagrania" value={formatDateTimeWithSeconds(flight.startTime)} />
                             <StatRow label="Koniec nagrania" value={formatDateTimeWithSeconds(flight.endTime)} />
-                            <StatRow
-                                label="Pokonany dystans"
-                                value={`${stats.trackDistanceKm.toFixed(2)} km`}
-                                hint="wzdłuż zarejestrowanej trasy"
-                            />
+                            <StatRow label="Pokonany dystans" value={`${stats.trackDistanceKm.toFixed(2)} km`} hint="wzdłuż zarejestrowanej trasy"/>
                             <StatRow
                                 label="Prędkość w linii prostej"
-                                value={
-                                    stats.timestampsAvailable
-                                        ? formatSpeed(stats.straightLineSpeedMetersPerMinute)
-                                        : '—'
-                                }
+                                value={stats.timestampsAvailable
+                                    ? formatSpeed(stats.straightLineSpeedMetersPerMinute)
+                                    : '—'}
                                 hint="dystans start–meta podzielony przez czas nagrania"
                             />
                             {stats.minElevationMeters !== null && stats.maxElevationMeters !== null && (
@@ -553,6 +523,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             <StatRow label="Plik źródłowy" value={flight.originalFileName} wrapValue />
                         </div>
                     </div>
+
                 </main>
 
                 <Footer />

@@ -1,8 +1,14 @@
 package com.pzhgp.backend.controller;
 
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
 import com.pzhgp.backend.entity.*;
-import com.pzhgp.backend.repository.*;
+import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.repository.FlightPlanEntryRepository;
+import com.pzhgp.backend.repository.FlightPlanRepository;
+import com.pzhgp.backend.repository.FlightResultRepository;
+import com.pzhgp.backend.repository.NotificationRepository;
+import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +23,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -148,10 +153,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Should allow an administrator to upload flight results for a selected section")
     void uploadsSectionResult() throws Exception {
-        Long resultId = uploadResult(
-                textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"),
-                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId())
-        );
+        Long resultId = uploadResult(textFile("sekcja3.txt", "Lista konkursowa Sekcji 3"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
         FlightResult saved = flightResultRepository.findById(resultId).orElseThrow();
 

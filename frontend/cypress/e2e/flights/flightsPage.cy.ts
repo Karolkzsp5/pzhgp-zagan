@@ -87,22 +87,19 @@ describe('Flights Page Tests', () => {
         beforeEach(() => {
             flightsPage = createFlightsPage();
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                (req) => {
-                    req.reply({
-                        statusCode: 200,
-                        body: flightsPage
-                    });
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getFlights');
+            }, (req) => {
+                req.reply({
+                    statusCode: 200,
+                    body: flightsPage
+                });
+            }).as('getFlights');
 
             cy.mockNavbarNotifications();
             cy.visitAsUser('/flights', breederUser);
@@ -129,20 +126,17 @@ describe('Flights Page Tests', () => {
             cy.contains('Maksymalny rozmiar pliku: 10 MB').should('be.visible');
 
             cy.contains('label', 'Nazwa lotu').should('be.visible');
-            cy.get('#flight-name')
-                .should('be.visible')
+            cy.get('#flight-name').should('be.visible')
                 .and('have.attr', 'maxlength', '150')
                 .and('have.attr', 'placeholder', 'np. Lot konkursowy Dessau');
 
             cy.contains('label', 'Numer obrączki').should('be.visible');
-            cy.get('#ring-number')
-                .should('be.visible')
+            cy.get('#ring-number').should('be.visible')
                 .and('have.attr', 'maxlength', '32')
                 .and('have.attr', 'placeholder', 'odczytany z pliku');
 
             cy.contains('label', 'Miejsce wypuszczenia').should('be.visible');
-            cy.get('#release-site')
-                .should('be.visible')
+            cy.get('#release-site').should('be.visible')
                 .and('have.attr', 'maxlength', '150')
                 .and('have.attr', 'placeholder', 'np. Dessau');
 
@@ -157,28 +151,22 @@ describe('Flights Page Tests', () => {
             cy.contains('th', 'Prędkość').should('be.visible');
             cy.contains('th', 'Wgrano').should('be.visible');
 
-            getFlightRow('Lot konkursowy Dessau')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('a', 'Lot konkursowy Dessau').should('have.attr', 'href', '/flights/1');
-                    cy.contains('Wypuszczenie: Dessau').should('be.visible');
-                    cy.contains('PL-0369-26-1234').should('be.visible');
-                    cy.contains('125.43 km').should('be.visible');
-                    cy.contains('1 godz. 30 min').should('be.visible');
-                    cy.get('td').eq(4).should('contain.text', 'm/min');
-                    cy.get('button[aria-label="Usuń lot Lot konkursowy Dessau"]').should('be.visible');
-                });
+            getFlightRow('Lot konkursowy Dessau').should('be.visible').within(() => {
+                cy.contains('a', 'Lot konkursowy Dessau').should('have.attr', 'href', '/flights/1');
+                cy.contains('Wypuszczenie: Dessau').should('be.visible');
+                cy.contains('PL-0369-26-1234').should('be.visible');
+                cy.contains('125.43 km').should('be.visible');
+                cy.contains('1 godz. 30 min').should('be.visible');
+                cy.get('td').eq(4).should('contain.text', 'm/min');
+                cy.get('button[aria-label="Usuń lot Lot konkursowy Dessau"]').should('be.visible');
+            });
 
-            getFlightRow('Lot treningowy')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('a', 'Lot treningowy').should('have.attr', 'href', '/flights/2');
-                    cy.contains('20.50 km').should('be.visible');
-                    cy.get('span[title="Plik nie zawiera znaczników czasu"]')
-                        .should('be.visible')
-                        .and('have.text', '—');
-                    cy.get('button[aria-label="Usuń lot Lot treningowy"]').should('be.visible');
-                });
+            getFlightRow('Lot treningowy').should('be.visible').within(() => {
+                cy.contains('a', 'Lot treningowy').should('have.attr', 'href', '/flights/2');
+                cy.contains('20.50 km').should('be.visible');
+                cy.get('span[title="Plik nie zawiera znaczników czasu"]').should('be.visible').and('have.text', '—');
+                cy.get('button[aria-label="Usuń lot Lot treningowy"]').should('be.visible');
+            });
 
             cy.contains('button', 'Poprzednia').should('not.exist');
             cy.contains('button', 'Następna').should('not.exist');
@@ -191,14 +179,11 @@ describe('Flights Page Tests', () => {
         // ==========================================
 
         it('Should accept a valid GPX file selected from the file input', () => {
-            cy.get('input[type="file"]').selectFile(
-                {
-                    contents: Cypress.Buffer.alloc(2048),
-                    fileName: 'test-flight.gpx',
-                    mimeType: 'application/gpx+xml'
-                },
-                { force: true }
-            );
+            cy.get('input[type="file"]').selectFile({
+                contents: Cypress.Buffer.alloc(2048),
+                fileName: 'test-flight.gpx',
+                mimeType: 'application/gpx+xml'
+            }, { force: true });
 
             cy.contains('test-flight.gpx').should('be.visible');
             cy.contains('2 kB — kliknij, aby wybrać inny plik').should('be.visible');
@@ -207,16 +192,11 @@ describe('Flights Page Tests', () => {
         });
 
         it('Should accept a valid GPX file using drag and drop', () => {
-            cy.get('input[type="file"]')
-                .parent('label')
-                .selectFile(
-                    {
-                        contents: Cypress.Buffer.alloc(3072),
-                        fileName: 'dragged-flight.GPX',
-                        mimeType: 'application/gpx+xml'
-                    },
-                    { action: 'drag-drop' }
-                );
+            cy.get('input[type="file"]').parent('label').selectFile({
+                contents: Cypress.Buffer.alloc(3072),
+                fileName: 'dragged-flight.GPX',
+                mimeType: 'application/gpx+xml'
+            }, { action: 'drag-drop' });
 
             cy.contains('dragged-flight.GPX').should('be.visible');
             cy.contains('3 kB — kliknij, aby wybrać inny plik').should('be.visible');
@@ -224,17 +204,13 @@ describe('Flights Page Tests', () => {
         });
 
         it('Should reject a file with an invalid extension', () => {
-            cy.get('input[type="file"]').selectFile(
-                {
-                    contents: Cypress.Buffer.from('invalid file'),
-                    fileName: 'flight.txt',
-                    mimeType: 'text/plain'
-                },
-                { force: true }
-            );
+            cy.get('input[type="file"]').selectFile({
+                contents: Cypress.Buffer.from('invalid file'),
+                fileName: 'flight.txt',
+                mimeType: 'text/plain'
+            }, { force: true });
 
-            cy.get('[role="alert"]')
-                .should('be.visible')
+            cy.get('[role="alert"]').should('be.visible')
                 .and('contain.text', 'Wybierz plik z rozszerzeniem .gpx (eksport z programu obsługującego obrączki).');
 
             cy.contains('flight.txt').should('not.exist');
@@ -242,14 +218,11 @@ describe('Flights Page Tests', () => {
         });
 
         it('Should reject a GPX file larger than 10 MB', () => {
-            cy.get('input[type="file"]').selectFile(
-                {
-                    contents: Cypress.Buffer.alloc(10 * 1024 * 1024 + 1),
-                    fileName: 'large-flight.gpx',
-                    mimeType: 'application/gpx+xml'
-                },
-                { force: true }
-            );
+            cy.get('input[type="file"]').selectFile({
+                contents: Cypress.Buffer.alloc(10 * 1024 * 1024 + 1),
+                fileName: 'large-flight.gpx',
+                mimeType: 'application/gpx+xml'
+            }, { force: true });
 
             cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Plik GPX może mieć maksymalnie 10 MB.');
             cy.contains('large-flight.gpx').should('not.exist');
@@ -276,14 +249,11 @@ describe('Flights Page Tests', () => {
                 body: 'Testowe zatrzymanie po przekierowaniu.'
             }).as('getUploadedFlight');
 
-            cy.get('input[type="file"]').selectFile(
-                {
-                    contents: Cypress.Buffer.from('<gpx version="1.1"></gpx>'),
-                    fileName: 'dessau.gpx',
-                    mimeType: 'application/gpx+xml'
-                },
-                { force: true }
-            );
+            cy.get('input[type="file"]').selectFile({
+                contents: Cypress.Buffer.from('<gpx version="1.1"></gpx>'),
+                fileName: 'dessau.gpx',
+                mimeType: 'application/gpx+xml'
+            }, { force: true });
 
             cy.get('#flight-name').type('Lot konkursowy Dessau');
             cy.get('#ring-number').type('PL-0369-26-1234');
@@ -301,14 +271,11 @@ describe('Flights Page Tests', () => {
                 body: 'Nieprawidłowy format pliku GPX.'
             }).as('uploadFlightError');
 
-            cy.get('input[type="file"]').selectFile(
-                {
-                    contents: Cypress.Buffer.from('<gpx></gpx>'),
-                    fileName: 'invalid.gpx',
-                    mimeType: 'application/gpx+xml'
-                },
-                { force: true }
-            );
+            cy.get('input[type="file"]').selectFile({
+                contents: Cypress.Buffer.from('<gpx></gpx>'),
+                fileName: 'invalid.gpx',
+                mimeType: 'application/gpx+xml'
+            }, { force: true });
 
             cy.contains('button', 'Wgraj i przeanalizuj').click();
 
@@ -324,27 +291,22 @@ describe('Flights Page Tests', () => {
         // ==========================================
 
         it('Should display an empty state when the user has no saved flights', () => {
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                {
-                    statusCode: 200,
-                    body: createEmptyFlightsPage()
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getEmptyFlights');
+            }, {
+                statusCode: 200,
+                body: createEmptyFlightsPage()
+            }).as('getEmptyFlights');
 
             cy.reload();
             cy.wait('@getEmptyFlights');
 
-            cy.contains(
-                'Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.'
-            ).should('be.visible');
+            cy.contains('Nie masz jeszcze zapisanych lotów. Wgraj pierwszy plik GPX, aby zobaczyć trasę na mapie.').should('be.visible');
             cy.get('table').should('not.exist');
         });
 
@@ -355,29 +317,26 @@ describe('Flights Page Tests', () => {
         it('Should display an error and successfully retry loading flights', () => {
             let shouldFail = true;
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                (req) => {
-                    if (shouldFail) {
-                        req.reply({
-                            statusCode: 500,
-                            body: 'Nie udało się pobrać testowej listy lotów.'
-                        });
-                    } else {
-                        req.reply({
-                            statusCode: 200,
-                            body: flightsPage
-                        });
-                    }
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getFlightsRetry');
+            }, (req) => {
+                if (shouldFail) {
+                    req.reply({
+                        statusCode: 500,
+                        body: 'Nie udało się pobrać testowej listy lotów.'
+                    });
+                } else {
+                    req.reply({
+                        statusCode: 200,
+                        body: flightsPage
+                    });
+                }
+            }).as('getFlightsRetry');
 
             cy.reload();
             cy.wait('@getFlightsRetry');
@@ -434,20 +393,17 @@ describe('Flights Page Tests', () => {
                 size: 10
             };
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                {
-                    statusCode: 200,
-                    body: firstPage
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getFirstFlightsPage');
+            }, {
+                statusCode: 200,
+                body: firstPage
+            }).as('getFirstFlightsPage');
 
             cy.reload();
             cy.wait('@getFirstFlightsPage');
@@ -456,20 +412,17 @@ describe('Flights Page Tests', () => {
             cy.contains('button', 'Poprzednia').should('be.disabled');
             cy.contains('button', 'Następna').should('not.be.disabled');
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '1',
-                        size: '10'
-                    }
-                },
-                {
-                    statusCode: 200,
-                    body: secondPage
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '1',
+                    size: '10'
                 }
-            ).as('getSecondFlightsPage');
+            }, {
+                statusCode: 200,
+                body: secondPage
+            }).as('getSecondFlightsPage');
 
             cy.contains('button', 'Następna').click();
             cy.wait('@getSecondFlightsPage');
@@ -480,20 +433,17 @@ describe('Flights Page Tests', () => {
             cy.contains('button', 'Poprzednia').should('not.be.disabled');
             cy.contains('button', 'Następna').should('be.disabled');
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                {
-                    statusCode: 200,
-                    body: firstPage
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getFirstFlightsPageAgain');
+            }, {
+                statusCode: 200,
+                body: firstPage
+            }).as('getFirstFlightsPageAgain');
 
             cy.contains('button', 'Poprzednia').click();
             cy.wait('@getFirstFlightsPageAgain');
@@ -509,16 +459,12 @@ describe('Flights Page Tests', () => {
         it('Should cancel flight deletion without removing the flight', () => {
             cy.get('button[aria-label="Usuń lot Lot konkursowy Dessau"]').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Usuń lot').should('be.visible');
-                    cy.contains('Czy na pewno chcesz usunąć lot "Lot konkursowy Dessau" wraz z zapisaną trasą?').should(
-                        'be.visible'
-                    );
-                    cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
-                    cy.contains('button', 'Anuluj').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Usuń lot').should('be.visible');
+                cy.contains('Czy na pewno chcesz usunąć lot "Lot konkursowy Dessau" wraz z zapisaną trasą?').should('be.visible');
+                cy.contains('Tej operacji nie można cofnąć.').should('be.visible');
+                cy.contains('button', 'Anuluj').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('a', 'Lot konkursowy Dessau').should('be.visible');
@@ -526,7 +472,7 @@ describe('Flights Page Tests', () => {
 
         it('Should successfully delete a flight', () => {
             cy.intercept('DELETE', '**/api/flights/1', (req) => {
-                flightsPage.content = flightsPage.content.filter((flight) => flight.id !== 1);
+                flightsPage.content = flightsPage.content.filter(flight => flight.id !== 1);
                 flightsPage.totalElements = flightsPage.content.length;
 
                 req.reply({
@@ -534,22 +480,19 @@ describe('Flights Page Tests', () => {
                 });
             }).as('deleteFlight');
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                (req) => {
-                    req.reply({
-                        statusCode: 200,
-                        body: flightsPage
-                    });
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            ).as('getFlightsAfterDelete');
+            }, (req) => {
+                req.reply({
+                    statusCode: 200,
+                    body: flightsPage
+                });
+            }).as('getFlightsAfterDelete');
 
             cy.get('button[aria-label="Usuń lot Lot konkursowy Dessau"]').click();
             cy.get('[role="dialog"]').within(() => {
@@ -576,13 +519,11 @@ describe('Flights Page Tests', () => {
 
             cy.wait('@deleteFlightError');
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Błąd').should('be.visible');
-                    cy.contains('Nie udało się usunąć testowego lotu.').should('be.visible');
-                    cy.contains('button', 'OK').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Błąd').should('be.visible');
+                cy.contains('Nie udało się usunąć testowego lotu.').should('be.visible');
+                cy.contains('button', 'OK').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.contains('a', 'Lot konkursowy Dessau').should('be.visible');
@@ -600,24 +541,23 @@ describe('Flights Page Tests', () => {
                 body: 'Wymagane jest uwierzytelnienie.'
             }).as('getUnauthenticatedUser');
 
-            cy.intercept(
-                {
-                    method: 'GET',
-                    pathname: '/api/flights',
-                    query: {
-                        page: '0',
-                        size: '10'
-                    }
-                },
-                {
-                    statusCode: 401,
-                    body: ''
+            cy.intercept({
+                method: 'GET',
+                pathname: '/api/flights',
+                query: {
+                    page: '0',
+                    size: '10'
                 }
-            );
+            }, {
+                statusCode: 401,
+                body: ''
+            });
 
             cy.visit('/flights');
 
-            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
+            cy.wait('@getUnauthenticatedUser')
+                .its('response.statusCode')
+                .should('eq', 401);
 
             cy.location('pathname').should('eq', '/login');
         });

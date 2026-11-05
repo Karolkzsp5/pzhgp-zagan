@@ -1,5 +1,6 @@
 package com.pzhgp.backend.controller;
 
+import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
@@ -15,7 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -135,10 +135,7 @@ class AdminIntegrationTest {
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification approvalNotification = notifications.stream()
-                .filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED)
-                .findFirst()
-                .orElseThrow();
+        Notification approvalNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ACCOUNT_APPROVED).findFirst().orElseThrow();
 
         assertEquals(pendingBreeder.getId(), approvalNotification.getRecipient().getId());
     }
@@ -201,10 +198,7 @@ class AdminIntegrationTest {
 
         assertEquals(initialNotificationCount + 1, notificationRepository.count());
         List<Notification> notifications = notificationRepository.findAll();
-        Notification roleChangeNotification = notifications.stream()
-                .filter(n -> n.getType() == NotificationType.ROLE_CHANGED)
-                .findFirst()
-                .orElseThrow();
+        Notification roleChangeNotification = notifications.stream().filter(n -> n.getType() == NotificationType.ROLE_CHANGED).findFirst().orElseThrow();
 
         assertEquals(activeBreeder.getId(), roleChangeNotification.getRecipient().getId());
     }

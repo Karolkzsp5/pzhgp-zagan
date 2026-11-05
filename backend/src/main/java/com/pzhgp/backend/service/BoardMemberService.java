@@ -7,13 +7,13 @@ import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BoardMemberRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.SectionRepository;
-import com.pzhgp.backend.utils.TextUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class BoardMemberService {
 
     @Transactional(readOnly = true)
     public List<BoardMemberDto> getAllBoardMembers() {
-        return boardMemberRepository.findAllWithDetails().stream().map(this::mapToDto).toList();
+        return boardMemberRepository.findAllWithDetails().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional
@@ -37,16 +37,14 @@ public class BoardMemberService {
 
     @Transactional
     public void updateBoardMember(Long id, BoardMemberRequest request) {
-        BoardMember member = boardMemberRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono członka zarządu o ID: " + id));
+        BoardMember member = boardMemberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono członka zarządu o ID: " + id));
         updateEntityFromRequest(member, request);
         boardMemberRepository.save(member);
     }
 
     @Transactional
     public void deleteBoardMember(Long id) {
-        BoardMember member = boardMemberRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono członka zarządu o ID: " + id));
+        BoardMember member = boardMemberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono członka zarządu o ID: " + id));
         boardMemberRepository.delete(member);
     }
 
@@ -56,8 +54,7 @@ public class BoardMemberService {
         Section managedSection = null;
         if (request.managedSectionId() != null) {
             managedSection = sectionRepository.findById(request.managedSectionId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Nie znaleziono sekcji o ID: " + request.managedSectionId()));
+                    .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.managedSectionId()));
         }
         member.setManagedSection(managedSection);
 
@@ -65,8 +62,7 @@ public class BoardMemberService {
             if (request.role() != BoardRole.PREZES &&
                     request.role() != BoardRole.SKARBNIK &&
                     request.role() != BoardRole.SEKRETARZ) {
-                throw new IllegalArgumentException(
-                        "Dla zarządu sekcji dozwolone są wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz.");
+                throw new IllegalArgumentException("Dla zarządu sekcji dozwolone są wyłącznie stanowiska: Prezes, Skarbnik lub Sekretarz.");
             }
         } else {
             if (request.role() == BoardRole.SKARBNIK) {
@@ -77,9 +73,7 @@ public class BoardMemberService {
         validateUniqueRole(request.role(), managedSection, member.getId());
 
         if (request.breederId() != null) {
-            Breeder breeder = breederRepository.findById(request.breederId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Nie znaleziono hodowcy o ID: " + request.breederId()));
+            Breeder breeder = breederRepository.findById(request.breederId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + request.breederId()));
 
             if (breeder.getStatus() != AccountStatus.ACTIVE) {
                 throw new ResourceConflictException("Do zarządu można przypisać wyłącznie aktywne konto hodowcy.");
@@ -91,10 +85,8 @@ public class BoardMemberService {
 
             Long safeExcludeId = (member.getId() != null) ? member.getId() : -1L;
             boolean alreadyHasThisRole = managedSection != null
-                    ? boardMemberRepository.existsByBreederAndRoleForSection(
-                            request.breederId(), request.role(), managedSection.getId(), safeExcludeId)
-                    : boardMemberRepository.existsByBreederAndRoleForBranch(
-                            request.breederId(), request.role(), safeExcludeId);
+                    ? boardMemberRepository.existsByBreederAndRoleForSection(request.breederId(), request.role(), managedSection.getId(), safeExcludeId)
+                    : boardMemberRepository.existsByBreederAndRoleForBranch(request.breederId(), request.role(), safeExcludeId);
 
             if (alreadyHasThisRole) {
                 throw new ResourceConflictException("Ten hodowca pełni już to stanowisko w tym zarządzie.");
@@ -109,13 +101,11 @@ public class BoardMemberService {
             member.setCustomSurname(request.customSurname() != null ? request.customSurname().trim() : null);
         }
 
-        member.setContactPhone(TextUtils.trimToNull(request.contactPhone()));
+        member.setContactPhone(request.contactPhone() != null && !request.contactPhone().isBlank() ? request.contactPhone().trim() : null);
     }
 
     private void validateUniqueRole(BoardRole role, Section section, Long excludeId) {
-        if (!role.isUniquePerBoard()) {
-            return;
-        }
+        if (!role.isUniquePerBoard()) return;
 
         Long safeExcludeId = (excludeId != null) ? excludeId : -1L;
         boolean existsConflict;

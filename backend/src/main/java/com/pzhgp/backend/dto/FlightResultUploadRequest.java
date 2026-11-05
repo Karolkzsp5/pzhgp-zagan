@@ -10,4 +10,5 @@ public record FlightResultUploadRequest(
 
         @Positive(message = "ID sekcji musi być liczbą dodatnią.")
         Long sectionId
+
 ) {}

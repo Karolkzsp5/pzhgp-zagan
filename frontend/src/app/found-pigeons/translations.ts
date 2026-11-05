@@ -45,9 +45,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
     PL: {
         languageName: 'Polski',
         pageTitle: 'Znalazłeś gołębia pocztowego?',
-        pageLead:
-            'Jeżeli znalazłeś gołębia z obrączką, wypełnij poniższy formularz. ' +
-            'Zgłoszenie trafi do administratora oddziału PZHGP Żagań, który spróbuje ustalić jego właściciela.',
+        pageLead: 'Jeżeli znalazłeś gołębia z obrączką, wypełnij poniższy formularz. '
+            + 'Zgłoszenie trafi do administratora oddziału PZHGP Żagań, który spróbuje ustalić jego właściciela.',
         languageSelectorLabel: 'Język',
         formTitle: 'Formularz zgłoszenia',
         ringNumberLabel: 'Numer obrączki',
@@ -62,18 +61,16 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         descriptionLabel: 'Opis okoliczności',
         descriptionCounter: (used, max) => `${used} z ${max} znaków`,
         privacyTitle: 'Co zrobimy z Twoimi danymi',
-        privacyBody:
-            'Twój numer telefonu i adres e-mail służą wyłącznie do obsługi tego zgłoszenia. ' +
-            'Widzi je tylko administrator oddziału. Jeżeli uda się ustalić właściciela gołębia, ' +
-            'administrator może przekazać mu Twój kontakt. ' +
-            'Zgłoszenia nie są publikowane na stronie.',
+        privacyBody: 'Twój numer telefonu i adres e-mail służą wyłącznie do obsługi tego zgłoszenia. '
+            + 'Widzi je tylko administrator oddziału. Jeżeli uda się ustalić właściciela gołębia, '
+            + 'administrator może przekazać mu Twój kontakt. '
+            + 'Zgłoszenia nie są publikowane na stronie.',
         requiredFieldsNote: 'Pola oznaczone gwiazdką są wymagane.',
         submitButton: 'Wyślij zgłoszenie',
         submittingButton: 'Wysyłanie…',
         successTitle: 'Dziękujemy za zgłoszenie',
-        successBody:
-            'Zgłoszenie trafiło do administratora oddziału. Jeżeli uda się ustalić właściciela ' +
-            'gołębia, skontaktujemy się z Tobą podanym sposobem.',
+        successBody: 'Zgłoszenie trafiło do administratora oddziału. Jeżeli uda się ustalić właściciela '
+            + 'gołębia, skontaktujemy się z Tobą podanym sposobem.',
         submitAnother: 'Zgłoś kolejnego gołębia',
         errorRingRequired: 'Podaj numer obrączki gołębia.',
         errorContactRequired: 'Podaj numer telefonu lub adres e-mail.',
@@ -87,9 +84,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
     EN: {
         languageName: 'English',
         pageTitle: 'Have you found a racing pigeon?',
-        pageLead:
-            'If you have found a pigeon wearing a ring, please fill in the form below. ' +
-            'Your report goes to the administrator of the PZHGP Żagań branch, who will try to identify the owner.',
+        pageLead: 'If you have found a pigeon wearing a ring, please fill in the form below. '
+            + 'Your report goes to the administrator of the PZHGP Żagań branch, who will try to identify the owner.',
         languageSelectorLabel: 'Language',
         formTitle: 'Report form',
         ringNumberLabel: 'Ring number',
@@ -104,18 +100,16 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         descriptionLabel: 'Circumstances',
         descriptionCounter: (used, max) => `${used} of ${max} characters`,
         privacyTitle: 'What we do with your details',
-        privacyBody:
-            'Your phone number and e-mail address are used only to handle this report. ' +
-            'Only the branch administrator can see them. If the owner of the pigeon is identified, ' +
-            'the administrator may pass your contact details on so that the bird can be collected. ' +
-            'Reports are never published on the website.',
+        privacyBody: 'Your phone number and e-mail address are used only to handle this report. '
+            + 'Only the branch administrator can see them. If the owner of the pigeon is identified, '
+            + 'the administrator may pass your contact details on so that the bird can be collected. '
+            + 'Reports are never published on the website.',
         requiredFieldsNote: 'Fields marked with an asterisk are required.',
         submitButton: 'Send report',
         submittingButton: 'Sending…',
         successTitle: 'Thank you for your report',
-        successBody:
-            'Your report has reached the branch administrator. If the owner is identified, ' +
-            'we will contact you using the details you provided.',
+        successBody: 'Your report has reached the branch administrator. If the owner is identified, '
+            + 'we will contact you using the details you provided.',
         submitAnother: 'Report another pigeon',
         errorRingRequired: 'Please enter the ring number.',
         errorContactRequired: 'Please provide a phone number or an e-mail address.',
@@ -129,9 +123,8 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
     DE: {
         languageName: 'Deutsch',
         pageTitle: 'Haben Sie eine Brieftaube gefunden?',
-        pageLead:
-            'Wenn Sie eine Taube mit einem Ring gefunden haben, füllen Sie bitte das folgende Formular aus. ' +
-            'Ihre Meldung erreicht den Administrator der Abteilung PZHGP Żagań, der versucht, den Besitzer zu ermitteln.',
+        pageLead: 'Wenn Sie eine Taube mit einem Ring gefunden haben, füllen Sie bitte das folgende Formular aus. '
+            + 'Ihre Meldung erreicht den Administrator der Abteilung PZHGP Żagań, der versucht, den Besitzer zu ermitteln.',
         languageSelectorLabel: 'Sprache',
         formTitle: 'Meldeformular',
         ringNumberLabel: 'Ringnummer',
@@ -146,18 +139,16 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         descriptionLabel: 'Umstände des Fundes',
         descriptionCounter: (used, max) => `${used} von ${max} Zeichen`,
         privacyTitle: 'Was mit Ihren Daten geschieht',
-        privacyBody:
-            'Ihre Telefonnummer und E-Mail-Adresse werden ausschließlich zur Bearbeitung dieser Meldung ' +
-            'verwendet. Nur der Administrator der Abteilung kann sie einsehen. Wird der Besitzer der Taube ' +
-            'ermittelt, kann der Administrator Ihre Kontaktdaten weitergeben, damit der Vogel abgeholt werden ' +
-            'kann. Meldungen werden nicht auf der Website veröffentlicht.',
+        privacyBody: 'Ihre Telefonnummer und E-Mail-Adresse werden ausschließlich zur Bearbeitung dieser Meldung '
+            + 'verwendet. Nur der Administrator der Abteilung kann sie einsehen. Wird der Besitzer der Taube '
+            + 'ermittelt, kann der Administrator Ihre Kontaktdaten weitergeben, damit der Vogel abgeholt werden '
+            + 'kann. Meldungen werden nicht auf der Website veröffentlicht.',
         requiredFieldsNote: 'Mit einem Sternchen gekennzeichnete Felder sind Pflichtfelder.',
         submitButton: 'Meldung senden',
         submittingButton: 'Wird gesendet…',
         successTitle: 'Vielen Dank für Ihre Meldung',
-        successBody:
-            'Ihre Meldung hat den Administrator der Abteilung erreicht. Wird der Besitzer ermittelt, ' +
-            'melden wir uns über die von Ihnen angegebenen Kontaktdaten.',
+        successBody: 'Ihre Meldung hat den Administrator der Abteilung erreicht. Wird der Besitzer ermittelt, '
+            + 'melden wir uns über die von Ihnen angegebenen Kontaktdaten.',
         submitAnother: 'Weitere Taube melden',
         errorRingRequired: 'Bitte geben Sie die Ringnummer an.',
         errorContactRequired: 'Bitte geben Sie eine Telefonnummer oder E-Mail-Adresse an.',

@@ -1,10 +1,5 @@
 import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
-import {
-    FlightPlanDetailsDto,
-    FlightPlanEntryRequest,
-    FlightPlanSummaryDto,
-    FlightResultUploadRequest
-} from '@/app/types/flightPlan';
+import { FlightPlanDetailsDto, FlightPlanEntryRequest, FlightPlanSummaryDto, FlightResultUploadRequest } from '@/app/types/flightPlan';
 
 export const flightPlanService = {
     getAllPlans: async (): Promise<FlightPlanSummaryDto[]> => {
@@ -75,7 +70,7 @@ export const flightPlanService = {
         const formData = new FormData();
 
         formData.append('file', file);
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
 
         const response = await fetchWithAuth(`${API_URL}/api/flight-results/entries/${entryId}`, {
             method: 'POST',

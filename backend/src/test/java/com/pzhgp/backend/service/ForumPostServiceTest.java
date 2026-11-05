@@ -3,11 +3,11 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.ForumPostDto;
 import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
-import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -185,7 +185,7 @@ class ForumPostServiceTest {
         assertTrue(thread.getLastPostAt().isAfter(oldLastPostAt));
 
         verify(notificationService, times(1)).createNotification(
-                eq(threadAuthor),
+                eq(1L),
                 contains("Piotr Nowak dodał/a odpowiedź"),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_REPLY)

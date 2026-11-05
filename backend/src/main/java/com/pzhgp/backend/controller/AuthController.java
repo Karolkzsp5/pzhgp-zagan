@@ -7,7 +7,6 @@ import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.exception.AuthRateLimitException;
 import com.pzhgp.backend.service.AuthRateLimiter;
 import com.pzhgp.backend.service.BreederService;
-import com.pzhgp.backend.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -15,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.pzhgp.backend.service.JwtService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +30,7 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(
-            @Valid @RequestBody RegistrationRequest request,
-            HttpServletRequest httpRequest
-    ) {
+    public ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest request, HttpServletRequest httpRequest) {
         if (!authRateLimiter.tryAcquireRegistration(httpRequest.getRemoteAddr())) {
             throw new AuthRateLimitException("Zbyt wiele prób rejestracji. Spróbuj ponownie później.");
         }

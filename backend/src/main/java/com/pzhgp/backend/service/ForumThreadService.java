@@ -20,12 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ForumThreadService {
-
-    private static final int MAX_PAGE_SIZE = 100;
 
     private final ForumThreadRepository threadRepository;
     private final ForumCategoryRepository categoryRepository;
@@ -41,7 +40,7 @@ public class ForumThreadService {
 
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
+        PaginationUtils.validate(page, size, 100);
         Pageable pageable = PageRequest.of(page, size, Sort.by(
                 Sort.Order.desc("isPinned"),
                 Sort.Order.desc("lastPostAt"),
@@ -53,8 +52,7 @@ public class ForumThreadService {
 
     @Transactional
     public void createThread(ForumThreadRequest request, String authorEmail) {
-        ForumCategory category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii."));
+        ForumCategory category = categoryRepository.findById(request.categoryId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii."));
         Breeder author = breederRepository.requireByEmail(authorEmail);
 
         ForumThread thread = new ForumThread();
@@ -72,26 +70,21 @@ public class ForumThreadService {
         String notificationMessage = author.getFullName() + " dodał/a nowy wątek na forum";
         String notificationLink = "/forum/thread/" + thread.getId();
 
-        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
-                .filter(breeder -> !breeder.getId().equals(author.getId()))
-                .toList();
+        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream().filter(breeder -> !breeder.getId().equals(author.getId())).collect(Collectors.toList());
 
         if (!recipients.isEmpty()) {
-            notificationService.createBulkNotifications(
-                    recipients, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
+            notificationService.createBulkNotifications(recipients, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
         }
     }
 
     @Transactional
     public ForumThreadDto getThread(Long threadId, String requesterEmail, boolean countView) {
-        ForumThread thread = threadRepository.findById(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (countView && !thread.getAuthor().getId().equals(requester.getId())) {
             threadRepository.incrementViews(threadId);
-            thread = threadRepository.findById(threadId)
-                    .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+            thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         }
 
         return mapToDto(thread, requester);
@@ -99,8 +92,7 @@ public class ForumThreadService {
 
     @Transactional
     public void toggleThreadStatus(Long threadId, String requesterEmail, ThreadAction action) {
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!PermissionRules.canModerateForumContent(thread.getAuthor(), requester)) {
@@ -112,14 +104,11 @@ public class ForumThreadService {
             case PIN -> thread.setIsPinned(!thread.getIsPinned());
             default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna.");
         }
-
-        threadRepository.save(thread);
     }
 
     @Transactional
     public void updateThreadTitle(Long threadId, String title, String requesterEmail) {
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!PermissionRules.canEditForumContent(thread.getAuthor(), requester)) {
@@ -131,13 +120,11 @@ public class ForumThreadService {
         }
 
         thread.setTitle(title.trim());
-        threadRepository.save(thread);
     }
 
     @Transactional
     public void deleteThread(Long threadId, String requesterEmail) {
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!PermissionRules.canDeleteForumContent(thread.getAuthor(), requester)) {

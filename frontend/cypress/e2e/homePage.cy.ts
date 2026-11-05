@@ -82,11 +82,9 @@ describe('Home Page - Announcements Tests', () => {
     const openAddAnnouncementModal = () => {
         cy.contains('button', '+ Dodaj ogłoszenie').click();
 
-        cy.get('[role="dialog"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Dodaj nowe ogłoszenie').should('be.visible');
-            });
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Dodaj nowe ogłoszenie').should('be.visible');
+        });
         cy.get('[role="dialog"] button[aria-label="Zamknij okno"]').should('be.focused');
     };
 
@@ -140,38 +138,32 @@ describe('Home Page - Announcements Tests', () => {
         cy.get('article').should('have.length', 3).and('be.visible');
 
         // Own pinned announcement
-        getAnnouncementByTitle('Ważne ogłoszenie oddziału')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h3', 'Ważne ogłoszenie oddziału').should('be.visible');
-                cy.contains('Ważna przypięta treść ogłoszenia.').should('be.visible');
-                cy.contains('25.09.2026').should('be.visible');
-                cy.contains('Dodał:').should('be.visible');
-                cy.contains('Admin Testowy').should('be.visible');
-                cy.contains('Edytowano:').should('be.visible').and('contain.text', '26.09.2026');
-                cy.get('svg').should('be.visible');
-                cy.contains('button', 'Edytuj').should('be.visible');
-                cy.contains('button', 'Usuń').should('be.visible');
-            });
+        getAnnouncementByTitle('Ważne ogłoszenie oddziału').should('be.visible').within(() => {
+            cy.contains('h3', 'Ważne ogłoszenie oddziału').should('be.visible');
+            cy.contains('Ważna przypięta treść ogłoszenia.').should('be.visible');
+            cy.contains('25.09.2026').should('be.visible');
+            cy.contains('Dodał:').should('be.visible');
+            cy.contains('Admin Testowy').should('be.visible');
+            cy.contains('Edytowano:').should('be.visible').and('contain.text', '26.09.2026');
+            cy.get('svg').should('be.visible');
+            cy.contains('button', 'Edytuj').should('be.visible');
+            cy.contains('button', 'Usuń').should('be.visible');
+        });
 
         // Announcement created by moderator
-        getAnnouncementByTitle('Ogłoszenie moderatora')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('Treść ogłoszenia dodanego przez moderatora.').should('be.visible');
-                cy.contains('Moderator Testowy').should('be.visible');
-                cy.contains('button', 'Edytuj').should('not.exist');
-                cy.contains('button', 'Usuń').should('be.visible');
-            });
+        getAnnouncementByTitle('Ogłoszenie moderatora').should('be.visible').within(() => {
+            cy.contains('Treść ogłoszenia dodanego przez moderatora.').should('be.visible');
+            cy.contains('Moderator Testowy').should('be.visible');
+            cy.contains('button', 'Edytuj').should('not.exist');
+            cy.contains('button', 'Usuń').should('be.visible');
+        });
 
         // Announcement created by another administrator
-        getAnnouncementByTitle('Ogłoszenie innego administratora')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('Treść ogłoszenia innego administratora.').should('be.visible');
-                cy.contains('Inny Administrator').should('be.visible');
-                cy.get('button').should('not.exist');
-            });
+        getAnnouncementByTitle('Ogłoszenie innego administratora').should('be.visible').within(() => {
+            cy.contains('Treść ogłoszenia innego administratora.').should('be.visible');
+            cy.contains('Inny Administrator').should('be.visible');
+            cy.get('button').should('not.exist');
+        });
 
         cy.checkFooter();
     });
@@ -251,11 +243,8 @@ describe('Home Page - Announcements Tests', () => {
         cy.contains('Najstarsze powiadomienie').should('not.exist');
 
         cy.get('[data-cy="load-older-notifications"]').scrollIntoView();
-        cy.get('[data-cy="load-older-notifications"]')
-            .should('be.visible')
-            .and('not.be.disabled')
-            .and('have.text', 'Zobacz wcześniejsze powiadomienia')
-            .click();
+        cy.get('[data-cy="load-older-notifications"]').should('be.visible').and('not.be.disabled')
+            .and('have.text', 'Zobacz wcześniejsze powiadomienia').click();
         cy.wait('@getNotificationsPage1');
 
         cy.contains('Powiadomienie 100').should('exist');
@@ -407,9 +396,11 @@ describe('Home Page - Announcements Tests', () => {
             content: firstPage.content.map((announcement) =>
                 announcement.id === 1
                     ? {
-                          ...announcement,
-                          content: '<p>Bezpieczna treść.</p>' + '<script>window.__announcementXss = true;</script>'
-                      }
+                        ...announcement,
+                        content:
+                            '<p>Bezpieczna treść.</p>' +
+                            '<script>window.__announcementXss = true;</script>'
+                    }
                     : announcement
             )
         };
@@ -436,9 +427,7 @@ describe('Home Page - Announcements Tests', () => {
 
         cy.get('[role="dialog"]').within(() => {
             cy.contains('label', 'Tytuł ogłoszenia').should('be.visible');
-            cy.get('#announcement-title')
-                .should('be.visible')
-                .and('have.attr', 'placeholder', 'Wpisz tytuł (min. 3 znaki)')
+            cy.get('#announcement-title').should('be.visible').and('have.attr', 'placeholder', 'Wpisz tytuł (min. 3 znaki)')
                 .and('have.attr', 'required');
 
             cy.contains('label', 'Treść ogłoszenia').should('be.visible');
@@ -512,7 +501,8 @@ describe('Home Page - Announcements Tests', () => {
 
         openAddAnnouncementModal();
 
-        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress').should('have.value', 'Nowe ogłoszenie Cypress');
+        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress')
+            .should('have.value', 'Nowe ogłoszenie Cypress');
         getAnnouncementEditor().click().type('Treść nowego ogłoszenia testowego.');
         getAnnouncementEditor().should('contain.text', 'Treść nowego ogłoszenia testowego.');
         cy.get('#isPinned').check();
@@ -527,15 +517,13 @@ describe('Home Page - Announcements Tests', () => {
         cy.wait('@getAnnouncements');
         cy.get('[role="dialog"]').should('not.exist');
 
-        getAnnouncementByTitle('Nowe ogłoszenie Cypress')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('Treść nowego ogłoszenia testowego.').should('be.visible');
-                cy.contains('Admin Testowy').should('be.visible');
-                cy.get('svg').should('be.visible');
-                cy.contains('button', 'Edytuj').should('be.visible');
-                cy.contains('button', 'Usuń').should('be.visible');
-            });
+        getAnnouncementByTitle('Nowe ogłoszenie Cypress').should('be.visible').within(() => {
+            cy.contains('Treść nowego ogłoszenia testowego.').should('be.visible');
+            cy.contains('Admin Testowy').should('be.visible');
+            cy.get('svg').should('be.visible');
+            cy.contains('button', 'Edytuj').should('be.visible');
+            cy.contains('button', 'Usuń').should('be.visible');
+        });
     });
 
     // ==========================================
@@ -555,9 +543,7 @@ describe('Home Page - Announcements Tests', () => {
         cy.contains('button', 'Opublikuj').click();
 
         cy.wait('@createAnnouncementError');
-        cy.get('[role="alert"]')
-            .should('be.visible')
-            .and('contain.text', 'Nie udało się zapisać ogłoszenia testowego.');
+        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Nie udało się zapisać ogłoszenia testowego.');
         cy.get('[role="dialog"]').should('be.visible');
     });
 
@@ -578,12 +564,12 @@ describe('Home Page - Announcements Tests', () => {
                 content: firstPage.content.map((announcement) =>
                     announcement.id === 1
                         ? {
-                              ...announcement,
-                              title: body.title,
-                              content: body.content,
-                              isPinned: body.isPinned,
-                              updatedAt: '2026-09-28T19:00:00'
-                          }
+                            ...announcement,
+                            title: body.title,
+                            content: body.content,
+                            isPinned: body.isPinned,
+                            updatedAt: '2026-09-28T19:00:00'
+                        }
                         : announcement
                 )
             };
@@ -594,27 +580,18 @@ describe('Home Page - Announcements Tests', () => {
             });
         }).as('updateAnnouncement');
 
-        getAnnouncementByTitle('Ważne ogłoszenie oddziału').within(() => {
-            cy.contains('button', 'Edytuj').click();
-        });
+        getAnnouncementByTitle('Ważne ogłoszenie oddziału').within(() => {cy.contains('button', 'Edytuj').click();});
 
-        cy.get('[role="dialog"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Edytuj ogłoszenie').should('be.visible');
-            });
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Edytuj ogłoszenie').should('be.visible');
+        });
 
         cy.get('[role="dialog"] button[aria-label="Zamknij okno"]').should('be.focused');
 
-        cy.get('#announcement-title')
-            .should('have.value', 'Ważne ogłoszenie oddziału')
-            .clear()
-            .type('Zmienione ogłoszenie')
-            .should('have.value', 'Zmienione ogłoszenie');
+        cy.get('#announcement-title').should('have.value', 'Ważne ogłoszenie oddziału').clear()
+            .type('Zmienione ogłoszenie').should('have.value', 'Zmienione ogłoszenie');
 
-        getAnnouncementEditor()
-            .should('contain.text', 'Ważna przypięta treść ogłoszenia.')
-            .click()
+        getAnnouncementEditor().should('contain.text', 'Ważna przypięta treść ogłoszenia.').click()
             .type('{selectall}{backspace}' + 'Zmieniona treść ogłoszenia.');
         getAnnouncementEditor().should('contain.text', 'Zmieniona treść ogłoszenia.');
 
@@ -631,13 +608,11 @@ describe('Home Page - Announcements Tests', () => {
         cy.get('[role="dialog"]').should('not.exist');
         cy.contains('article h3', 'Ważne ogłoszenie oddziału').should('not.exist');
 
-        getAnnouncementByTitle('Zmienione ogłoszenie')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('Zmieniona treść ogłoszenia.').should('be.visible');
-                cy.contains('Edytowano:').should('be.visible').and('contain.text', '28.09.2026');
-                cy.get('svg').should('not.exist');
-            });
+        getAnnouncementByTitle('Zmienione ogłoszenie').should('be.visible').within(() => {
+            cy.contains('Zmieniona treść ogłoszenia.').should('be.visible');
+            cy.contains('Edytowano:').should('be.visible').and('contain.text', '28.09.2026');
+            cy.get('svg').should('not.exist');
+        });
     });
 
     // ==========================================
@@ -649,13 +624,11 @@ describe('Home Page - Announcements Tests', () => {
             cy.contains('button', 'Usuń').click();
         });
 
-        cy.get('[role="dialog"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Usuń ogłoszenie').should('be.visible');
-                cy.contains('Czy na pewno chcesz trwale usunąć to ogłoszenie?').should('be.visible');
-                cy.contains('button', 'Anuluj').click();
-            });
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Usuń ogłoszenie').should('be.visible');
+            cy.contains('Czy na pewno chcesz trwale usunąć to ogłoszenie?').should('be.visible');
+            cy.contains('button', 'Anuluj').click();
+        });
 
         cy.get('[role="dialog"]').should('not.exist');
         getAnnouncementByTitle('Ogłoszenie moderatora').should('be.visible');
@@ -670,7 +643,9 @@ describe('Home Page - Announcements Tests', () => {
             firstPage = {
                 ...firstPage,
                 totalElements: firstPage.totalElements - 1,
-                content: firstPage.content.filter((announcement) => announcement.id !== 2)
+                content: firstPage.content.filter(
+                    (announcement) => announcement.id !== 2
+                )
             };
 
             req.reply({
@@ -716,13 +691,11 @@ describe('Home Page - Announcements Tests', () => {
 
         cy.wait('@deleteAnnouncementError');
 
-        cy.get('[role="dialog"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Nie udało się wykonać operacji').should('be.visible');
-                cy.contains('Nie udało się usunąć ogłoszenia testowego.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Nie udało się wykonać operacji').should('be.visible');
+            cy.contains('Nie udało się usunąć ogłoszenia testowego.').should('be.visible');
+            cy.contains('button', 'OK').click();
+        });
 
         cy.get('[role="dialog"]').should('not.exist');
         getAnnouncementByTitle('Ogłoszenie moderatora').should('be.visible');
@@ -754,23 +727,24 @@ describe('Home Page - Announcements Tests', () => {
         getAnnouncementByTitle('Starsze ogłoszenie').should('be.visible');
 
         cy.intercept('DELETE', '**/api/announcements/4', (req) => {
-            firstPage = {
-                ...firstPage,
-                totalElements: 3,
-                totalPages: 1
-            };
+                firstPage = {
+                    ...firstPage,
+                    totalElements: 3,
+                    totalPages: 1
+                };
 
-            secondPage = {
-                ...secondPage,
-                content: [],
-                totalElements: 3,
-                totalPages: 1
-            };
+                secondPage = {
+                    ...secondPage,
+                    content: [],
+                    totalElements: 3,
+                    totalPages: 1
+                };
 
-            req.reply({
-                statusCode: 204
-            });
-        }).as('deleteLastAnnouncement');
+                req.reply({
+                    statusCode: 204
+                });
+            }
+        ).as('deleteLastAnnouncement');
 
         getAnnouncementByTitle('Starsze ogłoszenie').within(() => {
             cy.contains('button', 'Usuń').click();

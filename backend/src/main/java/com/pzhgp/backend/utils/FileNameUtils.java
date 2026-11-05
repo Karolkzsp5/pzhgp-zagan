@@ -4,7 +4,8 @@ public final class FileNameUtils {
 
     private static final int MAX_FILE_NAME_LENGTH = 255;
 
-    private FileNameUtils() {}
+    private FileNameUtils() {
+    }
 
     /**
      * Usuwa z nazwy pliku elementy ścieżki, aby nazwa pochodząca od użytkownika

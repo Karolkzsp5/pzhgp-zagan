@@ -23,12 +23,7 @@ export const createCategory = async (name: string, description: string, sortOrde
     await ensureOk(response, 'Nie udało się utworzyć kategorii.');
 };
 
-export const updateCategory = async (
-    id: number,
-    name: string,
-    description: string,
-    sortOrder: number
-): Promise<void> => {
+export const updateCategory = async (id: number, name: string, description: string, sortOrder: number): Promise<void> => {
     const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

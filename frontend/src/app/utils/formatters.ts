@@ -6,8 +6,7 @@ export const formatDateTime = (dateString: string | null) => {
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
-    });
+        minute: '2-digit' });
 };
 
 /**
@@ -31,8 +30,7 @@ export const formatDate = (dateString: string | null) => {
     return new Date(dateString).toLocaleDateString('pl-PL', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
-    });
+        year: 'numeric' });
 };
 
 /** Data bez strefy czasowej (np. "2026-05-17" z backendu) zapisana jako "17.05.2026". */

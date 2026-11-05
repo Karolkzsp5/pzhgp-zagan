@@ -12,7 +12,8 @@ public final class GeoMath {
     /** Średni promień Ziemi wg IUGG w metrach. */
     private static final double EARTH_RADIUS_METERS = 6_371_008.8;
 
-    private GeoMath() {}
+    private GeoMath() {
+    }
 
     /**
      * Odległość ortodromiczna (po najkrótszym łuku) między dwoma punktami, w metrach.

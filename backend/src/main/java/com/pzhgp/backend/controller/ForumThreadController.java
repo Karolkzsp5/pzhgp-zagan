@@ -53,8 +53,7 @@ public class ForumThreadController {
     public ResponseEntity<Void> updateThreadTitle(
             @PathVariable Long id,
             @RequestBody Map<String, String> request,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         threadService.updateThreadTitle(id, request.get("title"), authentication.getName());
         return ResponseEntity.ok().build();
     }

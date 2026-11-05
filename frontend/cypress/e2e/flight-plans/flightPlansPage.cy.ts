@@ -53,27 +53,20 @@ describe('Flight Plans Page Tests', () => {
             cy.get('[data-cy="flight-plans-title"]').should('be.visible').and('have.text', 'Plany i wyniki lotów');
             cy.contains('Wybierz rok, aby wyświetlić plan oraz dostępne wyniki lotów.').should('be.visible');
 
-            cy.get('[data-cy="add-flight-plan-button"]')
-                .should('be.visible')
-                .and('not.be.disabled')
+            cy.get('[data-cy="add-flight-plan-button"]').should('be.visible').and('not.be.disabled')
                 .and('have.text', '+ Dodaj plan');
 
-            cy.get('[data-cy="flight-plan-card-2026"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', '2026').should('be.visible');
-                    cy.get('a').should('have.attr', 'href', '/flight-plans/2026');
-                });
+            cy.get('[data-cy="flight-plan-card-2026"]').should('be.visible').within(() => {
+                cy.contains('h2', '2026').should('be.visible');
+                cy.get('a').should('have.attr', 'href', '/flight-plans/2026');
+            });
 
-            cy.get('[data-cy="flight-plan-card-2025"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', '2025').should('be.visible');
-                    cy.get('a').should('have.attr', 'href', '/flight-plans/2025');
-                });
+            cy.get('[data-cy="flight-plan-card-2025"]').should('be.visible').within(() => {
+                cy.contains('h2', '2025').should('be.visible');
+                cy.get('a').should('have.attr', 'href', '/flight-plans/2025');
+            });
 
-            cy.get('[data-cy="delete-flight-plan-2026"]')
-                .should('be.visible')
+            cy.get('[data-cy="delete-flight-plan-2026"]').should('be.visible')
                 .and('have.attr', 'aria-label', 'Usuń plan lotów 2026');
 
             cy.get('[data-cy="delete-flight-plan-2025"]').should('be.visible');
@@ -87,26 +80,21 @@ describe('Flight Plans Page Tests', () => {
         it('Should correctly render and close the create flight plan modal', () => {
             cy.get('[data-cy="add-flight-plan-button"]').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Dodaj plan lotów').should('be.visible');
-                    cy.contains('label', 'Rok').should('be.visible');
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Dodaj plan lotów').should('be.visible');
+                cy.contains('label', 'Rok').should('be.visible');
 
-                    cy.get('[data-cy="flight-plan-year-input"]')
-                        .should('be.visible')
-                        .and('have.attr', 'type', 'number')
-                        .and('have.attr', 'min', '2000')
-                        .and('have.attr', 'max', '2100')
-                        .and('have.attr', 'required');
+                cy.get('[data-cy="flight-plan-year-input"]').should('be.visible')
+                    .and('have.attr', 'type', 'number')
+                    .and('have.attr', 'min', '2000')
+                    .and('have.attr', 'max', '2100')
+                    .and('have.attr', 'required');
 
-                    cy.get('[data-cy="save-flight-plan-button"]')
-                        .should('be.visible')
-                        .and('not.be.disabled')
-                        .and('have.text', 'Dodaj plan');
+                cy.get('[data-cy="save-flight-plan-button"]').should('be.visible').and('not.be.disabled')
+                    .and('have.text', 'Dodaj plan');
 
-                    cy.contains('button', 'Anuluj').click();
-                });
+                cy.contains('button', 'Anuluj').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
         });
@@ -121,8 +109,7 @@ describe('Flight Plans Page Tests', () => {
             cy.get('[data-cy="flight-plan-year-input"]').clear().type('1999');
 
             cy.get('[data-cy="save-flight-plan-button"]').click();
-            cy.get('[data-cy="flight-plan-form-error"]')
-                .should('be.visible')
+            cy.get('[data-cy="flight-plan-form-error"]').should('be.visible')
                 .and('have.text', 'Rok planu musi mieścić się w zakresie od 2000 do 2100.');
 
             cy.get('[role="dialog"]').should('be.visible');
@@ -163,12 +150,10 @@ describe('Flight Plans Page Tests', () => {
 
             cy.get('[role="dialog"]').should('not.exist');
 
-            cy.get('[data-cy="flight-plan-card-2027"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', '2027').should('be.visible');
-                    cy.get('a').should('have.attr', 'href', '/flight-plans/2027');
-                });
+            cy.get('[data-cy="flight-plan-card-2027"]').should('be.visible').within(() => {
+                cy.contains('h2', '2027').should('be.visible');
+                cy.get('a').should('have.attr', 'href', '/flight-plans/2027');
+            });
         });
 
         // ==========================================
@@ -187,8 +172,7 @@ describe('Flight Plans Page Tests', () => {
             cy.get('[data-cy="save-flight-plan-button"]').click();
             cy.wait('@createFlightPlanError');
 
-            cy.get('[data-cy="flight-plan-form-error"]')
-                .should('be.visible')
+            cy.get('[data-cy="flight-plan-form-error"]').should('be.visible')
                 .and('have.text', 'Plan lotów dla roku 2027 już istnieje.');
 
             cy.get('[role="dialog"]').should('be.visible');
@@ -201,13 +185,11 @@ describe('Flight Plans Page Tests', () => {
         it('Should cancel flight plan deletion', () => {
             cy.get('[data-cy="delete-flight-plan-2026"]').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Usuń plan lotów').should('be.visible');
-                    cy.contains('Czy na pewno chcesz usunąć plan lotów na rok 2026?').should('be.visible');
-                    cy.contains('button', 'Anuluj').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Usuń plan lotów').should('be.visible');
+                cy.contains('Czy na pewno chcesz usunąć plan lotów na rok 2026?').should('be.visible');
+                cy.contains('button', 'Anuluj').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.get('[data-cy="flight-plan-card-2026"]').should('be.visible');
@@ -259,16 +241,12 @@ describe('Flight Plans Page Tests', () => {
 
             cy.wait('@deleteFlightPlanError');
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Nie udało się usunąć planu').should('be.visible');
-                    cy.contains(
-                        'Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.'
-                    ).should('be.visible');
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Nie udało się usunąć planu').should('be.visible');
+                cy.contains('Nie można usunąć planu lotów, który zawiera loty. Najpierw usuń wszystkie pozycje planu.').should('be.visible');
 
-                    cy.contains('button', 'OK').click();
-                });
+                cy.contains('button', 'OK').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
             cy.get('[data-cy="flight-plan-card-2026"]').should('be.visible');

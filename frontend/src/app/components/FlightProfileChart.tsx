@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useMemo, useRef, useState } from 'react';
 import { FlightTrackPointDto } from '@/app/types/flight';
@@ -58,8 +58,11 @@ export default function FlightProfileChart({
 
     // Wysokość wygładzana medianą — pojedynczy błędny odczyt potrafiłby rozciągnąć oś
     // wykresu tak, że cały przebieg spłaszczyłby się do linii.
-    const elevations = useMemo(() => smoothElevations(points.map((point) => point.elevation)), [points]);
-    const speeds = useMemo(() => points.map((point) => point.speedMetersPerMinute), [points]);
+    const elevations = useMemo(
+        () => smoothElevations(points.map(point => point.elevation)),
+        [points]
+    );
+    const speeds = useMemo(() => points.map(point => point.speedMetersPerMinute), [points]);
 
     /**
      * Panel powstaje tylko dla wielkości faktycznie obecnych w pliku — trasy bez zapisu
@@ -68,10 +71,10 @@ export default function FlightProfileChart({
     const panels = useMemo<Panel[]>(() => {
         const available: Omit<Panel, 'offsetY'>[] = [];
 
-        if (speeds.some((value) => value !== null)) {
+        if (speeds.some(value => value !== null)) {
             available.push({ title: 'Prędkość', unit: 'm/min', values: speeds });
         }
-        if (elevations.some((value) => value !== null)) {
+        if (elevations.some(value => value !== null)) {
             available.push({ title: 'Wysokość n.p.m.', unit: 'm', values: elevations });
         }
 
@@ -83,7 +86,7 @@ export default function FlightProfileChart({
 
     /** Pozycja punktu na osi czasu; dla plików bez znaczników czasu — pozycja według indeksu. */
     const xPositions = useMemo(() => {
-        const times = points.map((point) => (point.time ? Date.parse(point.time) : null));
+        const times = points.map(point => (point.time ? Date.parse(point.time) : null));
         const valid = times.filter((value): value is number => value !== null);
 
         if (valid.length < 2) {
@@ -214,14 +217,22 @@ export default function FlightProfileChart({
     };
 
     if (panels.length === 0) {
-        return <p className="text-sm text-gray-500">Ten lot nie zawiera danych o wysokości ani prędkości.</p>;
+        return (
+            <p className="text-sm text-gray-500">
+                Ten lot nie zawiera danych o wysokości ani prędkości.
+            </p>
+        );
     }
 
     if (points.length < 2) {
-        return <p className="text-sm text-gray-500">Lot zawiera zbyt mało punktów, aby wyświetlić profil.</p>;
+        return (
+            <p className="text-sm text-gray-500">
+                Lot zawiera zbyt mało punktów, aby wyświetlić profil.
+            </p>
+        );
     }
 
-    const timeTicks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+    const timeTicks = [0, 0.25, 0.5, 0.75, 1].map(fraction => {
         const index = Math.min(points.length - 1, Math.round(fraction * (points.length - 1)));
         return { x: MARGIN_LEFT + xPositions[index], label: formatTime(points[index].time) };
     });
@@ -233,124 +244,120 @@ export default function FlightProfileChart({
             {/* Na wąskich ekranach wykres zachowuje minimalną szerokość i przewija się poziomo,
                 zamiast kurczyć się do rozmiaru, w którym opisy osi stają się nieczytelne. */}
             <div className="overflow-x-auto -mx-1 px-1">
-                <svg
-                    ref={svgRef}
-                    viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-                    className="w-full h-auto min-w-[560px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-                    role="img"
-                    tabIndex={0}
-                    aria-label="Profile wysokości i prędkości wzdłuż trasy lotu. Kliknij, aby wybrać punkt; strzałkami przesuniesz wybór."
-                    onPointerMove={handlePointerMove}
-                    onPointerLeave={handlePointerLeave}
-                    onClick={handleClick}
-                    onKeyDown={handleKeyDown}
-                >
-                    {panels.map((panel) => {
-                        const { line, area, min, max, dataMin, dataMax } = buildPath(panel);
-                        const span = Math.max(1e-9, max - min);
-                        const ticks = [dataMax, (dataMax + dataMin) / 2, dataMin].map((value) => ({
-                            value,
-                            y: panel.offsetY + PANEL_HEIGHT - ((value - min) / span) * PANEL_HEIGHT
-                        }));
+            <svg
+                ref={svgRef}
+                viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+                className="w-full h-auto min-w-[560px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                role="img"
+                tabIndex={0}
+                aria-label="Profile wysokości i prędkości wzdłuż trasy lotu. Kliknij, aby wybrać punkt; strzałkami przesuniesz wybór."
+                onPointerMove={handlePointerMove}
+                onPointerLeave={handlePointerLeave}
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}
+            >
+                {panels.map(panel => {
+                    const { line, area, min, max, dataMin, dataMax } = buildPath(panel);
+                    const span = Math.max(1e-9, max - min);
+                    const ticks = [dataMax, (dataMax + dataMin) / 2, dataMin].map(value => ({
+                        value,
+                        y: panel.offsetY + PANEL_HEIGHT - ((value - min) / span) * PANEL_HEIGHT
+                    }));
 
-                        return (
-                            <g key={panel.title}>
-                                <text
-                                    x={MARGIN_LEFT}
-                                    y={panel.offsetY - 6}
-                                    fontSize="12"
-                                    fontWeight="600"
-                                    fill="#374151"
-                                >
-                                    {panel.title}{' '}
-                                    <tspan fill={AXIS_TEXT_COLOR} fontWeight="400">
-                                        [{panel.unit}]
-                                    </tspan>
-                                </text>
+                    return (
+                        <g key={panel.title}>
+                            <text
+                                x={MARGIN_LEFT}
+                                y={panel.offsetY - 6}
+                                fontSize="12"
+                                fontWeight="600"
+                                fill="#374151"
+                            >
+                                {panel.title} <tspan fill={AXIS_TEXT_COLOR} fontWeight="400">[{panel.unit}]</tspan>
+                            </text>
 
-                                {ticks.map((tick, tickIndex) => (
-                                    <g key={`${panel.title}-tick-${tickIndex}`}>
-                                        <line
-                                            x1={MARGIN_LEFT}
-                                            x2={MARGIN_LEFT + PLOT_WIDTH}
-                                            y1={tick.y}
-                                            y2={tick.y}
-                                            stroke={GRID_COLOR}
-                                            strokeWidth="1"
-                                            vectorEffect="non-scaling-stroke"
-                                        />
-                                        <text
-                                            x={MARGIN_LEFT - 8}
-                                            y={tick.y + 4}
-                                            fontSize="11"
-                                            textAnchor="end"
-                                            fill={AXIS_TEXT_COLOR}
-                                        >
-                                            {Math.round(tick.value)}
-                                        </text>
-                                    </g>
-                                ))}
+                            {ticks.map((tick, tickIndex) => (
+                                <g key={`${panel.title}-tick-${tickIndex}`}>
+                                    <line
+                                        x1={MARGIN_LEFT}
+                                        x2={MARGIN_LEFT + PLOT_WIDTH}
+                                        y1={tick.y}
+                                        y2={tick.y}
+                                        stroke={GRID_COLOR}
+                                        strokeWidth="1"
+                                        vectorEffect="non-scaling-stroke"
+                                    />
+                                    <text
+                                        x={MARGIN_LEFT - 8}
+                                        y={tick.y + 4}
+                                        fontSize="11"
+                                        textAnchor="end"
+                                        fill={AXIS_TEXT_COLOR}
+                                    >
+                                        {Math.round(tick.value)}
+                                    </text>
+                                </g>
+                            ))}
 
-                                {area && <path d={area} fill={AREA_COLOR} opacity="0.55" />}
-                                <path
-                                    d={line}
-                                    fill="none"
-                                    stroke={LINE_COLOR}
-                                    strokeWidth="2"
-                                    strokeLinejoin="round"
-                                    strokeLinecap="round"
-                                    vectorEffect="non-scaling-stroke"
-                                />
+                            {area && <path d={area} fill={AREA_COLOR} opacity="0.55" />}
+                            <path
+                                d={line}
+                                fill="none"
+                                stroke={LINE_COLOR}
+                                strokeWidth="2"
+                                strokeLinejoin="round"
+                                strokeLinecap="round"
+                                vectorEffect="non-scaling-stroke"
+                            />
 
-                                {highlightedIndex !== null &&
-                                    (() => {
-                                        const value = panel.values[highlightedIndex];
-                                        if (value === null || !Number.isFinite(value)) return null;
+                            {highlightedIndex !== null && (() => {
+                                const value = panel.values[highlightedIndex];
+                                if (value === null || !Number.isFinite(value)) return null;
 
-                                        const y = panel.offsetY + PANEL_HEIGHT - ((value - min) / span) * PANEL_HEIGHT;
+                                const y = panel.offsetY + PANEL_HEIGHT - ((value - min) / span) * PANEL_HEIGHT;
 
-                                        return (
-                                            <circle
-                                                cx={MARGIN_LEFT + xPositions[highlightedIndex]}
-                                                cy={y}
-                                                r="4.5"
-                                                fill={CURSOR_COLOR}
-                                                stroke="#ffffff"
-                                                strokeWidth="2"
-                                                vectorEffect="non-scaling-stroke"
-                                            />
-                                        );
-                                    })()}
-                            </g>
-                        );
-                    })}
+                                return (
+                                    <circle
+                                        cx={MARGIN_LEFT + xPositions[highlightedIndex]}
+                                        cy={y}
+                                        r="4.5"
+                                        fill={CURSOR_COLOR}
+                                        stroke="#ffffff"
+                                        strokeWidth="2"
+                                        vectorEffect="non-scaling-stroke"
+                                    />
+                                );
+                            })()}
+                        </g>
+                    );
+                })}
 
-                    {timeTicks.map((tick, index) => (
-                        <text
-                            key={`time-${index}`}
-                            x={Math.min(CHART_WIDTH - MARGIN_RIGHT, Math.max(MARGIN_LEFT, tick.x))}
-                            y={CHART_HEIGHT - 8}
-                            fontSize="11"
-                            textAnchor={index === 0 ? 'start' : index === timeTicks.length - 1 ? 'end' : 'middle'}
-                            fill={AXIS_TEXT_COLOR}
-                        >
-                            {tick.label}
-                        </text>
-                    ))}
+                {timeTicks.map((tick, index) => (
+                    <text
+                        key={`time-${index}`}
+                        x={Math.min(CHART_WIDTH - MARGIN_RIGHT, Math.max(MARGIN_LEFT, tick.x))}
+                        y={CHART_HEIGHT - 8}
+                        fontSize="11"
+                        textAnchor={index === 0 ? 'start' : index === timeTicks.length - 1 ? 'end' : 'middle'}
+                        fill={AXIS_TEXT_COLOR}
+                    >
+                        {tick.label}
+                    </text>
+                ))}
 
-                    {highlightedIndex !== null && (
-                        <line
-                            x1={MARGIN_LEFT + xPositions[highlightedIndex]}
-                            x2={MARGIN_LEFT + xPositions[highlightedIndex]}
-                            y1={MARGIN_TOP}
-                            y2={MARGIN_TOP + PANEL_HEIGHT * 2 + PANEL_GAP}
-                            stroke={CURSOR_COLOR}
-                            strokeWidth="1"
-                            strokeDasharray="3 3"
-                            vectorEffect="non-scaling-stroke"
-                        />
-                    )}
-                </svg>
+                {highlightedIndex !== null && (
+                    <line
+                        x1={MARGIN_LEFT + xPositions[highlightedIndex]}
+                        x2={MARGIN_LEFT + xPositions[highlightedIndex]}
+                        y1={MARGIN_TOP}
+                        y2={MARGIN_TOP + PANEL_HEIGHT * 2 + PANEL_GAP}
+                        stroke={CURSOR_COLOR}
+                        strokeWidth="1"
+                        strokeDasharray="3 3"
+                        vectorEffect="non-scaling-stroke"
+                    />
+                )}
+            </svg>
             </div>
 
             {highlighted && (
@@ -366,8 +373,7 @@ export default function FlightProfileChart({
                     )}
                     {highlighted.elevation !== null && (
                         <span>
-                            Wysokość:{' '}
-                            <strong className="text-gray-900">{Math.round(highlighted.elevation)} m n.p.m.</strong>
+                            Wysokość: <strong className="text-gray-900">{Math.round(highlighted.elevation)} m n.p.m.</strong>
                         </span>
                     )}
                 </div>

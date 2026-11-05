@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo,  useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import { FoundPigeonApiError, foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
 import { useAuth } from '@/app/components/AuthProvider';
-import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from '@/app/found-pigeons/translations';
+import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
 const MAX_RING_NUMBER_LENGTH = 15;
@@ -48,7 +48,7 @@ export default function FoundPigeonsPage() {
     const text = FORM_TRANSLATIONS[language];
 
     const setValue = (field: keyof FormValues, value: string) => {
-        setValues((previous) => ({ ...previous, [field]: value }));
+        setValues(previous => ({ ...previous, [field]: value }));
         setErrors({});
         setSubmitError('');
     };
@@ -137,9 +137,7 @@ export default function FoundPigeonsPage() {
 
     const fieldClasses = (hasError: boolean) =>
         `w-full px-3 py-2 border rounded-md text-sm text-gray-900 outline-none transition focus:ring-2 ${
-            hasError
-                ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            hasError ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
         }`;
 
     return (
@@ -151,16 +149,14 @@ export default function FoundPigeonsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
                     <span className="text-sm text-gray-600">{text.languageSelectorLabel}:</span>
                     <div className="flex gap-2" role="group" aria-label={text.languageSelectorLabel}>
-                        {LANGUAGE_ORDER.map((code) => (
+                        {LANGUAGE_ORDER.map(code => (
                             <button
                                 key={code}
                                 type="button"
                                 onClick={() => changeLanguage(code)}
                                 aria-pressed={language === code}
                                 className={`px-3 py-1.5 rounded-md text-sm font-semibold border transition ${
-                                    language === code
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                                    language === code ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                                 }`}
                             >
                                 {FORM_TRANSLATIONS[code].languageName}
@@ -174,13 +170,7 @@ export default function FoundPigeonsPage() {
                             className="sm:ml-auto inline-flex items-center gap-1 text-sm text-blue-700 hover:text-blue-900 hover:underline whitespace-nowrap"
                         >
                             Panel zgłoszeń
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-4 h-4"
-                                viewBox="0 -960 960 960"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                 <path d="m288-96-68-68 316-316-316-316 68-68 384 384L288-96Z" />
                             </svg>
                         </Link>
@@ -195,13 +185,7 @@ export default function FoundPigeonsPage() {
                 {isSubmitted ? (
                     <div className="bg-white rounded-lg shadow-sm border border-green-200 p-8 text-center">
                         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-7 h-7 text-green-700"
-                                viewBox="0 -960 960 960"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-700" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                 <path d="M389-267 195-460l51-52 143 143 325-324 51 51-376 375Z" />
                             </svg>
                         </div>
@@ -233,12 +217,14 @@ export default function FoundPigeonsPage() {
                                     type="text"
                                     maxLength={MAX_RING_NUMBER_LENGTH}
                                     value={values.ringNumber}
-                                    onChange={(event) => setValue('ringNumber', event.target.value.toUpperCase())}
+                                    onChange={event => setValue('ringNumber', event.target.value.toUpperCase())}
                                     placeholder={text.ringNumberPlaceholder}
                                     aria-invalid={Boolean(errors.ringNumber)}
                                     className={fieldClasses(Boolean(errors.ringNumber))}
                                 />
-                                {errors.ringNumber && <p className="mt-1 text-sm text-red-600">{errors.ringNumber}</p>}
+                                {errors.ringNumber && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.ringNumber}</p>
+                                )}
                             </div>
 
                             <fieldset className="mb-6">
@@ -246,8 +232,8 @@ export default function FoundPigeonsPage() {
                                     {text.contactSectionTitle}
                                 </legend>
 
-                                <p className="text-xs text-gray-500 mb-3">
-                                    {text.contactSectionHint} <span className="text-red-500">*</span>
+                                <p className="text-xs text-gray-500 mb-3">{text.contactSectionHint}{' '}
+                                    <span className="text-red-500">*</span>
                                 </p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -261,7 +247,7 @@ export default function FoundPigeonsPage() {
                                             inputMode="tel"
                                             maxLength={15}
                                             value={values.contactPhone}
-                                            onChange={(event) => setValue('contactPhone', event.target.value)}
+                                            onChange={event => setValue('contactPhone', event.target.value)}
                                             aria-invalid={Boolean(errors.contactPhone || errors.contact)}
                                             className={fieldClasses(Boolean(errors.contactPhone || errors.contact))}
                                         />
@@ -279,7 +265,7 @@ export default function FoundPigeonsPage() {
                                             type="email"
                                             maxLength={320}
                                             value={values.contactEmail}
-                                            onChange={(event) => setValue('contactEmail', event.target.value)}
+                                            onChange={event => setValue('contactEmail', event.target.value)}
                                             aria-invalid={Boolean(errors.contactEmail || errors.contact)}
                                             className={fieldClasses(Boolean(errors.contactEmail || errors.contact))}
                                         />
@@ -289,15 +275,14 @@ export default function FoundPigeonsPage() {
                                     </div>
                                 </div>
 
-                                {errors.contact && <p className="mt-2 text-sm text-red-600">{errors.contact}</p>}
+                                {errors.contact && (
+                                    <p className="mt-2 text-sm text-red-600">{errors.contact}</p>
+                                )}
                             </fieldset>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                 <div>
-                                    <label
-                                        htmlFor="found-country"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
+                                    <label htmlFor="found-country" className="block text-sm font-medium text-gray-700 mb-1">
                                         {text.countryLabel}
                                     </label>
                                     <input
@@ -305,16 +290,13 @@ export default function FoundPigeonsPage() {
                                         type="text"
                                         maxLength={100}
                                         value={values.foundCountry}
-                                        onChange={(event) => setValue('foundCountry', event.target.value)}
+                                        onChange={event => setValue('foundCountry', event.target.value)}
                                         className={fieldClasses(false)}
                                     />
                                 </div>
 
                                 <div>
-                                    <label
-                                        htmlFor="found-location"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
+                                    <label htmlFor="found-location" className="block text-sm font-medium text-gray-700 mb-1">
                                         {text.locationLabel}
                                     </label>
                                     <input
@@ -322,7 +304,7 @@ export default function FoundPigeonsPage() {
                                         type="text"
                                         maxLength={150}
                                         value={values.foundLocation}
-                                        onChange={(event) => setValue('foundLocation', event.target.value)}
+                                        onChange={event => setValue('foundLocation', event.target.value)}
                                         className={fieldClasses(false)}
                                     />
                                 </div>
@@ -337,7 +319,7 @@ export default function FoundPigeonsPage() {
                                     rows={4}
                                     maxLength={MAX_DESCRIPTION_LENGTH}
                                     value={values.description}
-                                    onChange={(event) => setValue('description', event.target.value)}
+                                    onChange={event => setValue('description', event.target.value)}
                                     aria-invalid={Boolean(errors.description)}
                                     className={`${fieldClasses(Boolean(errors.description))} resize-y`}
                                 />
@@ -355,17 +337,15 @@ export default function FoundPigeonsPage() {
                             </section>
 
                             {submitError && (
-                                <p
-                                    role="alert"
-                                    className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"
-                                >
+                                <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                                     {submitError}
                                 </p>
                             )}
 
                             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <p className="text-xs text-gray-500">
-                                    <span className="text-red-500">*</span> {text.requiredFieldsNote}
+                                    <span className="text-red-500">*</span>{' '}
+                                    {text.requiredFieldsNote}
                                 </p>
 
                                 <button

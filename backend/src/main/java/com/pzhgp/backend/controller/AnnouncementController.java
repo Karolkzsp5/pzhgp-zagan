@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/announcements")
 @RequiredArgsConstructor
@@ -25,9 +27,7 @@ public class AnnouncementController {
             @RequestParam(defaultValue = "10") int size
     ) {
         String currentUserEmail = null;
-        if (authentication != null
-                && authentication.isAuthenticated()
-                && !authentication.getName().equals("anonymousUser")) {
+        if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
             currentUserEmail = authentication.getName();
         }
 

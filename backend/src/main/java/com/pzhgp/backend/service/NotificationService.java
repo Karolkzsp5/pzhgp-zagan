@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,21 +30,10 @@ public class NotificationService {
     private final BreederRepository breederRepository;
 
     @Transactional
-    public void createNotification(Breeder recipient, String message, String link, NotificationType type) {
+    public void createNotification(Long recipientId, String message, String link, NotificationType type) {
+        Breeder recipient = breederRepository.findById(recipientId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono odbiorcy o ID: " + recipientId));
+
         notificationRepository.save(buildNotification(recipient, message, link, type));
-    }
-
-    @Transactional
-    public void createBulkNotifications(List<Breeder> recipients, String message, String link, NotificationType type) {
-        if (recipients == null || recipients.isEmpty()) {
-            return;
-        }
-
-        List<Notification> notifications = recipients.stream()
-                .map(recipient -> buildNotification(recipient, message, link, type))
-                .toList();
-
-        notificationRepository.saveAll(notifications);
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +43,17 @@ public class NotificationService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
 
         return notificationRepository.findByRecipientId(breeder.getId(), pageable).map(this::mapToDto);
+    }
+
+    @Transactional
+    public void createBulkNotifications(List<Breeder> recipients, String message, String link, NotificationType type) {
+        if (recipients == null || recipients.isEmpty()) {
+            return;
+        }
+
+        List<Notification> notifications = recipients.stream().map(recipient -> buildNotification(recipient, message, link, type)).collect(Collectors.toList());
+
+        notificationRepository.saveAll(notifications);
     }
 
     @Transactional(readOnly = true)
@@ -98,12 +99,12 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setLink(link);
         notification.setType(type);
+        notification.setRead(false);
         return notification;
     }
 
     private Notification findNotification(Long notificationId) {
-        return notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+        return notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
     }
 
     private NotificationDto mapToDto(Notification notification) {

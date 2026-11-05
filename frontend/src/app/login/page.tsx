@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -58,10 +58,7 @@ export default function LoginPage() {
                 invalidateAuthSession(false);
                 const isAuthenticated = await refreshAuth();
                 if (!isAuthenticated) {
-                    setMessage({
-                        text: 'Nie udało się potwierdzić sesji. Sprawdź konfigurację ciasteczek.',
-                        type: 'error'
-                    });
+                    setMessage({ text: 'Nie udało się potwierdzić sesji. Sprawdź konfigurację ciasteczek.', type: 'error' });
                     setIsLoading(false);
                     return;
                 }
@@ -78,16 +75,9 @@ export default function LoginPage() {
             const errorMessage = await readApiError(response, 'Nie udało się zalogować.');
             setMessage({ text: errorMessage, type: 'error' });
             setIsLoading(false);
+
         } catch (error) {
-            setMessage({
-                text:
-                    error instanceof TypeError
-                        ? CONNECTION_ERROR_MESSAGE
-                        : error instanceof Error
-                          ? error.message
-                          : 'Wystąpił błąd podczas logowania.',
-                type: 'error'
-            });
+            setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : error instanceof Error ? error.message : 'Wystąpił błąd podczas logowania.', type: 'error' });
             setIsLoading(false);
         }
     };
@@ -99,9 +89,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Adres E-mail
-                        </label>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Adres E-mail</label>
                         <input
                             id="email"
                             type="email"
@@ -116,9 +104,7 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Hasło
-                        </label>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">Hasło</label>
                         <input
                             id="password"
                             type="password"
@@ -143,25 +129,17 @@ export default function LoginPage() {
                                 disabled={isLoading}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
                             />
-                            <label
-                                htmlFor="remember-me"
-                                className="ml-2 block text-sm text-gray-700 cursor-pointer select-none"
-                            >
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer select-none">
                                 Zapamiętaj mnie
                             </label>
                         </div>
                     </div>
 
                     {message.text && (
-                        <div
-                            className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
-                                message.type === 'success'
-                                    ? 'bg-green-100 text-green-700'
-                                    : message.type === 'error'
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-blue-100 text-blue-700'
-                            }`}
-                        >
+                        <div className={`p-4 my-4 rounded transition-all duration-300 text-sm ${
+                            message.type === 'success' ? 'bg-green-100 text-green-700' :
+                                message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
                             {message.text}
                         </div>
                     )}
@@ -183,10 +161,7 @@ export default function LoginPage() {
 
                 <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4">
                     Nie masz jeszcze konta?{' '}
-                    <Link
-                        href="/register"
-                        className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200"
-                    >
+                    <Link href="/register" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
                         Zarejestruj się tutaj
                     </Link>
                 </div>

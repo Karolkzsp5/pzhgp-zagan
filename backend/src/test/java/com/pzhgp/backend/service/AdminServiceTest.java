@@ -5,9 +5,9 @@ import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.entity.Section;
+import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
-import com.pzhgp.backend.repository.BreederRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,8 +82,7 @@ class AdminServiceTest {
     @DisplayName("Should return only ACTIVE and BLOCKED registered accounts")
     void shouldReturnRegisteredAccounts() {
         Breeder blockedBreeder = createBreeder(4L, "Zly", "Hodowca", AccountStatus.BLOCKED, Role.BREEDER);
-        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)))
-                .thenReturn(List.of(activeBreeder, blockedBreeder));
+        when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))).thenReturn(List.of(activeBreeder, blockedBreeder));
 
         List<BreederResponseDto> result = adminService.getAllRegisteredAccounts();
 
@@ -101,7 +100,7 @@ class AdminServiceTest {
 
         assertEquals(AccountStatus.ACTIVE, pendingBreeder.getStatus());
         verify(breederRepository, times(1)).save(pendingBreeder);
-        verify(notificationService, times(1)).createNotification(eq(pendingBreeder), contains("Prezes Oddzialu"), anyString(), any());
+        verify(notificationService, times(1)).createNotification(eq(1L), contains("Prezes Oddzialu"), anyString(), any());
     }
 
     @Test
@@ -243,7 +242,7 @@ class AdminServiceTest {
         assertEquals(Role.MODERATOR, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
         verify(notificationService, times(1)).createNotification(
-                eq(activeBreeder),
+                eq(2L),
                 contains("Prezes Oddzialu"),
                 anyString(),
                 any()
@@ -293,10 +292,7 @@ class AdminServiceTest {
         when(breederRepository.findById(3L)).thenReturn(Optional.of(adminBreeder));
         when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
 
-        ForbiddenOperationException ex = assertThrows(
-                ForbiddenOperationException.class,
-                () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl")
-        );
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> adminService.changeRole(3L, "BREEDER", "admin@test.pl"));
 
         assertEquals("Nie możesz zmieniać uprawnień innym administratorom.", ex.getMessage());
         verify(breederRepository, never()).save(any());

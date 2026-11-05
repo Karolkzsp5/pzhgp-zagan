@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { ReactNode, use, useCallback, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
@@ -13,12 +13,7 @@ import ActionMenu from '@/app/components/ActionMenu';
 import FlightPlanEntryModal from '@/app/components/FlightPlanEntryModal';
 import FlightResultModal from '@/app/components/FlightResultModal';
 import { flightPlanService } from '@/app/services/flightPlanService';
-import {
-    FlightPlanDetailsDto,
-    FlightPlanEntryDto,
-    FlightResultSummaryDto,
-    PigeonAgeGroup
-} from '@/app/types/flightPlan';
+import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
 import { useAuth } from '@/app/components/AuthProvider';
 import { formatLocalDate } from '@/app/utils/formatters';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
@@ -29,7 +24,7 @@ interface FlightPlanYearPageProps {
     }>;
 }
 
-export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) {
+export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
     const { user, isLoggedIn } = useAuth();
     const resolvedParams = use(params);
     const year = Number(resolvedParams.year);
@@ -48,9 +43,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const isAdministrator = user?.role === 'ADMINISTRATOR';
-    const resultEntry = plan
-        ? ([...plan.adultFlights, ...plan.youngFlights].find((flight) => flight.id === resultEntryId) ?? null)
-        : null;
+    const resultEntry = plan ? [...plan.adultFlights, ...plan.youngFlights].find(flight => flight.id === resultEntryId) ?? null : null;
 
     const loadPlan = useCallback(async () => {
         if (!Number.isInteger(year)) {
@@ -102,8 +95,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
         } catch (error) {
             resultWindow.close();
 
-            showAlert(
-                'Nie udało się otworzyć wyników',
+            showAlert('Nie udało się otworzyć wyników',
                 error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania wyników lotu.'
             );
         } finally {
@@ -137,10 +129,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
                 } catch (error) {
-                    showAlert(
-                        'Nie udało się usunąć lotu',
-                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.'
-                    );
+                    showAlert('Nie udało się usunąć lotu', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.');
                 }
             }
         });
@@ -149,7 +138,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
     return (
         <AuthGuard>
             <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
+                <Navbar/>
 
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
@@ -157,13 +146,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                             href="/flight-plans"
                             className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition mb-4"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-4 h-4"
-                                viewBox="0 -960 960 960"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                 <path d="M384-96 0-480l384-384 68 68-316 316 316 316-68 68Z"></path>
                             </svg>
                             Wróć do planów
@@ -181,9 +164,12 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     </div>
 
                     {isLoading ? (
-                        <LoadingState />
+                        <LoadingState/>
                     ) : loadError ? (
-                        <ErrorState message={loadError} onRetry={() => void loadPlan()} />
+                        <ErrorState
+                            message={loadError}
+                            onRetry={() => void loadPlan()}
+                        />
                     ) : plan ? (
                         <div className="space-y-12">
                             <FlightTableSection
@@ -193,7 +179,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 isAdministrator={isAdministrator}
                                 openingResultId={openingResultId}
                                 openActionsId={openActionsId}
-                                onToggleActions={(id) => setOpenActionsId((previous) => (previous === id ? null : id))}
+                                onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
                                 onOpenResult={handleOpenResult}
                                 onManageResults={handleManageResults}
@@ -209,7 +195,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                                 isAdministrator={isAdministrator}
                                 openingResultId={openingResultId}
                                 openActionsId={openActionsId}
-                                onToggleActions={(id) => setOpenActionsId((previous) => (previous === id ? null : id))}
+                                onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
                                 onOpenResult={handleOpenResult}
                                 onManageResults={handleManageResults}
@@ -221,7 +207,7 @@ export default function FlightPlanYearPage({ params }: FlightPlanYearPageProps) 
                     ) : null}
                 </main>
 
-                <Footer />
+                <Footer/>
 
                 <FlightPlanEntryModal
                     isOpen={isEntryModalOpen}
@@ -267,24 +253,26 @@ interface FlightTableSectionProps {
 }
 
 function FlightTableSection({
-    title,
-    ageGroup,
-    flights,
-    isAdministrator,
-    openingResultId,
-    openActionsId,
-    onToggleActions,
-    onCloseActions,
-    onOpenResult,
-    onManageResults,
-    onAddFlight,
-    onEditFlight,
-    onDeleteFlight
-}: FlightTableSectionProps) {
+                                title,
+                                ageGroup,
+                                flights,
+                                isAdministrator,
+                                openingResultId,
+                                openActionsId,
+                                onToggleActions,
+                                onCloseActions,
+                                onOpenResult,
+                                onManageResults,
+                                onAddFlight,
+                                onEditFlight,
+                                onDeleteFlight
+                            }: FlightTableSectionProps) {
     return (
         <section>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                    {title}
+                </h2>
 
                 {isAdministrator && (
                     <button
@@ -298,41 +286,45 @@ function FlightTableSection({
             </div>
 
             {flights.length === 0 ? (
-                <EmptyState>Brak lotów w tej części planu.</EmptyState>
+                <EmptyState>
+                    Brak lotów w tej części planu.
+                </EmptyState>
             ) : (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-blue-100">
-                            <tr>
-                                <TableHeader className="text-right w-16">Lp.</TableHeader>
-                                <TableHeader>Data</TableHeader>
-                                <TableHeader>Miejscowość</TableHeader>
-                                <TableHeader>Dystans</TableHeader>
-                                <TableHeader>Kategoria</TableHeader>
-                                <TableHeader>Rodzaj listy</TableHeader>
-                                <TableHeader>Wyniki</TableHeader>
+                        <tr>
+                            <TableHeader className="text-right w-16">Lp.</TableHeader>
+                            <TableHeader>Data</TableHeader>
+                            <TableHeader>Miejscowość</TableHeader>
+                            <TableHeader>Dystans</TableHeader>
+                            <TableHeader>Kategoria</TableHeader>
+                            <TableHeader>Rodzaj listy</TableHeader>
+                            <TableHeader>Wyniki</TableHeader>
 
-                                {isAdministrator && <TableHeader>Akcje</TableHeader>}
-                            </tr>
+                            {isAdministrator && (
+                                <TableHeader>Akcje</TableHeader>
+                            )}
+                        </tr>
                         </thead>
 
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {flights.map((flight, index) => (
-                                <FlightTableRow
-                                    key={flight.id}
-                                    rowNumber={index + 1}
-                                    flight={flight}
-                                    isAdministrator={isAdministrator}
-                                    openingResultId={openingResultId}
-                                    openActionsId={openActionsId}
-                                    onToggleActions={onToggleActions}
-                                    onCloseActions={onCloseActions}
-                                    onOpenResult={onOpenResult}
-                                    onManageResults={onManageResults}
-                                    onEditFlight={onEditFlight}
-                                    onDeleteFlight={onDeleteFlight}
-                                />
-                            ))}
+                        {flights.map((flight, index) => (
+                            <FlightTableRow
+                                key={flight.id}
+                                rowNumber={index + 1}
+                                flight={flight}
+                                isAdministrator={isAdministrator}
+                                openingResultId={openingResultId}
+                                openActionsId={openActionsId}
+                                onToggleActions={onToggleActions}
+                                onCloseActions={onCloseActions}
+                                onOpenResult={onOpenResult}
+                                onManageResults={onManageResults}
+                                onEditFlight={onEditFlight}
+                                onDeleteFlight={onDeleteFlight}
+                            />
+                        ))}
                         </tbody>
                     </table>
                 </div>
@@ -341,12 +333,12 @@ function FlightTableSection({
     );
 }
 
-function TableHeader({ children, className = '' }: { children: ReactNode; className?: string }) {
+function TableHeader({children, className = ''}: {
+    children: React.ReactNode;
+    className?: string;
+}) {
     return (
-        <th
-            scope="col"
-            className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}
-        >
+        <th scope="col" className={`px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${className}`}>
             {children}
         </th>
     );
@@ -367,18 +359,19 @@ interface FlightTableRowProps {
 }
 
 function FlightTableRow({
-    rowNumber,
-    flight,
-    isAdministrator,
-    openingResultId,
-    openActionsId,
-    onToggleActions,
-    onCloseActions,
-    onOpenResult,
-    onManageResults,
-    onEditFlight,
-    onDeleteFlight
-}: FlightTableRowProps) {
+                            rowNumber,
+                            flight,
+                            isAdministrator,
+                            openingResultId,
+                            openActionsId,
+                            onToggleActions,
+                            onCloseActions,
+                            onOpenResult,
+                            onManageResults,
+                            onEditFlight,
+                            onDeleteFlight
+                        }: FlightTableRowProps) {
+
     const handleResultChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const resultId = Number(event.target.value);
 
@@ -388,11 +381,13 @@ function FlightTableRow({
         void onOpenResult(resultId);
     };
 
-    const isOpeningThisFlight = flight.results.some((result) => result.id === openingResultId);
+    const isOpeningThisFlight = flight.results.some(result => result.id === openingResultId);
 
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">
-            <td className="px-6 py-3 text-sm text-gray-500 text-right whitespace-nowrap">{rowNumber}</td>
+            <td className="px-6 py-3 text-sm text-gray-500 text-right whitespace-nowrap">
+                {rowNumber}
+            </td>
 
             <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">
                 {formatLocalDate(flight.scheduledDate)}
@@ -402,15 +397,23 @@ function FlightTableRow({
                 {flight.location}
             </td>
 
-            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">{flight.distanceKm} km</td>
+            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">
+                {flight.distanceKm} km
+            </td>
 
-            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">{flight.category || '—'}</td>
+            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">
+                {flight.category || '—'}
+            </td>
 
-            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">{flight.listType}</td>
+            <td className="px-6 py-3 text-sm text-gray-700 text-center whitespace-nowrap">
+                {flight.listType}
+            </td>
 
             <td className="px-6 py-3 text-center whitespace-nowrap">
                 {flight.results.length === 0 ? (
-                    <span className="text-sm text-gray-400">Brak wyników</span>
+                    <span className="text-sm text-gray-400">
+                        Brak wyników
+                    </span>
                 ) : (
                     <select
                         defaultValue=""
@@ -423,7 +426,7 @@ function FlightTableRow({
                             {isOpeningThisFlight ? 'Otwieranie...' : 'Wybierz wyniki'}
                         </option>
 
-                        {flight.results.map((result) => (
+                        {flight.results.map(result => (
                             <option key={result.id} value={result.id}>
                                 {formatResultLabel(result)}
                             </option>

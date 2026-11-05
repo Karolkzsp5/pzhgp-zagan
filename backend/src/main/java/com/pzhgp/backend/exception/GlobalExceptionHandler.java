@@ -14,20 +14,16 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
-import java.util.Objects;
-
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String DEFAULT_VALIDATION_MESSAGE = "Błąd walidacji formularza.";
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getAllErrors().stream()
-                .map(error -> Objects.requireNonNullElse(error.getDefaultMessage(), DEFAULT_VALIDATION_MESSAGE))
+                .map(error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Błąd walidacji formularza.")
                 .findFirst()
-                .orElse(DEFAULT_VALIDATION_MESSAGE);
+                .orElse("Błąd walidacji formularza.");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
     }
@@ -99,8 +95,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<String> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Nieprawidłowy format żądania (błąd struktury JSON).");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nieprawidłowy format żądania (błąd struktury JSON).");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

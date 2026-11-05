@@ -44,4 +44,5 @@ public record FlightAnalysis(
         Double maxElevationMeters,
         Double elevationGainMeters,
         boolean timestampsAvailable
-) {}
+) {
+}

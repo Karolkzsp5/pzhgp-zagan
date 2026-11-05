@@ -137,8 +137,7 @@ class AnnouncementServiceTest {
         moderator.setRole(Role.BREEDER);
 
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
         assertEquals(1, result.getTotalElements());
@@ -262,10 +261,7 @@ class AnnouncementServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail()));
 
-        assertEquals(
-                "Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.",
-                exception.getMessage()
-        );
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
 
@@ -276,10 +272,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
-        assertThrows(
-                ForbiddenOperationException.class,
-                () -> announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail())
-        );
+        assertThrows(ForbiddenOperationException.class, () -> announcementService.updateAnnouncement(announcement.getId(), request, standardBreeder.getEmail()));
     }
 
     @Test
@@ -292,10 +285,7 @@ class AnnouncementServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.updateAnnouncement(announcement.getId(), request, admin1.getEmail())
         );
-        assertEquals(
-                "Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.",
-                exception.getMessage()
-        );
+        assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
 
@@ -319,7 +309,7 @@ class AnnouncementServiceTest {
         announcementService.deleteAnnouncement(announcement.getId(), moderator.getEmail());
 
         verify(announcementRepository, times(1)).delete(announcement);
-        verify(notificationService, never()).createNotification(any(), anyString(), anyString(), any());
+        verify(notificationService, never()).createBulkNotifications(any(), anyString(), anyString(), any());
     }
 
     @Test
@@ -331,8 +321,8 @@ class AnnouncementServiceTest {
         announcementService.deleteAnnouncement(announcement.getId(), admin1.getEmail());
 
         verify(announcementRepository, times(1)).delete(announcement);
-        verify(notificationService, times(1)).createNotification(
-                eq(moderator),
+        verify(notificationService, times(1)).createBulkNotifications(
+                argThat(list -> list.size() == 1 && list.contains(moderator)),
                 eq("Twoje ogłoszenie \"Test title\" zostało usunięte przez administratora Jan Kowalski."),
                 eq("/"),
                 eq(NotificationType.ANNOUNCEMENT_DELETED)

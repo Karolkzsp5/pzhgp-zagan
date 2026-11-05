@@ -19,12 +19,7 @@ public class AuthCookieService {
     @Value("${auth.cookie.secure:true}")
     private boolean secure;
 
-    public void setAuthenticationCookie(
-            HttpServletResponse response,
-            String token,
-            Duration lifetime,
-            boolean rememberMe
-    ) {
+    public void setAuthenticationCookie(HttpServletResponse response, String token, Duration lifetime, boolean rememberMe) {
         ResponseCookie.ResponseCookieBuilder cookie = authenticationCookie(token);
 
         if (rememberMe) {

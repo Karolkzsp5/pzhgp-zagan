@@ -2,7 +2,13 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
-import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.entity.AccountStatus;
+import com.pzhgp.backend.entity.Breeder;
+import com.pzhgp.backend.entity.FlightPlanEntry;
+import com.pzhgp.backend.entity.FlightResult;
+import com.pzhgp.backend.entity.FlightResultScope;
+import com.pzhgp.backend.entity.NotificationType;
+import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
@@ -19,7 +25,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -90,16 +95,14 @@ public class FlightResultService {
 
     @Transactional(readOnly = true)
     public FlightResultFileDto getResultFile(Long resultId) {
-        FlightResult result = flightResultRepository.findById(resultId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
+        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
         return new FlightResultFileDto(result.getOriginalFileName(), result.getContent());
     }
 
     @Transactional
     public void deleteResult(Long resultId, String userEmail) {
         requireAdministrator(userEmail);
-        FlightResult result = flightResultRepository.findById(resultId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
+        FlightResult result = flightResultRepository.findById(resultId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wyników lotu o ID: " + resultId));
         flightResultRepository.delete(result);
     }
 
@@ -120,11 +123,9 @@ public class FlightResultService {
             throw new IllegalArgumentException("Dla wyników sekcyjnych należy wybrać sekcję.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId())
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.sectionId()));
+        Section section = sectionRepository.findById(request.sectionId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono sekcji o ID: " + request.sectionId()));
 
-        if (flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
-                entryId, FlightResultScope.SECTION, section.getId())) {
+        if (flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(entryId, FlightResultScope.SECTION, section.getId())) {
             throw new ResourceConflictException("Wyniki tej sekcji dla wybranego lotu zostały już wgrane.");
         }
 
@@ -142,7 +143,7 @@ public class FlightResultService {
 
         String fileName = file.getOriginalFilename();
 
-        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".txt")) {
+        if (fileName == null || !fileName.toLowerCase().endsWith(".txt")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .txt.");
         }
     }
@@ -156,7 +157,7 @@ public class FlightResultService {
     }
 
     private Breeder requireAdministrator(String userEmail) {
-        return PermissionRules.requireAdministrator(breederRepository.requireByEmail(userEmail),
-                "Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.");
+        Breeder user = breederRepository.requireByEmail(userEmail);
+        return PermissionRules.requireAdministrator(user, "Brak uprawnień. Wynikami lotów może zarządzać wyłącznie administrator.");
     }
 }

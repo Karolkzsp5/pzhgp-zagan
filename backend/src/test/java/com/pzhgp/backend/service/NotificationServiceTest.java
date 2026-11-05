@@ -17,7 +17,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -67,7 +71,9 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Should successfully create a single notification")
     void shouldCreateNotification() {
-        assertDoesNotThrow(() -> notificationService.createNotification(testBreeder, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(testBreeder));
+
+        assertDoesNotThrow(() -> notificationService.createNotification(1L, "Wiadomość", "/link", NotificationType.ROLE_CHANGED));
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository, times(1)).save(captor.capture());

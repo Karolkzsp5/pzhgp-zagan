@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { createCategory, updateCategory } from '@/app/services/forumService';
@@ -100,7 +100,9 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                     <div>
                         <label htmlFor="category-description" className="block text-sm font-bold text-gray-700 mb-1">
                             Opis kategorii
-                            <span className="text-gray-400 font-normal">(Opcjonalny)</span>
+                            <span className="text-gray-400 font-normal">
+                                (Opcjonalny)
+                            </span>
                         </label>
                         <textarea
                             id="category-description"
@@ -135,10 +137,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                     </div>
 
                     {error && (
-                        <div
-                            role="alert"
-                            className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100"
-                        >
+                        <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">
                             {error}
                         </div>
                     )}
@@ -160,7 +159,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                             isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                         }`}
                     >
-                        {isLoading ? 'Zapisywanie...' : categoryToEdit ? 'Zapisz zmiany' : 'Dodaj kategorię'}
+                        {isLoading ? 'Zapisywanie...' : (categoryToEdit ? 'Zapisz zmiany' : 'Dodaj kategorię')}
                     </button>
                 </div>
             </form>

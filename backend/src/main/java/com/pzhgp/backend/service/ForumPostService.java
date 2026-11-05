@@ -2,10 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumPostDto;
 import com.pzhgp.backend.dto.ForumPostRequest;
-import com.pzhgp.backend.entity.Breeder;
-import com.pzhgp.backend.entity.ForumPost;
-import com.pzhgp.backend.entity.ForumThread;
-import com.pzhgp.backend.entity.NotificationType;
+import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -27,8 +24,6 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ForumPostService {
 
-    private static final int MAX_PAGE_SIZE = 100;
-
     private final ForumPostRepository postRepository;
     private final ForumThreadRepository threadRepository;
     private final BreederRepository breederRepository;
@@ -42,16 +37,15 @@ public class ForumPostService {
 
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")));
+        PaginationUtils.validate(page, size, 100);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
 
         return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));
     }
 
     @Transactional
     public void addPost(Long threadId, ForumPostRequest request, String authorEmail) {
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         if (thread.getIsLocked()) {
             throw new ResourceConflictException("Wątek jest zamknięty. Nie można dodawać nowych odpowiedzi.");
@@ -70,7 +64,7 @@ public class ForumPostService {
 
         if (!thread.getAuthor().getId().equals(author.getId())) {
             notificationService.createNotification(
-                    thread.getAuthor(),
+                    thread.getAuthor().getId(),
                     author.getFullName() + " dodał/a odpowiedź w twoim wątku na forum",
                     "/forum/thread/" + thread.getId(),
                     NotificationType.NEW_REPLY
@@ -80,8 +74,7 @@ public class ForumPostService {
 
     @Transactional
     public void updatePost(Long postId, ForumPostRequest request, String requesterEmail) {
-        ForumPost post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
+        ForumPost post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!PermissionRules.canEditForumContent(post.getAuthor(), requester)) {
@@ -95,8 +88,7 @@ public class ForumPostService {
 
     @Transactional
     public void deletePost(Long postId, String requesterEmail) {
-        ForumPost post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
+        ForumPost post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (!PermissionRules.canDeleteForumContent(post.getAuthor(), requester)) {
@@ -104,8 +96,7 @@ public class ForumPostService {
         }
 
         Long threadId = post.getThread().getId();
-        ForumThread thread = threadRepository.findByIdForUpdate(threadId)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
+        ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
 
         if (!postRepository.existsById(postId)) {
             throw new EntityNotFoundException("Nie znaleziono wpisu o ID: " + postId);
@@ -114,14 +105,11 @@ public class ForumPostService {
         ForumPost firstPost = postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(threadId).orElse(post);
 
         if (firstPost.getId().equals(post.getId())) {
-            throw new ResourceConflictException(
-                    "Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.");
+            throw new ResourceConflictException("Nie można usunąć pierwszego wpisu wątku. Usuń cały wątek zamiast jego pierwszego wpisu.");
         }
 
-        ForumPost latestRemainingPost = postRepository
-                .findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId)
-                .orElseThrow(() -> new ResourceConflictException(
-                        "Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
+        ForumPost latestRemainingPost = postRepository.findFirstByThreadIdAndIdNotOrderByCreatedAtDescIdDesc(threadId, postId).orElseThrow(() ->
+                new ResourceConflictException("Nie można usunąć wpisu, ponieważ wątek nie zawiera innego wpisu."));
 
         postRepository.delete(post);
         thread.setLastPostAt(latestRemainingPost.getCreatedAt());

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingState from '@/app/components/LoadingState';
 import ErrorState from '@/app/components/ErrorState';
@@ -8,7 +8,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import { UserRole } from '@/app/utils/authSession';
 
 interface AuthGuardProps {
-    children: ReactNode;
+    children: React.ReactNode;
     /** Rola wymagana na podstronie. Zalogowany użytkownik bez tej roli trafia na stronę główną. */
     requiredRole?: UserRole;
 }
@@ -38,9 +38,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
                 <div className="w-full max-w-lg">
                     <ErrorState
                         message="Nie udało się sprawdzić sesji. Sprawdź połączenie z serwerem i spróbuj ponownie."
-                        onRetry={() => {
-                            void refreshAuth();
-                        }}
+                        onRetry={() => { void refreshAuth(); }}
                     />
                 </div>
             </div>

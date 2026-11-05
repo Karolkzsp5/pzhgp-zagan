@@ -1,4 +1,4 @@
-import { getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
+import { getAuthGeneration, invalidateAuthSession } from './authSession';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 export const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
@@ -7,7 +7,7 @@ let csrfRefreshPromise: Promise<string> | null = null;
 
 const getCsrfToken = (): string | null => {
     if (typeof document === 'undefined') return null;
-    const csrfCookie = document.cookie.split('; ').find((cookie) => cookie.startsWith(`${CSRF_COOKIE_NAME}=`));
+    const csrfCookie = document.cookie.split('; ').find(cookie => cookie.startsWith(`${CSRF_COOKIE_NAME}=`));
     return csrfCookie ? decodeURIComponent(csrfCookie.slice(CSRF_COOKIE_NAME.length + 1)) : null;
 };
 
@@ -34,11 +34,7 @@ export const refreshCsrfToken = (): Promise<string> => {
         }
         return token;
     })();
-    void csrfRefreshPromise
-        .finally(() => {
-            csrfRefreshPromise = null;
-        })
-        .catch(() => {});
+    void csrfRefreshPromise.finally(() => { csrfRefreshPromise = null; }).catch(() => {});
     return csrfRefreshPromise;
 };
 
@@ -49,7 +45,7 @@ export const fetchApi = async (url: string, options: RequestInit = {}): Promise<
     const headers = new Headers(options.headers);
 
     if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
-        const csrfToken = getCsrfToken() ?? (await refreshCsrfToken());
+        const csrfToken = getCsrfToken() ?? await refreshCsrfToken();
         headers.set('X-XSRF-TOKEN', csrfToken);
     }
 

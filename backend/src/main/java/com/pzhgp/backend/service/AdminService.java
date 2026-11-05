@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,22 +25,17 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getPendingAccounts() {
-        return breederRepository.findByStatus(AccountStatus.PENDING).stream()
-                .map(this::mapToDto)
-                .toList();
+        return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<BreederResponseDto> getAllRegisteredAccounts() {
-        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream()
-                .map(this::mapToDto)
-                .toList();
+        return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional
     public void approveAccount(Long id, String adminEmail) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
         Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
@@ -51,7 +46,7 @@ public class AdminService {
         breederRepository.save(breeder);
 
         notificationService.createNotification(
-                breeder,
+                breeder.getId(),
                 "Administrator " + admin.getFullName() + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
                 "/",
                 NotificationType.ACCOUNT_APPROVED
@@ -60,8 +55,7 @@ public class AdminService {
 
     @Transactional
     public void rejectAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new ResourceConflictException("Można usunąć fizycznie tylko konta o statusie oczekującym.");
@@ -72,8 +66,7 @@ public class AdminService {
 
     @Transactional
     public void blockAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new ForbiddenOperationException("Odmowa dostępu: Nie możesz zablokować konta innego administratora.");
@@ -89,8 +82,7 @@ public class AdminService {
 
     @Transactional
     public void unblockAccount(Long id) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
 
         if (breeder.getStatus() != AccountStatus.BLOCKED) {
             throw new ResourceConflictException("Tylko zablokowane konta mogą zostać odblokowane.");
@@ -102,8 +94,7 @@ public class AdminService {
 
     @Transactional
     public void changeRole(Long id, String newRoleStr, String adminEmail) {
-        Breeder breeder = breederRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
+        Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
         Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
@@ -115,7 +106,7 @@ public class AdminService {
         }
 
         try {
-            Role newRole = Role.valueOf(newRoleStr.toUpperCase(Locale.ROOT));
+            Role newRole = Role.valueOf(newRoleStr.toUpperCase());
             if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
                 throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
             }
@@ -125,7 +116,7 @@ public class AdminService {
             String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
 
             notificationService.createNotification(
-                    breeder,
+                    breeder.getId(),
                     "Administrator " + admin.getFullName() + " zmienił twoją rolę na: " + roleNamePL,
                     "/settings",
                     NotificationType.ROLE_CHANGED

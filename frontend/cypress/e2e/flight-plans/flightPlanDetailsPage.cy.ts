@@ -41,10 +41,10 @@ describe('Flight Plan Details Page Tests', () => {
     const breederUser = createTestUserFor(TEST_USERS.breeder);
 
     const sections: MockSection[] = [
-        { id: 1, name: 'Żagań' },
-        { id: 2, name: 'Wymiarki' },
-        { id: 3, name: 'Chotków' },
-        { id: 4, name: 'Kożuchów' }
+        {id: 1, name: 'Żagań'},
+        {id: 2, name: 'Wymiarki'},
+        {id: 3, name: 'Chotków'},
+        {id: 4, name: 'Kożuchów'}
     ];
 
     const createPlan = (): MockFlightPlanDetails => ({
@@ -138,11 +138,9 @@ describe('Flight Plan Details Page Tests', () => {
         openFlightActions(flightId);
 
         cy.get(`[data-cy="flight-actions-menu-${flightId}"]`).contains('button', buttonLabel).click();
-        cy.get('[role="dialog"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Wyniki lotu').should('be.visible');
-            });
+        cy.get('[role="dialog"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Wyniki lotu').should('be.visible');
+        });
 
         cy.wait('@getSections');
     };
@@ -154,8 +152,8 @@ describe('Flight Plan Details Page Tests', () => {
     const updateFlight = (flightId: number, update: (flight: MockFlightPlanEntry) => MockFlightPlanEntry) => {
         plan = {
             ...plan,
-            adultFlights: plan.adultFlights.map((flight) => (flight.id === flightId ? update(flight) : flight)),
-            youngFlights: plan.youngFlights.map((flight) => (flight.id === flightId ? update(flight) : flight))
+            adultFlights: plan.adultFlights.map((flight) => flight.id === flightId ? update(flight) : flight),
+            youngFlights: plan.youngFlights.map((flight) => flight.id === flightId ? update(flight) : flight)
         };
     };
 
@@ -203,10 +201,7 @@ describe('Flight Plan Details Page Tests', () => {
                 cy.contains('A').should('be.visible');
                 cy.contains('Oddziałowa').should('be.visible');
 
-                cy.get('select[aria-label="Wyniki lotu Dahme"]')
-                    .should('be.visible')
-                    .find('option[value=""]')
-                    .should('be.selected');
+                cy.get('select[aria-label="Wyniki lotu Dahme"]').should('be.visible').find('option[value=""]').should('be.selected');
                 cy.get('select[aria-label="Wyniki lotu Dahme"] option').should('have.length', 3);
 
                 cy.contains('option', 'Oddział').should('exist');
@@ -258,20 +253,13 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should correctly render and support keyboard navigation in the flight ActionMenu', () => {
             openFlightActions(101);
 
-            cy.get('[data-cy="flight-actions-menu-101"]')
-                .should('have.class', 'w-48')
-                .and('have.class', 'whitespace-nowrap')
-                .within(() => {
-                    cy.contains('button', 'Edytuj lot').should('be.visible');
-                    cy.contains('button', 'Zarządzaj wynikami').should('be.visible');
-                    cy.contains('button', 'Usuń lot').should('be.visible');
-                });
+            cy.get('[data-cy="flight-actions-menu-101"]').should('have.class', 'w-48').and('have.class', 'whitespace-nowrap').within(() => {
+                cy.contains('button', 'Edytuj lot').should('be.visible');
+                cy.contains('button', 'Zarządzaj wynikami').should('be.visible');
+                cy.contains('button', 'Usuń lot').should('be.visible');
+            });
 
-            cy.get('[data-cy="flight-actions-menu-101"]')
-                .find('[role="menuitem"]')
-                .first()
-                .should('be.focused')
-                .and('contain.text', 'Edytuj lot');
+            cy.get('[data-cy="flight-actions-menu-101"]').find('[role="menuitem"]').first().should('be.focused').and('contain.text', 'Edytuj lot');
             cy.focused().type('{downarrow}');
             cy.focused().should('contain.text', 'Zarządzaj wynikami');
             cy.focused().type('{uparrow}');
@@ -299,29 +287,22 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should correctly render and close the add flight modal', () => {
             getFlightSection('Gołębie dorosłe').contains('button', '+ Dodaj lot').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Dodaj lot').should('be.visible');
-                    cy.contains('Gołębie dorosłe').should('be.visible');
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Dodaj lot').should('be.visible');
+                cy.contains('Gołębie dorosłe').should('be.visible');
 
-                    cy.get('#flight-date')
-                        .should('be.visible')
-                        .and('have.attr', 'min', '2026-01-01')
-                        .and('have.attr', 'max', '2026-12-31')
-                        .and('have.attr', 'required');
+                cy.get('#flight-date').should('be.visible').and('have.attr', 'min', '2026-01-01')
+                    .and('have.attr', 'max', '2026-12-31').and('have.attr', 'required');
 
-                    cy.get('#flight-location').should('be.visible').and('have.attr', 'maxlength', '100');
+                cy.get('#flight-location').should('be.visible').and('have.attr', 'maxlength', '100');
 
-                    cy.get('#flight-distance')
-                        .should('be.visible')
-                        .and('have.attr', 'min', '1')
-                        .and('have.attr', 'max', '3000');
+                cy.get('#flight-distance').should('be.visible').and('have.attr', 'min', '1')
+                    .and('have.attr', 'max', '3000');
 
-                    cy.get('#flight-category').should('be.visible').and('have.attr', 'maxlength', '30');
-                    cy.get('#flight-list-type').should('be.visible').and('have.attr', 'maxlength', '100');
-                    cy.contains('button', 'Anuluj').click();
-                });
+                cy.get('#flight-category').should('be.visible').and('have.attr', 'maxlength', '30');
+                cy.get('#flight-list-type').should('be.visible').and('have.attr', 'maxlength', '100');
+                cy.contains('button', 'Anuluj').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
         });
@@ -344,8 +325,7 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[role="dialog"]').contains('button', 'Dodaj lot').click();
 
-            cy.get('[role="alert"]')
-                .should('be.visible')
+            cy.get('[role="alert"]').should('be.visible')
                 .and('have.text', 'Dystans musi mieścić się w zakresie od 1 do 3000 km.');
         });
 
@@ -403,14 +383,12 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[role="dialog"]').should('not.exist');
 
-            getFlightRow('Dessau')
-                .should('be.visible')
-                .within(() => {
-                    cy.get('td').eq(0).should('have.text', '3');
-                    cy.contains('10.05.2026').should('be.visible');
-                    cy.contains('220 km').should('be.visible');
-                    cy.contains('A/B').should('be.visible');
-                });
+            getFlightRow('Dessau').should('be.visible').within(() => {
+                cy.get('td').eq(0).should('have.text', '3');
+                cy.contains('10.05.2026').should('be.visible');
+                cy.contains('220 km').should('be.visible');
+                cy.contains('A/B').should('be.visible');
+            });
         });
 
         // ==========================================
@@ -418,12 +396,16 @@ describe('Flight Plan Details Page Tests', () => {
         // ==========================================
 
         it('Should display an API error when adding a flight fails', () => {
-            cy.intercept('POST', '**/api/flight-plans/2026/entries', (req) => {
-                req.reply({
-                    statusCode: 400,
-                    body: 'Testowy błąd podczas dodawania lotu.'
-                });
-            }).as('createFlightError');
+            cy.intercept(
+                'POST',
+                '**/api/flight-plans/2026/entries',
+                (req) => {
+                    req.reply({
+                        statusCode: 400,
+                        body: 'Testowy błąd podczas dodawania lotu.'
+                    });
+                }
+            ).as('createFlightError');
 
             getFlightSection('Gołębie dorosłe').contains('button', '+ Dodaj lot').click();
 
@@ -475,18 +457,16 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[data-cy="flight-actions-menu-101"]').contains('button', 'Edytuj lot').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Edytuj lot').should('be.visible');
-                    cy.contains('Gołębie dorosłe').should('be.visible');
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Edytuj lot').should('be.visible');
+                cy.contains('Gołębie dorosłe').should('be.visible');
 
-                    cy.get('#flight-date').should('have.value', '2026-04-26');
-                    cy.get('#flight-location').should('have.value', 'Dahme');
-                    cy.get('#flight-distance').should('have.value', '130');
-                    cy.get('#flight-category').should('have.value', 'A');
-                    cy.get('#flight-list-type').should('have.value', 'Oddziałowa');
-                });
+                cy.get('#flight-date').should('have.value', '2026-04-26');
+                cy.get('#flight-location').should('have.value', 'Dahme');
+                cy.get('#flight-distance').should('have.value', '130');
+                cy.get('#flight-category').should('have.value', 'A');
+                cy.get('#flight-list-type').should('have.value', 'Oddziałowa');
+            });
 
             cy.get('#flight-date').clear().type('2026-04-27');
             cy.get('#flight-location').clear().type('Dahme Updated');
@@ -517,13 +497,11 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[data-cy="flight-actions-menu-102"]').contains('button', 'Usuń lot').click();
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Usuń lot').should('be.visible');
-                    cy.contains('Czy na pewno chcesz usunąć lot Jessen z dnia 03.05.2026?').should('be.visible');
-                    cy.contains('button', 'Anuluj').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Usuń lot').should('be.visible');
+                cy.contains('Czy na pewno chcesz usunąć lot Jessen z dnia 03.05.2026?').should('be.visible');
+                cy.contains('button', 'Anuluj').click();
+            });
 
             cy.get('[role="dialog"]').should('not.exist');
             getFlightRow('Jessen').should('be.visible');
@@ -537,7 +515,9 @@ describe('Flight Plan Details Page Tests', () => {
             cy.intercept('DELETE', '**/api/flight-plans/entries/102', (req) => {
                 plan = {
                     ...plan,
-                    adultFlights: plan.adultFlights.filter((flight) => flight.id !== 102)
+                    adultFlights: plan.adultFlights.filter(
+                        (flight) => flight.id !== 102
+                    )
                 };
 
                 req.reply({
@@ -574,15 +554,11 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.wait('@deleteFlightError');
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Nie udało się usunąć lotu').should('be.visible');
-                    cy.contains(
-                        'Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu.'
-                    ).should('be.visible');
-                    cy.contains('button', 'OK').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Nie udało się usunąć lotu').should('be.visible');
+                cy.contains('Nie można usunąć lotu z planu, ponieważ posiada przypisane wyniki. Najpierw usuń wyniki tego lotu.').should('be.visible');
+                cy.contains('button', 'OK').click();
+            });
 
             getFlightRow('Dahme').should('be.visible');
         });
@@ -608,9 +584,7 @@ describe('Flight Plan Details Page Tests', () => {
 
                 cy.contains('h3', 'Dodaj wyniki').should('be.visible');
                 cy.get('#flight-result-scope').should('have.value', 'SECTION');
-                cy.get('#flight-result-scope option[value="BRANCH"]')
-                    .should('be.disabled')
-                    .and('contain.text', 'wyniki już dodane');
+                cy.get('#flight-result-scope option[value="BRANCH"]').should('be.disabled').and('contain.text', 'wyniki już dodane');
                 cy.get('#flight-result-section').should('be.visible');
 
                 cy.get('#flight-result-section option[value=""]').should('be.disabled');
@@ -637,18 +611,13 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should accept a valid TXT file using drag and drop', () => {
             openResultsModal(102, 'Dodaj wyniki');
 
-            cy.get('#flight-result-file')
-                .parent('label')
-                .selectFile(
-                    {
-                        contents: Cypress.Buffer.alloc(3072),
-                        fileName: 'wyniki-jessen.txt',
-                        mimeType: 'text/plain'
-                    },
-                    {
-                        action: 'drag-drop'
-                    }
-                );
+            cy.get('#flight-result-file').parent('label').selectFile({
+                contents: Cypress.Buffer.alloc(3072),
+                fileName: 'wyniki-jessen.txt',
+                mimeType: 'text/plain'
+            }, {
+                action: 'drag-drop'
+            });
 
             cy.contains('wyniki-jessen.txt').should('be.visible');
             cy.contains('3 kB — kliknij, aby wybrać inny plik').should('be.visible');
@@ -659,19 +628,15 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should reject a result file with an invalid extension', () => {
             openResultsModal(102, 'Dodaj wyniki');
 
-            cy.get('#flight-result-file').selectFile(
-                {
-                    contents: Cypress.Buffer.from('invalid result'),
-                    fileName: 'wyniki.pdf',
-                    mimeType: 'application/pdf'
-                },
-                {
-                    force: true
-                }
-            );
+            cy.get('#flight-result-file').selectFile({
+                contents: Cypress.Buffer.from('invalid result'),
+                fileName: 'wyniki.pdf',
+                mimeType: 'application/pdf'
+            }, {
+                force: true
+            });
 
-            cy.get('[role="alert"]')
-                .should('be.visible')
+            cy.get('[role="alert"]').should('be.visible')
                 .and('have.text', 'Dozwolone są wyłącznie pliki z rozszerzeniem .txt.');
 
             cy.contains('wyniki.pdf').should('not.exist');
@@ -681,19 +646,15 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should reject a result file larger than 5 MB', () => {
             openResultsModal(102, 'Dodaj wyniki');
 
-            cy.get('#flight-result-file').selectFile(
-                {
-                    contents: Cypress.Buffer.alloc(5 * 1024 * 1024 + 1),
-                    fileName: 'large-results.txt',
-                    mimeType: 'text/plain'
-                },
-                {
-                    force: true
-                }
-            );
+            cy.get('#flight-result-file').selectFile({
+                contents: Cypress.Buffer.alloc(5 * 1024 * 1024 + 1),
+                fileName: 'large-results.txt',
+                mimeType: 'text/plain'
+            }, {
+                force: true
+            });
 
-            cy.get('[role="alert"]')
-                .should('be.visible')
+            cy.get('[role="alert"]').should('be.visible')
                 .and('have.text', 'Plik jest za duży. Maksymalny rozmiar pliku z wynikami to 5 MB.');
 
             cy.contains('large-results.txt').should('not.exist');
@@ -734,16 +695,13 @@ describe('Flight Plan Details Page Tests', () => {
             openResultsModal(102, 'Dodaj wyniki');
 
             cy.get('#flight-result-scope').should('have.value', 'BRANCH');
-            cy.get('#flight-result-file').selectFile(
-                {
-                    contents: Cypress.Buffer.from('Oficjalne wyniki oddziałowe Jessen'),
-                    fileName: 'jessen-oddzial.txt',
-                    mimeType: 'text/plain'
-                },
-                {
-                    force: true
-                }
-            );
+            cy.get('#flight-result-file').selectFile({
+                contents: Cypress.Buffer.from('Oficjalne wyniki oddziałowe Jessen'),
+                fileName: 'jessen-oddzial.txt',
+                mimeType: 'text/plain'
+            }, {
+                force: true
+            });
 
             cy.contains('button', 'Wgraj wyniki').click();
 
@@ -795,16 +753,13 @@ describe('Flight Plan Details Page Tests', () => {
             cy.get('#flight-result-section').select('2');
             cy.get('#flight-result-section').should('have.value', '2');
 
-            cy.get('#flight-result-file').selectFile(
-                {
-                    contents: Cypress.Buffer.from('Oficjalne wyniki Sekcji 2'),
-                    fileName: 'sekcja2-dahme.txt',
-                    mimeType: 'text/plain'
-                },
-                {
-                    force: true
-                }
-            );
+            cy.get('#flight-result-file').selectFile({
+                contents: Cypress.Buffer.from('Oficjalne wyniki Sekcji 2'),
+                fileName: 'sekcja2-dahme.txt',
+                mimeType: 'text/plain'
+            }, {
+                force: true
+            });
 
             cy.contains('button', 'Wgraj wyniki').click();
 
@@ -830,16 +785,13 @@ describe('Flight Plan Details Page Tests', () => {
 
             openResultsModal(102, 'Dodaj wyniki');
 
-            cy.get('#flight-result-file').selectFile(
-                {
-                    contents: Cypress.Buffer.from('Test'),
-                    fileName: 'wyniki.txt',
-                    mimeType: 'text/plain'
-                },
-                {
-                    force: true
-                }
-            );
+            cy.get('#flight-result-file').selectFile({
+                contents: Cypress.Buffer.from('Test'),
+                fileName: 'wyniki.txt',
+                mimeType: 'text/plain'
+            }, {
+                force: true
+            });
 
             cy.contains('button', 'Wgraj wyniki').click();
             cy.wait('@uploadResultError');
@@ -854,16 +806,18 @@ describe('Flight Plan Details Page Tests', () => {
         // ==========================================
 
         it('Should successfully delete uploaded results', () => {
-            cy.intercept('DELETE', '**/api/flight-results/1001', (req) => {
-                updateFlight(101, (flight) => ({
-                    ...flight,
-                    results: flight.results.filter((result) => result.id !== 1001)
-                }));
+            cy.intercept('DELETE', '**/api/flight-results/1001',
+                (req) => {
+                    updateFlight(101, (flight) => ({
+                        ...flight,
+                        results: flight.results.filter((result) => result.id !== 1001)
+                    }));
 
-                req.reply({
-                    statusCode: 204
-                });
-            }).as('deleteResult');
+                    req.reply({
+                        statusCode: 204
+                    });
+                }
+            ).as('deleteResult');
 
             openResultsModal(101, 'Zarządzaj wynikami');
             getUploadedResult('oddzial-dahme.txt').contains('button', 'Usuń').click();
@@ -909,7 +863,7 @@ describe('Flight Plan Details Page Tests', () => {
         it('Should download the selected result and open it in a new tab', () => {
             cy.intercept('GET', '**/api/flight-results/1001/file', {
                 statusCode: 200,
-                headers: { 'content-type': 'text/plain; charset=UTF-8' },
+                headers: {'content-type': 'text/plain; charset=UTF-8'},
                 body: 'Oficjalne wyniki lotu Dahme'
             }).as('getResultFile');
 
@@ -941,10 +895,7 @@ describe('Flight Plan Details Page Tests', () => {
                 expect(openedWindow.location.href).to.eq('blob:test-flight-result');
             });
 
-            cy.get('select[aria-label="Wyniki lotu Dahme"]')
-                .should('be.visible')
-                .find('option[value=""]')
-                .should('be.selected');
+            cy.get('select[aria-label="Wyniki lotu Dahme"]').should('be.visible').find('option[value=""]').should('be.selected');
         });
 
         // ==========================================
@@ -960,16 +911,13 @@ describe('Flight Plan Details Page Tests', () => {
             cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
             cy.get('@windowOpen').should('have.been.calledOnceWith', '', '_blank');
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Nie można otworzyć wyników').should('be.visible');
-                    cy.contains(
-                        'Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.'
-                    ).should('be.visible');
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Nie można otworzyć wyników').should('be.visible');
+                cy.contains('Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.')
+                    .should('be.visible');
 
-                    cy.contains('button', 'OK').click();
-                });
+                cy.contains('button', 'OK').click();
+            });
         });
 
         // ==========================================
@@ -998,13 +946,11 @@ describe('Flight Plan Details Page Tests', () => {
             cy.wait('@getResultFileError');
             cy.get('@closeResultWindow').should('have.been.calledOnce');
 
-            cy.get('[role="dialog"]')
-                .should('be.visible')
-                .within(() => {
-                    cy.contains('h2', 'Nie udało się otworzyć wyników').should('be.visible');
-                    cy.contains('Nie udało się pobrać testowych wyników.').should('be.visible');
-                    cy.contains('button', 'OK').click();
-                });
+            cy.get('[role="dialog"]').should('be.visible').within(() => {
+                cy.contains('h2', 'Nie udało się otworzyć wyników').should('be.visible');
+                cy.contains('Nie udało się pobrać testowych wyników.').should('be.visible');
+                cy.contains('button', 'OK').click();
+            });
         });
 
         // ==========================================

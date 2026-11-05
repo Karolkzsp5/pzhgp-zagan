@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @Repository
 public interface FlightPlanEntryRepository extends JpaRepository<FlightPlanEntry, Long> {
-
     List<FlightPlanEntry> findAllByFlightPlanIdOrderByScheduledDateAscIdAsc(Long flightPlanId);
     boolean existsByFlightPlanId(Long flightPlanId);
 

@@ -9,75 +9,28 @@ const mockSections = [
 
 const mockPending = [
     {
-        id: 1,
-        name: 'Jan',
-        surname: 'Nowak',
-        email: 'jan.nowak@test.pl',
-        phoneNumber: '111222333',
-        dateOfBirth: '1990-01-01',
-        postalCode: '68-100',
-        city: 'Żagań',
-        street: 'Długa',
-        houseNumber: '1',
-        sectionId: 1,
-        status: 'PENDING',
-        createdAt: '2026-08-10T10:00:00',
-        role: 'BREEDER',
-        sectionName: 'Żagań'
+        id: 1, name: 'Jan', surname: 'Nowak', email: 'jan.nowak@test.pl', phoneNumber: '111222333',
+        dateOfBirth: '1990-01-01', postalCode: '68-100', city: 'Żagań', street: 'Długa', houseNumber: '1',
+        sectionId: 1, status: 'PENDING', createdAt: '2026-08-10T10:00:00', role: 'BREEDER', sectionName: 'Żagań'
     }
 ];
 
 const mockRegistered = [
     {
-        id: 2,
-        name: 'Anna',
-        surname: 'Kowalska',
-        email: 'anna.k@test.pl',
-        phoneNumber: '444555666',
-        dateOfBirth: '1985-05-15',
-        postalCode: '68-113',
-        city: 'Chotków',
-        street: 'Krótka',
-        houseNumber: '5a',
-        sectionId: 3,
-        status: 'ACTIVE',
-        createdAt: '2026-08-01T10:00:00',
-        role: 'BREEDER',
-        sectionName: 'Chotków'
+        id: 2, name: 'Anna', surname: 'Kowalska', email: 'anna.k@test.pl', phoneNumber: '444555666',
+        dateOfBirth: '1985-05-15', postalCode: '68-113', city: 'Chotków', street: 'Krótka', houseNumber: '5a',
+        sectionId: 3, status: 'ACTIVE', createdAt: '2026-08-01T10:00:00', role: 'BREEDER', sectionName: 'Chotków'
     },
     {
-        id: 3,
-        name: 'Michał',
-        surname: 'Admin',
-        email: 'admin@pzhgp.pl',
-        phoneNumber: '000000000',
-        dateOfBirth: '1980-01-01',
-        postalCode: '68-120',
-        city: 'Iłowa',
-        street: 'Główna',
-        houseNumber: '10b/14a',
-        sectionId: 2,
-        status: 'ACTIVE',
-        createdAt: '2026-07-01T10:00:00',
-        role: 'ADMINISTRATOR',
-        sectionName: 'Wymiarki'
+        id: 3, name: 'Michał', surname: 'Admin', email: 'admin@pzhgp.pl', phoneNumber: '000000000',
+        dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '10b/14a',
+        sectionId: 2, status: 'ACTIVE', createdAt: '2026-07-01T10:00:00', role: 'ADMINISTRATOR', sectionName: 'Wymiarki'
     },
     {
-        id: 4,
-        name: 'Piotr',
-        surname: 'Moderator',
-        email: 'piotr.m@test.pl',
-        phoneNumber: '123123123',
-        dateOfBirth: '1980-01-01',
-        postalCode: '68-120',
-        city: 'Iłowa',
-        street: 'Główna',
-        houseNumber: '1',
-        sectionId: 4,
-        status: 'ACTIVE',
-        createdAt: '2026-06-13T10:00:00',
-        role: 'MODERATOR',
-        sectionName: 'Kożuchów'
+        id: 4, name: 'Piotr', surname: 'Moderator', email: 'piotr.m@test.pl', phoneNumber: '123123123',
+        dateOfBirth: '1980-01-01', postalCode: '68-120', city: 'Iłowa', street: 'Główna', houseNumber: '1',
+        sectionId: 4, status: 'ACTIVE', createdAt: '2026-06-13T10:00:00',
+        role: 'MODERATOR', sectionName: 'Kożuchów'
     }
 ];
 
@@ -103,38 +56,39 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.mockNavbarNotifications();
         cy.visitAsUser('/admin', adminUser);
 
-        cy.wait(['@getPending', '@getRegistered', '@getSections', '@getNotifications', '@getUnreadCount']);
+        cy.wait([
+            '@getPending',
+            '@getRegistered',
+            '@getSections',
+            '@getNotifications',
+            '@getUnreadCount'
+        ]);
     });
 
     it('Should correctly render the entire admin panel', () => {
         cy.get('[data-cy="admin-panel-title"]').should('be.visible').and('have.text', 'Panel Administratora');
         cy.contains('p', 'Zarządzanie kontami hodowców.').should('be.visible');
 
-        cy.get('[data-cy="search-input"]')
-            .should('be.visible')
+        cy.get('[data-cy="search-input"]').should('be.visible')
             .and('have.attr', 'placeholder', 'Szukaj po imieniu, nazwisku, emailu lub telefonie...');
 
-        cy.get('[data-cy="section-filter"]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('option').should('have.length', 5);
-                cy.get('option').eq(0).should('have.text', 'Wszystkie sekcje');
-                cy.get('option').eq(1).should('have.text', 'Żagań');
-                cy.get('option').eq(2).should('have.text', 'Wymiarki');
-                cy.get('option').eq(3).should('have.text', 'Chotków');
-                cy.get('option').eq(4).should('have.text', 'Kożuchów');
-            });
+        cy.get('[data-cy="section-filter"]').should('be.visible').within(() => {
+            cy.get('option').should('have.length', 5);
+            cy.get('option').eq(0).should('have.text', 'Wszystkie sekcje');
+            cy.get('option').eq(1).should('have.text', 'Żagań');
+            cy.get('option').eq(2).should('have.text', 'Wymiarki');
+            cy.get('option').eq(3).should('have.text', 'Chotków');
+            cy.get('option').eq(4).should('have.text', 'Kożuchów');
+        });
         cy.get('[data-cy="section-filter"]').find('option:selected').should('have.text', 'Wszystkie sekcje');
 
-        cy.get('[data-cy="sort-filter"]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('option').should('have.length', 4);
-                cy.get('option').eq(0).should('have.text', 'Od najnowszego');
-                cy.get('option').eq(1).should('have.text', 'Od najstarszego');
-                cy.get('option').eq(2).should('have.text', 'Alfabetycznie (A-Z)');
-                cy.get('option').eq(3).should('have.text', 'Alfabetycznie (Z-A)');
-            });
+        cy.get('[data-cy="sort-filter"]').should('be.visible').within(() => {
+            cy.get('option').should('have.length', 4);
+            cy.get('option').eq(0).should('have.text', 'Od najnowszego');
+            cy.get('option').eq(1).should('have.text', 'Od najstarszego');
+            cy.get('option').eq(2).should('have.text', 'Alfabetycznie (A-Z)');
+            cy.get('option').eq(3).should('have.text', 'Alfabetycznie (Z-A)');
+        });
         cy.get('[data-cy="sort-filter"]').find('option:selected').should('have.text', 'Od najnowszego');
 
         // ==========================================
@@ -143,180 +97,142 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.contains('h2', 'Konta czekające na akceptację').should('be.visible');
 
-        cy.get('[data-cy="pending-table"]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('thead th').eq(0).should('contain.text', 'Hodowca');
-                cy.get('thead th').eq(1).should('contain.text', 'Kontakt');
-                cy.get('thead th').eq(2).should('contain.text', 'Sekcja');
-                cy.get('thead th').eq(3).should('contain.text', 'Data Rejestracji');
-                cy.get('thead th').eq(4).should('contain.text', 'Akcje');
+        cy.get('[data-cy="pending-table"]').should('be.visible').within(() => {
+            cy.get('thead th').eq(0).should('contain.text', 'Hodowca');
+            cy.get('thead th').eq(1).should('contain.text', 'Kontakt');
+            cy.get('thead th').eq(2).should('contain.text', 'Sekcja');
+            cy.get('thead th').eq(3).should('contain.text', 'Data Rejestracji');
+            cy.get('thead th').eq(4).should('contain.text', 'Akcje');
 
-                cy.get('[data-cy="pending-row-1"]').within(() => {
-                    cy.get('td')
-                        .eq(0)
-                        .within(() => {
-                            cy.contains('Jan Nowak').should('be.visible');
-                        });
+            cy.get('[data-cy="pending-row-1"]').within(() => {
+                cy.get('td').eq(0).within(() => {
+                    cy.contains('Jan Nowak').should('be.visible');
+                });
 
-                    cy.get('td')
-                        .eq(1)
-                        .within(() => {
-                            cy.contains('jan.nowak@test.pl').should('be.visible');
-                            cy.contains('Tel: 111 222 333').should('be.visible');
-                        });
+                cy.get('td').eq(1).within(() => {
+                    cy.contains('jan.nowak@test.pl').should('be.visible');
+                    cy.contains('Tel: 111 222 333').should('be.visible');
+                });
 
-                    cy.get('td')
-                        .eq(2)
-                        .within(() => {
-                            cy.contains('Żagań').should('be.visible');
-                        });
+                cy.get('td').eq(2).within(() => {
+                    cy.contains('Żagań').should('be.visible');
+                });
 
-                    cy.get('td').eq(3).should('contain.text', '10.08.2026');
-                    cy.get('td')
-                        .eq(4)
-                        .within(() => {
-                            cy.get('[data-cy="approve-btn-1"]').should('be.visible').and('contain.text', 'Akceptuj');
-                            cy.get('[data-cy="reject-btn-1"]').should('be.visible').and('contain.text', 'Odrzuć');
-                        });
+                cy.get('td').eq(3).should('contain.text', '10.08.2026');
+                cy.get('td').eq(4).within(() => {
+                    cy.get('[data-cy="approve-btn-1"]').should('be.visible').and('contain.text', 'Akceptuj');
+                    cy.get('[data-cy="reject-btn-1"]').should('be.visible').and('contain.text', 'Odrzuć');
                 });
             });
+        });
 
         // ========================
         // TABELA: Konta hodowców
         // ========================
         cy.contains('h2', 'Konta hodowców').should('be.visible');
 
-        cy.get('[data-cy="registered-table"]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('thead th').eq(0).should('contain.text', 'Hodowca');
-                cy.get('thead th').eq(1).should('contain.text', 'Kontakt');
-                cy.get('thead th').eq(2).should('contain.text', 'Status');
-                cy.get('thead th').eq(3).should('contain.text', 'Sekcja');
-                cy.get('thead th').eq(4).should('contain.text', 'Data Rejestracji');
-                cy.get('thead th').eq(5).should('contain.text', 'Akcje');
+        cy.get('[data-cy="registered-table"]').should('be.visible').within(() => {
+            cy.get('thead th').eq(0).should('contain.text', 'Hodowca');
+            cy.get('thead th').eq(1).should('contain.text', 'Kontakt');
+            cy.get('thead th').eq(2).should('contain.text', 'Status');
+            cy.get('thead th').eq(3).should('contain.text', 'Sekcja');
+            cy.get('thead th').eq(4).should('contain.text', 'Data Rejestracji');
+            cy.get('thead th').eq(5).should('contain.text', 'Akcje');
 
-                ///////////////////////////
-                // Hodowca - Anna Kowalska
-                ///////////////////////////
+            ///////////////////////////
+            // Hodowca - Anna Kowalska
+            ///////////////////////////
 
-                cy.get('[data-cy="registered-row-2"]').within(() => {
-                    cy.get('td')
-                        .eq(0)
-                        .within(() => {
-                            cy.contains('Anna Kowalska').should('be.visible');
-                        });
-
-                    cy.get('td')
-                        .eq(1)
-                        .within(() => {
-                            cy.contains('anna.k@test.pl').should('be.visible');
-                            cy.contains('Tel: 444 555 666').should('be.visible');
-                        });
-
-                    cy.get('td')
-                        .eq(2)
-                        .find('[data-cy="status-active"]')
-                        .should('be.visible')
-                        .and('contain.text', 'Aktywny');
-
-                    cy.get('td')
-                        .eq(3)
-                        .within(() => {
-                            cy.contains('Chotków').should('be.visible');
-                        });
-
-                    cy.get('td').eq(4).should('contain.text', '01.08.2026');
-                    cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-2"]').should('be.visible');
+            cy.get('[data-cy="registered-row-2"]').within(() => {
+                cy.get('td').eq(0).within(() => {
+                    cy.contains('Anna Kowalska').should('be.visible');
                 });
 
-                ////////////////////////////////
-                // Administrator - Michał Admin
-                ////////////////////////////////
-
-                cy.get('[data-cy="registered-row-3"]').within(() => {
-                    cy.get('td')
-                        .eq(0)
-                        .within(() => {
-                            cy.contains('Michał Admin').should('be.visible');
-                            cy.get('[data-cy="badge-admin"]').should('be.visible').and('contain.text', 'ADMIN');
-                            cy.get('[data-cy="badge-you"]').should('be.visible').and('contain.text', 'TO TY');
-                            cy.get('[data-cy="badge-moderator"]').should('not.exist');
-                        });
-
-                    cy.get('td')
-                        .eq(1)
-                        .within(() => {
-                            cy.contains('admin@pzhgp.pl').should('be.visible');
-                            cy.contains('Tel: 000 000 000').should('be.visible');
-                        });
-
-                    cy.get('td')
-                        .eq(2)
-                        .find('[data-cy="status-active"]')
-                        .should('be.visible')
-                        .and('contain.text', 'Aktywny');
-
-                    cy.get('td')
-                        .eq(3)
-                        .within(() => {
-                            cy.contains('Wymiarki').should('be.visible');
-                        });
-
-                    cy.get('td').eq(4).should('contain.text', '01.07.2026');
-                    cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-3"]').should('be.visible');
+                cy.get('td').eq(1).within(() => {
+                    cy.contains('anna.k@test.pl').should('be.visible');
+                    cy.contains('Tel: 444 555 666').should('be.visible');
                 });
 
-                ///////////////////////////////
-                // Moderator - Piotr moderator
-                ///////////////////////////////
+                cy.get('td').eq(2).find('[data-cy="status-active"]')
+                    .should('be.visible')
+                    .and('contain.text', 'Aktywny');
 
-                cy.get('[data-cy="registered-row-4"]').within(() => {
-                    cy.get('td')
-                        .eq(0)
-                        .within(() => {
-                            cy.contains('Piotr Moderator').should('be.visible');
-                            cy.get('[data-cy="badge-moderator"]').should('be.visible').and('contain.text', 'MODERATOR');
-                            cy.get('[data-cy="badge-admin"]').should('not.exist');
-                            cy.get('[data-cy="badge-you"]').should('not.exist');
-                        });
-
-                    cy.get('td')
-                        .eq(1)
-                        .within(() => {
-                            cy.contains('piotr.m@test.pl').should('be.visible');
-                        });
-
-                    cy.get('td')
-                        .eq(2)
-                        .find('[data-cy="status-active"]')
-                        .should('be.visible')
-                        .and('contain.text', 'Aktywny');
-
-                    cy.get('td')
-                        .eq(3)
-                        .within(() => {
-                            cy.contains('Kożuchów').should('be.visible');
-                        });
-
-                    cy.get('td').eq(4).should('contain.text', '13.06.2026');
-                    cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-4"]').should('be.visible');
+                cy.get('td').eq(3).within(() => {
+                    cy.contains('Chotków').should('be.visible');
                 });
+
+                cy.get('td').eq(4).should('contain.text', '01.08.2026');
+                cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-2"]').should('be.visible');
             });
+
+            ////////////////////////////////
+            // Administrator - Michał Admin
+            ////////////////////////////////
+
+            cy.get('[data-cy="registered-row-3"]').within(() => {
+                cy.get('td').eq(0).within(() => {
+                    cy.contains('Michał Admin').should('be.visible');
+                    cy.get('[data-cy="badge-admin"]').should('be.visible').and('contain.text', 'ADMIN');
+                    cy.get('[data-cy="badge-you"]').should('be.visible').and('contain.text', 'TO TY');
+                    cy.get('[data-cy="badge-moderator"]').should('not.exist');
+                });
+
+                cy.get('td').eq(1).within(() => {
+                    cy.contains('admin@pzhgp.pl').should('be.visible');
+                    cy.contains('Tel: 000 000 000').should('be.visible');
+                });
+
+                cy.get('td').eq(2).find('[data-cy="status-active"]')
+                    .should('be.visible')
+                    .and('contain.text', 'Aktywny');
+
+                cy.get('td').eq(3).within(() => {
+                    cy.contains('Wymiarki').should('be.visible');
+                });
+
+                cy.get('td').eq(4).should('contain.text', '01.07.2026');
+                cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-3"]').should('be.visible');
+            });
+
+            ///////////////////////////////
+            // Moderator - Piotr moderator
+            ///////////////////////////////
+
+            cy.get('[data-cy="registered-row-4"]').within(() => {
+                cy.get('td').eq(0).within(() => {
+                    cy.contains('Piotr Moderator').should('be.visible');
+                    cy.get('[data-cy="badge-moderator"]').should('be.visible').and('contain.text', 'MODERATOR');
+                    cy.get('[data-cy="badge-admin"]').should('not.exist');
+                    cy.get('[data-cy="badge-you"]').should('not.exist');
+                });
+
+                cy.get('td').eq(1).within(() => {
+                    cy.contains('piotr.m@test.pl').should('be.visible');
+                });
+
+                cy.get('td').eq(2).find('[data-cy="status-active"]')
+                    .should('be.visible')
+                    .and('contain.text', 'Aktywny');
+
+                cy.get('td').eq(3).within(() => {
+                    cy.contains('Kożuchów').should('be.visible');
+                });
+
+                cy.get('td').eq(4).should('contain.text', '13.06.2026');
+                cy.get('td').eq(5).find('[data-cy="kebab-menu-btn-4"]').should('be.visible');
+            });
+        });
 
         // ==================
         // WERYFIKACJA MENU
         // ==================
 
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
-        cy.get('[data-cy="dropdown-menu-2"]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('[data-cy="details-option"]').should('be.visible').and('have.text', 'Szczegóły');
-                cy.get('[data-cy="change-role-option"]').should('be.visible').and('have.text', 'Zmień rolę');
-                cy.get('[data-cy="block-option"]').should('be.visible').and('have.text', 'Zablokuj');
-            });
+        cy.get('[data-cy="dropdown-menu-2"]').should('be.visible').within(() => {
+            cy.get('[data-cy="details-option"]').should('be.visible').and('have.text', 'Szczegóły');
+            cy.get('[data-cy="change-role-option"]').should('be.visible').and('have.text', 'Zmień rolę');
+            cy.get('[data-cy="block-option"]').should('be.visible').and('have.text', 'Zablokuj');
+        });
     });
 
     it('Should correctly filter both tables using the search function across all attributes', () => {
@@ -342,6 +258,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="no-registered-accounts"]').should('be.visible');
 
+
         // =========================================
         // Wyszukiwanie użytkownika: Anna Kowalska
         // =========================================
@@ -365,6 +282,7 @@ describe('Panel Administratora - Testy E2E', () => {
         searchInput().clear().type('444555666');
         cy.get('[data-cy="registered-row-2"]').should('be.visible');
         cy.get('[data-cy="no-pending-accounts"]').should('be.visible');
+
 
         // ==========================
         // Czyszczenie wyszukiwarki
@@ -479,7 +397,9 @@ describe('Panel Administratora - Testy E2E', () => {
 
         cy.get('[data-cy="registered-row-1"]').within(() => {
             cy.get('td').eq(0).should('contain.text', 'Jan Nowak');
-            cy.get('td').eq(2).find('[data-cy="status-active"]').should('be.visible').and('contain.text', 'Aktywny');
+            cy.get('td').eq(2).find('[data-cy="status-active"]')
+                .should('be.visible')
+                .and('contain.text', 'Aktywny');
         });
     });
 
@@ -513,24 +433,19 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="details-option"]').click();
 
         cy.contains('h2', 'Dane hodowcy').should('be.visible');
-        cy.get('[data-cy="details-modal"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('p', 'Imię i nazwisko').next().should('have.text', 'Anna Kowalska');
-                cy.contains('p', 'Email').next().should('have.text', 'anna.k@test.pl');
-                cy.contains('p', 'Telefon').next().should('have.text', '444 555 666');
-                cy.contains('p', 'Data urodzenia').next().should('have.text', '15.05.1985');
-                cy.contains('p', 'Adres zamieszkania')
-                    .next()
-                    .should('contain.text', 'ul. Krótka 5a')
-                    .and('contain.text', '68-113 Chotków');
-                cy.contains('p', 'Sekcja').next().should('have.text', 'Chotków');
-                cy.contains('p', 'Data rejestracji').next().should('contain.text', '01.08.2026');
-                cy.contains('p', 'Rola w systemie').next().should('have.text', 'Hodowca');
-                cy.contains('p', 'Obecny status').next().should('have.text', 'Aktywny');
+        cy.get('[data-cy="details-modal"]').should('be.visible').within(() => {
+            cy.contains('p', 'Imię i nazwisko').next().should('have.text', 'Anna Kowalska');
+            cy.contains('p', 'Email').next().should('have.text', 'anna.k@test.pl');
+            cy.contains('p', 'Telefon').next().should('have.text', '444 555 666');
+            cy.contains('p', 'Data urodzenia').next().should('have.text', '15.05.1985');
+            cy.contains('p', 'Adres zamieszkania').next().should('contain.text', 'ul. Krótka 5a').and('contain.text', '68-113 Chotków');
+            cy.contains('p', 'Sekcja').next().should('have.text', 'Chotków');
+            cy.contains('p', 'Data rejestracji').next().should('contain.text', '01.08.2026');
+            cy.contains('p', 'Rola w systemie').next().should('have.text', 'Hodowca');
+            cy.contains('p', 'Obecny status').next().should('have.text', 'Aktywny');
 
-                cy.contains('button', 'Zamknij').click();
-            });
+            cy.contains('button', 'Zamknij').click();
+        });
 
         cy.get('[data-cy="details-modal"]').should('not.exist');
     });
@@ -544,35 +459,33 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
         cy.get('[data-cy="change-role-option"]').click();
 
-        cy.get('[data-cy="role-change-modal"]')
-            .should('be.visible')
-            .within(() => {
-                cy.contains('h2', 'Zmień rolę').should('be.visible');
-                cy.contains('Wybierz nowe uprawnienia dla użytkownika:').should('be.visible');
-                cy.contains('Anna Kowalska').should('be.visible');
-                cy.contains('label', 'Nowa rola w systemie').should('be.visible');
+        cy.get('[data-cy="role-change-modal"]').should('be.visible').within(() => {
+            cy.contains('h2', 'Zmień rolę').should('be.visible');
+            cy.contains('Wybierz nowe uprawnienia dla użytkownika:').should('be.visible');
+            cy.contains('Anna Kowalska').should('be.visible');
+            cy.contains('label', 'Nowa rola w systemie').should('be.visible');
 
-                cy.get('[data-cy="role-select"]')
-                    .should('be.visible')
-                    .within(() => {
-                        cy.get('option').should('have.length', 2);
-                        cy.get('option').eq(0).should('have.text', 'Hodowca');
-                        cy.get('option').eq(1).should('have.text', 'Moderator');
-                    });
-
-                cy.get('[data-cy="cancel-role-btn"]').should('be.visible');
-                cy.get('[data-cy="save-role-btn"]').should('be.visible');
-
-                cy.get('[data-cy="role-select"]').find('option:selected').should('have.value', 'BREEDER');
-                cy.get('[data-cy="role-select"]').select('MODERATOR');
-                cy.get('[data-cy="save-role-btn"]').click();
+            cy.get('[data-cy="role-select"]').should('be.visible').within(() => {
+                cy.get('option').should('have.length', 2);
+                cy.get('option').eq(0).should('have.text', 'Hodowca');
+                cy.get('option').eq(1).should('have.text', 'Moderator');
             });
+
+            cy.get('[data-cy="cancel-role-btn"]').should('be.visible');
+            cy.get('[data-cy="save-role-btn"]').should('be.visible');
+
+            cy.get('[data-cy="role-select"]').find('option:selected').should('have.value', 'BREEDER');
+            cy.get('[data-cy="role-select"]').select('MODERATOR');
+            cy.get('[data-cy="save-role-btn"]').click();
+        });
 
         cy.wait('@changeRole');
         cy.get('[data-cy="role-change-modal"]').should('not.exist');
 
         cy.get('[data-cy="registered-row-2"]').within(() => {
-            cy.get('[data-cy="badge-moderator"]').should('be.visible').and('contain.text', 'MODERATOR');
+            cy.get('[data-cy="badge-moderator"]')
+                .should('be.visible')
+                .and('contain.text', 'MODERATOR');
         });
     });
 
@@ -636,7 +549,9 @@ describe('Administrator route guard', () => {
 
         cy.visit('/admin');
 
-        cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
+        cy.wait('@getUnauthenticatedUser')
+            .its('response.statusCode')
+            .should('eq', 401);
 
         cy.location('pathname').should('eq', '/login');
     });

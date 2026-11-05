@@ -2,6 +2,7 @@ package com.pzhgp.backend.repository;
 
 import com.pzhgp.backend.entity.FoundPigeonReport;
 import com.pzhgp.backend.entity.FoundPigeonStatus;
+import java.util.Optional;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,8 +11,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
 
 @Repository
 public interface FoundPigeonRepository extends JpaRepository<FoundPigeonReport, Long> {
@@ -32,15 +31,10 @@ public interface FoundPigeonRepository extends JpaRepository<FoundPigeonReport, 
             WHERE (:status IS NULL OR r.status = :status)
               AND r.ringNumberNormalized LIKE CONCAT('%', :ringNumber, '%')
             """)
-    Page<FoundPigeonReport> search(
-            @Param("status") FoundPigeonStatus status,
-            @Param("ringNumber") String ringNumber,
-            Pageable pageable
-    );
+    Page<FoundPigeonReport> search(@Param("status") FoundPigeonStatus status, @Param("ringNumber") String ringNumber, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM FoundPigeonReport r WHERE r.id = :id")
     Optional<FoundPigeonReport> findByIdForUpdate(@Param("id") Long id);
-
     long countByStatus(FoundPigeonStatus status);
 }

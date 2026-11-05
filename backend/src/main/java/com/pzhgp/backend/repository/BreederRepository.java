@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @Repository
 public interface BreederRepository extends JpaRepository<Breeder, Long> {
-
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByPhoneNumber(String phoneNumber);
 

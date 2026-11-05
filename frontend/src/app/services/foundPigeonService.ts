@@ -3,10 +3,7 @@ import { PageResponse } from '@/app/types/common';
 import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus } from '@/app/types/foundPigeon';
 
 export class FoundPigeonApiError extends Error {
-    constructor(
-        public readonly status: number,
-        message: string
-    ) {
+    constructor(public readonly status: number, message: string) {
         super(message);
         this.name = 'FoundPigeonApiError';
     }
@@ -27,10 +24,7 @@ export const foundPigeonService = {
         });
 
         if (!response.ok) {
-            throw new FoundPigeonApiError(
-                response.status,
-                await readApiError(response, 'Nie udało się wysłać zgłoszenia.')
-            );
+            throw new FoundPigeonApiError(response.status, await readApiError(response, 'Nie udało się wysłać zgłoszenia.'));
         }
 
         const body = await response.json();
@@ -38,13 +32,7 @@ export const foundPigeonService = {
     },
 
     /** Lista zgłoszeń dla panelu administratora. */
-    getReports: async (
-        status: FoundPigeonStatus | null,
-        ringNumber: string,
-        page = 0,
-        size = 10,
-        signal?: AbortSignal
-    ): Promise<PageResponse<FoundPigeonDto>> => {
+    getReports: async (status: FoundPigeonStatus | null, ringNumber: string, page = 0, size = 10, signal?: AbortSignal): Promise<PageResponse<FoundPigeonDto>> => {
         const params = new URLSearchParams({ page: String(page), size: String(size) });
         if (status) params.set('status', status);
         if (ringNumber.trim()) params.set('ringNumber', ringNumber.trim());

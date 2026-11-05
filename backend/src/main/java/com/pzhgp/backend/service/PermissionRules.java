@@ -12,7 +12,8 @@ import com.pzhgp.backend.exception.ForbiddenOperationException;
  */
 final class PermissionRules {
 
-    private PermissionRules() {}
+    private PermissionRules() {
+    }
 
     /**
      * Zwraca użytkownika, jeżeli jest administratorem.

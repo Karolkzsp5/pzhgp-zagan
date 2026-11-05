@@ -93,11 +93,9 @@ describe('Breeder Login Process', () => {
         let authenticated = false;
 
         cy.intercept('GET', '**/api/auth/me', (request) => {
-            request.reply(
-                authenticated
-                    ? { statusCode: 200, body: testUser }
-                    : { statusCode: 401, body: 'Wymagane jest uwierzytelnienie.' }
-            );
+            request.reply(authenticated
+                ? { statusCode: 200, body: testUser }
+                : { statusCode: 401, body: 'Wymagane jest uwierzytelnienie.' });
         }).as('currentUser');
 
         cy.intercept('POST', '**/api/auth/login-cookie*', (request) => {

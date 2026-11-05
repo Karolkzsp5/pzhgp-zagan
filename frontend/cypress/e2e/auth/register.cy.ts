@@ -1,4 +1,5 @@
 describe('Breeder Registration Process Test', () => {
+
     const mockSections = [
         { id: 1, name: 'Żagań' },
         { id: 2, name: 'Wymiarki' },
@@ -37,7 +38,7 @@ describe('Breeder Registration Process Test', () => {
 
         cy.wait('@getSections');
     });
-
+    
     it('Should display a registration form with the relevant fields', () => {
         cy.get('h1').should('contain.text', 'Rejestracja Hodowcy PZHGP');
 
@@ -182,10 +183,7 @@ describe('Breeder Registration Process Test', () => {
     ////////////////////////
 
     it('Phone number test - Should format phone number correctly as it is entered', () => {
-        cy.get('input[name="phoneNumber"]')
-            .clear()
-            .type('123456789', { delay: 20 })
-            .should('have.value', '123 456 789');
+        cy.get('input[name="phoneNumber"]').clear().type('123456789', { delay: 20 }).should('have.value', '123 456 789');
     });
 
     it('Phone number test - Should correctly handle a phone number containing spaces', () => {
@@ -193,10 +191,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     it('Phone number test - Should ignore any letters and special characters included in the phone number', () => {
-        cy.get('input[name="phoneNumber"]')
-            .clear()
-            .type('1a2@3c4$5e6^7g8*9', { delay: 20 })
-            .should('have.value', '123 456 789');
+        cy.get('input[name="phoneNumber"]').clear().type('1a2@3c4$5e6^7g8*9', { delay: 20 }).should('have.value', '123 456 789');
     });
 
     it('Phone number test - Should prevent registration when phone number has less than 9 digits', () => {
@@ -235,7 +230,7 @@ describe('Breeder Registration Process Test', () => {
     it('Password test - Should check the strength of the password', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
         fillEmail();
-        fillPhoneNumber();
+        fillPhoneNumber()
 
         // No capital letter
         cy.get('input[name="password"]').clear().type('testcypress1@');
@@ -301,11 +296,8 @@ describe('Breeder Registration Process Test', () => {
     ////////////////////////
 
     it('Postal code test - Should ignore any letters and special characters', () => {
-        cy.get('input[name="postalCode"]')
-            .invoke('removeAttr', 'maxlength')
-            .clear()
-            .type('1f1&-1a1@1u', { delay: 20 })
-            .should('have.value', '11-111');
+        cy.get('input[name="postalCode"]').invoke('removeAttr', 'maxlength').clear()
+            .type('1f1&-1a1@1u', { delay: 20 }).should('have.value', '11-111');
     });
 
     ////////////////////////
@@ -343,6 +335,7 @@ describe('Breeder Registration Process Test', () => {
     it('House number test - Should ignore Polish characters', () => {
         cy.get('input[name="houseNumber"]').clear().type('1ąć4a/ó8ńc', { delay: 50 }).should('have.value', '14a/8c');
     });
+
 
     ///////////////////////////
     /////Registration test/////
@@ -385,9 +378,7 @@ describe('Breeder Registration Process Test', () => {
         });
 
         cy.contains('Rejestracja przebiegła pomyślnie').should('be.visible');
-        cy.contains('Twoje konto zostało pomyślnie utworzone i oczekuje na akceptację administratora.').should(
-            'be.visible'
-        );
+        cy.contains('Twoje konto zostało pomyślnie utworzone i oczekuje na akceptację administratora.').should('be.visible');
 
         cy.contains('button', 'Rozumiem').click();
         cy.location('pathname').should('eq', '/');
