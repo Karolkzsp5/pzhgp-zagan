@@ -86,6 +86,24 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should accept names with letters from other alphabets and apostrophes")
+    void shouldRegisterUserWithForeignLettersAndApostrophesIntegration() throws Exception {
+        RegistrationRequest request = new RegistrationRequest(
+                "Jürgen", "O'Connor-Müller", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
+                "Słowackiego", "10", 1, "foreign.name@pzhgp.pl", "444444445", "SecurePass1!"
+        );
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        Breeder saved = breederRepository.findByEmail("foreign.name@pzhgp.pl").orElseThrow();
+        assertEquals("Jürgen", saved.getName());
+        assertEquals("O'Connor-Müller", saved.getSurname());
+    }
+
+    @Test
     @DisplayName("Should normalize email case and surrounding whitespace during registration")
     void shouldNormalizeEmailDuringRegistrationIntegration() throws Exception {
         String requestJson = """

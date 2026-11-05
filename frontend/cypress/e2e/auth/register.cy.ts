@@ -96,6 +96,11 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="name"]').type('Łukasz').should('have.value', 'Łukasz');
     });
 
+    it('Name test - Should accept letters from other alphabets and apostrophes', () => {
+        cy.get('input[name="name"]').type('Jürgen').should('have.value', 'Jürgen');
+        cy.get('input[name="name"]').clear().type("D'Arcy").should('have.value', "D'Arcy");
+    });
+
     ////////////////////////
     /////Surname tests//////
     ////////////////////////
@@ -106,6 +111,12 @@ describe('Breeder Registration Process Test', () => {
 
     it('Surname test - Should accept Polish characters in last name', () => {
         cy.get('input[name="surname"]').type('Chrzęściewski').should('have.value', 'Chrzęściewski');
+    });
+
+    it('Surname test - Should accept letters from other alphabets and apostrophes', () => {
+        cy.get('input[name="surname"]').type('Müller').should('have.value', 'Müller');
+        cy.get('input[name="surname"]').clear().type("O'Connor").should('have.value', "O'Connor");
+        cy.get('input[name="surname"]').clear().type('Nowak-Müller').should('have.value', 'Nowak-Müller');
     });
 
     /////////////////////////

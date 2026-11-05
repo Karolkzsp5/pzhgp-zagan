@@ -77,8 +77,9 @@ export default function RegisterPage() {
         return digits;
     };
 
+    // Litery z dowolnego alfabetu (np. Müller), spacje, myślniki i apostrofy (np. O'Connor).
     const formatPersonOrCityName = (value: string) => {
-        return value.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]/g, '');
+        return value.replace(/[^\p{L}\p{M}\s'’-]/gu, '');
     };
 
     const formatStreet = (value: string) => {
