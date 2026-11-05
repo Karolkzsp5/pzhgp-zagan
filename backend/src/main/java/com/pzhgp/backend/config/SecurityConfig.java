@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        // DELETE celowo nie ma tu reguły roli: autor może usunąć własne ogłoszenie także po odebraniu roli moderatora.
+                        // Uprawnienia do usuwania sprawdza AnnouncementService.
 
                         .requestMatchers(HttpMethod.POST, "/api/forum/categories").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())

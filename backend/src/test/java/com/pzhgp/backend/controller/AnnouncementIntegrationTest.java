@@ -364,4 +364,36 @@ class AnnouncementIntegrationTest {
         mockMvc.perform(delete("/api/announcements/{id}", savedId).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
         assertEquals(0, announcementRepository.count());
     }
+
+    @Test
+    @DisplayName("Should allow an announcement author to delete it after their role was downgraded")
+    void downgradedAuthorShouldDeleteOwnAnnouncement() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Moderatora");
+        announcement.setContent("Treść");
+        announcement.setAuthor(moderator);
+        announcementRepository.save(announcement);
+
+        moderator.setRole(Role.BREEDER);
+        breederRepository.save(moderator);
+
+        mockMvc.perform(delete("/api/announcements/{id}", announcement.getId()).with(cookieAuth(modToken)))
+                .andExpect(status().isNoContent());
+        assertEquals(0, announcementRepository.count());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when a breeder tries to delete someone else's announcement")
+    void shouldDenyBreederFromDeletingAnnouncement() throws Exception {
+        Announcement announcement = new Announcement();
+        announcement.setTitle("Ogłoszenie Admina");
+        announcement.setContent("Treść");
+        announcement.setAuthor(admin);
+        announcementRepository.save(announcement);
+
+        mockMvc.perform(delete("/api/announcements/{id}", announcement.getId()).with(cookieAuth(breederToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("Brak uprawnień do usunięcia tego ogłoszenia."));
+        assertEquals(1, announcementRepository.count());
+    }
 }
