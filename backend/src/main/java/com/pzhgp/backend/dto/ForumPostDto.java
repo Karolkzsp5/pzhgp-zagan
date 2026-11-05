@@ -1,14 +1,14 @@
 package com.pzhgp.backend.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ForumPostDto(
         Long id,
         String authorName,
         String authorRole,
         String body,
-        LocalDateTime createdAt,
-        LocalDateTime editedAt,
+        Instant createdAt,
+        Instant editedAt,
         boolean canEdit,
         boolean canDelete
 ) {}

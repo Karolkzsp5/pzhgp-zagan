@@ -23,7 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,7 +65,7 @@ class NotificationServiceTest {
         testNotification.setLink("/test");
         testNotification.setType(NotificationType.ACCOUNT_APPROVED);
         testNotification.setRead(false);
-        testNotification.setCreatedAt(LocalDateTime.now());
+        testNotification.setCreatedAt(Instant.now());
     }
 
     @Test

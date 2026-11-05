@@ -18,8 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,7 +62,7 @@ class AdminServiceTest {
         breeder.setSection(section);
         breeder.setStatus(status);
         breeder.setRole(role);
-        breeder.setCreatedAt(LocalDateTime.now());
+        breeder.setCreatedAt(Instant.now());
         return breeder;
     }
 

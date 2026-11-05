@@ -20,7 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,7 +82,7 @@ class AnnouncementServiceTest {
         announcement.setTitle("Test title");
         announcement.setContent("Test content");
         announcement.setAuthor(moderator);
-        announcement.setCreatedAt(LocalDateTime.now());
+        announcement.setCreatedAt(Instant.now());
     }
 
     @Test

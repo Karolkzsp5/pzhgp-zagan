@@ -2,8 +2,8 @@ package com.pzhgp.backend.dto;
 
 import com.pzhgp.backend.entity.AccountStatus;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public record BreederResponseDto(
         Long id,
@@ -20,5 +20,5 @@ public record BreederResponseDto(
         String sectionName,
         AccountStatus status,
         String role,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {}

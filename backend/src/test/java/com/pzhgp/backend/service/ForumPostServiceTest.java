@@ -22,7 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,7 +71,7 @@ class ForumPostServiceTest {
         openingPost.setThread(thread);
         openingPost.setAuthor(threadAuthor);
         openingPost.setBody("Pierwszy wpis wątku");
-        openingPost.setCreatedAt(LocalDateTime.now().minusHours(2));
+        openingPost.setCreatedAt(Instant.now().minus(2, ChronoUnit.HOURS));
 
         postAuthor = new Breeder();
         postAuthor.setId(2L);
@@ -94,14 +95,14 @@ class ForumPostServiceTest {
         thread.setAuthor(threadAuthor);
         thread.setTitle("Tytuł Tematu");
         thread.setIsLocked(false);
-        thread.setLastPostAt(LocalDateTime.now().minusDays(1));
+        thread.setLastPostAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
         post = new ForumPost();
         post.setId(500L);
         post.setThread(thread);
         post.setAuthor(postAuthor);
         post.setBody("Stara treść posta");
-        post.setCreatedAt(LocalDateTime.now().minusHours(1));
+        post.setCreatedAt(Instant.now().minus(1, ChronoUnit.HOURS));
     }
 
     private void mockSuccessfulPostDeletion() {
@@ -167,7 +168,7 @@ class ForumPostServiceTest {
     @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
     void addPost_ShouldSaveAndNotify() {
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
-        LocalDateTime oldLastPostAt = thread.getLastPostAt();
+        Instant oldLastPostAt = thread.getLastPostAt();
 
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));

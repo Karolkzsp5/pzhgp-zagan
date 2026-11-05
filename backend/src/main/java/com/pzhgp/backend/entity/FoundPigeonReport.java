@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Zgłoszenie odnalezienia gołębia pocztowego wysłane przez publiczny formularz.
@@ -72,14 +72,14 @@ public class FoundPigeonReport {
     private String adminNote;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
         if (this.status == null) {
             this.status = FoundPigeonStatus.PENDING;
         }
@@ -90,6 +90,6 @@ public class FoundPigeonReport {
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 }

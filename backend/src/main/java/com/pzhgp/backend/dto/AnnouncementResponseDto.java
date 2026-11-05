@@ -1,6 +1,6 @@
 package com.pzhgp.backend.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record AnnouncementResponseDto(
         Long id,
@@ -8,8 +8,8 @@ public record AnnouncementResponseDto(
         String content,
         String authorName,
         boolean isPinned,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         boolean canEdit,
         boolean canDelete
 ) {}

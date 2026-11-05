@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Formula;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "forum_threads")
@@ -39,20 +39,20 @@ public class ForumThread {
     private Boolean isPinned = false;
 
     @Column(name = "last_post_at")
-    private LocalDateTime lastPostAt;
+    private Instant lastPostAt;
 
     @Column(columnDefinition = "integer default 0")
     private Integer views = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Formula("(SELECT COUNT(p.id) FROM forum_posts p WHERE p.thread_id = id) - 1")
     private Integer repliesCount;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
         this.lastPostAt = this.createdAt;
     }
 }

@@ -18,7 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class ForumPostService {
         post.setBody(request.body());
         postRepository.save(post);
 
-        thread.setLastPostAt(LocalDateTime.now());
+        thread.setLastPostAt(Instant.now());
         threadRepository.save(thread);
 
         if (!thread.getAuthor().getId().equals(author.getId())) {
@@ -82,7 +82,7 @@ public class ForumPostService {
         }
 
         post.setBody(request.body());
-        post.setEditedAt(LocalDateTime.now());
+        post.setEditedAt(Instant.now());
         postRepository.save(post);
     }
 

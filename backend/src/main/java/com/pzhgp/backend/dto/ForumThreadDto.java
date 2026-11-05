@@ -1,6 +1,6 @@
 package com.pzhgp.backend.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ForumThreadDto(
         Long id,
@@ -10,9 +10,9 @@ public record ForumThreadDto(
         Integer repliesCount,
         Boolean isLocked,
         Boolean isPinned,
-        LocalDateTime lastPostAt,
+        Instant lastPostAt,
         Integer views,
-        LocalDateTime createdAt,
+        Instant createdAt,
         Boolean canEdit,
         Boolean canDelete,
         Boolean canModerate

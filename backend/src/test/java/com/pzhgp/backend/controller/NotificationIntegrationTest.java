@@ -15,8 +15,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
@@ -69,7 +69,7 @@ class NotificationIntegrationTest {
         testBreeder.setSection(section);
         testBreeder.setStatus(AccountStatus.ACTIVE);
         testBreeder.setRole(Role.BREEDER);
-        testBreeder.setCreatedAt(LocalDateTime.now());
+        testBreeder.setCreatedAt(Instant.now());
         testBreeder = breederRepository.save(testBreeder);
 
         testBreederToken = jwtService.generateToken(testBreeder);
@@ -84,7 +84,7 @@ class NotificationIntegrationTest {
         anotherBreeder.setSection(section);
         anotherBreeder.setStatus(AccountStatus.ACTIVE);
         anotherBreeder.setRole(Role.BREEDER);
-        anotherBreeder.setCreatedAt(LocalDateTime.now());
+        anotherBreeder.setCreatedAt(Instant.now());
         anotherBreeder = breederRepository.save(anotherBreeder);
 
         anotherBreederToken = jwtService.generateToken(anotherBreeder);

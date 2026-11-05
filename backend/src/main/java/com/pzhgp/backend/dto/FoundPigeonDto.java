@@ -3,7 +3,7 @@ package com.pzhgp.backend.dto;
 import com.pzhgp.backend.entity.FoundPigeonStatus;
 import com.pzhgp.backend.entity.ReportLanguage;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Pełne dane zgłoszenia widoczne wyłącznie w panelu administratora.
@@ -22,7 +22,7 @@ public record FoundPigeonDto(
         ReportLanguage preferredLanguage,
         FoundPigeonStatus status,
         String adminNote,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }
