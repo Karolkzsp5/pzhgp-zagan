@@ -36,6 +36,14 @@ export const SECTION_ROLE_ORDER: Partial<Record<BoardRole, number>> = {
 
 export const SECTION_ROLES: BoardRole[] = [BoardRole.PREZES, BoardRole.SKARBNIK, BoardRole.SEKRETARZ];
 
+/** Hodowca do wyboru w formularzu zarządu (bez danych kontaktowych). */
+export interface BoardCandidateDto {
+    id: number;
+    name: string;
+    surname: string;
+    sectionId: number | null;
+}
+
 export interface BoardMemberDto {
     id: number;
     role: BoardRole;

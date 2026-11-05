@@ -97,6 +97,34 @@ class BoardIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return only active board candidates without contact or address details")
+    void shouldReturnActiveBoardCandidatesWithoutPersonalDetails() throws Exception {
+        Breeder blocked = createRealUser("zablokowany@test.pl", "666666666", Role.BREEDER, sectionZagan);
+        blocked.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(blocked);
+
+        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[?(@.id == " + blocked.getId() + ")]").isEmpty())
+                .andExpect(jsonPath("$[?(@.id == " + breederWymiarki.getId() + ")].sectionId").value(sectionWymiarki.getId().intValue()))
+                .andExpect(jsonPath("$[0].email").doesNotExist())
+                .andExpect(jsonPath("$[0].phoneNumber").doesNotExist())
+                .andExpect(jsonPath("$[0].dateOfBirth").doesNotExist())
+                .andExpect(jsonPath("$[0].street").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("Should allow only administrators to list board candidates")
+    void shouldDenyBoardCandidatesToNonAdministrators() throws Exception {
+        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(modToken)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/board/candidates"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("Should return board members with correctly mapped breeder and manual-person details")
     void shouldReturnCorrectDtoListOnGet() throws Exception {
         BoardMember sysMember = new BoardMember();

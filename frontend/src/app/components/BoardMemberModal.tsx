@@ -4,10 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
-import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
-import { BreederDto } from '@/app/types/breeder';
+import { BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
-import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface BoardMemberModalProps {
@@ -28,7 +26,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [contactPhone, setContactPhone] = useState('');
 
     const [sections, setSections] = useState<SectionDto[]>([]);
-    const [breeders, setBreeders] = useState<BreederDto[]>([]);
+    const [breeders, setBreeders] = useState<BoardCandidateDto[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
@@ -82,24 +80,16 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             setError(null);
 
             try {
-                const [sectionsData, breedersRes] = await Promise.all([sectionService.getSections(controller.signal),
-                    fetchWithAuth(`${API_URL}/api/admin/registered`, {
-                            signal: controller.signal
-                    })
+                const [sectionsData, candidatesData] = await Promise.all([sectionService.getSections(controller.signal),
+                    boardService.getBoardCandidates(controller.signal)
                 ]);
-
-                if (!breedersRes.ok) {
-                    throw new Error('Nie udało się pobrać danych formularza. Spróbuj ponownie.');
-                }
-
-                const allBreeders: BreederDto[] = await breedersRes.json();
 
                 if (controller.signal.aborted) {
                     return;
                 }
 
                 setSections(sectionsData);
-                setBreeders(allBreeders.filter(breeder => breeder.status === 'ACTIVE'));
+                setBreeders(candidatesData);
             } catch (error) {
                 if (controller.signal.aborted) {
                     return;

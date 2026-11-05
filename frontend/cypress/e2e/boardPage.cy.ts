@@ -30,12 +30,12 @@ describe('Board Page Tests', () => {
         { id: 3, name: 'Chotków' }
     ];
 
+    // The candidates endpoint returns only active breeders, without contact details.
     const mockBreeders = [
-        { id: 10, name: 'Jan', surname: 'Kowalski', status: 'ACTIVE', sectionId: 1 },
-        { id: 11, name: 'Anna', surname: 'Nowak', status: 'ACTIVE', sectionId: 1 },
-        { id: 12, name: 'Piotr', surname: 'Testowy', status: 'ACTIVE', sectionId: 2 },
-        { id: 13, name: 'Blokowany', surname: 'Hodowca', status: 'BLOCKED', sectionId: 1 },
-        { id: 14, name: 'Marek', surname: 'Testowy', status: 'ACTIVE', sectionId: 3 }
+        { id: 10, name: 'Jan', surname: 'Kowalski', sectionId: 1 },
+        { id: 11, name: 'Anna', surname: 'Nowak', sectionId: 1 },
+        { id: 12, name: 'Piotr', surname: 'Testowy', sectionId: 2 },
+        { id: 14, name: 'Marek', surname: 'Testowy', sectionId: 3 }
     ];
 
     const createBoardMembers = (): MockBoardMember[] => [
@@ -145,7 +145,7 @@ describe('Board Page Tests', () => {
             body: mockSections
         }).as('getSections');
 
-        cy.intercept('GET', '**/api/admin/registered', {
+        cy.intercept('GET', '**/api/board/candidates', {
             statusCode: 200,
             body: mockBreeders
         }).as('getRegisteredBreeders');
@@ -309,7 +309,7 @@ describe('Board Page Tests', () => {
     it('Should allow an unauthenticated user to view the board without administration controls', () => {
         let adminDictionaryRequests = 0;
 
-        cy.intercept('GET', '**/api/admin/registered', (req) => {
+        cy.intercept('GET', '**/api/board/candidates', (req) => {
             adminDictionaryRequests++;
             req.reply({
                 statusCode: 403,
@@ -379,7 +379,7 @@ describe('Board Page Tests', () => {
     it('Should load administrator form dictionaries only after the modal is opened', () => {
         let registeredBreedersRequests = 0;
 
-        cy.intercept('GET', '**/api/admin/registered', (req) => {
+        cy.intercept('GET', '**/api/board/candidates', (req) => {
             registeredBreedersRequests++;
 
             req.reply({
@@ -477,7 +477,6 @@ describe('Board Page Tests', () => {
             cy.contains('option', 'Jan Kowalski').should('exist');
             cy.contains('option', 'Anna Nowak').should('exist');
             cy.contains('option', 'Piotr Testowy').should('not.exist');
-            cy.contains('option', 'Blokowany Hodowca').should('not.exist');
         });
 
         cy.get('#board-role').select('SKARBNIK');

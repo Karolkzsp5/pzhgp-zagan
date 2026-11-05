@@ -1,10 +1,17 @@
-import { BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
+import { BoardCandidateDto, BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
 import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const boardService = {
     getAllBoardMembers: async (): Promise<BoardMemberDto[]> => {
         const response = await fetchWithAuth(`${API_URL}/api/board`);
         await ensureOk(response, 'Nie udało się pobrać danych zarządu.');
+        return response.json();
+    },
+
+    /** Aktywni hodowcy do wyboru w formularzu zarządu (tylko dla administratora). */
+    getBoardCandidates: async (signal?: AbortSignal): Promise<BoardCandidateDto[]> => {
+        const response = await fetchWithAuth(`${API_URL}/api/board/candidates`, { signal });
+        await ensureOk(response, 'Nie udało się pobrać listy hodowców.');
         return response.json();
     },
 

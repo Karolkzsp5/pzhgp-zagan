@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/found-pigeons").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/board").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/board/candidates").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.POST, "/api/board").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())

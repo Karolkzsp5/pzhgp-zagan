@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service;
 
+import com.pzhgp.backend.dto.BoardCandidateDto;
 import com.pzhgp.backend.dto.BoardMemberDto;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.entity.*;
@@ -12,7 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +30,22 @@ public class BoardMemberService {
     @Transactional(readOnly = true)
     public List<BoardMemberDto> getAllBoardMembers() {
         return boardMemberRepository.findAllWithDetails().stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    /** Aktywni hodowcy do wyboru w formularzu zarządu, alfabetycznie po nazwisku i imieniu. */
+    @Transactional(readOnly = true)
+    public List<BoardCandidateDto> getBoardCandidates() {
+        Collator polishOrder = Collator.getInstance(Locale.forLanguageTag("pl"));
+
+        return breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
+                .map(breeder -> new BoardCandidateDto(
+                        breeder.getId(),
+                        breeder.getName(),
+                        breeder.getSurname(),
+                        breeder.getSection() != null ? breeder.getSection().getId() : null
+                ))
+                .sorted(Comparator.comparing(BoardCandidateDto::surname, polishOrder).thenComparing(BoardCandidateDto::name, polishOrder))
+                .collect(Collectors.toList());
     }
 
     @Transactional
