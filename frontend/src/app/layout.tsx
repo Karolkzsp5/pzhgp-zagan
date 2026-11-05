@@ -3,7 +3,7 @@ import { Geist } from "next/font/google";
 import AuthProvider from '@/app/components/AuthProvider';
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext"] });
 
 export const metadata: Metadata = {
   title: "PZHGP Żagań",
