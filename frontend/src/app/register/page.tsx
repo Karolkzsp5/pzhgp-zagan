@@ -27,6 +27,15 @@ interface RegistrationFormData {
 // Znak specjalny to każdy znak, który nie jest literą ani cyfrą (np. ! ; ' [ ] ~ lub spacja), tak samo jak w backendzie.
 const SPECIAL_CHARACTER = /[^\p{L}\p{N}]/u;
 
+// Backend przyjmuje wyłącznie datę z przeszłości (@Past), więc ostatni dozwolony dzień to wczoraj.
+const getLatestBirthDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    return `${yesterday.getFullYear()}-${month}-${day}`;
+};
+
 export default function RegisterPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,6 +43,8 @@ export default function RegisterPage() {
     const [sectionsError, setSectionsError] = useState('');
     const [isRegistrationSuccessful, setIsRegistrationSuccessful] = useState(false);
     const [error, setError] = useState('');
+    // Ustawiane po załadowaniu w przeglądarce, żeby statycznie wygenerowana strona nie miała daty z dnia budowania.
+    const [latestBirthDate, setLatestBirthDate] = useState<string | undefined>(undefined);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -49,6 +60,10 @@ export default function RegisterPage() {
         street: '',
         houseNumber: ''
     });
+
+    useEffect(() => {
+        setLatestBirthDate(getLatestBirthDate());
+    }, []);
 
     useEffect(() => {
         const fetchSections = async () => {
@@ -153,6 +168,11 @@ export default function RegisterPage() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
+
+        if (formData.dateOfBirth > getLatestBirthDate()) {
+            setError('Data urodzenia musi być z przeszłości.');
+            return;
+        }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(formData.email)) {
@@ -270,6 +290,7 @@ export default function RegisterPage() {
                                    type="date"
                                    name="dateOfBirth"
                                    autoComplete="bday"
+                                   max={latestBirthDate}
                                    value={formData.dateOfBirth}
                                    onChange={handleChange}
                                    required

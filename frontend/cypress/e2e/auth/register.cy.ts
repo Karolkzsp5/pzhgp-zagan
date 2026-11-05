@@ -127,6 +127,21 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="dateOfBirth"]').clear().type('1990-08-25').should('have.value', '1990-08-25');
     });
 
+    it('Date of birth test - Should reject a date that is not in the past', () => {
+        const today = new Date();
+        const pad = (value: number) => String(value).padStart(2, '0');
+        const todayValue = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+        cy.get('input[name="dateOfBirth"]').should(($input) => {
+            expect(String($input.attr('max')) < todayValue, 'max is earlier than today').to.equal(true);
+        });
+
+        cy.get('form').invoke('attr', 'novalidate', '');
+        cy.get('input[name="dateOfBirth"]').clear().type(todayValue);
+        cy.get('button[type="submit"]').click();
+        cy.contains('Data urodzenia musi być z przeszłości.').should('be.visible');
+    });
+
     it('Date of birth test - Should trigger HTML5 validation when left empty', () => {
         cy.get('input[name="dateOfBirth"]').clear();
         cy.get('button[type="submit"]').click();
