@@ -22,7 +22,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -34,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -314,7 +314,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should return 401 when logging in with an unknown email address")
     void shouldReturnUnauthorizedOnInvalidLogin() throws Exception {
-        LoginRequest invalidLogin = new LoginRequest("doesntexist@test.pl", "BadPassword123");
+        LoginRequest invalidLogin = new LoginRequest("doesntexist@test.pl", "BadPassword123", false);
 
         loginWithCookieJson(objectMapper.writeValueAsString(invalidLogin), null)
                 .andExpect(status().isUnauthorized());
@@ -332,7 +332,7 @@ class AuthIntegrationTest {
         savedBreeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(savedBreeder);
 
-        LoginRequest wrongPassLogin = new LoginRequest(validRequest.email(), "ZleHaslo999!");
+        LoginRequest wrongPassLogin = new LoginRequest(validRequest.email(), "ZleHaslo999!", false);
 
         loginWithCookieJson(objectMapper.writeValueAsString(wrongPassLogin), null)
                 .andExpect(status().isUnauthorized())
@@ -342,7 +342,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Should reject login when password exceeds 72 UTF-8 bytes")
     void shouldRejectLoginPasswordExceeding72Utf8Bytes() throws Exception {
-        LoginRequest request = new LoginRequest("test@test.pl", "Aa1!" + "a".repeat(69));
+        LoginRequest request = new LoginRequest("test@test.pl", "Aa1!" + "a".repeat(69), false);
 
         loginWithCookieJson(objectMapper.writeValueAsString(request), null)
                 .andExpect(status().isBadRequest())
@@ -357,7 +357,7 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated());
 
-        LoginRequest loginRequest = new LoginRequest(validRequest.email(), validRequest.password());
+        LoginRequest loginRequest = new LoginRequest(validRequest.email(), validRequest.password(), false);
 
         loginWithCookieJson(objectMapper.writeValueAsString(loginRequest), null)
                 .andExpect(status().isForbidden())
@@ -368,7 +368,7 @@ class AuthIntegrationTest {
     @DisplayName("Should return 429 when the login attempt limit is exceeded")
     void shouldReturnTooManyRequestsAfterLoginLimit() throws Exception {
         String clientAddress = "192.0.2.10";
-        LoginRequest request = new LoginRequest("unknown@test.pl", "WrongPassword123!");
+        LoginRequest request = new LoginRequest("unknown@test.pl", "WrongPassword123!", false);
 
         for (int i = 0; i < 30; i++) {
             loginWithCookieJson(objectMapper.writeValueAsString(request), clientAddress)
@@ -411,7 +411,7 @@ class AuthIntegrationTest {
         mockMvc.perform(get("/api/auth/me").cookie(authCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(breeder.getId().intValue()))
-                .andExpect(jsonPath("$.sub").value(validRequest.email()))
+                .andExpect(jsonPath("$.email").value(validRequest.email()))
                 .andExpect(jsonPath("$.name").value("Piotr"))
                 .andExpect(jsonPath("$.role").value("MODERATOR"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
@@ -451,7 +451,7 @@ class AuthIntegrationTest {
     private org.springframework.test.web.servlet.ResultActions loginWithCookieJson(
             String json, String remoteAddress) throws Exception {
         CsrfValues csrf = obtainCsrf();
-        var request = post("/api/auth/login-cookie")
+        var request = post("/api/auth/login")
                 .cookie(csrf.cookie())
                 .header("X-XSRF-TOKEN", csrf.token())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -490,12 +490,11 @@ class AuthIntegrationTest {
     }
 
     private Cookie loginWithCookie(CsrfValues csrf, boolean rememberMe) throws Exception {
-        var response = mockMvc.perform(post("/api/auth/login-cookie")
-                        .param("rememberMe", Boolean.toString(rememberMe))
+        var response = mockMvc.perform(post("/api/auth/login")
                         .cookie(csrf.cookie())
                         .header("X-XSRF-TOKEN", csrf.token())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password()))))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password(), rememberMe))))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""))
                 .andReturn().getResponse();
@@ -522,7 +521,7 @@ class AuthIntegrationTest {
 
         mockMvc.perform(get("/api/auth/me").cookie(authCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sub").value(validRequest.email()));
+                .andExpect(jsonPath("$.email").value(validRequest.email()));
     }
 
     @Test
@@ -540,9 +539,9 @@ class AuthIntegrationTest {
     void shouldRejectCookieLoginWithoutCsrf() throws Exception {
         createActiveBreeder();
 
-        mockMvc.perform(post("/api/auth/login-cookie")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password()))))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password(), false))))
                 .andExpect(status().isForbidden());
     }
 
@@ -568,14 +567,28 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should not register the removed legacy login endpoint")
-    void shouldNotRegisterLegacyLoginEndpoint() {
-        boolean legacyLoginRegistered = requestMappingHandlerMapping.getHandlerMethods().keySet().stream()
-                .anyMatch(mapping -> mapping.getPatternValues().contains("/api/auth/login")
-                        && (mapping.getMethodsCondition().getMethods().isEmpty()
-                        || mapping.getMethodsCondition().getMethods().contains(RequestMethod.POST)));
+    @DisplayName("Should not expose the JWT anywhere except the HttpOnly cookie after logging in")
+    void shouldNotExposeTokenOutsideTheCookie() throws Exception {
+        createActiveBreeder();
+        CsrfValues csrf = obtainCsrf();
 
-        assertFalse(legacyLoginRegistered);
+        mockMvc.perform(post("/api/auth/login")
+                        .cookie(csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password(), false))))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""))
+                .andExpect(header().doesNotExist(HttpHeaders.AUTHORIZATION));
+    }
+
+    @Test
+    @DisplayName("Should not register the old cookie login address")
+    void shouldNotRegisterOldLoginCookieEndpoint() {
+        boolean oldEndpointRegistered = requestMappingHandlerMapping.getHandlerMethods().keySet().stream()
+                .anyMatch(mapping -> mapping.getPatternValues().contains("/api/auth/login-cookie"));
+
+        assertFalse(oldEndpointRegistered);
     }
 
     @Test

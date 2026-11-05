@@ -25,7 +25,7 @@ const compareByFullName = (a: BreederDto, b: BreederDto) =>
 
 export default function AdminPanelPage() {
     const { user } = useAuth();
-    const currentUserEmail = user?.sub ?? '';
+    const currentUserEmail = user?.email ?? '';
 
     const [pendingBreeders, setPendingBreeders] = useState<BreederDto[]>([]);
     const [registeredBreeders, setRegisteredBreeders] = useState<BreederDto[]>([]);

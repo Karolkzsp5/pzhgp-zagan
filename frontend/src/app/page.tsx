@@ -74,7 +74,7 @@ export default function HomePage() {
         if (!isAuthResolved) return;
 
         void fetchAnnouncements(0);
-    }, [fetchAnnouncements, isAuthResolved, user?.sub, user?.role]);
+    }, [fetchAnnouncements, isAuthResolved, user?.email, user?.role]);
 
     const canAddAnnouncement = user?.role === 'ADMINISTRATOR' || user?.role === 'MODERATOR';
 

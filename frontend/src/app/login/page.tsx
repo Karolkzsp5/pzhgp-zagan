@@ -48,10 +48,10 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetchApi(`${API_URL}/api/auth/login-cookie?rememberMe=${rememberMe}`, {
+            const response = await fetchApi(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ ...formData, rememberMe })
             });
 
             if (response.ok) {

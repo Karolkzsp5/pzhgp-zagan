@@ -3,7 +3,7 @@ export type UserRole = 'BREEDER' | 'MODERATOR' | 'ADMINISTRATOR';
 
 export interface CurrentUser {
     id: number;
-    sub: string;
+    email: string;
     name: string;
     role: UserRole;
     status: string;

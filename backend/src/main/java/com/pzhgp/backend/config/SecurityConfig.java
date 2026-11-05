@@ -47,7 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login-cookie", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
@@ -102,7 +102,7 @@ public class SecurityConfig {
 
         // Te operacje zawsze wymagają tokenu CSRF, także przed zalogowaniem.
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        if ("/api/auth/login-cookie".equals(path) || "/api/auth/logout".equals(path)) {
+        if ("/api/auth/login".equals(path) || "/api/auth/logout".equals(path)) {
             return true;
         }
 

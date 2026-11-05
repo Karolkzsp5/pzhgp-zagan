@@ -151,7 +151,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should log in successfully and return a JWT token")
     void shouldLoginSuccessfullyAndReturnToken() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
@@ -164,14 +164,14 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should normalize email address during login")
     void shouldNormalizeEmailDuringLogin() {
-        LoginRequest request = new LoginRequest("  TestCypress@TEST.COM  ", "Testcypress1@");
+        LoginRequest request = new LoginRequest("  TestCypress@TEST.COM  ", "Testcypress1@", false);
         assertEquals("testcypress@test.com", request.email());
     }
 
     @Test
     @DisplayName("Should reject login with a non-existent email address")
     void shouldThrowExceptionWhenLoginEmailDoesNotExist() {
-        LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.empty());
 
@@ -184,7 +184,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should reject login with an incorrect password")
     void shouldThrowExceptionWhenLoginPasswordIsIncorrect() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(false);
@@ -196,7 +196,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should block logins for the account marked as PENDING")
     void shouldThrowExceptionWhenLoggingInWithPendingAccount() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
         activeBreeder.setStatus(AccountStatus.PENDING);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
@@ -209,7 +209,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should block logins for the account marked as BLOCKED")
     void shouldThrowExceptionWhenLoggingInWithBlockedAccount() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
         activeBreeder.setStatus(AccountStatus.BLOCKED);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));

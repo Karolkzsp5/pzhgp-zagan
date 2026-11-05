@@ -36,7 +36,7 @@ describe('Breeder Login Process', () => {
     });
 
     it('Should display an error message if the credentials are incorrect', () => {
-        cy.intercept('POST', '**/api/auth/login-cookie*', {
+        cy.intercept('POST', '**/api/auth/login', {
             statusCode: 401,
             body: 'Nieprawidłowy adres e-mail lub hasło.'
         }).as('loginErrorRequest');
@@ -56,7 +56,7 @@ describe('Breeder Login Process', () => {
     });
 
     it('Should prevent user from logging in if their account has not been approved by an administrator (PENDING Status)', () => {
-        cy.intercept('POST', '**/api/auth/login-cookie*', {
+        cy.intercept('POST', '**/api/auth/login', {
             statusCode: 403,
             body: 'Twoje konto oczekuje jeszcze na akceptację administratora.'
         }).as('pendingAccountRequest');
@@ -70,7 +70,7 @@ describe('Breeder Login Process', () => {
     });
 
     it('Should prevent user from logging in if their account is blocked', () => {
-        cy.intercept('POST', '**/api/auth/login-cookie*', {
+        cy.intercept('POST', '**/api/auth/login', {
             statusCode: 403,
             body: 'Twoje konto zostało zablokowane.'
         }).as('blockedAccountRequest');
@@ -98,7 +98,7 @@ describe('Breeder Login Process', () => {
                 : { statusCode: 401, body: 'Wymagane jest uwierzytelnienie.' });
         }).as('currentUser');
 
-        cy.intercept('POST', '**/api/auth/login-cookie*', (request) => {
+        cy.intercept('POST', '**/api/auth/login', (request) => {
             authenticated = true;
             request.reply({ statusCode: 204 });
         }).as('successfulLogin');
@@ -122,8 +122,7 @@ describe('Breeder Login Process', () => {
         cy.get('button[type="submit"]').click();
 
         cy.wait('@successfulLogin').then(({ request }) => {
-            expect(new URL(request.url).searchParams.get('rememberMe')).to.eq('false');
-            expect(request.body).to.deep.equal({ email: 'test.cypress1@test.cy', password: 'Test.cypress1' });
+            expect(request.body).to.deep.equal({ email: 'test.cypress1@test.cy', password: 'Test.cypress1', rememberMe: false });
             expect(request.headers['x-xsrf-token']).to.eq('cypress-test-csrf');
         });
         cy.location('pathname').should('eq', '/');
@@ -137,7 +136,7 @@ describe('Breeder Login Process', () => {
         });
     });
 
-    it('Should log in and pass rememberMe=true to the cookie endpoint', () => {
+    it('Should log in and send rememberMe=true to the login endpoint', () => {
         mockSuccessfulLogin();
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
@@ -146,7 +145,7 @@ describe('Breeder Login Process', () => {
         cy.get('button[type="submit"]').click();
 
         cy.wait('@successfulLogin').then(({ request }) => {
-            expect(new URL(request.url).searchParams.get('rememberMe')).to.eq('true');
+            expect(request.body.rememberMe).to.eq(true);
             expect(request.headers['x-xsrf-token']).to.eq('cypress-test-csrf');
         });
         cy.location('pathname').should('eq', '/');

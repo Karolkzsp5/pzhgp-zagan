@@ -13,12 +13,16 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "Hasło nie może być puste")
-        String password
+        String password,
+
+        // Gdy true, ciasteczko z tokenem przetrwa zamknięcie przeglądarki. Brak pola oznacza false.
+        Boolean rememberMe
 ) {
     public LoginRequest {
         if (email != null) {
             email = email.trim().toLowerCase(Locale.ROOT);
         }
+        rememberMe = Boolean.TRUE.equals(rememberMe);
     }
 
     @AssertTrue(message = "Hasło może mieć maksymalnie 72 bajty (UTF-8).")

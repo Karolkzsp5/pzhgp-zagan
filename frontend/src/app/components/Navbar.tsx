@@ -14,7 +14,7 @@ const NOTIFICATIONS_PAGE_SIZE = 50;
 
 export default function Navbar() {
     const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
-    const userName = user?.name || user?.sub?.split('@')[0] || 'Użytkowniku';
+    const userName = user?.name || user?.email?.split('@')[0] || 'Użytkowniku';
 
     const userRole = user?.role ?? '';
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -166,7 +166,7 @@ export default function Navbar() {
         return () => {
             notificationSessionRef.current++;
         };
-    }, [fetchNotifications, isLoggedIn, user?.sub]);
+    }, [fetchNotifications, isLoggedIn, user?.email]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
         const sessionId = notificationSessionRef.current;

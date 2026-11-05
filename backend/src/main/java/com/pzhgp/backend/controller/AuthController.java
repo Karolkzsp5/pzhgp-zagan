@@ -47,10 +47,9 @@ public class AuthController {
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
-    @PostMapping("/login-cookie")
-    public ResponseEntity<Void> loginWithCookie(
+    @PostMapping("/login")
+    public ResponseEntity<Void> login(
             @Valid @RequestBody LoginRequest request,
-            @RequestParam(defaultValue = "false") boolean rememberMe,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
@@ -59,7 +58,7 @@ public class AuthController {
         }
 
         String token = breederService.login(request);
-        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), rememberMe);
+        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), request.rememberMe());
         return ResponseEntity.noContent().build();
     }
 

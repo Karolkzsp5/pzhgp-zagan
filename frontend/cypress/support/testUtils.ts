@@ -8,7 +8,7 @@ export interface TestUser {
 
 export interface MockCurrentUser {
     id: number;
-    sub: string;
+    email: string;
     name: string;
     role: TestUserRole;
     status: 'ACTIVE';
@@ -35,7 +35,7 @@ export const TEST_USERS = {
 // Frontend pobiera użytkownika z /api/auth/me zamiast dekodować JWT.
 export const createTestUser = (role: TestUserRole, email: string, name: string): MockCurrentUser => ({
     id: 1,
-    sub: email,
+    email,
     name,
     role,
     status: 'ACTIVE'
