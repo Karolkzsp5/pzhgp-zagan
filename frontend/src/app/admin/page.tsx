@@ -11,6 +11,7 @@ import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
 import Modal from '@/app/components/Modal';
 import Navbar from "@/app/components/Navbar";
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { adminService } from '@/app/services/adminService';
 import { sectionService } from '@/app/services/sectionService';
 import { AccountAction, BreederDto } from '@/app/types/breeder';
@@ -51,8 +52,10 @@ export default function AdminPanelPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSection, setFilterSection] = useState<string>('ALL');
     const [sortBy, setSortBy] = useState<SortOption>('NEWEST');
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const fetchAllAccounts = useCallback(async () => {
+        const requestId = beginRequest();
         setIsLoading(true);
         setError('');
 
@@ -63,11 +66,15 @@ export default function AdminPanelPage() {
                 sectionService.getSections()
             ]);
 
+            if (!isLatestRequest(requestId)) return;
+
             setPendingBreeders(pendingData);
             setRegisteredBreeders(registeredData);
             setSectionsList(sectionsData);
 
         } catch (error) {
+            if (!isLatestRequest(requestId)) return;
+
             if (error instanceof TypeError) {
                 setError(CONNECTION_ERROR_MESSAGE);
             } else if (error instanceof ApiError && error.status === 403) {
@@ -76,9 +83,11 @@ export default function AdminPanelPage() {
                 setError('Wystąpił błąd podczas pobierania danych.');
             }
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         if (user?.role !== 'ADMINISTRATOR') {

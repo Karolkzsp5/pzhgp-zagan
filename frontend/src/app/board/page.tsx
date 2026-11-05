@@ -10,6 +10,7 @@ import Footer from '@/app/components/Footer';
 import LoadingState from "@/app/components/LoadingState"
 import Navbar from "@/app/components/Navbar";
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
 import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardRole, BoardRoleTranslations, SECTION_ROLE_ORDER } from '@/app/types/board';
@@ -29,8 +30,10 @@ export default function BoardPage() {
     const [memberToEdit, setMemberToEdit] = useState<BoardMemberDto | null>(null);
 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const fetchData = useCallback(async () => {
+        const requestId = beginRequest();
         setIsLoading(true);
         setError('');
 
@@ -40,14 +43,20 @@ export default function BoardPage() {
                 sectionService.getSections()
             ]);
 
+            if (!isLatestRequest(requestId)) return;
+
             setMembers(boardData);
             setSections(sectionsData);
         } catch (error) {
+            if (!isLatestRequest(requestId)) return;
+
             setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać danych zarządu.');
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         void fetchData();
