@@ -4,23 +4,14 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import Modal from '@/app/components/Modal';
+import { authService } from '@/app/services/authService';
 import { sectionService } from '@/app/services/sectionService';
+import { RegistrationRequest } from '@/app/types/auth';
 import { SectionDto } from '@/app/types/section';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError } from '@/app/utils/apiClient';
+import { ApiError, CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 
-interface RegistrationFormData {
-    name: string;
-    surname: string;
-    dateOfBirth: string;
-    postalCode: string;
-    city: string;
-    street: string;
-    houseNumber: string;
-    sectionId: number;
-    email: string;
-    phoneNumber: string;
-    password: string;
+interface RegistrationFormData extends RegistrationRequest {
     confirmPassword: string;
 }
 
@@ -220,24 +211,12 @@ export default function RegisterPage() {
                 phoneNumber: rawPhoneNumber
             };
 
-            const response = await fetchApi(`${API_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(cleanDataToSend)
-            });
-
-            if (response.status === 201) {
-                setIsRegistrationSuccessful(true);
-                return;
-            }
-
-            setError(await readApiError(response, 'Nie udało się zarejestrować konta.')
-            );
-
+            await authService.register(cleanDataToSend);
+            setIsRegistrationSuccessful(true);
         } catch (error) {
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas rejestracji.');
+            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
+                : error instanceof ApiError ? error.message
+                    : 'Wystąpił błąd podczas rejestracji.');
         } finally {
             setIsLoading(false);
         }

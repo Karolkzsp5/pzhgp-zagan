@@ -4,7 +4,8 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
+import { authService } from '@/app/services/authService';
+import { CONNECTION_ERROR_MESSAGE, refreshCsrfToken } from '@/app/utils/apiClient';
 import { invalidateAuthSession } from '@/app/utils/authSession';
 import { safeReturnPath } from '@/app/utils/loginRedirect';
 
@@ -48,35 +49,23 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetchApi(`${API_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, rememberMe })
-            });
+            await authService.login({ ...formData, rememberMe });
 
-            if (response.ok) {
-                // Backend ustawia JWT w HttpOnly cookie (odpowiedź 204, bez tokenu).
-                invalidateAuthSession(false);
-                const isAuthenticated = await refreshAuth();
-                if (!isAuthenticated) {
-                    setMessage({ text: 'Nie udało się potwierdzić sesji. Sprawdź konfigurację ciasteczek.', type: 'error' });
-                    setIsLoading(false);
-                    return;
-                }
-                // Spring Security może wyczyścić wcześniejszy token CSRF po logowaniu.
-                try {
-                    await refreshCsrfToken();
-                } catch (csrfError) {
-                    console.error('Błąd odświeżenia CSRF po logowaniu:', csrfError);
-                }
-                router.push(safeReturnPath(new URLSearchParams(window.location.search).get('next')));
+            // Backend ustawia JWT w HttpOnly cookie (odpowiedź 204, bez tokenu).
+            invalidateAuthSession(false);
+            const isAuthenticated = await refreshAuth();
+            if (!isAuthenticated) {
+                setMessage({ text: 'Nie udało się potwierdzić sesji. Sprawdź konfigurację ciasteczek.', type: 'error' });
+                setIsLoading(false);
                 return;
             }
-
-            const errorMessage = await readApiError(response, 'Nie udało się zalogować.');
-            setMessage({ text: errorMessage, type: 'error' });
-            setIsLoading(false);
-
+            // Spring Security może wyczyścić wcześniejszy token CSRF po logowaniu.
+            try {
+                await refreshCsrfToken();
+            } catch (csrfError) {
+                console.error('Błąd odświeżenia CSRF po logowaniu:', csrfError);
+            }
+            router.push(safeReturnPath(new URLSearchParams(window.location.search).get('next')));
         } catch (error) {
             setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : error instanceof Error ? error.message : 'Wystąpił błąd podczas logowania.', type: 'error' });
             setIsLoading(false);
