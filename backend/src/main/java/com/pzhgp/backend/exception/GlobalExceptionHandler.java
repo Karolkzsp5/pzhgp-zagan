@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +22,12 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -28,12 +36,42 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        // Walidator zwraca błędy w przypadkowej kolejności. Wybieramy błąd pola, które w żądaniu
+        // (a więc i w formularzu) występuje najwcześniej, żeby komunikat był zawsze ten sam.
+        List<String> fieldOrder = fieldNamesInDeclarationOrder(ex.getBindingResult().getTarget());
+
         String errorMessage = ex.getBindingResult().getAllErrors().stream()
+                .min(Comparator.comparingInt((ObjectError error) -> fieldPosition(error, fieldOrder))
+                        .thenComparing(error -> Objects.requireNonNullElse(error.getDefaultMessage(), "")))
                 .map(error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Błąd walidacji formularza.")
-                .findFirst()
                 .orElse("Błąd walidacji formularza.");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+    }
+
+    private static List<String> fieldNamesInDeclarationOrder(Object target) {
+        if (target == null) {
+            return List.of();
+        }
+
+        Class<?> type = target.getClass();
+        if (type.isRecord()) {
+            return Arrays.stream(type.getRecordComponents()).map(RecordComponent::getName).toList();
+        }
+
+        return Arrays.stream(type.getDeclaredFields()).map(Field::getName).toList();
+    }
+
+    // Błędy pól spoza listy (np. z metod @AssertTrue) i błędy całego obiektu trafiają na koniec.
+    private static int fieldPosition(ObjectError error, List<String> fieldOrder) {
+        if (error instanceof FieldError fieldError) {
+            int index = fieldOrder.indexOf(fieldError.getField());
+            if (index >= 0) {
+                return index;
+            }
+        }
+
+        return fieldOrder.size();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

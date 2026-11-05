@@ -391,7 +391,7 @@ export default function Navbar() {
 
                                         {/* Notification modal */}
                                         {isNotificationsOpen && (
-                                            <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 animate-fadeIn text-gray-800 overflow-hidden">
+                                            <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 motion-safe:animate-fade-in text-gray-800 overflow-hidden">
                                                 <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                     <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                     {unreadCount > 0 && (
@@ -494,7 +494,7 @@ export default function Navbar() {
                                         </button>
 
                                         {isDropdownOpen && (
-                                            <div id="profile-dropdown" className="absolute right-0 mt-3 w-56 bg-white rounded-md shadow-lg border border-gray-100 z-50 animate-fadeIn overflow-hidden">
+                                            <div id="profile-dropdown" className="absolute right-0 mt-3 w-56 bg-white rounded-md shadow-lg border border-gray-100 z-50 motion-safe:animate-fade-in overflow-hidden">
                                                 {userRole === 'ADMINISTRATOR' && (
                                                     <>
                                                         <Link
@@ -562,7 +562,7 @@ export default function Navbar() {
 
             {/* Mobile menu */}
             {isMobileMenuOpen && (
-                <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn">
+                <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl motion-safe:animate-fade-in">
                     <div className="flex flex-col">
                         {navLinks.filter(link => link.show).map((link) => (
                             <Link

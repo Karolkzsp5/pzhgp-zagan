@@ -86,6 +86,23 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should report the validation error of the first invalid form field")
+    void shouldReportFirstInvalidFieldWhenSeveralAreInvalid() throws Exception {
+        RegistrationRequest request = new RegistrationRequest(
+                "Jan", "", LocalDate.parse("1995-05-15"), "68100", "Żagań",
+                "Słowackiego", "10", 1, "not-an-email", "123", "SecurePass1!"
+        );
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Nazwisko nie może być puste"));
+        }
+    }
+
+    @Test
     @DisplayName("Should accept names with letters from other alphabets and apostrophes")
     void shouldRegisterUserWithForeignLettersAndApostrophesIntegration() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
