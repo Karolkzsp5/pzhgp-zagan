@@ -69,7 +69,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {
-                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
+                // Adres e-mail to dane osobowe, dlatego w logu jest tylko ID konta.
+                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.",
+                        breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
             }
         }
 

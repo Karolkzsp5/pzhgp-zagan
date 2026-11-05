@@ -99,8 +99,8 @@ public class PigeonFlightService {
 
         PigeonFlight saved = flightRepository.save(flight);
 
-        log.info("Hodowca {} wgrał lot '{}' ({} punktów, dystans {} km, prędkość {} m/min).",
-                userEmail, saved.getName(), analysis.totalPoints(),
+        log.info("Hodowca o ID {} wgrał lot '{}' ({} punktów, dystans {} km, prędkość {} m/min).",
+                owner.getId(), saved.getName(), analysis.totalPoints(),
                 Math.round(analysis.straightLineDistanceMeters() / 1000),
                 Math.round(analysis.averageSpeedMetersPerMinute()));
 
