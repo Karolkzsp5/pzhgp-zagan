@@ -1,4 +1,4 @@
-/** Strona wyników zwracana przez endpointy ze stronicowaniem (Spring Data Page). */
+/** Strona wyników zwracana przez endpointy ze stronicowaniem (rekord PageResponse w backendzie). */
 export interface PageResponse<T> {
     content: T[];
     totalElements: number;

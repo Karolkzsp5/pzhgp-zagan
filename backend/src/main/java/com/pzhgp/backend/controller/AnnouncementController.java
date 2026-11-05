@@ -2,10 +2,10 @@ package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.dto.AnnouncementRequestDto;
 import com.pzhgp.backend.dto.AnnouncementResponseDto;
+import com.pzhgp.backend.dto.PageResponse;
 import com.pzhgp.backend.service.AnnouncementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,7 +19,7 @@ public class AnnouncementController {
     private final AnnouncementService announcementService;
 
     @GetMapping
-    public ResponseEntity<Page<AnnouncementResponseDto>> getAllAnnouncements(
+    public ResponseEntity<PageResponse<AnnouncementResponseDto>> getAllAnnouncements(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
@@ -29,7 +29,7 @@ public class AnnouncementController {
             currentUserEmail = authentication.getName();
         }
 
-        return ResponseEntity.ok(announcementService.getAllAnnouncements(currentUserEmail, page, size));
+        return ResponseEntity.ok(PageResponse.from(announcementService.getAllAnnouncements(currentUserEmail, page, size)));
     }
 
     @PostMapping
