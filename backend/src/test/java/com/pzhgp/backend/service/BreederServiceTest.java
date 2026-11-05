@@ -177,6 +177,8 @@ class BreederServiceTest {
 
         BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> breederService.login(loginRequest));
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());
+        // Hasło jest porównywane także dla nieistniejącego konta, żeby czas odpowiedzi był taki sam.
+        verify(passwordEncoder, times(1)).matches(eq(loginRequest.password()), any());
     }
 
     @Test

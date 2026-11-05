@@ -17,6 +17,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class BreederService {
@@ -25,6 +28,9 @@ public class BreederService {
     private final SectionRepository sectionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+
+    // Hash losowego hasła, liczony przy pierwszym logowaniu na nieistniejące konto.
+    private volatile String dummyPasswordHash;
 
     public void registerNewBreeder(RegistrationRequest request) {
         if (breederRepository.existsByEmailIgnoreCase(request.email())) {
@@ -59,12 +65,18 @@ public class BreederService {
     }
 
     public String login(LoginRequest request) {
-        Breeder breeder = breederRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() ->
-                new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło."));
+        Optional<Breeder> account = breederRepository.findByEmailIgnoreCase(request.email());
 
-        if (!passwordEncoder.matches(request.password(), breeder.getPasswordHash())) {
+        // Gdy konto nie istnieje, i tak porównujemy hasło (z hashem-atrapą), żeby czas odpowiedzi
+        // nie zdradzał, czy podany adres e-mail jest zarejestrowany.
+        String passwordHash = account.map(Breeder::getPasswordHash).orElseGet(this::getDummyPasswordHash);
+        boolean passwordMatches = passwordEncoder.matches(request.password(), passwordHash);
+
+        if (account.isEmpty() || !passwordMatches) {
             throw new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło.");
         }
+
+        Breeder breeder = account.get();
 
         if (breeder.getStatus() == AccountStatus.PENDING) {
             throw new ForbiddenOperationException("Twoje konto oczekuje jeszcze na akceptację administratora.");
@@ -75,6 +87,14 @@ public class BreederService {
         }
 
         return jwtService.generateToken(breeder);
+    }
+
+    private String getDummyPasswordHash() {
+        if (dummyPasswordHash == null) {
+            dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
+        }
+
+        return dummyPasswordHash;
     }
 
     public CurrentUserResponseDto getCurrentUser(String userEmail) {
