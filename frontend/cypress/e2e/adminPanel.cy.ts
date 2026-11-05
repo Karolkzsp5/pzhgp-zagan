@@ -358,17 +358,18 @@ describe('Panel Administratora - Testy E2E', () => {
         getRegisteredRows().eq(1).should('contain.text', 'Michał Admin');
         getRegisteredRows().eq(2).should('contain.text', 'Anna Kowalska');
 
+        // Alphabetical order uses the surname first, like the board page.
         sortFilter().select('A_Z');
         getRegisteredRows().should('have.length', 3);
-        getRegisteredRows().eq(0).should('contain.text', 'Anna Kowalska');
-        getRegisteredRows().eq(1).should('contain.text', 'Michał Admin');
+        getRegisteredRows().eq(0).should('contain.text', 'Michał Admin');
+        getRegisteredRows().eq(1).should('contain.text', 'Anna Kowalska');
         getRegisteredRows().eq(2).should('contain.text', 'Piotr Moderator');
 
         sortFilter().select('Z_A');
         getRegisteredRows().should('have.length', 3);
         getRegisteredRows().eq(0).should('contain.text', 'Piotr Moderator');
-        getRegisteredRows().eq(1).should('contain.text', 'Michał Admin');
-        getRegisteredRows().eq(2).should('contain.text', 'Anna Kowalska');
+        getRegisteredRows().eq(1).should('contain.text', 'Anna Kowalska');
+        getRegisteredRows().eq(2).should('contain.text', 'Michał Admin');
 
         sortFilter().select('NEWEST');
         getRegisteredRows().eq(0).should('contain.text', 'Anna Kowalska');

@@ -19,6 +19,10 @@ import { formatAccountStatus, formatDate, formatDateTime, formatLocalDate, forma
 
 type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
 
+// Kolejność alfabetyczna jak na stronie zarządu: najpierw nazwisko, potem imię, z polskimi literami.
+const compareByFullName = (a: BreederDto, b: BreederDto) =>
+    a.surname.localeCompare(b.surname, 'pl') || a.name.localeCompare(b.name, 'pl');
+
 export default function AdminPanelPage() {
     const { user } = useAuth();
     const currentUserEmail = user?.sub ?? '';
@@ -174,8 +178,8 @@ export default function AdminPanelPage() {
         }).sort((a, b) => {
             if (sortBy === 'NEWEST') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             if (sortBy === 'OLDEST') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            if (sortBy === 'A_Z') return a.name.localeCompare(b.name);
-            if (sortBy === 'Z_A') return b.name.localeCompare(a.name);
+            if (sortBy === 'A_Z') return compareByFullName(a, b);
+            if (sortBy === 'Z_A') return compareByFullName(b, a);
             return 0;
         });
     }, [searchTerm, filterSection, sortBy]);
