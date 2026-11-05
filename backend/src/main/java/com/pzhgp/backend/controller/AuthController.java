@@ -1,7 +1,7 @@
 package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.config.AuthCookieService;
-import com.pzhgp.backend.dto.CurrentUserResponseDto;
+import com.pzhgp.backend.dto.CurrentUserDto;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.exception.AuthRateLimitException;
@@ -69,7 +69,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<CurrentUserResponseDto> currentUser(Authentication authentication) {
+    public ResponseEntity<CurrentUserDto> currentUser(Authentication authentication) {
         return ResponseEntity.ok(breederService.getCurrentUser(authentication.getName()));
     }
 

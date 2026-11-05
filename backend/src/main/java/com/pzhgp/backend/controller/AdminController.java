@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.pzhgp.backend.dto.BreederResponseDto;
+import com.pzhgp.backend.dto.BreederDto;
 import com.pzhgp.backend.dto.RoleChangeRequest;
 import com.pzhgp.backend.service.AdminService;
 import jakarta.validation.Valid;
@@ -19,12 +19,12 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/pending")
-    public ResponseEntity<List<BreederResponseDto>> getPendingAccounts() {
+    public ResponseEntity<List<BreederDto>> getPendingAccounts() {
         return ResponseEntity.ok(adminService.getPendingAccounts());
     }
 
     @GetMapping("/registered")
-    public ResponseEntity<List<BreederResponseDto>> getRegisteredAccounts() {
+    public ResponseEntity<List<BreederDto>> getRegisteredAccounts() {
         return ResponseEntity.ok(adminService.getAllRegisteredAccounts());
     }
 

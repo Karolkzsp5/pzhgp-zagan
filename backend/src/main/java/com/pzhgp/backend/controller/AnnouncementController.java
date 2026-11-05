@@ -1,7 +1,7 @@
 package com.pzhgp.backend.controller;
 
-import com.pzhgp.backend.dto.AnnouncementRequestDto;
-import com.pzhgp.backend.dto.AnnouncementResponseDto;
+import com.pzhgp.backend.dto.AnnouncementDto;
+import com.pzhgp.backend.dto.AnnouncementRequest;
 import com.pzhgp.backend.dto.PageResponse;
 import com.pzhgp.backend.service.AnnouncementService;
 import jakarta.validation.Valid;
@@ -19,7 +19,7 @@ public class AnnouncementController {
     private final AnnouncementService announcementService;
 
     @GetMapping
-    public ResponseEntity<PageResponse<AnnouncementResponseDto>> getAllAnnouncements(
+    public ResponseEntity<PageResponse<AnnouncementDto>> getAllAnnouncements(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
@@ -34,7 +34,7 @@ public class AnnouncementController {
 
     @PostMapping
     public ResponseEntity<Void> createAnnouncement(
-            @Valid @RequestBody AnnouncementRequestDto requestDto,
+            @Valid @RequestBody AnnouncementRequest requestDto,
             Authentication authentication
     ) {
         announcementService.createAnnouncement(requestDto, authentication.getName());
@@ -44,7 +44,7 @@ public class AnnouncementController {
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateAnnouncement(
             @PathVariable Long id,
-            @Valid @RequestBody AnnouncementRequestDto requestDto,
+            @Valid @RequestBody AnnouncementRequest requestDto,
             Authentication authentication
     ) {
         announcementService.updateAnnouncement(id, requestDto, authentication.getName());

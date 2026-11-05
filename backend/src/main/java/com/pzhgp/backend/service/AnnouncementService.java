@@ -1,7 +1,7 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.AnnouncementRequestDto;
-import com.pzhgp.backend.dto.AnnouncementResponseDto;
+import com.pzhgp.backend.dto.AnnouncementDto;
+import com.pzhgp.backend.dto.AnnouncementRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.AnnouncementRepository;
@@ -28,7 +28,7 @@ public class AnnouncementService {
     private final NotificationService notificationService;
 
     @Transactional
-    public void createAnnouncement(AnnouncementRequestDto requestDto, String authorEmail) {
+    public void createAnnouncement(AnnouncementRequest requestDto, String authorEmail) {
         Breeder author = breederRepository.requireByEmail(authorEmail);
 
         if (author.getRole() == Role.BREEDER) {
@@ -52,7 +52,7 @@ public class AnnouncementService {
     }
 
     @Transactional
-    public void updateAnnouncement(Long id, AnnouncementRequestDto requestDto, String userEmail) {
+    public void updateAnnouncement(Long id, AnnouncementRequest requestDto, String userEmail) {
         Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono ogłoszenia o ID: " + id));
         Breeder editor = breederRepository.requireByEmail(userEmail);
 
@@ -90,7 +90,7 @@ public class AnnouncementService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AnnouncementResponseDto> getAllAnnouncements(String currentUserEmail, int page, int size) {
+    public Page<AnnouncementDto> getAllAnnouncements(String currentUserEmail, int page, int size) {
         Breeder currentUser = null;
         if (currentUserEmail != null) {
             currentUser = breederRepository.findByEmail(currentUserEmail).orElse(null);
@@ -125,11 +125,11 @@ public class AnnouncementService {
         return isAuthor || (isAdmin && !isAuthorAdmin);
     }
 
-    private AnnouncementResponseDto mapToDto(Announcement announcement, Breeder currentUser) {
+    private AnnouncementDto mapToDto(Announcement announcement, Breeder currentUser) {
         boolean canEdit = canEditAnnouncement(announcement, currentUser);
         boolean canDelete = canDeleteAnnouncement(announcement, currentUser);
 
-        return new AnnouncementResponseDto(
+        return new AnnouncementDto(
                 announcement.getId(),
                 announcement.getTitle(),
                 announcement.getContent(),

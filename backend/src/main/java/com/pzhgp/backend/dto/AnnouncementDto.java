@@ -2,7 +2,7 @@ package com.pzhgp.backend.dto;
 
 import java.time.Instant;
 
-public record AnnouncementResponseDto(
+public record AnnouncementDto(
         Long id,
         String title,
         String content,

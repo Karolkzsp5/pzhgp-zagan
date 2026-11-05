@@ -1,6 +1,6 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.CurrentUserResponseDto;
+import com.pzhgp.backend.dto.CurrentUserDto;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
@@ -97,14 +97,14 @@ public class BreederService {
         return dummyPasswordHash;
     }
 
-    public CurrentUserResponseDto getCurrentUser(String userEmail) {
+    public CurrentUserDto getCurrentUser(String userEmail) {
         Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
 
         if (breeder.getStatus() != AccountStatus.ACTIVE) {
             throw new BadCredentialsException("Wymagane jest uwierzytelnienie.");
         }
 
-        return new CurrentUserResponseDto(
+        return new CurrentUserDto(
                 breeder.getId(),
                 breeder.getEmail(),
                 breeder.getName(),

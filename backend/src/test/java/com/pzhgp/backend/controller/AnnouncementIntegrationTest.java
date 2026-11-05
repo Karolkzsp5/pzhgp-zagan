@@ -1,6 +1,6 @@
 package com.pzhgp.backend.controller;
 
-import com.pzhgp.backend.dto.AnnouncementRequestDto;
+import com.pzhgp.backend.dto.AnnouncementRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -193,7 +193,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should save an announcement created by an administrator")
     void shouldCreateAnnouncementAndSaveToDatabase() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Tytuł Integracyjny", "Treść Integracyjna", false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Tytuł Integracyjny", "Treść Integracyjna", false);
         assertEquals(0, announcementRepository.count());
 
         mockMvc.perform(post("/api/announcements")
@@ -211,7 +211,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should remove unsafe HTML from the announcement content before saving it")
     void shouldSanitizeAnnouncementContentBeforeSaving() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto(
+        AnnouncementRequest requestDto = new AnnouncementRequest(
                 "Bezpieczne ogłoszenie",
                 "<p style=\"text-align: center\" onclick=\"alert(1)\">Zbiórka <strong>o 8:00</strong></p><script>alert(1)</script>",
                 false
@@ -232,7 +232,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should allow a moderator to create an announcement")
     void shouldAllowModeratorToCreateAnnouncement() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Lot próbny", "Informacje dla hodowców", false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Lot próbny", "Informacje dla hodowców", false);
 
         mockMvc.perform(post("/api/announcements")
                         .with(cookieAuth(modToken))
@@ -246,7 +246,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should notify other active breeders when an announcement is created")
     void shouldCreateNotificationsOnAnnouncementCreation() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Nowe ogłoszenie", "Ważne info", true);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Nowe ogłoszenie", "Ważne info", true);
 
         mockMvc.perform(post("/api/announcements")
                         .with(cookieAuth(adminToken))
@@ -266,7 +266,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a breeder creates an announcement")
     void shouldBlockBreederFromCreatingAnnouncement() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zły tytuł", "Nieważne", false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Zły tytuł", "Nieważne", false);
 
         mockMvc.perform(post("/api/announcements")
                         .with(cookieAuth(breederToken))
@@ -280,7 +280,7 @@ class AnnouncementIntegrationTest {
     @Test
     @DisplayName("Should return 400 when announcement content exceeds the maximum length")
     void shouldRejectAnnouncementWithTooLongContent() throws Exception {
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Poprawny tytuł", "a".repeat(50_001), false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Poprawny tytuł", "a".repeat(50_001), false);
 
         mockMvc.perform(post("/api/announcements").with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -298,7 +298,7 @@ class AnnouncementIntegrationTest {
         currentAdmin.setRole(Role.BREEDER);
         breederRepository.save(currentAdmin);
 
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Próba ataku", "Mam stary token!", false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Próba ataku", "Mam stary token!", false);
 
         mockMvc.perform(post("/api/announcements")
                         .with(cookieAuth(adminToken))
@@ -317,7 +317,7 @@ class AnnouncementIntegrationTest {
         announcementRepository.save(announcement);
 
         Long savedId = announcement.getId();
-        AnnouncementRequestDto updateRequest = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", true);
+        AnnouncementRequest updateRequest = new AnnouncementRequest("Nowy tytuł", "Nowa treść", true);
 
         mockMvc.perform(put("/api/announcements/{id}", savedId)
                         .with(cookieAuth(modToken))
@@ -340,7 +340,7 @@ class AnnouncementIntegrationTest {
         announcement.setAuthor(admin);
         announcementRepository.save(announcement);
 
-        AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Zmieniony tytuł", "Treść", false);
+        AnnouncementRequest requestDto = new AnnouncementRequest("Zmieniony tytuł", "Treść", false);
 
         mockMvc.perform(put("/api/announcements/{id}", announcement.getId())
                         .with(cookieAuth(breederToken))

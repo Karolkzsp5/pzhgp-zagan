@@ -6,7 +6,7 @@ import com.pzhgp.backend.entity.Role;
 import java.time.Instant;
 import java.time.LocalDate;
 
-public record BreederResponseDto(
+public record BreederDto(
         Long id,
         String name,
         String surname,

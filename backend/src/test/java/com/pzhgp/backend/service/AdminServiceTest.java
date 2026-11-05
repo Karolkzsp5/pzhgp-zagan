@@ -1,6 +1,6 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.BreederResponseDto;
+import com.pzhgp.backend.dto.BreederDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
@@ -71,7 +71,7 @@ class AdminServiceTest {
     void shouldReturnPendingAccounts() {
         when(breederRepository.findByStatus(AccountStatus.PENDING)).thenReturn(List.of(pendingBreeder));
 
-        List<BreederResponseDto> result = adminService.getPendingAccounts();
+        List<BreederDto> result = adminService.getPendingAccounts();
 
         assertEquals(1, result.size());
         assertEquals(AccountStatus.PENDING, result.getFirst().status());
@@ -84,7 +84,7 @@ class AdminServiceTest {
         Breeder blockedBreeder = createBreeder(4L, "Zly", "Hodowca", AccountStatus.BLOCKED, Role.BREEDER);
         when(breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED))).thenReturn(List.of(activeBreeder, blockedBreeder));
 
-        List<BreederResponseDto> result = adminService.getAllRegisteredAccounts();
+        List<BreederDto> result = adminService.getAllRegisteredAccounts();
 
         assertEquals(2, result.size());
         verify(breederRepository, times(1)).findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED));

@@ -1,6 +1,6 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.BreederResponseDto;
+import com.pzhgp.backend.dto.BreederDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.NotificationType;
@@ -24,12 +24,12 @@ public class AdminService {
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public List<BreederResponseDto> getPendingAccounts() {
+    public List<BreederDto> getPendingAccounts() {
         return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<BreederResponseDto> getAllRegisteredAccounts() {
+    public List<BreederDto> getAllRegisteredAccounts() {
         return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
@@ -119,8 +119,8 @@ public class AdminService {
         );
     }
 
-    private BreederResponseDto mapToDto(Breeder breeder) {
-        return new BreederResponseDto(
+    private BreederDto mapToDto(Breeder breeder) {
+        return new BreederDto(
                 breeder.getId(),
                 breeder.getName(),
                 breeder.getSurname(),
