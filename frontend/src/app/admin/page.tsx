@@ -11,10 +11,11 @@ import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
 import Modal from '@/app/components/Modal';
 import Navbar from "@/app/components/Navbar";
+import { adminService } from '@/app/services/adminService';
 import { sectionService } from '@/app/services/sectionService';
-import { BreederDto } from '@/app/types/breeder';
+import { AccountAction, BreederDto } from '@/app/types/breeder';
 import { SectionDto } from '@/app/types/section';
-import { API_URL, CONNECTION_ERROR_MESSAGE, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { ApiError, CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { UserRole } from '@/app/utils/authSession';
 import { formatAccountStatus, formatDate, formatDateTime, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 
@@ -38,7 +39,7 @@ export default function AdminPanelPage() {
     const [confirmDialog, setConfirmDialog] = useState<{
         isOpen: boolean;
         message: string;
-        action: 'approve' | 'reject' | 'block' | 'unblock' | null;
+        action: AccountAction | null;
         breederId: number | null;
     }>({ isOpen: false, message: '', action: null, breederId: null });
 
@@ -56,29 +57,24 @@ export default function AdminPanelPage() {
         setError('');
 
         try {
-            const [pendingRes, registeredRes, sectionsData] = await Promise.all([
-                fetchWithAuth(`${API_URL}/api/admin/accounts/pending`),
-                fetchWithAuth(`${API_URL}/api/admin/accounts/registered`),
+            const [pendingData, registeredData, sectionsData] = await Promise.all([
+                adminService.getPendingAccounts(),
+                adminService.getRegisteredAccounts(),
                 sectionService.getSections()
             ]);
-
-            if (!pendingRes.ok || !registeredRes.ok) {
-                if (pendingRes.status === 403 || registeredRes.status === 403) {
-                    setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
-                } else {
-                    setError('Wystąpił błąd podczas pobierania danych.');
-                }
-                return;
-            }
-
-            const [pendingData, registeredData] = await Promise.all([pendingRes.json(), registeredRes.json()]);
 
             setPendingBreeders(pendingData);
             setRegisteredBreeders(registeredData);
             setSectionsList(sectionsData);
 
         } catch (error) {
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas pobierania danych.');
+            if (error instanceof TypeError) {
+                setError(CONNECTION_ERROR_MESSAGE);
+            } else if (error instanceof ApiError && error.status === 403) {
+                setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
+            } else {
+                setError('Wystąpił błąd podczas pobierania danych.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -110,32 +106,27 @@ export default function AdminPanelPage() {
         };
     }, []);
 
-    const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
-        const method = action === 'reject' ? 'DELETE' : 'PUT';
-        const url = action === 'reject' ? `${API_URL}/api/admin/accounts/${id}` : `${API_URL}/api/admin/accounts/${id}/${action}`;
-
+    const handleAction = async (id: number, action: AccountAction) => {
         try {
-            const response = await fetchWithAuth(url, { method });
+            await adminService.applyAccountAction(id, action);
 
-            if (response.ok) {
-                if (action === 'approve') {
-                    const approved = pendingBreeders.find(b => b.id === id);
-                    if (approved) {
-                        setPendingBreeders(prev => prev.filter(b => b.id !== id));
-                        setRegisteredBreeders(prev => [...prev, { ...approved, status: 'ACTIVE' }]);
-                    }
-                } else if (action === 'reject') {
+            if (action === 'approve') {
+                const approved = pendingBreeders.find(b => b.id === id);
+                if (approved) {
                     setPendingBreeders(prev => prev.filter(b => b.id !== id));
-                } else if (action === 'block') {
-                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b));
-                } else if (action === 'unblock') {
-                    setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b));
+                    setRegisteredBreeders(prev => [...prev, { ...approved, status: 'ACTIVE' }]);
                 }
-            } else {
-                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się wykonać operacji.')}`);
+            } else if (action === 'reject') {
+                setPendingBreeders(prev => prev.filter(b => b.id !== id));
+            } else if (action === 'block') {
+                setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'BLOCKED' } : b));
+            } else if (action === 'unblock') {
+                setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b));
             }
         } catch (error) {
-            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się wykonać operacji.');
+            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
+                : error instanceof ApiError ? `Błąd: ${error.message}`
+                    : 'Nie udało się wykonać operacji.');
         }
     };
 
@@ -143,22 +134,16 @@ export default function AdminPanelPage() {
         if (!roleChangeBreeder) return;
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/admin/accounts/${roleChangeBreeder.id}/role`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role: newRole })
-            });
+            await adminService.changeRole(roleChangeBreeder.id, newRole);
 
-            if (response.ok) {
-                setRegisteredBreeders(prev =>
-                    prev.map(b => b.id === roleChangeBreeder.id ? { ...b, role: newRole } : b)
-                );
-                setRoleChangeBreeder(null);
-            } else {
-                setModalMessage(`Błąd: ${await readApiError(response, 'Nie udało się zmienić roli.')}`);
-            }
+            setRegisteredBreeders(prev =>
+                prev.map(b => b.id === roleChangeBreeder.id ? { ...b, role: newRole } : b)
+            );
+            setRoleChangeBreeder(null);
         } catch (error) {
-            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się zmienić roli.');
+            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
+                : error instanceof ApiError ? `Błąd: ${error.message}`
+                    : 'Nie udało się zmienić roli.');
         }
     };
 
