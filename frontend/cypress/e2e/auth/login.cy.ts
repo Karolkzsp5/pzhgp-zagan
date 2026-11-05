@@ -159,6 +159,31 @@ describe('Breeder Login Process', () => {
         });
     });
 
+    it('Should return to the page passed in the next parameter after logging in', () => {
+        mockSuccessfulLogin();
+        cy.visit('/login?next=%2Fweather');
+
+        cy.get('input[name="email"]').type('test.cypress1@test.cy');
+        cy.get('input[name="password"]').type('Test.cypress1');
+        cy.get('button[type="submit"]').click();
+
+        cy.wait('@successfulLogin');
+        cy.location('pathname').should('eq', '/weather');
+    });
+
+    it('Should ignore a next parameter that points outside the application', () => {
+        mockSuccessfulLogin();
+        cy.visit('/login?next=%2F%2Fexample.com');
+
+        cy.get('input[name="email"]').type('test.cypress1@test.cy');
+        cy.get('input[name="password"]').type('Test.cypress1');
+        cy.get('button[type="submit"]').click();
+
+        cy.wait('@successfulLogin');
+        cy.location('origin').should('eq', Cypress.config('baseUrl'));
+        cy.location('pathname').should('eq', '/');
+    });
+
     it('Should display a message when the session has expired', () => {
         cy.visit('/login?expired=true');
         cy.contains('Sesja wygasła. Zaloguj się ponownie.').should('be.visible');

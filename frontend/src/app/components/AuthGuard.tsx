@@ -6,6 +6,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
 import { UserRole } from '@/app/utils/authSession';
+import { loginUrlReturningTo } from '@/app/utils/loginRedirect';
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -23,7 +24,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
         if (!isAuthResolved) return;
 
         if (!isLoggedIn) {
-            if (!authCheckFailed) router.replace('/login');
+            if (!authCheckFailed) router.replace(loginUrlReturningTo(window.location.pathname + window.location.search));
             return;
         }
 

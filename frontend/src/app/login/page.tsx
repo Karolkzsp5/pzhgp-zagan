@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
 import { API_URL, CONNECTION_ERROR_MESSAGE, fetchApi, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
 import { invalidateAuthSession } from '@/app/utils/authSession';
+import { safeReturnPath } from '@/app/utils/loginRedirect';
 
 interface LoginFormData {
     email: string;
@@ -68,7 +69,7 @@ export default function LoginPage() {
                 } catch (csrfError) {
                     console.error('Błąd odświeżenia CSRF po logowaniu:', csrfError);
                 }
-                router.push('/');
+                router.push(safeReturnPath(new URLSearchParams(window.location.search).get('next')));
                 return;
             }
 

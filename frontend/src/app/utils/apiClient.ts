@@ -1,4 +1,5 @@
 import { getAuthGeneration, invalidateAuthSession } from './authSession';
+import { loginUrlReturningTo } from './loginRedirect';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 export const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
@@ -76,7 +77,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
     if (response.status === 401 && requestGeneration === getAuthGeneration()) {
         invalidateAuthSession();
         if (typeof window !== 'undefined') {
-            window.location.href = '/login?expired=true';
+            window.location.href = loginUrlReturningTo(window.location.pathname + window.location.search, { expired: 'true' });
         }
         throw new Error('Sesja wygasła. Zaloguj się ponownie.');
     }
