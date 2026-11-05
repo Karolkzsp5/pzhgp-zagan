@@ -66,7 +66,7 @@ public class ForumPostService {
         if (!thread.getAuthor().getId().equals(author.getId())) {
             notificationService.createNotification(
                     thread.getAuthor().getId(),
-                    author.getFullName() + " dodał/a odpowiedź w twoim wątku na forum",
+                    "Użytkownik " + author.getFullName() + " dodał odpowiedź w Twoim wątku na forum.",
                     "/forum/thread/" + thread.getId(),
                     NotificationType.NEW_REPLY
             );

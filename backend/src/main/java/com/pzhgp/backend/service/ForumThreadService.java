@@ -68,7 +68,7 @@ public class ForumThreadService {
         firstPost.setBody(RichTextSanitizer.sanitize(request.initialPostContent()));
         postRepository.save(firstPost);
 
-        String notificationMessage = author.getFullName() + " dodał/a nowy wątek na forum";
+        String notificationMessage = "Użytkownik " + author.getFullName() + " dodał nowy wątek na forum.";
         String notificationLink = "/forum/thread/" + thread.getId();
 
         List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream().filter(breeder -> !breeder.getId().equals(author.getId())).collect(Collectors.toList());

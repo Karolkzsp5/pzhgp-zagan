@@ -47,7 +47,7 @@ public class AdminService {
 
         notificationService.createNotification(
                 breeder.getId(),
-                "Administrator " + admin.getFullName() + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
+                "Administrator " + admin.getFullName() + " zatwierdził Twoje konto. Witaj w systemie PZHGP Żagań!",
                 "/",
                 NotificationType.ACCOUNT_APPROVED
         );
@@ -113,7 +113,7 @@ public class AdminService {
 
         notificationService.createNotification(
                 breeder.getId(),
-                "Administrator " + admin.getFullName() + " zmienił twoją rolę na: " + roleNamePL,
+                "Administrator " + admin.getFullName() + " zmienił Twoją rolę na: " + roleNamePL + ".",
                 "/settings",
                 NotificationType.ROLE_CHANGED
         );

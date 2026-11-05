@@ -310,7 +310,7 @@ class BoardIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią"));
+                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią."));
     }
 
     @Test

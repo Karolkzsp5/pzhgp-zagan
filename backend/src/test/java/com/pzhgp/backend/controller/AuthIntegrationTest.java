@@ -98,7 +98,7 @@ class AuthIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(content().string("Nazwisko nie może być puste"));
+                    .andExpect(content().string("Nazwisko nie może być puste."));
         }
     }
 

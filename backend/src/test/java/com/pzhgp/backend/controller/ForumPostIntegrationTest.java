@@ -178,7 +178,7 @@ class ForumPostIntegrationTest {
 
         assertEquals(thread.getAuthor().getId(), replyNotification.getRecipient().getId());
         assertEquals("/forum/thread/" + thread.getId(), replyNotification.getLink());
-        assertTrue(replyNotification.getMessage().contains("dodał/a odpowiedź w twoim wątku na forum"));
+        assertTrue(replyNotification.getMessage().contains("dodał odpowiedź w Twoim wątku na forum."));
     }
 
     @Test

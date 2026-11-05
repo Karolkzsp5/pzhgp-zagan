@@ -253,7 +253,7 @@ class ForumThreadServiceTest {
 
         verify(notificationService, times(1)).createBulkNotifications(
                 argThat(list -> list.size() == 1 && list.getFirst().getId().equals(5L)),
-                eq("Jan Kowalski dodał/a nowy wątek na forum"),
+                eq("Użytkownik Jan Kowalski dodał nowy wątek na forum."),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_THREAD)
         );

@@ -201,7 +201,7 @@ class AnnouncementServiceTest {
 
         verify(notificationService, times(1)).createBulkNotifications(
                 argThat(list -> list.size() == 2 && !list.contains(admin1) && list.contains(standardBreeder) && list.contains(anotherActiveBreeder)),
-                eq("Jan Kowalski dodał/a ogłoszenie na stronie głównej"),
+                eq("Użytkownik Jan Kowalski dodał ogłoszenie na stronie głównej."),
                 eq("/"),
                 eq(NotificationType.NEW_ANNOUNCEMENT)
         );

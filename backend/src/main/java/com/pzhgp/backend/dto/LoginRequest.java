@@ -8,11 +8,11 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.Locale;
 
 public record LoginRequest(
-        @NotBlank(message = "Adres e-mail nie może być pusty")
-        @Email(message = "Niepoprawny format adresu e-mail")
+        @NotBlank(message = "Adres e-mail nie może być pusty.")
+        @Email(message = "Niepoprawny format adresu e-mail.")
         String email,
 
-        @NotBlank(message = "Hasło nie może być puste")
+        @NotBlank(message = "Hasło nie może być puste.")
         String password,
 
         // Gdy true, ciasteczko z tokenem przetrwa zamknięcie przeglądarki. Brak pola oznacza false.

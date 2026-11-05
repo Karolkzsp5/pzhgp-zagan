@@ -7,52 +7,52 @@ import java.time.LocalDate;
 import java.util.Locale;
 
 public record RegistrationRequest(
-        @NotBlank(message = "Imię nie może być puste")
-        @Size(max = 32, message = "Imię może mieć maksymalnie 32 znaki")
+        @NotBlank(message = "Imię nie może być puste.")
+        @Size(max = 32, message = "Imię może mieć maksymalnie 32 znaki.")
         String name,
 
-        @NotBlank(message = "Nazwisko nie może być puste")
-        @Size(max = 64, message = "Nazwisko może mieć maksymalnie 64 znaki")
+        @NotBlank(message = "Nazwisko nie może być puste.")
+        @Size(max = 64, message = "Nazwisko może mieć maksymalnie 64 znaki.")
         String surname,
 
-        @NotNull(message = "Data urodzenia nie może być pusta")
-        @Past(message = "Data urodzenia musi być z przeszłości")
+        @NotNull(message = "Data urodzenia nie może być pusta.")
+        @Past(message = "Data urodzenia musi być z przeszłości.")
         LocalDate dateOfBirth,
 
-        @NotBlank(message = "Kod pocztowy nie może być pusty")
-        @Pattern(regexp = "^\\d{2}-\\d{3}$", message = "Niepoprawny format kodu pocztowego (wymagany: XX-XXX)")
+        @NotBlank(message = "Kod pocztowy nie może być pusty.")
+        @Pattern(regexp = "^\\d{2}-\\d{3}$", message = "Niepoprawny format kodu pocztowego (wymagany: XX-XXX).")
         String postalCode,
 
-        @NotBlank(message = "Miejscowość nie może być pusta")
-        @Size(max = 100, message = "Miejscowość może mieć maksymalnie 100 znaków")
+        @NotBlank(message = "Miejscowość nie może być pusta.")
+        @Size(max = 100, message = "Miejscowość może mieć maksymalnie 100 znaków.")
         String city,
 
-        @NotBlank(message = "Ulica nie może być pusta")
-        @Size(max = 100, message = "Ulica może mieć maksymalnie 100 znaków")
+        @NotBlank(message = "Ulica nie może być pusta.")
+        @Size(max = 100, message = "Ulica może mieć maksymalnie 100 znaków.")
         String street,
 
-        @NotBlank(message = "Numer domu/lokalu nie może być pusty")
-        @Size(max = 10, message = "Numer domu/lokalu może mieć maksymalnie 10 znaków")
-        @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$", message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4)")
+        @NotBlank(message = "Numer domu/lokalu nie może być pusty.")
+        @Size(max = 10, message = "Numer domu/lokalu może mieć maksymalnie 10 znaków.")
+        @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$", message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).")
         String houseNumber,
 
-        @NotNull(message = "ID sekcji nie może być puste")
-        @Positive(message = "ID sekcji musi być liczbą dodatnią")
+        @NotNull(message = "ID sekcji nie może być puste.")
+        @Positive(message = "ID sekcji musi być liczbą dodatnią.")
         Long sectionId,
 
-        @NotBlank(message = "Adres e-mail nie może być pusty")
-        @Size(max = 320, message = "Adres e-mail może mieć maksymalnie 320 znaków")
-        @Email(message = "Niepoprawny format adresu e-mail")
-        @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Wymagany poprawny adres e-mail z domeną")
+        @NotBlank(message = "Adres e-mail nie może być pusty.")
+        @Size(max = 320, message = "Adres e-mail może mieć maksymalnie 320 znaków.")
+        @Email(message = "Niepoprawny format adresu e-mail.")
+        @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Wymagany poprawny adres e-mail z domeną.")
         String email,
 
-        @NotBlank(message = "Numer telefonu nie może być pusty")
-        @Pattern(regexp = "^\\d{9}$", message = "Numer telefonu musi mieć dokładnie 9 cyfr")
+        @NotBlank(message = "Numer telefonu nie może być pusty.")
+        @Pattern(regexp = "^\\d{9}$", message = "Numer telefonu musi mieć dokładnie 9 cyfr.")
         String phoneNumber,
 
-        @NotBlank(message = "Hasło nie może być puste")
+        @NotBlank(message = "Hasło nie może być puste.")
         @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[^\\p{L}\\p{N}]).{8,}$",
-                message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny"
+                message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny."
         )
         String password
 ) {

@@ -187,7 +187,7 @@ class ForumPostServiceTest {
 
         verify(notificationService, times(1)).createNotification(
                 eq(1L),
-                contains("Piotr Nowak dodał/a odpowiedź"),
+                contains("Użytkownik Piotr Nowak dodał odpowiedź"),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_REPLY)
         );

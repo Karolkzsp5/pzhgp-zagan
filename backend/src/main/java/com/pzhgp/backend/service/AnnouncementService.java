@@ -46,7 +46,7 @@ public class AnnouncementService {
         List<Breeder> activeBreeders = breederRepository.findByStatus(AccountStatus.ACTIVE);
         List<Breeder> recipients = activeBreeders.stream().filter(b -> !b.getId().equals(author.getId())).collect(Collectors.toList());
 
-        String notificationMessage = author.getFullName() + " dodał/a ogłoszenie na stronie głównej";
+        String notificationMessage = "Użytkownik " + author.getFullName() + " dodał ogłoszenie na stronie głównej.";
 
         notificationService.createBulkNotifications(recipients, notificationMessage, "/", NotificationType.NEW_ANNOUNCEMENT);
     }
