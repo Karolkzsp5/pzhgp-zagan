@@ -15,7 +15,7 @@ import Pagination from '@/app/components/Pagination';
 import TextEditor from '@/app/components/TextEditor';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
-import { createPost, deletePost, deleteThread, fetchPostsByThread, fetchThreadById, toggleThreadStatus, updatePost, updateThreadTitle} from '@/app/services/forumService';
+import { ThreadStatusChange, createPost, deletePost, deleteThread, fetchPostsByThread, fetchThreadById, updatePost, updateThreadStatus, updateThreadTitle} from '@/app/services/forumService';
 import { ForumPostDto, ForumThreadDto } from '@/app/types/forum';
 import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { formatDateTime, formatRole } from '@/app/utils/formatters';
@@ -172,18 +172,13 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     };
 
     const handleToggleStatus = async (action: 'LOCK' | 'PIN') => {
+        if (!thread) return;
+
+        const status: ThreadStatusChange = action === 'LOCK' ? { isLocked: !thread.isLocked } : { isPinned: !thread.isPinned };
+
         try {
-            await toggleThreadStatus(threadId, action);
-
-            setThread(prev => {
-                if (!prev) return prev;
-
-                return {
-                    ...prev,
-                    isLocked: action === 'LOCK' ? !prev.isLocked : prev.isLocked,
-                    isPinned: action === 'PIN' ? !prev.isPinned : prev.isPinned
-                };
-            });
+            await updateThreadStatus(threadId, status);
+            setThread(prev => prev ? { ...prev, ...status } : prev);
         } catch (error) {
             showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas zmiany statusu wątku.');
         }

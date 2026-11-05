@@ -56,8 +56,8 @@ export default function AdminPanelPage() {
 
         try {
             const [pendingRes, registeredRes, sectionsData] = await Promise.all([
-                fetchWithAuth(`${API_URL}/api/admin/pending`),
-                fetchWithAuth(`${API_URL}/api/admin/registered`),
+                fetchWithAuth(`${API_URL}/api/admin/accounts/pending`),
+                fetchWithAuth(`${API_URL}/api/admin/accounts/registered`),
                 sectionService.getSections()
             ]);
 
@@ -111,7 +111,7 @@ export default function AdminPanelPage() {
 
     const handleAction = async (id: number, action: 'approve' | 'reject' | 'block' | 'unblock') => {
         const method = action === 'reject' ? 'DELETE' : 'PUT';
-        const url = `${API_URL}/api/admin/${action}/${id}`;
+        const url = action === 'reject' ? `${API_URL}/api/admin/accounts/${id}` : `${API_URL}/api/admin/accounts/${id}/${action}`;
 
         try {
             const response = await fetchWithAuth(url, { method });
@@ -142,7 +142,7 @@ export default function AdminPanelPage() {
         if (!roleChangeBreeder) return;
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/admin/${roleChangeBreeder.id}/role`, {
+            const response = await fetchWithAuth(`${API_URL}/api/admin/accounts/${roleChangeBreeder.id}/role`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: newRole })

@@ -2,7 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumThreadDto;
 import com.pzhgp.backend.dto.ForumThreadRequest;
-import com.pzhgp.backend.dto.ThreadAction;
+import com.pzhgp.backend.dto.ThreadStatusRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -273,41 +273,41 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should allow an administrator to lock and unlock a thread")
-    void toggleThreadStatus_AdminShouldToggleLock() {
+    void updateThreadStatus_AdminShouldLockAndUnlock() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         assertFalse(thread.getIsLocked());
 
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(true, null), "admin@test.com");
         assertTrue(thread.getIsLocked());
 
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(false, null), "admin@test.com");
         assertFalse(thread.getIsLocked());
     }
 
     @Test
     @DisplayName("Should allow a moderator to pin and unpin a thread")
-    void toggleThreadStatus_ModeratorShouldTogglePin() {
+    void updateThreadStatus_ModeratorShouldPinAndUnpin() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertFalse(thread.getIsPinned());
 
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, true), "moderator@test.com");
         assertTrue(thread.getIsPinned());
 
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, false), "moderator@test.com");
         assertFalse(thread.getIsPinned());
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
-    void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
+    @DisplayName("Should throw EntityNotFoundException when changing the status of a non-existent thread")
+    void updateThreadStatus_WhenThreadNotFound_ShouldThrowException() {
         when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
-            threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);
+            threadService.updateThreadStatus(999L, new ThreadStatusRequest(true, null), "moderator@test.com");
         });
 
         assertEquals("Nie znaleziono wątku.", exception.getMessage());

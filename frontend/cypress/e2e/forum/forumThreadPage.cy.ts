@@ -216,7 +216,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should successfully update the thread title', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/title', (req) => {
+            cy.intercept('PATCH', '**/api/forum/threads/11/title', (req) => {
                 expect(req.body).to.deep.equal({
                     title: 'Zaktualizowany tytuł wątku'
                 });
@@ -226,7 +226,7 @@ describe('Forum Thread Page Tests', () => {
                     title: 'Zaktualizowany tytuł wątku'
                 };
 
-                req.reply({ statusCode: 200 });
+                req.reply({ statusCode: 204 });
             }).as('updateThreadTitle');
 
             cy.get('button[aria-label="Edytuj tytuł wątku"]').click();
@@ -254,7 +254,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should display an error modal when updating the thread title fails', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/title', {
+            cy.intercept('PATCH', '**/api/forum/threads/11/title', {
                 statusCode: 500,
                 body: 'Nie udało się zaktualizować testowego tytułu.'
             }).as('updateThreadTitleError');
@@ -279,33 +279,33 @@ describe('Forum Thread Page Tests', () => {
         // ==========================================
 
         it('Should successfully pin and unpin a thread', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/pin', {
-                statusCode: 200
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
+                statusCode: 204
             }).as('togglePin');
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Przypnij wątek').click();
 
-            cy.wait('@togglePin');
+            cy.wait('@togglePin').its('request.body').should('deep.equal', { isPinned: true });
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Odepnij wątek').should('be.visible').click();
 
-            cy.wait('@togglePin');
+            cy.wait('@togglePin').its('request.body').should('deep.equal', { isPinned: false });
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Przypnij wątek').should('be.visible');
         });
 
         it('Should successfully lock and unlock a thread', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/lock', {
-                statusCode: 200
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
+                statusCode: 204
             }).as('toggleLock');
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Zablokuj wątek').click();
 
-            cy.wait('@toggleLock');
+            cy.wait('@toggleLock').its('request.body').should('deep.equal', { isLocked: true });
 
             cy.contains('h3', 'Wątek zablokowany').should('be.visible');
             cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should('be.visible');
@@ -314,7 +314,7 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Odblokuj wątek').click();
 
-            cy.wait('@toggleLock');
+            cy.wait('@toggleLock').its('request.body').should('deep.equal', { isLocked: false });
 
             cy.contains('h3', 'Wątek zablokowany').should('not.exist');
             cy.contains('h3', 'Dodaj odpowiedź').should('be.visible');
@@ -322,7 +322,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should display an error modal when thread moderation fails', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/pin', {
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
                 statusCode: 403,
                 body: 'Brak uprawnień do moderacji tego wątku.'
             }).as('togglePinError');

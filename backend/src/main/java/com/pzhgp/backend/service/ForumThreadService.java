@@ -2,7 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumThreadDto;
 import com.pzhgp.backend.dto.ForumThreadRequest;
-import com.pzhgp.backend.dto.ThreadAction;
+import com.pzhgp.backend.dto.ThreadStatusRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -92,7 +92,7 @@ public class ForumThreadService {
     }
 
     @Transactional
-    public void toggleThreadStatus(Long threadId, String requesterEmail, ThreadAction action) {
+    public void updateThreadStatus(Long threadId, ThreadStatusRequest request, String requesterEmail) {
         ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
@@ -100,10 +100,12 @@ public class ForumThreadService {
             throw new ForbiddenOperationException("Brak uprawnień do moderacji tego wątku.");
         }
 
-        switch (action) {
-            case LOCK -> thread.setIsLocked(!thread.getIsLocked());
-            case PIN -> thread.setIsPinned(!thread.getIsPinned());
-            default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna.");
+        if (request.isLocked() != null) {
+            thread.setIsLocked(request.isLocked());
+        }
+
+        if (request.isPinned() != null) {
+            thread.setIsPinned(request.isPinned());
         }
     }
 
@@ -116,11 +118,8 @@ public class ForumThreadService {
             throw new ForbiddenOperationException("Brak uprawnień. Tylko autor może edytować tytuł wątku.");
         }
 
-        if (title == null || title.trim().length() < 5 || title.trim().length() > 150) {
-            throw new IllegalArgumentException("Tytuł wątku musi mieć od 5 do 150 znaków.");
-        }
-
-        thread.setTitle(title.trim());
+        // Długość tytułu sprawdza ThreadTitleRequest.
+        thread.setTitle(title);
     }
 
     @Transactional

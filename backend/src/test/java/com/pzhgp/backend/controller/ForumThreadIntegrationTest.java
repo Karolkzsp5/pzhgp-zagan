@@ -14,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -315,14 +316,14 @@ class ForumThreadIntegrationTest {
 
     @Test
     @DisplayName("Should allow a thread author to update its title")
-    void updateThreadTitle_AsAuthor_ShouldReturn200() throws Exception {
-        Map<String, String> payload = Map.of("title", "Zaktualizowany piękny tytuł");
+    void updateThreadTitle_AsAuthor_ShouldReturn204() throws Exception {
+        Map<String, String> payload = Map.of("title", "  Zaktualizowany piękny tytuł  ");
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+        mockMvc.perform(patch("/api/forum/threads/" + thread.getId() + "/title")
                         .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         ForumThread updated = threadRepository.findById(thread.getId()).get();
         assertEquals("Zaktualizowany piękny tytuł", updated.getTitle());
@@ -331,16 +332,17 @@ class ForumThreadIntegrationTest {
     @Test
     @DisplayName("Should return 400 when a new thread title is empty or too short")
     void updateThreadTitle_WithInvalidLengthBoundary_ShouldReturn400() throws Exception {
-        Map<String, String> shortPayload = Map.of("title", "1234");
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+        Map<String, String> shortPayload = Map.of("title", "  1234  ");
+        mockMvc.perform(patch("/api/forum/threads/" + thread.getId() + "/title")
                         .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(shortPayload)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Tytuł wątku musi mieć od 5 do 150 znaków."));
 
         String longTitle = "a".repeat(151);
         Map<String, String> longPayload = Map.of("title", longTitle);
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+        mockMvc.perform(patch("/api/forum/threads/" + thread.getId() + "/title")
                         .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(longPayload)))
@@ -352,7 +354,7 @@ class ForumThreadIntegrationTest {
     void updateThreadTitle_AsOtherBreeder_ShouldReturn403() throws Exception {
         Map<String, String> payload = Map.of("title", "Włamuję się na twój wątek");
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/title")
+        mockMvc.perform(patch("/api/forum/threads/" + thread.getId() + "/title")
                         .with(cookieAuth(otherBreederToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
@@ -367,7 +369,7 @@ class ForumThreadIntegrationTest {
     void updateThreadTitle_WhenMissing_ShouldReturn404() throws Exception {
         Map<String, String> payload = Map.of("title", "Gdzie ja jestem?");
 
-        mockMvc.perform(put("/api/forum/threads/9999/title")
+        mockMvc.perform(patch("/api/forum/threads/9999/title")
                         .with(cookieAuth(authorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
@@ -376,46 +378,52 @@ class ForumThreadIntegrationTest {
 
     @Test
     @DisplayName("Should allow an administrator to lock and unlock a thread")
-    void lockThread_AsAdmin_ShouldToggleProperly() throws Exception {
+    void lockThread_AsAdmin_ShouldSetStatus() throws Exception {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isOk());
-
+        patchStatus(adminToken, "{\"isLocked\": true}").andExpect(status().isNoContent());
         assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isOk());
+        // Ponowne wysłanie tego samego statusu niczego nie przełącza.
+        patchStatus(adminToken, "{\"isLocked\": true}").andExpect(status().isNoContent());
+        assertTrue(threadRepository.findById(thread.getId()).get().getIsLocked());
 
+        patchStatus(adminToken, "{\"isLocked\": false}").andExpect(status().isNoContent());
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
     }
 
     @Test
     @DisplayName("Should allow a moderator to pin and unpin a thread")
-    void pinThread_AsModerator_ShouldToggleProperly() throws Exception {
+    void pinThread_AsModerator_ShouldSetStatus() throws Exception {
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .with(cookieAuth(modToken)))
-                .andExpect(status().isOk());
-
+        patchStatus(modToken, "{\"isPinned\": true}").andExpect(status().isNoContent());
         assertTrue(threadRepository.findById(thread.getId()).get().getIsPinned());
+        assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
 
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .with(cookieAuth(modToken)))
-                .andExpect(status().isOk());
-
+        patchStatus(modToken, "{\"isPinned\": false}").andExpect(status().isNoContent());
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when the status request changes nothing")
+    void updateThreadStatus_WithoutAnyField_ShouldReturn400() throws Exception {
+        patchStatus(modToken, "{}")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Podaj nowy status wątku."));
+    }
+
+    private ResultActions patchStatus(String token, String body) throws Exception {
+        return mockMvc.perform(patch("/api/forum/threads/" + thread.getId() + "/status")
+                .with(cookieAuth(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
     }
 
     @Test
     @DisplayName("Should return 403 when a breeder pins a thread")
     void pinThread_AsBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/pin")
-                        .with(cookieAuth(otherBreederToken)))
-                .andExpect(status().isForbidden());
+        patchStatus(otherBreederToken, "{\"isPinned\": true}").andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsPinned());
     }
@@ -423,9 +431,7 @@ class ForumThreadIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a breeder attempts to lock their own thread")
     void lockThread_AsBreederAuthor_ShouldReturn403() throws Exception {
-        mockMvc.perform(put("/api/forum/threads/" + thread.getId() + "/lock")
-                        .with(cookieAuth(authorToken)))
-                .andExpect(status().isForbidden());
+        patchStatus(authorToken, "{\"isLocked\": true}").andExpect(status().isForbidden());
 
         assertFalse(threadRepository.findById(thread.getId()).get().getIsLocked());
     }

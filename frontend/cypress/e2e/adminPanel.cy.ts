@@ -38,12 +38,12 @@ describe('Panel Administratora - Testy E2E', () => {
     const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
 
     beforeEach(() => {
-        cy.intercept('GET', '**/api/admin/pending', {
+        cy.intercept('GET', '**/api/admin/accounts/pending', {
             statusCode: 200,
             body: mockPending
         }).as('getPending');
 
-        cy.intercept('GET', '**/api/admin/registered', {
+        cy.intercept('GET', '**/api/admin/accounts/registered', {
             statusCode: 200,
             body: mockRegistered
         }).as('getRegistered');
@@ -378,9 +378,8 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should successfully accept the pending account and move it to the breeders table', () => {
-        cy.intercept('PUT', '**/api/admin/approve/1', {
-            statusCode: 200,
-            body: 'Konto zostało pomyślnie zaakceptowane.'
+        cy.intercept('PUT', '**/api/admin/accounts/1/approve', {
+            statusCode: 204
         }).as('approveAccount');
 
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
@@ -405,9 +404,8 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly reject the pending account and remove it from the system', () => {
-        cy.intercept('DELETE', '**/api/admin/reject/1', {
-            statusCode: 200,
-            body: 'Konto zostało odrzucone i usunięte.'
+        cy.intercept('DELETE', '**/api/admin/accounts/1', {
+            statusCode: 204
         }).as('rejectAccount');
 
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
@@ -452,9 +450,8 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly open the role change modal, display the data, and save the new role', () => {
-        cy.intercept('PUT', '**/api/admin/2/role', {
-            statusCode: 200,
-            body: 'Rola została pomyślnie zmieniona'
+        cy.intercept('PUT', '**/api/admin/accounts/2/role', {
+            statusCode: 204
         }).as('changeRole');
 
         cy.get('[data-cy="kebab-menu-btn-2"]').click();
@@ -491,14 +488,12 @@ describe('Panel Administratora - Testy E2E', () => {
     });
 
     it('Should correctly block the user and then unblock them', () => {
-        cy.intercept('PUT', '**/api/admin/block/2', {
-            statusCode: 200,
-            body: 'Konto zostało pomyślnie zablokowane.'
+        cy.intercept('PUT', '**/api/admin/accounts/2/block', {
+            statusCode: 204
         }).as('blockAccount');
 
-        cy.intercept('PUT', '**/api/admin/unblock/2', {
-            statusCode: 200,
-            body: 'Konto zostało pomyślnie odblokowane.'
+        cy.intercept('PUT', '**/api/admin/accounts/2/unblock', {
+            statusCode: 204
         }).as('unblockAccount');
 
         // =============
@@ -560,12 +555,12 @@ describe('Administrator route guard', () => {
     it('Should redirect a non-administrator user to the home page', () => {
         const breederUser = createTestUser('BREEDER', 'hodowca@test.pl', 'Hodowca');
 
-        cy.intercept('GET', '**/api/admin/pending', {
+        cy.intercept('GET', '**/api/admin/accounts/pending', {
             statusCode: 403,
             body: ''
         });
 
-        cy.intercept('GET', '**/api/admin/registered', {
+        cy.intercept('GET', '**/api/admin/accounts/registered', {
             statusCode: 403,
             body: ''
         });

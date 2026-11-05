@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/accounts")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -28,25 +28,25 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllRegisteredAccounts());
     }
 
-    @PutMapping("/approve/{id}")
+    @PutMapping("/{id}/approve")
     public ResponseEntity<Void> approveAccount(@PathVariable Long id, Authentication authentication) {
         adminService.approveAccount(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/reject/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> rejectAccount(@PathVariable Long id) {
         adminService.rejectAccount(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/block/{id}")
+    @PutMapping("/{id}/block")
     public ResponseEntity<Void> blockAccount(@PathVariable Long id) {
         adminService.blockAccount(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/unblock/{id}")
+    @PutMapping("/{id}/unblock")
     public ResponseEntity<Void> unblockAccount(@PathVariable Long id) {
         adminService.unblockAccount(id);
         return ResponseEntity.noContent().build();

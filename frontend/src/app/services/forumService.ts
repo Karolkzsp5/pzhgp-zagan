@@ -54,7 +54,7 @@ export const fetchThreadById = async (threadId: number, countView = true): Promi
 
 export const updateThreadTitle = async (threadId: number, title: string): Promise<void> => {
     const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/title`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
     });
@@ -68,16 +68,16 @@ export const deleteThread = async (id: number): Promise<void> => {
     await ensureOk(response, 'Nie udało się usunąć wątku.');
 };
 
-const THREAD_STATUS_ERRORS: Record<'LOCK' | 'PIN', string> = {
-    LOCK: 'Nie udało się zamknąć ani otworzyć wątku.',
-    PIN: 'Nie udało się przypiąć ani odpiąć wątku.'
-};
+export type ThreadStatusChange = { isLocked: boolean } | { isPinned: boolean };
 
-export const toggleThreadStatus = async (id: number, action: 'LOCK' | 'PIN'): Promise<void> => {
-    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}/${action.toLowerCase()}`, {
-        method: 'PUT'
+/** Ustawia blokadę albo przypięcie wątku na podaną wartość (ponowne wysłanie niczego nie przełącza). */
+export const updateThreadStatus = async (id: number, status: ThreadStatusChange): Promise<void> => {
+    const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(status)
     });
-    await ensureOk(response, THREAD_STATUS_ERRORS[action]);
+    await ensureOk(response, 'isLocked' in status ? 'Nie udało się zamknąć ani otworzyć wątku.' : 'Nie udało się przypiąć ani odpiąć wątku.');
 };
 
 export const fetchPostsByThread = async (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> => {
