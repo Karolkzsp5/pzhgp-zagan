@@ -68,11 +68,16 @@ export const deleteThread = async (id: number): Promise<void> => {
     await ensureOk(response, 'Nie udało się usunąć wątku.');
 };
 
+const THREAD_STATUS_ERRORS: Record<'LOCK' | 'PIN', string> = {
+    LOCK: 'Nie udało się zamknąć ani otworzyć wątku.',
+    PIN: 'Nie udało się przypiąć ani odpiąć wątku.'
+};
+
 export const toggleThreadStatus = async (id: number, action: 'LOCK' | 'PIN'): Promise<void> => {
     const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}/${action.toLowerCase()}`, {
         method: 'PUT'
     });
-    await ensureOk(response, `Nie udało się zmienić statusu wątku (${action}).`);
+    await ensureOk(response, THREAD_STATUS_ERRORS[action]);
 };
 
 export const fetchPostsByThread = async (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> => {

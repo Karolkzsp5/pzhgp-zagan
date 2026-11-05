@@ -183,7 +183,7 @@ class BoardMemberServiceTest {
         when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+        assertEquals("Stanowisko „Prezes” jest już zajęte w tym zarządzie.", exception.getMessage());
     }
 
     @Test

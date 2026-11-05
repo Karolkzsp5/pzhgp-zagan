@@ -117,7 +117,7 @@ public class BoardMemberService {
         }
 
         if (existsConflict) {
-            throw new ResourceConflictException("To stanowisko (" + role.name() + ") jest już zajęte w tym zarządzie.");
+            throw new ResourceConflictException("Stanowisko „" + role.getLabel() + "” jest już zajęte w tym zarządzie.");
         }
     }
 

@@ -662,7 +662,7 @@ describe('Board Page Tests', () => {
     it('Should display an API error when adding a board member fails', () => {
         cy.intercept('POST', '**/api/board', {
             statusCode: 400,
-            body: 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.'
+            body: 'Stanowisko „Prezes” jest już zajęte w tym zarządzie.'
         }).as('createBoardMemberError');
 
         openAddMemberModal();
@@ -674,7 +674,7 @@ describe('Board Page Tests', () => {
 
         cy.wait('@createBoardMemberError');
 
-        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.');
+        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Stanowisko „Prezes” jest już zajęte w tym zarządzie.');
 
         cy.get('[role="dialog"]').should('be.visible');
     });

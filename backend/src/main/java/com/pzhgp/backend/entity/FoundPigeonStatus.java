@@ -10,16 +10,27 @@ package com.pzhgp.backend.entity;
 public enum FoundPigeonStatus {
 
     /** Nowe zgłoszenie oczekujące na sprawdzenie przez administratora. */
-    PENDING,
+    PENDING("Oczekujące"),
 
     /** Administrator zweryfikował zgłoszenie i ustala właściciela gołębia. */
-    APPROVED,
+    APPROVED("W trakcie"),
 
     /** Obsługa zgłoszenia została zakończona. */
-    RESOLVED,
+    RESOLVED("Zakończone"),
 
     /** Zgłoszenie odrzucono, np. z powodu nieprawidłowych danych lub spamu. */
-    REJECTED;
+    REJECTED("Odrzucone");
+
+    /** Nazwa statusu wyświetlana użytkownikowi (taka sama jak w panelu administratora). */
+    private final String label;
+
+    FoundPigeonStatus(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
+    }
 
     /**
      * Sprawdza, czy ze stanu bieżącego wolno przejść do wskazanego stanu.

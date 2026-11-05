@@ -112,7 +112,7 @@ public class FoundPigeonService {
         FoundPigeonReport report = findReportForUpdate(id);
 
         if (!report.getStatus().canTransitionTo(newStatus)) {
-            throw new InvalidStatusTransitionException(String.format("Nie można zmienić statusu z %s na %s.", report.getStatus(), newStatus));
+            throw new InvalidStatusTransitionException(String.format("Nie można zmienić statusu z „%s” na „%s”.", report.getStatus().getLabel(), newStatus.getLabel()));
         }
 
         report.setStatus(newStatus);

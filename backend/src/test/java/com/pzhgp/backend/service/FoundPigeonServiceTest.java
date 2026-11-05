@@ -289,7 +289,9 @@ class FoundPigeonServiceTest {
     void rejectsTransitionFromPendingToResolved() {
         when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
 
-        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class,
+                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        assertEquals("Nie można zmienić statusu z „Oczekujące” na „Zakończone”.", exception.getMessage());
         verify(foundPigeonRepository, never()).save(any());
     }
 

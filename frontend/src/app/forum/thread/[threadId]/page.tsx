@@ -185,7 +185,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 };
             });
         } catch (error) {
-            showAlert('Błąd', error instanceof Error ? error.message : `Wystąpił błąd (${action}).`);
+            showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas zmiany statusu wątku.');
         }
     };
 
