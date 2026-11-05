@@ -7,10 +7,8 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
 import Modal from '@/app/components/Modal';
-import Navbar from '@/app/components/Navbar';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanSummaryDto } from '@/app/types/flightPlan';
@@ -106,9 +104,7 @@ export default function FlightPlansPage() {
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200 pb-5 mb-8">
                         <div className="flex-1 pr-2">
@@ -188,8 +184,6 @@ export default function FlightPlansPage() {
                     )}
                 </main>
 
-                <Footer />
-
                 <Modal
                     isOpen={isCreateModalOpen}
                     title="Dodaj plan lotów"
@@ -245,7 +239,7 @@ export default function FlightPlansPage() {
                 </Modal>
 
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }

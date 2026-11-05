@@ -8,9 +8,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
@@ -148,9 +146,7 @@ export default function FlightsPage() {
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="border-b border-gray-200 pb-5 mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">Mapy lotów</h1>
@@ -371,10 +367,8 @@ export default function FlightsPage() {
                     )}
                 </main>
 
-                <Footer />
-
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }

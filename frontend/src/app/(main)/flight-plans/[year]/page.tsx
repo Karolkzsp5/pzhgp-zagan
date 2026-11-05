@@ -10,9 +10,7 @@ import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
 import FlightPlanEntryModal from '@/app/components/FlightPlanEntryModal';
 import FlightResultModal from '@/app/components/FlightResultModal';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
@@ -137,9 +135,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar/>
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <Link
@@ -207,8 +203,6 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                     ) : null}
                 </main>
 
-                <Footer/>
-
                 <FlightPlanEntryModal
                     isOpen={isEntryModalOpen}
                     onClose={() => {
@@ -231,7 +225,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                 )}
 
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }

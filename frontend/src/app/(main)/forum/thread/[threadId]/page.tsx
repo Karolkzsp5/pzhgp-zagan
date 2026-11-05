@@ -8,9 +8,7 @@ import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import TextEditor from '@/app/components/TextEditor';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
@@ -249,7 +247,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     if (!isValidThreadId) {
         return (
             <AuthGuard>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="grow flex items-center justify-center">
                     <div className="text-center py-16 text-red-600 font-medium text-xl">
                         Nieprawidłowy adres URL. Wątek nie istnieje.
                     </div>
@@ -260,9 +258,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-5xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
                     <nav className="flex text-sm text-gray-500 mb-6 font-medium">
                         <Link href="/forum" className="hover:text-blue-600 transition">
@@ -592,10 +588,8 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     ) : null}
                 </main>
 
-                <Footer />
-
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }

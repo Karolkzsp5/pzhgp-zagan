@@ -3,8 +3,6 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/components/AuthProvider';
-import Footer from '@/app/components/Footer';
-import Navbar from '@/app/components/Navbar';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
 import { ApiError } from '@/app/utils/apiClient';
@@ -142,9 +140,7 @@ export default function FoundPigeonsPage() {
         }`;
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar />
-
+        <>
             <main className="grow max-w-3xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                 {/* Przełącznik języka nad treścią — znalazca z zagranicy widzi go od razu. */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
@@ -365,8 +361,6 @@ export default function FoundPigeonsPage() {
                     </>
                 )}
             </main>
-
-            <Footer />
-        </div>
+        </>
     );
 }

@@ -6,9 +6,7 @@ import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import ThreadModal from '@/app/components/ThreadModal';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
@@ -81,7 +79,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
     if (!Number.isInteger(categoryId)) {
         return (
             <AuthGuard>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="grow flex items-center justify-center">
                     <div className="text-center py-16 text-red-600 font-medium text-xl">
                         Nieprawidłowy adres URL. Kategoria nie istnieje.
                     </div>
@@ -92,9 +90,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
                     <nav className="flex min-w-0 text-sm text-gray-500 mb-6 font-medium">
                         <Link href="/forum" className="shrink-0 hover:text-blue-600 transition">Forum</Link>
@@ -215,8 +211,6 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     )}
                 </main>
 
-                <Footer />
-
                 <ThreadModal
                     isOpen={isThreadModalOpen}
                     onClose={() => setIsThreadModalOpen(false)}
@@ -229,7 +223,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                     }}
                     categoryId={categoryId}
                 />
-            </div>
+            </>
         </AuthGuard>
     );
 }

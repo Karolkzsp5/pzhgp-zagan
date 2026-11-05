@@ -9,9 +9,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import ErrorState from '@/app/components/ErrorState';
 import FlightProfileChart from '@/app/components/FlightProfileChart';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightService } from '@/app/services/flightService';
 import { FlightDetailsDto } from '@/app/types/flight';
@@ -224,15 +222,11 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     if (isLoading) {
         return (
             <AuthGuard>
-                <div className="min-h-screen bg-gray-50 flex flex-col">
-                    <Navbar />
-
+                <>
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4">
                         <LoadingState />
                     </main>
-
-                    <Footer />
-                </div>
+                </>
             </AuthGuard>
         );
     }
@@ -240,9 +234,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     if (!isValidId) {
         return (
             <AuthGuard>
-                <div className="min-h-screen bg-gray-50 flex flex-col">
-                    <Navbar />
-
+                <>
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4 text-center">
                         <h1 className="text-2xl font-bold text-gray-900 mb-3">Nie udało się otworzyć lotu</h1>
                         <p className="text-sm text-gray-600 mb-6">Nieprawidłowy identyfikator lotu.</p>
@@ -252,9 +244,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             Wróć do listy lotów
                         </Link>
                     </main>
-
-                    <Footer />
-                </div>
+                </>
             </AuthGuard>
         );
     }
@@ -262,18 +252,14 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     if (error || !flight) {
         return (
             <AuthGuard>
-                <div className="min-h-screen bg-gray-50 flex flex-col">
-                    <Navbar />
-
+                <>
                     <main className="grow max-w-3xl mx-auto w-full py-16 px-4">
                         <ErrorState
                             message={error || 'Lot nie istnieje.'}
                             onRetry={() => void loadFlight()}
                         />
                     </main>
-
-                    <Footer />
-                </div>
+                </>
             </AuthGuard>
         );
     }
@@ -282,9 +268,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <Link
                         href="/flights"
@@ -526,10 +510,8 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
 
                 </main>
 
-                <Footer />
-
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }

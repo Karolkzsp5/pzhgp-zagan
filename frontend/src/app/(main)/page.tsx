@@ -7,9 +7,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from "@/app/components/ConfirmModal"
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { announcementService } from '@/app/services/announcementService';
@@ -96,9 +94,7 @@ export default function HomePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar/>
-
+        <>
             <header className="bg-white shadow">
                 <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
                     <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
@@ -225,8 +221,6 @@ export default function HomePage() {
                 </section>
             </main>
 
-            <Footer/>
-
             <AnnouncementModal
                 isOpen={isModalOpen}
                 onClose={() => {
@@ -262,6 +256,6 @@ export default function HomePage() {
                 onConfirm={() => setActionError(null)}
                 onCancel={() => setActionError(null)}
             />
-        </div>
+        </>
     );
 }

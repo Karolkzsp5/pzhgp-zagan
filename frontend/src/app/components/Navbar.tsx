@@ -10,6 +10,8 @@ import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
 import { getAuthGeneration } from '@/app/utils/authSession';
 import { formatDateTime } from '@/app/utils/formatters';
 
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 60_000;
+
 export default function Navbar() {
     const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
     const userName = user?.name || user?.email?.split('@')[0] || 'Użytkowniku';
@@ -33,12 +35,14 @@ export default function Navbar() {
     const notificationsRef = useRef<HTMLDivElement>(null);
     const notificationSessionRef = useRef(0);
     const notificationDataVersionRef = useRef(0);
+    const lastNotificationsFetchRef = useRef(0);
     const isCurrentNotificationSession = useCallback((sessionId: number, generation: number) =>
         sessionId === notificationSessionRef.current && generation === getAuthGeneration(), []);
     const router = useRouter();
     const pathname = usePathname();
 
     const fetchNotifications = useCallback(async (sessionId: number) => {
+        lastNotificationsFetchRef.current = Date.now();
         const generation = getAuthGeneration();
         const dataVersion = notificationDataVersionRef.current;
 
@@ -148,6 +152,39 @@ export default function Navbar() {
             notificationSessionRef.current++;
         };
     }, [fetchNotifications, isLoggedIn, user?.email]);
+
+    // Navbar jest we wspólnym layoucie i nie montuje się od nowa przy przejściu między podstronami,
+    // dlatego powiadomienia odświeżamy po zmianie podstrony i po powrocie do karty, najwyżej raz na minutę.
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
+        const refreshIfStale = () => {
+            if (Date.now() - lastNotificationsFetchRef.current >= NOTIFICATIONS_REFRESH_INTERVAL_MS) {
+                void fetchNotifications(notificationSessionRef.current);
+            }
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                refreshIfStale();
+            }
+        };
+
+        refreshIfStale();
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [fetchNotifications, isLoggedIn, pathname]);
+
+    // Po przejściu na inną podstronę (także przyciskiem Wstecz) zamykamy otwarte menu i stare komunikaty błędów.
+    useEffect(() => {
+        setIsDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        setIsNotificationsOpen(false);
+        setNotificationDeleteError(null);
+        setLogoutError(null);
+    }, [pathname]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
         const sessionId = notificationSessionRef.current;

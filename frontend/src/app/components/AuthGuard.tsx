@@ -35,7 +35,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
 
     if (isAuthResolved && !isLoggedIn && authCheckFailed) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div className="grow flex items-center justify-center px-4">
                 <div className="w-full max-w-lg">
                     <ErrorState
                         message="Nie udało się sprawdzić sesji. Sprawdź połączenie z serwerem i spróbuj ponownie."
@@ -48,7 +48,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
 
     if (!isAuthResolved || !isLoggedIn || !hasRequiredRole) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="grow flex items-center justify-center">
                 <LoadingState />
             </div>
         );

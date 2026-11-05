@@ -7,10 +7,8 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
 import Modal from '@/app/components/Modal';
-import Navbar from "@/app/components/Navbar";
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { adminService } from '@/app/services/adminService';
 import { sectionService } from '@/app/services/sectionService';
@@ -200,8 +198,7 @@ export default function AdminPanelPage() {
 
     return (
         <AuthGuard requiredRole="ADMINISTRATOR">
-            <div className="flex flex-col min-h-screen">
-                <Navbar />
+            <>
                 <main className="grow bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto space-y-12">
 
@@ -508,9 +505,7 @@ export default function AdminPanelPage() {
                         )}
                     </div>
                 </main>
-
-                <Footer />
-            </div>
+            </>
 
             {/* Breeder details modal */}
             {selectedBreeder && (

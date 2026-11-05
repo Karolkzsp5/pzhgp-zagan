@@ -7,9 +7,7 @@ import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
-import Footer from '@/app/components/Footer';
 import LoadingState from '@/app/components/LoadingState';
-import Navbar from '@/app/components/Navbar';
 import Pagination from '@/app/components/Pagination';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
@@ -206,9 +204,7 @@ export default function FoundPigeonsAdminPage() {
 
     return (
         <AuthGuard requiredRole="ADMINISTRATOR">
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-
+            <>
                 <main className="grow max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                     <Link
                         href="/found-pigeons"
@@ -475,10 +471,8 @@ export default function FoundPigeonsAdminPage() {
                     )}
                 </main>
 
-                <Footer />
-
                 <ConfirmModal {...dialog} />
-            </div>
+            </>
         </AuthGuard>
     );
 }
