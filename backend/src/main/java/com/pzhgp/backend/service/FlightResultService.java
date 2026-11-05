@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -143,7 +144,7 @@ public class FlightResultService {
 
         String fileName = file.getOriginalFilename();
 
-        if (fileName == null || !fileName.toLowerCase().endsWith(".txt")) {
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".txt")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .txt.");
         }
     }

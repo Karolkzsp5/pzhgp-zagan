@@ -7,6 +7,7 @@ import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Safelist;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -81,7 +82,7 @@ public final class RichTextSanitizer {
                 .map(String::trim)
                 .filter(declaration -> declaration.contains(":"))
                 .filter(declaration -> {
-                    String property = declaration.substring(0, declaration.indexOf(':')).trim().toLowerCase();
+                    String property = declaration.substring(0, declaration.indexOf(':')).trim().toLowerCase(Locale.ROOT);
                     String value = declaration.substring(declaration.indexOf(':') + 1).trim();
                     boolean propertyAllowedHere = property.equals("text-align") ? textBlock : highlight;
                     Pattern valuePattern = ALLOWED_STYLES.get(property);

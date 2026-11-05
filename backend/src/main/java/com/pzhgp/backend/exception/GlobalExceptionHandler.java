@@ -115,7 +115,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
-        return error(HttpStatus.PAYLOAD_TOO_LARGE, "Przesłany plik przekracza maksymalny rozmiar dozwolony przez serwer.");
+        return error(HttpStatus.CONTENT_TOO_LARGE, "Przesłany plik przekracza maksymalny rozmiar dozwolony przez serwer.");
     }
 
     @ExceptionHandler(SubmissionRateLimitException.class)

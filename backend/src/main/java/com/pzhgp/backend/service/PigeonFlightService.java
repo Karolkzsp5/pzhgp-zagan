@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Obsługa modułu "Mapy lotów": wgrywanie plików GPX, analiza trasy i udostępnianie wyników.
@@ -327,7 +328,7 @@ public class PigeonFlightService {
         }
 
         String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.toLowerCase().endsWith(".gpx")) {
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".gpx")) {
             throw new IllegalArgumentException("Dozwolone są wyłącznie pliki z rozszerzeniem .gpx.");
         }
     }
