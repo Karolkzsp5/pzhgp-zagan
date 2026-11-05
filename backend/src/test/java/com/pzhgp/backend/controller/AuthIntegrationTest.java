@@ -103,6 +103,20 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should accept any non-alphanumeric character as the special character of a password")
+    void shouldAcceptAnyNonAlphanumericSpecialCharacter() throws Exception {
+        RegistrationRequest request = new RegistrationRequest(
+                "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
+                "Słowackiego", "10", 1, "special.char@pzhgp.pl", "444444446", "Haslo123;"
+        );
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     @DisplayName("Should accept names with letters from other alphabets and apostrophes")
     void shouldRegisterUserWithForeignLettersAndApostrophesIntegration() throws Exception {
         RegistrationRequest request = new RegistrationRequest(

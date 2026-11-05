@@ -267,6 +267,12 @@ describe('Breeder Registration Process Test', () => {
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jeden znak specjalny.').should('be.visible');
 
+        // Any character other than a letter or digit counts as special
+        cy.get('input[name="password"]').clear().type('Testcypress1;');
+        cy.get('input[name="confirmPassword"]').clear().type('Testcypress1;');
+        cy.get('button[type="submit"]').click();
+        cy.contains('Hasło musi zawierać co najmniej jeden znak specjalny.').should('not.exist');
+
         // Too short password
         cy.get('input[name="password"]').clear().type('Test');
         cy.get('input[name="confirmPassword"]').clear().type('Test');

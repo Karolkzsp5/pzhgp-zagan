@@ -24,6 +24,9 @@ interface RegistrationFormData {
     confirmPassword: string;
 }
 
+// Znak specjalny to każdy znak, który nie jest literą ani cyfrą (np. ! ; ' [ ] ~ lub spacja), tak samo jak w backendzie.
+const SPECIAL_CHARACTER = /[^\p{L}\p{N}]/u;
+
 export default function RegisterPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -94,7 +97,7 @@ export default function RegisterPage() {
         if (/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) score += 1;
         if (/[a-ząćęłńóśźż]/.test(pass)) score += 1;
         if (/\d/.test(pass)) score += 1;
-        if (/[!@#$%^&*(),.?":{}|<>_\-\=\+\/\\]/.test(pass)) score += 1;
+        if (SPECIAL_CHARACTER.test(pass)) score += 1;
 
         switch (score) {
             case 1:
@@ -117,7 +120,7 @@ export default function RegisterPage() {
         if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return "Hasło musi zawierać co najmniej jedną dużą literę.";
         if (!/[a-ząćęłńóśźż]/.test(pass)) return "Hasło musi zawierać co najmniej jedną małą literę.";
         if (!/\d/.test(pass)) return "Hasło musi zawierać co najmniej jedną cyfrę.";
-        if (!/[!@#$%^&*(),.?":{}|<>_\-\=\+\/\\]/.test(pass)) return "Hasło musi zawierać co najmniej jeden znak specjalny.";
+        if (!SPECIAL_CHARACTER.test(pass)) return "Hasło musi zawierać co najmniej jeden znak specjalny.";
         if (pass.length > 72 || new TextEncoder().encode(pass).length > 72) return "Hasło może mieć maksymalnie 72 bajty (UTF-8).";
         return null;
     };

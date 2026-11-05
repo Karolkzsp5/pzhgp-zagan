@@ -51,7 +51,7 @@ public record RegistrationRequest(
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste")
-        @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>_\\-=+/\\\\]).{8,}$",
+        @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[^\\p{L}\\p{N}]).{8,}$",
                 message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny"
         )
         String password
