@@ -16,7 +16,7 @@ public class AuthCookieService {
 
     public static final String COOKIE_NAME = "pzhgp_auth";
 
-    @Value("${auth.cookie.secure:true}")
+    @Value("${auth.cookie.secure}")
     private boolean secure;
 
     public void setAuthenticationCookie(HttpServletResponse response, String token, Duration lifetime, boolean rememberMe) {
