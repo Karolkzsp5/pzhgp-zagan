@@ -7,6 +7,7 @@ import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.AnnouncementRepository;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
+import com.pzhgp.backend.utils.RichTextSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,7 +37,7 @@ public class AnnouncementService {
 
         Announcement announcement = new Announcement();
         announcement.setTitle(requestDto.title());
-        announcement.setContent(requestDto.content());
+        announcement.setContent(RichTextSanitizer.sanitize(requestDto.content()));
         announcement.setPinned(requestDto.isPinned());
         announcement.setAuthor(author);
 
@@ -60,7 +61,7 @@ public class AnnouncementService {
         }
 
         announcement.setTitle(requestDto.title());
-        announcement.setContent(requestDto.content());
+        announcement.setContent(RichTextSanitizer.sanitize(requestDto.content()));
         announcement.setPinned(requestDto.isPinned());
 
         announcementRepository.save(announcement);

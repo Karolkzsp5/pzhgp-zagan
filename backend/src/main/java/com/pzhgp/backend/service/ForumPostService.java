@@ -9,6 +9,7 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
+import com.pzhgp.backend.utils.RichTextSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -56,7 +57,7 @@ public class ForumPostService {
         ForumPost post = new ForumPost();
         post.setThread(thread);
         post.setAuthor(author);
-        post.setBody(request.body());
+        post.setBody(RichTextSanitizer.sanitize(request.body()));
         postRepository.save(post);
 
         thread.setLastPostAt(Instant.now());
@@ -81,7 +82,7 @@ public class ForumPostService {
             throw new ForbiddenOperationException("Brak uprawnień. Nikt nie może edytować cudzych postów.");
         }
 
-        post.setBody(request.body());
+        post.setBody(RichTextSanitizer.sanitize(request.body()));
         post.setEditedAt(Instant.now());
         postRepository.save(post);
     }

@@ -209,6 +209,27 @@ class AnnouncementIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should remove unsafe HTML from the announcement content before saving it")
+    void shouldSanitizeAnnouncementContentBeforeSaving() throws Exception {
+        AnnouncementRequestDto requestDto = new AnnouncementRequestDto(
+                "Bezpieczne ogłoszenie",
+                "<p style=\"text-align: center\" onclick=\"alert(1)\">Zbiórka <strong>o 8:00</strong></p><script>alert(1)</script>",
+                false
+        );
+
+        mockMvc.perform(post("/api/announcements")
+                        .with(cookieAuth(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isCreated());
+
+        assertEquals(
+                "<p style=\"text-align: center\">Zbiórka <strong>o 8:00</strong></p>",
+                announcementRepository.findAll().getFirst().getContent()
+        );
+    }
+
+    @Test
     @DisplayName("Should allow a moderator to create an announcement")
     void shouldAllowModeratorToCreateAnnouncement() throws Exception {
         AnnouncementRequestDto requestDto = new AnnouncementRequestDto("Lot próbny", "Informacje dla hodowców", false);

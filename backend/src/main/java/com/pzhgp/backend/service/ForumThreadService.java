@@ -10,6 +10,7 @@ import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
+import com.pzhgp.backend.utils.RichTextSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -64,7 +65,7 @@ public class ForumThreadService {
         ForumPost firstPost = new ForumPost();
         firstPost.setThread(thread);
         firstPost.setAuthor(author);
-        firstPost.setBody(request.initialPostContent());
+        firstPost.setBody(RichTextSanitizer.sanitize(request.initialPostContent()));
         postRepository.save(firstPost);
 
         String notificationMessage = author.getFullName() + " dodał/a nowy wątek na forum";
