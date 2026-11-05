@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service.gpx;
 
+import com.pzhgp.backend.exception.GpxParsingException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;

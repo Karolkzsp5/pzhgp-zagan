@@ -1,4 +1,4 @@
-package com.pzhgp.backend.service.gpx;
+package com.pzhgp.backend.exception;
 
 /**
  * Błąd odczytu pliku GPX zgłaszany użytkownikowi (mapowany na HTTP 400).

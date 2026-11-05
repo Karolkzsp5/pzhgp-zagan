@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service.gpx;
 
+import com.pzhgp.backend.exception.GpxParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

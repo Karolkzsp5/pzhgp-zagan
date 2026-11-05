@@ -6,6 +6,7 @@ import com.pzhgp.backend.entity.FlightTrackPoint;
 import com.pzhgp.backend.entity.PigeonFlight;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.GpxParsingException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightTrackPointRepository;

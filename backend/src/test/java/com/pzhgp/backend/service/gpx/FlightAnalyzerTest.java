@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service.gpx;
 
+import com.pzhgp.backend.exception.GpxParsingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
