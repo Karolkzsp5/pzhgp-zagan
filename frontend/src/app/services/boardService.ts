@@ -1,9 +1,10 @@
 import { BoardCandidateDto, BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
+import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const boardService = {
+    /** Skład zarządu (endpoint publiczny). */
     getAllBoardMembers: async (): Promise<BoardMemberDto[]> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board`);
+        const response = await fetchApi(`${API_URL}/api/board`);
         await ensureOk(response, 'Nie udało się pobrać danych zarządu.');
         return response.json();
     },

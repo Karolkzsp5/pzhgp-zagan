@@ -39,7 +39,7 @@ export const refreshCsrfToken = (): Promise<string> => {
     return csrfRefreshPromise;
 };
 
-// Wspólny klient dla endpointów publicznych i chronionych.
+// Klient dla endpointów publicznych; dla chronionych służy fetchWithAuth.
 // JWT przesyła przeglądarka w HttpOnly cookie; nie odczytujemy go w JavaScript.
 export const fetchApi = async (url: string, options: RequestInit = {}): Promise<Response> => {
     const method = (options.method ?? 'GET').toUpperCase();
@@ -78,6 +78,7 @@ export const ensureOk = async (response: Response, fallback: string): Promise<vo
     }
 };
 
+/** Klient dla endpointów wymagających logowania: po odpowiedzi 401 przenosi na stronę logowania. */
 export const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
     const requestGeneration = getAuthGeneration();
     const response = await fetchApi(url, options);
