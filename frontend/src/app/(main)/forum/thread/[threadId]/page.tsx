@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
+import ActionMenu from '@/app/components/ActionMenu';
 import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
 import ConfirmModal from '@/app/components/ConfirmModal';
@@ -46,7 +47,6 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
     const [editError, setEditError] = useState('');
 
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-    const optionsRef = useRef<HTMLDivElement>(null);
     const viewedThreadIdRef = useRef<number | null>(null);
 
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -109,17 +109,6 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
 
         void loadThreadData();
     }, [isLoggedIn, isValidThreadId, loadThreadData]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
-                setIsOptionsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     const handleReplySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -364,68 +353,64 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                                 </div>
 
                                 {(thread.canModerate || thread.canDelete) && (
-                                    <div className="relative" ref={optionsRef}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsOptionsOpen(!isOptionsOpen)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition"
-                                            aria-expanded={isOptionsOpen}
-                                            aria-haspopup="menu"
-                                        >
-                                            Zarządzaj
+                                    <ActionMenu
+                                        isOpen={isOptionsOpen}
+                                        onToggle={() => setIsOptionsOpen(previous => !previous)}
+                                        onClose={() => setIsOptionsOpen(false)}
+                                        ariaLabel="Zarządzaj"
+                                        buttonClassName="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition"
+                                        buttonContent={
+                                            <>
+                                                Zarządzaj
 
-                                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 transition-transform duration-200 ${isOptionsOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                                                <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
-                                            </svg>
-                                        </button>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 transition-transform duration-200 ${isOptionsOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                                                    <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
+                                                </svg>
+                                            </>
+                                        }
+                                    >
+                                        {thread.canModerate && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        void handleToggleStatus('PIN');
+                                                        setIsOptionsOpen(false);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
+                                                    role="menuitem"
+                                                >
+                                                    {thread.isPinned ? 'Odepnij wątek' : 'Przypnij wątek'}
+                                                </button>
 
-                                        {isOptionsOpen && (
-                                            <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-max min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden"
-                                                 role="menu">
-                                                {thread.canModerate && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                void handleToggleStatus('PIN');
-                                                                setIsOptionsOpen(false);
-                                                            }}
-                                                            className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition"
-                                                            role="menuitem"
-                                                        >
-                                                            {thread.isPinned ? 'Odepnij wątek' : 'Przypnij wątek'}
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                void handleToggleStatus('LOCK');
-                                                                setIsOptionsOpen(false);
-                                                            }}
-                                                            className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 transition border-t border-gray-100"
-                                                            role="menuitem"
-                                                        >
-                                                            {thread.isLocked ? 'Odblokuj wątek' : 'Zablokuj wątek'}
-                                                        </button>
-                                                    </>
-                                                )}
-
-                                                {thread.canDelete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            handleDeleteThread();
-                                                            setIsOptionsOpen(false);
-                                                        }}
-                                                        className="block w-full text-left px-4 py-3 text-sm text-red-600 font-medium hover:bg-red-50 transition border-t border-gray-100"
-                                                        role="menuitem"
-                                                    >
-                                                        Usuń wątek
-                                                    </button>
-                                                )}
-                                            </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        void handleToggleStatus('LOCK');
+                                                        setIsOptionsOpen(false);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 transition border-t border-gray-100"
+                                                    role="menuitem"
+                                                >
+                                                    {thread.isLocked ? 'Odblokuj wątek' : 'Zablokuj wątek'}
+                                                </button>
+                                            </>
                                         )}
-                                    </div>
+
+                                        {thread.canDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    handleDeleteThread();
+                                                    setIsOptionsOpen(false);
+                                                }}
+                                                className="block w-full text-left px-4 py-3 text-sm text-red-600 font-medium hover:bg-red-50 transition border-t border-gray-100"
+                                                role="menuitem"
+                                            >
+                                                Usuń wątek
+                                            </button>
+                                        )}
+                                    </ActionMenu>
                                 )}
                             </div>
 

@@ -95,24 +95,6 @@ export default function AdminPanelPage() {
         void fetchAllAccounts();
     }, [user?.role, fetchAllAccounts]);
 
-    useEffect(() => {
-        const handleClickOutside = () => {
-            setOpenDropdownId(null);
-        };
-
-        window.addEventListener(
-            'click',
-            handleClickOutside
-        );
-
-        return () => {
-            window.removeEventListener(
-                'click',
-                handleClickOutside
-            );
-        };
-    }, []);
-
     const handleAction = async (id: number, action: AccountAction) => {
         try {
             await adminService.applyAccountAction(id, action);
