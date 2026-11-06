@@ -22,6 +22,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const [authCheckFailed, setAuthCheckFailed] = useState(false);
     const latestAuthRequestRef = useRef(0);
 
+    // Trwające sprawdzanie sesji zostanie pominięte, gdy jego wynik przyjdzie po wywołaniu tej funkcji.
+    const invalidateAuthRequests = useCallback(() => {
+        latestAuthRequestRef.current++;
+    }, []);
+
     const refreshAuth = useCallback(async (): Promise<boolean> => {
         const requestId = ++latestAuthRequestRef.current;
         const generation = getAuthGeneration();
@@ -55,7 +60,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = useCallback(async () => {
         await authService.logout();
         invalidateAuthSession(false);
-        latestAuthRequestRef.current++;
+        invalidateAuthRequests();
         setUser(null);
         setAuthCheckFailed(false);
         setIsAuthResolved(true);
@@ -65,7 +70,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Błąd odświeżenia tokenu CSRF po wylogowaniu:', error);
         }
-    }, []);
+    }, [invalidateAuthRequests]);
 
     useEffect(() => {
         void refreshAuth();
@@ -83,12 +88,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
         window.addEventListener('focus', onFocus);
         return () => {
-            latestAuthRequestRef.current++;
+            invalidateAuthRequests();
             window.removeEventListener('storage', onStorage);
             window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
             window.removeEventListener('focus', onFocus);
         };
-    }, [refreshAuth]);
+    }, [invalidateAuthRequests, refreshAuth]);
 
     const value = useMemo<AuthContextValue>(() => ({
         user,

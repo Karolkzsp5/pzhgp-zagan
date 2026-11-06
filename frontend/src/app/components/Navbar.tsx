@@ -38,6 +38,10 @@ export default function Navbar() {
     const lastNotificationsFetchRef = useRef(0);
     const isCurrentNotificationSession = useCallback((sessionId: number, generation: number) =>
         sessionId === notificationSessionRef.current && generation === getAuthGeneration(), []);
+    // Odpowiedzi na zapytania z poprzedniej sesji powiadomień zostaną pominięte.
+    const invalidateNotificationSession = useCallback(() => {
+        notificationSessionRef.current++;
+    }, []);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -149,9 +153,9 @@ export default function Navbar() {
         }
 
         return () => {
-            notificationSessionRef.current++;
+            invalidateNotificationSession();
         };
-    }, [fetchNotifications, isLoggedIn, user?.email]);
+    }, [fetchNotifications, invalidateNotificationSession, isLoggedIn, user?.email]);
 
     // Navbar jest we wspólnym layoucie i nie montuje się od nowa przy przejściu między podstronami,
     // dlatego powiadomienia odświeżamy po zmianie podstrony i po powrocie do karty, najwyżej raz na minutę.
@@ -279,7 +283,7 @@ export default function Navbar() {
             setLogoutError(error instanceof Error ? error.message : 'Nie udało się wylogować.');
             return;
         }
-        notificationSessionRef.current++;
+        invalidateNotificationSession();
         notificationDataVersionRef.current++;
 
         setNotifications([]);

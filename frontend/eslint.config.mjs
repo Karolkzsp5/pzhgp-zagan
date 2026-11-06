@@ -8,6 +8,8 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "react-hooks/set-state-in-effect": "off",
+      // Pozwala pominąć pole przy destrukturyzacji, np. { confirmPassword, ...daneDoWysłania }.
+      "@typescript-eslint/no-unused-vars": ["warn", { ignoreRestSiblings: true }],
     },
   },
   {
