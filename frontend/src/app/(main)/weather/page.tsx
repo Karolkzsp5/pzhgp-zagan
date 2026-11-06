@@ -12,7 +12,7 @@ export default function WeatherPage() {
                 </p>
             </div>
 
-            {/* Map container */}
+            {/* Mapa pogodowa */}
             <div className="w-full h-[600px] lg:h-[700px] rounded-lg overflow-hidden shadow-md border border-gray-200 bg-white">
                 <iframe
                     className="w-full h-full border-0"

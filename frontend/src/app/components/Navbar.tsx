@@ -320,7 +320,7 @@ export default function Navbar() {
                 <div className="flex justify-between h-16 items-center">
 
                     <div className="flex items-center shrink-0">
-                        {/* Mobile menu button */}
+                        {/* Przycisk menu mobilnego */}
                         <button
                             type="button"
                             ref={mobileMenuButtonRef}
@@ -375,7 +375,7 @@ export default function Navbar() {
                             ) : (
                                 <div className="flex items-center space-x-1 sm:space-x-3">
 
-                                    {/* Notification icon */}
+                                    {/* Ikona powiadomień */}
                                     <div className="relative" ref={notificationsRef}>
                                         <button
                                             type="button"
@@ -400,7 +400,7 @@ export default function Navbar() {
                                             )}
                                         </button>
 
-                                        {/* Notification modal */}
+                                        {/* Lista powiadomień */}
                                         {isNotificationsOpen && (
                                             <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 motion-safe:animate-fade-in text-gray-800 overflow-hidden">
                                                 <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
@@ -483,7 +483,7 @@ export default function Navbar() {
                                         )}
                                     </div>
 
-                                    {/* User profile */}
+                                    {/* Menu użytkownika */}
                                     <div className="relative" ref={dropdownRef}>
                                         <button
                                             type="button"
@@ -571,7 +571,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile menu */}
+            {/* Menu mobilne */}
             {isMobileMenuOpen && (
                 <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl motion-safe:animate-fade-in">
                     <div className="flex flex-col">

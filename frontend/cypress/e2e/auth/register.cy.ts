@@ -85,7 +85,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    ///////Name tests///////
+    /////Testy imienia//////
     ////////////////////////
 
     it('Name test - Should ignore digits and special characters', () => {
@@ -102,7 +102,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    /////Surname tests//////
+    /////Testy nazwiska/////
     ////////////////////////
 
     it('Surname test - Should ignore digits and special characters', () => {
@@ -119,9 +119,9 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="surname"]').clear().type('Nowak-Müller').should('have.value', 'Nowak-Müller');
     });
 
-    /////////////////////////
-    ///Date of Birth tests///
-    /////////////////////////
+    //////////////////////////
+    ///Testy daty urodzenia///
+    //////////////////////////
 
     it('Date of birth test - Should accept a valid date in YYYY-MM-DD format', () => {
         cy.get('input[name="dateOfBirth"]').clear().type('1990-08-25').should('have.value', '1990-08-25');
@@ -149,24 +149,24 @@ describe('Breeder Registration Process Test', () => {
         cy.get('input[name="dateOfBirth"]').should('match', ':invalid');
     });
 
-    ////////////////////////
-    //////E-mail tests//////
-    ////////////////////////
+    /////////////////////////
+    ///Testy adresu e-mail///
+    /////////////////////////
 
     it('E-mail test - Should reject an invalid email address', () => {
         cy.get('form').invoke('attr', 'novalidate', '');
 
-        // without username
+        // bez nazwy użytkownika
         cy.get('input[name="email"]').clear().type('@example.com');
         cy.get('button[type="submit"]').click();
         cy.contains('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).').should('be.visible');
 
-        // without '@' sign
+        // bez znaku '@'
         cy.get('input[name="email"]').clear().type('testcypressexample.com');
         cy.get('button[type="submit"]').click();
         cy.contains('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).').should('be.visible');
 
-        // without domain name
+        // bez domeny
         cy.get('input[name="email"]').clear().type('testcypress@');
         cy.get('button[type="submit"]').click();
         cy.contains('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).').should('be.visible');
@@ -175,7 +175,7 @@ describe('Breeder Registration Process Test', () => {
         cy.get('button[type="submit"]').click();
         cy.contains('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).').should('be.visible');
 
-        // without '@' sign and domain name
+        // bez znaku '@' i domeny
         cy.get('input[name="email"]').clear().type('testcypress');
         cy.get('button[type="submit"]').click();
         cy.contains('Proszę podać prawidłowy adres e-mail (np. jan.kowalski@domena.pl).').should('be.visible');
@@ -204,9 +204,9 @@ describe('Breeder Registration Process Test', () => {
         cy.contains('Użytkownik z podanym adresem e-mail już istnieje.').should('be.visible');
     });
 
-    ////////////////////////
-    ///Phone number tests///
-    ////////////////////////
+    ///////////////////////////
+    ///Testy numeru telefonu///
+    ///////////////////////////
 
     it('Phone number test - Should format phone number correctly as it is entered', () => {
         cy.get('input[name="phoneNumber"]').clear().type('123456789', { delay: 20 }).should('have.value', '123 456 789');
@@ -250,7 +250,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    /////Password tests/////
+    //////Testy hasła///////
     ////////////////////////
 
     it('Password test - Should check the strength of the password', () => {
@@ -258,37 +258,37 @@ describe('Breeder Registration Process Test', () => {
         fillEmail();
         fillPhoneNumber()
 
-        // No capital letter
+        // Brak wielkiej litery
         cy.get('input[name="password"]').clear().type('testcypress1@');
         cy.get('input[name="confirmPassword"]').clear().type('testcypress1@');
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jedną dużą literę.').should('be.visible');
 
-        // No small letter
+        // Brak małej litery
         cy.get('input[name="password"]').clear().type('TESTCYPRESS1@');
         cy.get('input[name="confirmPassword"]').clear().type('TESTCYPRESS1@');
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jedną małą literę.').should('be.visible');
 
-        // No digit
+        // Brak cyfry
         cy.get('input[name="password"]').clear().type('Testcypress@');
         cy.get('input[name="confirmPassword"]').clear().type('Testcypress@');
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jedną cyfrę.').should('be.visible');
 
-        // No special character
+        // Brak znaku specjalnego
         cy.get('input[name="password"]').clear().type('Testcypress1');
         cy.get('input[name="confirmPassword"]').clear().type('Testcypress1');
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jeden znak specjalny.').should('be.visible');
 
-        // Any character other than a letter or digit counts as special
+        // Każdy znak, który nie jest literą ani cyfrą, liczy się jako specjalny
         cy.get('input[name="password"]').clear().type('Testcypress1;');
         cy.get('input[name="confirmPassword"]').clear().type('Testcypress1;');
         cy.get('button[type="submit"]').click();
         cy.contains('Hasło musi zawierać co najmniej jeden znak specjalny.').should('not.exist');
 
-        // Too short password
+        // Za krótkie hasło
         cy.get('input[name="password"]').clear().type('Test');
         cy.get('input[name="confirmPassword"]').clear().type('Test');
         cy.get('button[type="submit"]').click();
@@ -309,7 +309,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    /////Section tests//////
+    //////Testy sekcji//////
     ////////////////////////
 
     it('Section test - Should prevent registration when section is not selected', () => {
@@ -323,9 +323,9 @@ describe('Breeder Registration Process Test', () => {
         cy.contains('Proszę wybrać sekcję, do której chcesz należeć').should('be.visible');
     });
 
-    ////////////////////////
-    ////Postal code tests///
-    ////////////////////////
+    ///////////////////////////
+    ///Testy kodu pocztowego///
+    ///////////////////////////
 
     it('Postal code test - Should ignore any letters and special characters', () => {
         cy.get('input[name="postalCode"]').invoke('removeAttr', 'maxlength').clear()
@@ -333,7 +333,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    ///////City tests///////
+    ///Testy miejscowości///
     ////////////////////////
 
     it('City test - Should ignore digits and special characters', () => {
@@ -345,7 +345,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    //////Street tests//////
+    //////Testy ulicy///////
     ////////////////////////
 
     it('Street test - Should ignore unsupported special characters', () => {
@@ -357,7 +357,7 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ////////////////////////
-    ///House number tests///
+    ///Testy numeru domu////
     ////////////////////////
 
     it('House number test - Should ignore any special characters except "/" and "-"', () => {
@@ -370,7 +370,7 @@ describe('Breeder Registration Process Test', () => {
 
 
     ///////////////////////////
-    /////Registration test/////
+    /////Test rejestracji//////
     ///////////////////////////
 
     it('Should successfully register the user', () => {

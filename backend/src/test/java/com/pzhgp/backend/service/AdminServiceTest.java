@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("Admin Service Unit Tests")
 class AdminServiceTest {
 
-    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
     @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 

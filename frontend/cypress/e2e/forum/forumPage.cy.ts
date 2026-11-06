@@ -60,7 +60,7 @@ describe('Forum Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the forum page', () => {
@@ -88,7 +88,7 @@ describe('Forum Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE CATEGORY
+        // DODAWANIE KATEGORII
         // ==========================================
 
         it('Should correctly render the add category modal', () => {
@@ -190,7 +190,7 @@ describe('Forum Page Tests', () => {
         });
 
         // ==========================================
-        // EDIT CATEGORY
+        // EDYCJA KATEGORII
         // ==========================================
 
         it('Should preload category data in the edit modal and allow cancellation', () => {
@@ -269,7 +269,7 @@ describe('Forum Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE CATEGORY
+        // USUWANIE KATEGORII
         // ==========================================
 
         it('Should cancel category deletion without removing the category', () => {
@@ -328,7 +328,7 @@ describe('Forum Page Tests', () => {
         });
 
         // ==========================================
-        // EMPTY STATE AND ERRORS
+        // PUSTA LISTA I BŁĘDY
         // ==========================================
 
         it('Should display an empty state when no forum categories exist', () => {
@@ -382,7 +382,7 @@ describe('Forum Page Tests', () => {
     });
 
     // ==========================================
-    // ROLE PERMISSIONS
+    // UPRAWNIENIA RÓL
     // ==========================================
 
     describe('Role Permissions', () => {
@@ -427,7 +427,7 @@ describe('Forum Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

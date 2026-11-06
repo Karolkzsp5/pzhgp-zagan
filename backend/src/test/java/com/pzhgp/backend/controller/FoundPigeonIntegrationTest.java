@@ -131,7 +131,7 @@ class FoundPigeonIntegrationTest {
         return foundPigeonRepository.save(stored).getId();
     }
 
-    // --- Public submission -------------------------------------------------
+    // --- Publiczne zgłoszenie ----------------------------------------------
 
     @Test
     @DisplayName("Should allow submitting a found-pigeon report without authentication")
@@ -328,7 +328,7 @@ class FoundPigeonIntegrationTest {
         assertEquals(5, foundPigeonRepository.count());
     }
 
-    // --- Privacy and authorization ----------------------------------------
+    // --- Prywatność i uprawnienia -----------------------------------------
 
     @Test
     @DisplayName("Should prevent unauthenticated users from reading found-pigeon reports")
@@ -356,7 +356,7 @@ class FoundPigeonIntegrationTest {
         mockMvc.perform(get("/api/admin/found-pigeons").with(cookieAuth(moderatorToken))).andExpect(status().isForbidden());
     }
 
-    // --- Administration panel ---------------------------------------------
+    // --- Panel administratora ---------------------------------------------
 
     @Test
     @DisplayName("Should show contact details to administrators reviewing a report")
@@ -385,7 +385,7 @@ class FoundPigeonIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        // The search ignores letter case and separator differences.
+        // Wyszukiwanie nie zależy od wielkości liter ani od znaków rozdzielających.
         mockMvc.perform(get("/api/admin/found-pigeons")
                         .param("ringNumber", "pl 0369")
                         .with(cookieAuth(adminToken)))
@@ -413,7 +413,7 @@ class FoundPigeonIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(10))
                 .andExpect(jsonPath("$.totalElements").value(12));
 
-        // A page size above the allowed maximum is rejected instead of being silently capped.
+        // Rozmiar strony powyżej dozwolonego maksimum jest odrzucany, a nie po cichu przycinany.
         mockMvc.perform(get("/api/admin/found-pigeons")
                         .param("size", "500")
                         .with(cookieAuth(adminToken)))

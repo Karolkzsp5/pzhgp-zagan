@@ -44,7 +44,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render the flight plans page', () => {
@@ -74,7 +74,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE MODAL
+        // OKNO DODAWANIA
         // ==========================================
 
         it('Should correctly render and close the create flight plan modal', () => {
@@ -100,7 +100,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // VALIDATION
+        // WALIDACJA
         // ==========================================
 
         it('Should validate the flight plan year before sending the request', () => {
@@ -116,7 +116,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE PLAN
+        // TWORZENIE PLANU
         // ==========================================
 
         it('Should successfully create a flight plan', () => {
@@ -157,7 +157,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE ERROR
+        // BŁĄD DODAWANIA
         // ==========================================
 
         it('Should display an API error when creating a flight plan fails', () => {
@@ -179,7 +179,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // CANCEL DELETE
+        // ANULOWANIE USUWANIA
         // ==========================================
 
         it('Should cancel flight plan deletion', () => {
@@ -196,7 +196,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE PLAN
+        // USUWANIE PLANU
         // ==========================================
 
         it('Should successfully delete an empty flight plan', () => {
@@ -224,7 +224,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE ERROR
+        // BŁĄD USUWANIA
         // ==========================================
 
         it('Should display an error modal when flight plan deletion fails', () => {
@@ -253,7 +253,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // EMPTY STATE
+        // PUSTA LISTA
         // ==========================================
 
         it('Should display an empty state when there are no flight plans', () => {
@@ -270,7 +270,7 @@ describe('Flight Plans Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading flight plans', () => {
@@ -311,7 +311,7 @@ describe('Flight Plans Page Tests', () => {
     });
 
     // ==========================================
-    // READ-ONLY ROLES
+    // ROLE TYLKO DO ODCZYTU
     // ==========================================
 
     describe('Read-only roles', () => {
@@ -347,7 +347,7 @@ describe('Flight Plans Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

@@ -94,7 +94,7 @@ describe('Home Page - Announcements Tests', () => {
         announcementsShouldFail = false;
 
         // ==========================
-        // Announcements
+        // Ogłoszenia
         // ==========================
 
         cy.intercept('GET', '**/api/announcements*', (req) => {
@@ -123,7 +123,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // PAGE RENDERING
+    // WYŚWIETLANIE STRONY
     // ==========================================
 
     it('Should correctly render all visible elements of the home page and announcements section', () => {
@@ -137,7 +137,7 @@ describe('Home Page - Announcements Tests', () => {
 
         cy.get('article').should('have.length', 3).and('be.visible');
 
-        // Own pinned announcement
+        // Własne przypięte ogłoszenie
         getAnnouncementByTitle('Ważne ogłoszenie oddziału').should('be.visible').within(() => {
             cy.contains('h3', 'Ważne ogłoszenie oddziału').should('be.visible');
             cy.contains('Ważna przypięta treść ogłoszenia.').should('be.visible');
@@ -150,7 +150,7 @@ describe('Home Page - Announcements Tests', () => {
             cy.contains('button', 'Usuń').should('be.visible');
         });
 
-        // Announcement created by moderator
+        // Ogłoszenie dodane przez moderatora
         getAnnouncementByTitle('Ogłoszenie moderatora').should('be.visible').within(() => {
             cy.contains('Treść ogłoszenia dodanego przez moderatora.').should('be.visible');
             cy.contains('Moderator Testowy').should('be.visible');
@@ -158,7 +158,7 @@ describe('Home Page - Announcements Tests', () => {
             cy.contains('button', 'Usuń').should('be.visible');
         });
 
-        // Announcement created by another administrator
+        // Ogłoszenie dodane przez innego administratora
         getAnnouncementByTitle('Ogłoszenie innego administratora').should('be.visible').within(() => {
             cy.contains('Treść ogłoszenia innego administratora.').should('be.visible');
             cy.contains('Inny Administrator').should('be.visible');
@@ -169,7 +169,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // NOTIFICATIONS PAGINATION
+    // STRONICOWANIE POWIADOMIEŃ
     // ==========================================
 
     it('Should load older notifications after clicking the load more button', () => {
@@ -254,7 +254,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // PERMISSIONS
+    // UPRAWNIENIA
     // ==========================================
 
     it('Should display edit and delete actions according to announcement permissions', () => {
@@ -275,7 +275,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // EMPTY STATE
+    // PUSTA LISTA
     // ==========================================
 
     it('Should display an empty state when there are no announcements', () => {
@@ -296,7 +296,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // LOADING ERROR AND RETRY
+    // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
     // ==========================================
 
     it('Should display an error and successfully retry loading announcements', () => {
@@ -321,7 +321,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // PAGINATION
+    // STRONICOWANIE
     // ==========================================
 
     it('Should correctly navigate between announcement pages', () => {
@@ -387,7 +387,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // HTML SANITIZATION
+    // CZYSZCZENIE HTML
     // ==========================================
 
     it('Should sanitize unsafe HTML before displaying announcement content', () => {
@@ -419,7 +419,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // ADD ANNOUNCEMENT MODAL
+    // OKNO DODAWANIA OGŁOSZENIA
     // ==========================================
 
     it('Should correctly open and close the add announcement modal', () => {
@@ -444,26 +444,26 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // ADD ANNOUNCEMENT VALIDATION
+    // WALIDACJA DODAWANIA OGŁOSZENIA
     // ==========================================
 
     it('Should validate announcement title and content before submitting', () => {
         openAddAnnouncementModal();
         cy.get('[role="dialog"] form').invoke('attr', 'novalidate', '');
 
-        // Title too short
+        // Za krótki tytuł
         cy.get('#announcement-title').type('AB');
         cy.contains('button', 'Opublikuj').click();
         cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Tytuł musi mieć od 3 do 150 znaków.');
 
-        // Empty announcement content
+        // Pusta treść ogłoszenia
         cy.get('#announcement-title').clear().type('Poprawny tytuł ogłoszenia');
         cy.contains('button', 'Opublikuj').click();
         cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Treść ogłoszenia nie może być pusta.');
     });
 
     // ==========================================
-    // CREATE ANNOUNCEMENT
+    // DODAWANIE OGŁOSZENIA
     // ==========================================
 
     it('Should successfully create a new pinned announcement', () => {
@@ -527,7 +527,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // CREATE ANNOUNCEMENT ERROR
+    // BŁĄD DODAWANIA OGŁOSZENIA
     // ==========================================
 
     it('Should display an API error when creating an announcement fails', () => {
@@ -548,7 +548,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // EDIT ANNOUNCEMENT
+    // EDYCJA OGŁOSZENIA
     // ==========================================
 
     it('Should successfully edit an existing announcement', () => {
@@ -616,7 +616,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // CANCEL DELETE
+    // ANULOWANIE USUWANIA
     // ==========================================
 
     it('Should cancel announcement deletion without removing the announcement', () => {
@@ -635,7 +635,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // DELETE ANNOUNCEMENT
+    // USUWANIE OGŁOSZENIA
     // ==========================================
 
     it('Should successfully delete an announcement', () => {
@@ -672,7 +672,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // DELETE ERROR
+    // BŁĄD USUWANIA
     // ==========================================
 
     it('Should display an error modal when announcement deletion fails', () => {
@@ -702,7 +702,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // DELETE LAST ITEM ON PAGE
+    // USUWANIE OSTATNIEGO ELEMENTU NA STRONIE
     // ==========================================
 
     it('Should return to the previous page after deleting the last announcement on the current page', () => {
@@ -764,7 +764,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // PUBLIC USER
+    // NIEZALOGOWANY UŻYTKOWNIK
     // ==========================================
 
     it('Should hide announcement management actions from an unauthenticated user', () => {
@@ -798,7 +798,7 @@ describe('Home Page - Announcements Tests', () => {
     });
 
     // ==========================================
-    // BREEDER
+    // HODOWCA
     // ==========================================
 
     it('Should prevent a breeder from seeing the add announcement button', () => {

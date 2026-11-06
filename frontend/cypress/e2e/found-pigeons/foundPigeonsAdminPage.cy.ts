@@ -112,7 +112,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the admin reports page', () => {
@@ -161,7 +161,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // REPORT DETAILS
+        // SZCZEGÓŁY ZGŁOSZENIA
         // ==========================================
 
         it('Should display all report details after selecting a report', () => {
@@ -226,7 +226,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // FILTERING
+        // FILTROWANIE
         // ==========================================
 
         it('Should filter reports by status', () => {
@@ -277,7 +277,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // SEARCH
+        // WYSZUKIWANIE
         // ==========================================
 
         it('Should search reports by ring number', () => {
@@ -307,7 +307,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // PAGINATION
+        // STRONICOWANIE
         // ==========================================
 
         it('Should navigate between report pages', () => {
@@ -401,7 +401,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading reports', () => {
@@ -443,7 +443,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // STATUS TRANSITIONS
+        // ZMIANY STATUSU
         // ==========================================
 
         it('Should show only allowed status transitions for a pending report', () => {
@@ -523,7 +523,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // STATUS UPDATE
+        // AKTUALIZACJA STATUSU
         // ==========================================
 
         it('Should successfully approve a pending report', () => {
@@ -581,7 +581,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // ADMIN NOTE
+        // NOTATKA ADMINISTRATORA
         // ==========================================
 
         it('Should successfully save an administrator note', () => {
@@ -631,7 +631,7 @@ describe('Found Pigeons Admin Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE REPORT
+        // USUWANIE ZGŁOSZENIA
         // ==========================================
 
         it('Should cancel report deletion without removing the report', () => {
@@ -705,7 +705,7 @@ describe('Found Pigeons Admin Page Tests', () => {
     });
 
     // ==========================================
-    // ADMIN ACCESS CONTROL
+    // KONTROLA DOSTĘPU ADMINISTRATORA
     // ==========================================
 
     describe('Access Control', () => {

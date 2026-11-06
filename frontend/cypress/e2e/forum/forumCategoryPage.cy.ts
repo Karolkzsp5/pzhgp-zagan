@@ -131,7 +131,7 @@ describe('Forum Category Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the forum category page', () => {
@@ -170,7 +170,7 @@ describe('Forum Category Page Tests', () => {
         });
 
         // ==========================================
-        // NEW THREAD MODAL
+        // OKNO NOWEGO WĄTKU
         // ==========================================
 
         it('Should correctly render the new thread modal and text editor controls', () => {
@@ -280,7 +280,7 @@ describe('Forum Category Page Tests', () => {
         });
 
         // ==========================================
-        // EMPTY STATE
+        // PUSTA LISTA
         // ==========================================
 
         it('Should display an empty state when the category has no threads', () => {
@@ -304,7 +304,7 @@ describe('Forum Category Page Tests', () => {
         });
 
         // ==========================================
-        // PAGINATION
+        // STRONICOWANIE
         // ==========================================
 
         it('Should navigate between thread pages', () => {
@@ -398,7 +398,7 @@ describe('Forum Category Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading category data', () => {
@@ -450,7 +450,7 @@ describe('Forum Category Page Tests', () => {
     });
 
     // ==========================================
-    // INVALID CATEGORY ID
+    // NIEPRAWIDŁOWE ID KATEGORII
     // ==========================================
 
     describe('Invalid Category ID', () => {
@@ -461,7 +461,7 @@ describe('Forum Category Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

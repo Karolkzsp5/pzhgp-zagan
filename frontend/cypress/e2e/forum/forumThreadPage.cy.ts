@@ -125,7 +125,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the forum thread page', () => {
@@ -179,7 +179,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // VIEW COUNTING
+        // ZLICZANIE WYŚWIETLEŃ
         // ==========================================
 
         it('Should count a new visit after a full page reload', () => {
@@ -201,7 +201,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD TITLE
+        // TYTUŁ WĄTKU
         // ==========================================
 
         it('Should allow cancelling thread title editing', () => {
@@ -275,7 +275,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD MODERATION
+        // MODEROWANIE WĄTKU
         // ==========================================
 
         it('Should successfully pin and unpin a thread', () => {
@@ -340,7 +340,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // REPLIES
+        // ODPOWIEDZI
         // ==========================================
 
         it('Should require non-empty reply content', () => {
@@ -423,7 +423,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // EDIT POST
+        // EDYCJA WPISU
         // ==========================================
 
         it('Should validate an empty post while editing', () => {
@@ -505,7 +505,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE POST
+        // USUWANIE WPISU
         // ==========================================
 
         it('Should cancel post deletion without removing the post', () => {
@@ -591,7 +591,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD PAGINATION
+        // STRONICOWANIE WĄTKU
         // ==========================================
 
         it('Should navigate between post pages', () => {
@@ -687,7 +687,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // SANITIZATION
+        // CZYSZCZENIE TREŚCI
         // ==========================================
 
         it('Should sanitize dangerous HTML before rendering a post', () => {
@@ -733,7 +733,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading the discussion', () => {
@@ -784,7 +784,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE THREAD
+        // USUWANIE WĄTKU
         // ==========================================
 
         it('Should cancel thread deletion without removing the thread', () => {
@@ -867,7 +867,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // LOCKED THREAD
+    // ZABLOKOWANY WĄTEK
     // ==========================================
 
     describe('Locked Thread', () => {
@@ -907,7 +907,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // LIMITED PERMISSIONS
+    // OGRANICZONE UPRAWNIENIA
     // ==========================================
 
     describe('Limited Permissions', () => {
@@ -963,7 +963,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // INVALID THREAD ID
+    // NIEPRAWIDŁOWE ID WĄTKU
     // ==========================================
 
     describe('Invalid Thread ID', () => {
@@ -974,7 +974,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

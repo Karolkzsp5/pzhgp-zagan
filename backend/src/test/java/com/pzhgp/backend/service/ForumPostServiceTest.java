@@ -40,7 +40,7 @@ class ForumPostServiceTest {
     private ForumPostRepository postRepository;
     @Mock
     private ForumThreadRepository threadRepository;
-    // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
     @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
     @Mock
@@ -320,7 +320,7 @@ class ForumPostServiceTest {
     @DisplayName("Should forbid a breeder from deleting another breeder's post")
     void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor nie jest autorem wpisu
 
         assertThrows(ForbiddenOperationException.class, () -> {
             postService.deletePost(500L, "thread.author@test.pl");

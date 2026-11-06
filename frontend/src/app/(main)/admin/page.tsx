@@ -189,7 +189,7 @@ export default function AdminPanelPage() {
                             </div>
                         ) : (
                             <>
-                                {/* Searching and filtering */}
+                                {/* Wyszukiwanie i filtrowanie */}
                                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="relative flex-1">
                                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -236,7 +236,7 @@ export default function AdminPanelPage() {
                                     </div>
                                 </div>
 
-                                {/* Pending accounts */}
+                                {/* Konta oczekujące na akceptację */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta czekające na akceptację</h2>
                                     {processedPending.length === 0 ? (
@@ -316,7 +316,7 @@ export default function AdminPanelPage() {
                                     )}
                                 </section>
 
-                                {/* Breeders accounts */}
+                                {/* Konta hodowców */}
                                 <section>
                                     <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Konta hodowców</h2>
                                     {processedRegistered.length === 0 ? (
@@ -479,7 +479,7 @@ export default function AdminPanelPage() {
                 </main>
             </>
 
-            {/* Breeder details modal */}
+            {/* Okno ze szczegółami hodowcy */}
             {selectedBreeder && (
                 <Modal isOpen title="Dane hodowcy" onClose={() => setSelectedBreeder(null)} maxWidthClass="max-w-md">
                     <div data-cy="details-modal" className="p-6">
@@ -549,7 +549,7 @@ export default function AdminPanelPage() {
                 </Modal>
             )}
 
-            {/* role change modal */}
+            {/* Okno zmiany roli */}
             {roleChangeBreeder && (
                 <div data-cy="role-change-modal">
                     <Modal isOpen title="Zmień rolę" onClose={() => setRoleChangeBreeder(null)} maxWidthClass="max-w-sm">
@@ -588,7 +588,7 @@ export default function AdminPanelPage() {
                 </div>
             )}
 
-            {/* Error modal */}
+            {/* Okno z komunikatem */}
             <ConfirmModal
                 isOpen={modalMessage !== null}
                 title="Komunikat systemu"
@@ -600,7 +600,7 @@ export default function AdminPanelPage() {
                 onCancel={() => setModalMessage(null)}
             />
 
-            {/* Block/unblock confirmation modal */}
+            {/* Potwierdzenie operacji na koncie */}
             <ConfirmModal
                 isOpen={confirmDialog.isOpen}
                 title="Potwierdzenie akcji"

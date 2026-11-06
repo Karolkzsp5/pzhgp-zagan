@@ -30,7 +30,7 @@ describe('Board Page Tests', () => {
         { id: 3, name: 'Chotków' }
     ];
 
-    // The candidates endpoint returns only active breeders, without contact details.
+    // Endpoint kandydatów zwraca tylko aktywnych hodowców, bez danych kontaktowych.
     const mockBreeders = [
         { id: 10, name: 'Jan', surname: 'Kowalski', sectionId: 1 },
         { id: 11, name: 'Anna', surname: 'Nowak', sectionId: 1 },
@@ -157,7 +157,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PAGE RENDERING
+    // WYŚWIETLANIE STRONY
     // ==========================================
 
     it('Should correctly render all visible elements of the board page', () => {
@@ -217,7 +217,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // SORTING
+    // SORTOWANIE
     // ==========================================
 
     it('Should correctly sort board members according to their roles', () => {
@@ -237,7 +237,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // EMPTY STATE
+    // PUSTA LISTA
     // ==========================================
 
     it('Should display empty states when there are no board members', () => {
@@ -264,7 +264,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ERROR AND RETRY
+    // BŁĄD I PONOWNA PRÓBA
     // ==========================================
 
     it('Should display an error and successfully retry loading board data', () => {
@@ -303,7 +303,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PUBLIC ACCESS
+    // DOSTĘP PUBLICZNY
     // ==========================================
 
     it('Should allow an unauthenticated user to view the board without administration controls', () => {
@@ -351,7 +351,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // BREEDER ACCESS
+    // DOSTĘP HODOWCY
     // ==========================================
 
     it('Should hide administration controls from a breeder', () => {
@@ -373,7 +373,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DICTIONARY LOADING
+    // ŁADOWANIE SŁOWNIKÓW
     // ==========================================
 
     it('Should load administrator form dictionaries only after the modal is opened', () => {
@@ -406,7 +406,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ADD MEMBER MODAL
+    // OKNO DODAWANIA CZŁONKA
     // ==========================================
 
     it('Should correctly render and close the add board member modal', () => {
@@ -442,7 +442,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ROLE AND SECTION FILTERING
+    // FILTROWANIE PO ROLI I SEKCJI
     // ==========================================
 
     it('Should correctly change available roles and breeders after selecting a board section', () => {
@@ -497,7 +497,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PERSON SOURCE
+    // ŹRÓDŁO DANYCH OSOBY
     // ==========================================
 
     it('Should switch between a registered breeder and a person without an account', () => {
@@ -525,7 +525,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PHONE NUMBER
+    // NUMER TELEFONU
     // ==========================================
 
     it('Should correctly format and validate the public phone number', () => {
@@ -545,7 +545,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE REGISTERED MEMBER
+    // DODAWANIE ZAREJESTROWANEGO HODOWCY
     // ==========================================
 
     it('Should successfully add a registered breeder to a section board', () => {
@@ -601,7 +601,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE EXTERNAL MEMBER
+    // DODAWANIE OSOBY SPOZA SYSTEMU
     // ==========================================
 
     it('Should successfully add a person without an account to the branch board', () => {
@@ -655,7 +655,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE ERROR
+    // BŁĄD DODAWANIA
     // ==========================================
 
     it('Should display an API error when adding a board member fails', () => {
@@ -679,7 +679,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // EDIT REGISTERED MEMBER
+    // EDYCJA ZAREJESTROWANEGO HODOWCY
     // ==========================================
 
     it('Should correctly preload and successfully edit a registered board member', () => {
@@ -734,7 +734,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // EDIT EXTERNAL MEMBER
+    // EDYCJA OSOBY SPOZA SYSTEMU
     // ==========================================
 
     it('Should correctly preload a person without an account when editing', () => {
@@ -755,7 +755,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CANCEL DELETE
+    // ANULOWANIE USUWANIA
     // ==========================================
 
     it('Should cancel board member deletion without removing the member', () => {
@@ -772,7 +772,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DELETE MEMBER
+    // USUWANIE CZŁONKA
     // ==========================================
 
     it('Should successfully delete a board member', () => {
@@ -802,7 +802,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DELETE ERROR
+    // BŁĄD USUWANIA
     // ==========================================
 
     it('Should display an error modal when board member deletion fails', () => {

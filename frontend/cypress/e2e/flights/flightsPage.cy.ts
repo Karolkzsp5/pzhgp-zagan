@@ -108,7 +108,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the flights page', () => {
@@ -175,7 +175,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // FILE SELECTION
+        // WYBÓR PLIKU
         // ==========================================
 
         it('Should accept a valid GPX file selected from the file input', () => {
@@ -230,7 +230,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // FLIGHT UPLOAD
+        // WGRYWANIE LOTU
         // ==========================================
 
         it('Should successfully upload a GPX file and navigate to the flight details page', () => {
@@ -287,7 +287,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // EMPTY STATE
+        // PUSTA LISTA
         // ==========================================
 
         it('Should display an empty state when the user has no saved flights', () => {
@@ -311,7 +311,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading flights', () => {
@@ -357,7 +357,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // PAGINATION
+        // STRONICOWANIE
         // ==========================================
 
         it('Should navigate between flight pages', () => {
@@ -453,7 +453,7 @@ describe('Flights Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE FLIGHT
+        // USUWANIE LOTU
         // ==========================================
 
         it('Should cancel flight deletion without removing the flight', () => {
@@ -531,7 +531,7 @@ describe('Flights Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

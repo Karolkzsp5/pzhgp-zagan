@@ -177,7 +177,7 @@ export default function HomePage() {
                                                 )}
                                             </div>
 
-                                            {/* Edit and delete buttons */}
+                                            {/* Przyciski edycji i usuwania */}
                                             {(post.canEdit || post.canDelete) && (
                                                 <div className="flex items-center gap-2">
                                                     {post.canEdit && (

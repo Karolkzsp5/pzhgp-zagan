@@ -192,8 +192,8 @@ class FoundPigeonServiceTest {
 
         foundPigeonService.searchReports(null, "   ", 0, 10);
 
-        // An empty text, never null: PostgreSQL cannot infer the type of a null LIKE parameter
-        // and rejects the query, while an empty pattern simply matches every ring number.
+        // Pusty tekst, nigdy null: PostgreSQL nie rozpozna typu parametru LIKE równego null
+        // i odrzuci zapytanie, a pusty wzorzec po prostu pasuje do każdego numeru obrączki.
         verify(foundPigeonRepository).search(eq(null), eq(""), any(Pageable.class));
     }
 
