@@ -10,13 +10,15 @@ import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
-import com.pzhgp.backend.service.SubmissionRateLimiter;
+import com.pzhgp.backend.support.MutableClock;
+import com.pzhgp.backend.support.TestClockConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 
 import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
@@ -35,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@Import(TestClockConfig.class)
 @DisplayName("Found Pigeon Integration Tests")
 class FoundPigeonIntegrationTest {
 
@@ -54,7 +58,7 @@ class FoundPigeonIntegrationTest {
     private NotificationRepository notificationRepository;
 
     @Autowired
-    private SubmissionRateLimiter rateLimiter;
+    private MutableClock clock;
 
     @Autowired
     private JwtService jwtService;
@@ -68,8 +72,8 @@ class FoundPigeonIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // The limiter is a singleton shared between tests, so each test starts from a clean slate.
-        rateLimiter.reset();
+        // Limit zgłoszeń jest wspólny dla testów; po przesunięciu zegara o dobę wcześniejsze zgłoszenia wygasają.
+        clock.advance(Duration.ofDays(1));
 
         Section section = new Section();
         section.setName("Sekcja Testowa");
@@ -236,7 +240,7 @@ class FoundPigeonIntegrationTest {
         );
 
         for (String number : validNumbers) {
-            rateLimiter.reset();
+            clock.advance(Duration.ofHours(1));
             submitExpectingCreated(report("PL-0369-24-1234", number, null, ReportLanguage.PL));
         }
 
@@ -280,7 +284,7 @@ class FoundPigeonIntegrationTest {
         int pigeonNumber = 1;
 
         for (ReportLanguage language : ReportLanguage.values()) {
-            rateLimiter.reset();
+            clock.advance(Duration.ofHours(1));
             String ringNumber = String.format("PL-0369-26-%04d", pigeonNumber++);
             submitExpectingCreated(report(ringNumber, "601234567", null, language));
         }
@@ -317,7 +321,9 @@ class FoundPigeonIntegrationTest {
         mockMvc.perform(post("/api/found-pigeons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(report("PL-0369-26-9999", "601234567", null, ReportLanguage.PL))))
-                .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests())
+                // Komunikat nie zdradza skonfigurowanego limitu.
+                .andExpect(content().string("Zbyt wiele zgłoszeń. Spróbuj ponownie później."));
 
         assertEquals(5, foundPigeonRepository.count());
     }

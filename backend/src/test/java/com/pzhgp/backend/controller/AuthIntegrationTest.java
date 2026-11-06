@@ -7,15 +7,16 @@ import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.repository.BreederRepository;
-import com.pzhgp.backend.service.AuthRateLimiter;
+import com.pzhgp.backend.support.MutableClock;
+import com.pzhgp.backend.support.TestClockConfig;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Duration;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @ActiveProfiles("test")
 @TestPropertySource(properties = "auth.cookie.secure=false")
+@Import(TestClockConfig.class)
 @DisplayName("Authorization Integration Tests")
 class AuthIntegrationTest {
 
@@ -52,7 +55,7 @@ class AuthIntegrationTest {
     private BreederRepository breederRepository;
 
     @Autowired
-    private AuthRateLimiter authRateLimiter;
+    private MutableClock clock;
 
     @Autowired
     private JsonMapper objectMapper;
@@ -64,16 +67,12 @@ class AuthIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        authRateLimiter.reset();
+        // Limity prób są wspólne dla testów; po przesunięciu zegara o dobę wcześniejsze próby wygasają.
+        clock.advance(Duration.ofDays(1));
         validRequest = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
                 "Słowackiego", "10", 1L, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
         );
-    }
-
-    @AfterEach
-    void tearDown() {
-        authRateLimiter.reset();
     }
 
     @Test

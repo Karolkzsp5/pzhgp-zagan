@@ -4,7 +4,6 @@ import com.pzhgp.backend.dto.FoundPigeonDto;
 import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.InvalidStatusTransitionException;
-import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
@@ -40,21 +39,15 @@ public class FoundPigeonService {
     private final FoundPigeonRepository foundPigeonRepository;
     private final BreederRepository breederRepository;
     private final NotificationService notificationService;
-    private final SubmissionRateLimiter rateLimiter;
 
     /**
      * Zapisuje nowe zgłoszenie i powiadamia administratorów.
      *
-     * @param request  dane z formularza
-     * @param clientKey adres zdalny nadawcy, wykorzystywany do ograniczania częstotliwości
+     * @param request dane z formularza
      * @return identyfikator utworzonego zgłoszenia
      */
     @Transactional
-    public Long createReport(FoundPigeonRequest request, String clientKey) {
-        if (!rateLimiter.tryAcquire(clientKey)) {
-            throw new SubmissionRateLimitException("Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
-        }
-
+    public Long createReport(FoundPigeonRequest request) {
         FoundPigeonReport report = new FoundPigeonReport();
         // Białe znaki usuwa już konstruktor FoundPigeonRequest.
         report.setRingNumber(request.ringNumber());

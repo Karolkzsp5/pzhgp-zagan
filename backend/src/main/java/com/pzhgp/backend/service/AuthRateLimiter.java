@@ -18,11 +18,7 @@ public class AuthRateLimiter {
     private final SlidingWindowRateLimiter loginAttempts;
     private final SlidingWindowRateLimiter registrationAttempts;
 
-    public AuthRateLimiter() {
-        this(Clock.systemUTC());
-    }
-
-    AuthRateLimiter(Clock clock) {
+    public AuthRateLimiter(Clock clock) {
         this.loginAttempts = new SlidingWindowRateLimiter(LOGIN_WINDOW, MAX_LOGIN_ATTEMPTS, clock);
         this.registrationAttempts = new SlidingWindowRateLimiter(REGISTRATION_WINDOW, MAX_REGISTRATION_ATTEMPTS, clock);
     }
@@ -33,11 +29,5 @@ public class AuthRateLimiter {
 
     public boolean tryAcquireRegistration(String clientAddress) {
         return registrationAttempts.tryAcquire(clientAddress);
-    }
-
-    /** Czyści zapamiętane próby — wykorzystywane w testach. */
-    public void reset() {
-        loginAttempts.reset();
-        registrationAttempts.reset();
     }
 }

@@ -24,8 +24,11 @@ public class SubmissionRateLimiter {
     /** Dopuszczalna liczba zgłoszeń z jednego adresu w oknie. */
     private static final int MAX_SUBMISSIONS_PER_WINDOW = 5;
 
-    private final SlidingWindowRateLimiter submissions =
-            new SlidingWindowRateLimiter(WINDOW, MAX_SUBMISSIONS_PER_WINDOW, Clock.systemUTC());
+    private final SlidingWindowRateLimiter submissions;
+
+    public SubmissionRateLimiter(Clock clock) {
+        this.submissions = new SlidingWindowRateLimiter(WINDOW, MAX_SUBMISSIONS_PER_WINDOW, clock);
+    }
 
     /**
      * Rejestruje próbę wysłania formularza.
@@ -35,10 +38,5 @@ public class SubmissionRateLimiter {
      */
     public boolean tryAcquire(String clientKey) {
         return submissions.tryAcquire(clientKey);
-    }
-
-    /** Czyści zapamiętane zgłoszenia — wykorzystywane w testach. */
-    public void reset() {
-        submissions.reset();
     }
 }

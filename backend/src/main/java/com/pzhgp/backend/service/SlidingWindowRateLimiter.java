@@ -62,10 +62,6 @@ final class SlidingWindowRateLimiter {
         return accepted.get();
     }
 
-    void reset() {
-        attempts.clear();
-    }
-
     private void discardExpired(Deque<Instant> timestamps, Instant now) {
         Instant windowStart = now.minus(window);
 
