@@ -37,8 +37,8 @@ public class FoundPigeonReport {
 
     /**
      * Numer obrączki sprowadzony do postaci porównywalnej: wielkie litery, bez znaków
-     * rozdzielających. Pozwala odnaleźć zgłoszenie niezależnie od tego, czy znalazca
-     * zapisał numer jako "PL-0208-24-1234", "pl 0208 24 1234" czy "PL0208241234".
+     * rozdzielających. Pozwala odnaleźć zgłoszenie niezależnie od tego, czy w wyszukiwarce
+     * wpisze się "PL-0369-24-1234", "pl 0369 24 1234" czy "PL0369241234".
      */
     @Column(name = "ring_number_normalized", nullable = false, length = 64)
     private String ringNumberNormalized;
