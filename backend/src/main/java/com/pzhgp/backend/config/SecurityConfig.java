@@ -30,7 +30,7 @@ public class SecurityConfig {
     private final RestAccessDeniedHandler restAccessDeniedHandler;
     private final AuthCookieService authCookieService;
 
-    @Value("${cors.allowed-origins:http://localhost:3000}")
+    @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
 
     @Bean
