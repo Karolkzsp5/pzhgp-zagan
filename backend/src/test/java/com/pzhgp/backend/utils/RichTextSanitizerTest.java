@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@DisplayName("Rich Text Sanitizer Tests")
+@DisplayName("Rich Text Sanitizer Unit Tests")
 class RichTextSanitizerTest {
 
     @Test

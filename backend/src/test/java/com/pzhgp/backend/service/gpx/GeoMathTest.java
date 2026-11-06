@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Geo Math Unit Tests")
 class GeoMathTest {
 
     @Test

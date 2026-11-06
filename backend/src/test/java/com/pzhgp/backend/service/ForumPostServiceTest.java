@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumPostService Unit Tests")
+@DisplayName("Forum Post Service Unit Tests")
 class ForumPostServiceTest {
 
     @Mock

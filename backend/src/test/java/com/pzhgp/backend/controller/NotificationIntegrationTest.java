@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@DisplayName("Notifications Integration Tests")
+@DisplayName("Notification Integration Tests")
 class NotificationIntegrationTest {
 
     @Autowired

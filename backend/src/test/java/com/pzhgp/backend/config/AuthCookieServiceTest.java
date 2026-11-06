@@ -11,7 +11,7 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Auth Cookie Service Tests")
+@DisplayName("Auth Cookie Service Unit Tests")
 class AuthCookieServiceTest {
 
     private AuthCookieService serviceWithSecureFlag(boolean secure) {

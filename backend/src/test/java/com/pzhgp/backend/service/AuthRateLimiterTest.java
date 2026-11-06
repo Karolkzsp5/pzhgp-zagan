@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@DisplayName("Auth Rate Limiter Unit Tests")
 class AuthRateLimiterTest {
 
     private AuthRateLimiter rateLimiter;

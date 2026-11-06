@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Flight Analyzer Unit Tests")
 class FlightAnalyzerTest {
 
     private FlightAnalyzer analyzer;

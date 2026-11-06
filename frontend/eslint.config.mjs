@@ -7,6 +7,8 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
+      // Wyłączona świadomie: strony i modale ładują dane albo czyszczą formularz w useEffect,
+      // ustawiając przy tym stan (24 miejsca). Włączenie wymaga przebudowy ładowania danych wszędzie.
       "react-hooks/set-state-in-effect": "off",
       // Pozwala pominąć pole przy destrukturyzacji, np. { confirmPassword, ...daneDoWysłania }.
       "@typescript-eslint/no-unused-vars": ["warn", { ignoreRestSiblings: true }],

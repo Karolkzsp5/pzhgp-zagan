@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Found Pigeon Service Unit Tests")
 class FoundPigeonServiceTest {
 
     @Mock

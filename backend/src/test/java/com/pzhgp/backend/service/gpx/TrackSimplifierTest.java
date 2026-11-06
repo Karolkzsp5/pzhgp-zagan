@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Track Simplifier Unit Tests")
 class TrackSimplifierTest {
 
     @Test

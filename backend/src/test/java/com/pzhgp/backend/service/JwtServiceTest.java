@@ -12,7 +12,7 @@ import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@DisplayName("JWT Service Tests")
+@DisplayName("JWT Service Unit Tests")
 class JwtServiceTest {
 
     private static final String TEST_SECRET = "jwt-test-only-do-not-use-in-production-0123456789abcdef0123456789abcdef";

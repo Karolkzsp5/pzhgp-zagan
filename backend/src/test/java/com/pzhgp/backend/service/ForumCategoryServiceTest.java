@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumCategoryService Unit Tests")
+@DisplayName("Forum Category Service Unit Tests")
 class ForumCategoryServiceTest {
 
     @Mock

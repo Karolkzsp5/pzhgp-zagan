@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Admin Service Unit Tests")
 class AdminServiceTest {
 
     // CALLS_REAL_METHODS runs the default requireByEmail method on top of the stubbed findByEmail.

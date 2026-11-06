@@ -13,6 +13,7 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("GPX Parser Unit Tests")
 class GpxParserTest {
 
     private GpxParser parser;
