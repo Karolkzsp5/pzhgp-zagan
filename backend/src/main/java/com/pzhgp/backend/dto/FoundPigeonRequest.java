@@ -48,7 +48,6 @@ public record FoundPigeonRequest(
 
         ReportLanguage preferredLanguage
 ) {
-
     private static final int MIN_PHONE_DIGITS = 6;
     private static final int MAX_PHONE_DIGITS = 15;
 

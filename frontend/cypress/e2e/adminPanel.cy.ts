@@ -258,7 +258,6 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="pending-row-1"]').should('be.visible');
         cy.get('[data-cy="no-registered-accounts"]').should('be.visible');
 
-
         // =========================================
         // Wyszukiwanie użytkownika: Anna Kowalska
         // =========================================
@@ -282,7 +281,6 @@ describe('Panel Administratora - Testy E2E', () => {
         searchInput().clear().type('444555666');
         cy.get('[data-cy="registered-row-2"]').should('be.visible');
         cy.get('[data-cy="no-pending-accounts"]').should('be.visible');
-
 
         // ==========================
         // Czyszczenie wyszukiwarki

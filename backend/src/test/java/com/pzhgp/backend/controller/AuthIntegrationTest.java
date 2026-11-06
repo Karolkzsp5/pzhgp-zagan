@@ -446,7 +446,6 @@ class AuthIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-
     private org.springframework.test.web.servlet.ResultActions loginWithCookieJson(
             String json, String remoteAddress) throws Exception {
         CsrfValues csrf = obtainCsrf();

@@ -406,7 +406,6 @@ export default function RegisterPage() {
                                    maxLength={10}
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
-
                     </div>
 
                     {error && (

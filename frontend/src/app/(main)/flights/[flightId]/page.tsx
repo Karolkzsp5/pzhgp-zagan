@@ -508,7 +508,6 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                             <StatRow label="Plik źródłowy" value={flight.originalFileName} wrapValue />
                         </div>
                     </div>
-
                 </main>
 
                 <ConfirmModal {...dialog} />

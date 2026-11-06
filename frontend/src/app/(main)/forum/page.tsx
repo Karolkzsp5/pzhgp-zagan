@@ -45,7 +45,6 @@ export default function ForumPage() {
     }, [isLoggedIn, loadCategories]);
 
     const handleDeleteCategory = (id: number) => {
-
         showConfirm({
             title: 'Usuń kategorię',
             message: 'Czy na pewno chcesz usunąć tę kategorię? Upewnij się, że nie zawiera ona żadnych wątków.',

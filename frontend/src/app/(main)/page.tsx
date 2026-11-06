@@ -165,7 +165,6 @@ export default function HomePage() {
                                         />
 
                                         <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
-
                                             <div className="flex flex-col gap-1">
                                                 <div className="text-sm text-gray-400 font-medium">
                                                     Dodał: <span className="text-gray-600">{post.authorName}</span>

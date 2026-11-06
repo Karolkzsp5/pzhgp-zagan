@@ -366,7 +366,6 @@ function FlightTableRow({
                             onEditFlight,
                             onDeleteFlight
                         }: FlightTableRowProps) {
-
     const handleResultChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const resultId = Number(event.target.value);
 

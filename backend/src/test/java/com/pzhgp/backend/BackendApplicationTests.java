@@ -14,5 +14,4 @@ class BackendApplicationTests {
 	@DisplayName("Should start the Spring application context")
 	void contextLoads() {
 	}
-
 }

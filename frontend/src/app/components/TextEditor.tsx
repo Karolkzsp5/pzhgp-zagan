@@ -91,7 +91,6 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
     return (
         <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-gray-200 bg-white rounded-t-md">
-
             {/* Cofnij i ponów */}
             <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().chain().focus().undo().run()} title="Cofnij">
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor" aria-hidden="true">

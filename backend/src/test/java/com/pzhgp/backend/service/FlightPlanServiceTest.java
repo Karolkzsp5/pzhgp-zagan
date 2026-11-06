@@ -281,7 +281,6 @@ class FlightPlanServiceTest {
         verifyNoInteractions(notificationService);
     }
 
-
     @Test
     @DisplayName("Should throw ResourceConflictException when database detects duplicate plan year")
     void rejectsDuplicatePlanYearDetectedByDatabase() {
@@ -308,7 +307,6 @@ class FlightPlanServiceTest {
 
         verify(flightPlanRepository).saveAndFlush(any(FlightPlan.class));
     }
-
 
     @Test
     @DisplayName("Should reject creating another flight plan for the same year")

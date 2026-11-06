@@ -220,7 +220,6 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return 400 when a category description exceeds the maximum length")
     void createCategory_WithTooLongDescription_ShouldReturn400() throws Exception {
-
         Map<String, Object> request = Map.of(
                 "name", "Poprawna kategoria",
                 "description", "a".repeat(2_001),

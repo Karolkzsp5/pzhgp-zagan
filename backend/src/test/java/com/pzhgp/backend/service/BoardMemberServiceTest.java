@@ -58,7 +58,6 @@ class BoardMemberServiceTest {
         breeder.setStatus(AccountStatus.ACTIVE);
     }
 
-
     @Test
     @DisplayName("Should successfully map and return a list of all board members")
     void shouldReturnAllBoardMembersAsDtoList() {

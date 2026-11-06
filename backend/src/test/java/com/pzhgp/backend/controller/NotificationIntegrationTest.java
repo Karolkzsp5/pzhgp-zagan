@@ -132,7 +132,6 @@ class NotificationIntegrationTest {
     @DisplayName("Should return older notifications on the next page")
     void shouldReturnOlderNotificationsOnNextPage()
             throws Exception {
-
         for (int i = 0; i < 60; i++) {
             Notification notification = new Notification();
 
@@ -211,7 +210,6 @@ class NotificationIntegrationTest {
     @DisplayName("Should count all unread notifications even when the list is limited")
     void shouldCountAllUnreadNotificationsDespiteListLimit()
             throws Exception {
-
         for (int i = 0; i < 60; i++) {
             Notification notification = new Notification();
             notification.setRecipient(testBreeder);

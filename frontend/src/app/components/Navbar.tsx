@@ -318,7 +318,6 @@ export default function Navbar() {
         <nav className="bg-blue-700 text-white shadow-md relative z-40" aria-label="Główna nawigacja">
             <div className="max-w-7xl mx-auto px-2 min-[375px]:px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
-
                     <div className="flex items-center shrink-0">
                         {/* Przycisk menu mobilnego */}
                         <button
@@ -374,7 +373,6 @@ export default function Navbar() {
                                 </>
                             ) : (
                                 <div className="flex items-center space-x-1 sm:space-x-3">
-
                                     {/* Ikona powiadomień */}
                                     <div className="relative" ref={notificationsRef}>
                                         <button

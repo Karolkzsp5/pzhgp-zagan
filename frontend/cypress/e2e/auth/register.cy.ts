@@ -1,5 +1,4 @@
 describe('Breeder Registration Process Test', () => {
-
     const mockSections = [
         { id: 1, name: 'Żagań' },
         { id: 2, name: 'Wymiarki' },
@@ -367,7 +366,6 @@ describe('Breeder Registration Process Test', () => {
     it('House number test - Should ignore Polish characters', () => {
         cy.get('input[name="houseNumber"]').clear().type('1ąć4a/ó8ńc', { delay: 50 }).should('have.value', '14a/8c');
     });
-
 
     ///////////////////////////
     /////Test rejestracji//////

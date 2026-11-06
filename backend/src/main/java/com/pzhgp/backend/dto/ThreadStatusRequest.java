@@ -10,7 +10,6 @@ public record ThreadStatusRequest(
         Boolean isLocked,
         Boolean isPinned
 ) {
-
     @AssertTrue(message = "Podaj nowy status wątku.")
     public boolean isStatusProvided() {
         return isLocked != null || isPinned != null;

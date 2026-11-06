@@ -72,5 +72,4 @@ public class AuthController {
     public ResponseEntity<CurrentUserDto> currentUser(Authentication authentication) {
         return ResponseEntity.ok(breederService.getCurrentUser(authentication.getName()));
     }
-
 }
