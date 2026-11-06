@@ -16,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,7 @@ public class BreederService {
     // Hash losowego hasła, liczony przy pierwszym logowaniu na nieistniejące konto.
     private volatile String dummyPasswordHash;
 
+    @Transactional
     public void registerNewBreeder(RegistrationRequest request) {
         if (breederRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ResourceConflictException("Użytkownik z podanym adresem e-mail już istnieje.");
@@ -64,6 +66,7 @@ public class BreederService {
         }
     }
 
+    @Transactional(readOnly = true)
     public String login(LoginRequest request) {
         Optional<Breeder> account = breederRepository.findByEmailIgnoreCase(request.email());
 
@@ -97,6 +100,7 @@ public class BreederService {
         return dummyPasswordHash;
     }
 
+    @Transactional(readOnly = true)
     public CurrentUserDto getCurrentUser(String userEmail) {
         Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
 
