@@ -11,7 +11,7 @@ import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
-import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardRole, BoardRoleTranslations, SECTION_ROLE_ORDER } from '@/app/types/board';
+import { BOARD_ROLE_LABELS, BRANCH_ROLE_ORDER, BoardMemberDto, BoardRole, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneNumber } from '@/app/utils/formatters';
@@ -141,7 +141,7 @@ export default function BoardPage() {
                 {member.firstName} {member.lastName}
             </h3>
             <p className="text-sm font-semibold text-blue-600 mt-1 mb-4">
-                {BoardRoleTranslations[member.role]}
+                {BOARD_ROLE_LABELS[member.role]}
             </p>
 
             {member.publicPhoneNumber ? (

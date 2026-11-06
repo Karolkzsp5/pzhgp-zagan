@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
-import { BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
+import { BOARD_ROLE_LABELS, BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
@@ -17,7 +17,7 @@ interface BoardMemberModalProps {
 }
 
 export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdit }: BoardMemberModalProps) {
-    const [role, setRole] = useState<BoardRole>(BoardRole.CZLONEK_ZARZADU);
+    const [role, setRole] = useState<BoardRole>('CZLONEK_ZARZADU');
     const [managedSectionId, setManagedSectionId] = useState<number | null>(null);
 
     const [isRegistered, setIsRegistered] = useState<boolean>(true);
@@ -34,10 +34,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [error, setError] = useState<string | null>(null);
 
     const allowedRoles = managedSectionId === null
-        ? Object.entries(BoardRoleTranslations)
-            .filter(([key]) => key !== BoardRole.SKARBNIK)
+        ? Object.entries(BOARD_ROLE_LABELS)
+            .filter(([key]) => key !== 'SKARBNIK')
             .sort((a, b) => (BRANCH_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (BRANCH_ROLE_ORDER[b[0] as BoardRole] ?? 99))
-        : Object.entries(BoardRoleTranslations)
+        : Object.entries(BOARD_ROLE_LABELS)
             .filter(([key]) => SECTION_ROLES
             .includes(key as BoardRole))
             .sort((a, b) => (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99));
@@ -53,7 +53,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
         if (newSectionId !== null) {
             if (!SECTION_ROLES.includes(role)) {
-                setRole(BoardRole.PREZES);
+                setRole('PREZES');
             }
 
             if (breederId) {
@@ -63,8 +63,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     setBreederId(null);
                 }
             }
-        } else if (role === BoardRole.SKARBNIK) {
-            setRole(BoardRole.PREZES);
+        } else if (role === 'SKARBNIK') {
+            setRole('PREZES');
         }
     };
 
@@ -129,7 +129,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 setCustomSurname(memberToEdit.lastName);
             }
         } else {
-            setRole(BoardRole.CZLONEK_ZARZADU);
+            setRole('CZLONEK_ZARZADU');
             setManagedSectionId(null);
             setIsRegistered(true);
             setBreederId(null);

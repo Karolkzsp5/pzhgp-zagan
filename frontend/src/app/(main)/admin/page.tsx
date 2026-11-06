@@ -16,7 +16,7 @@ import { AccountAction, BreederDto } from '@/app/types/breeder';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { UserRole } from '@/app/utils/authSession';
-import { formatAccountStatus, formatDate, formatDateTime, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
+import { formatAccountStatus, formatDateTime, formatInstantDate, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 
 type SortOption = 'NEWEST' | 'OLDEST' | 'A_Z' | 'Z_A';
 
@@ -520,7 +520,7 @@ export default function AdminPanelPage() {
 
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase tracking-wider">Data rejestracji</p>
-                                    <p className="text-sm font-medium text-gray-800">{formatDate(selectedBreeder.createdAt)}</p>
+                                    <p className="text-sm font-medium text-gray-800">{formatInstantDate(selectedBreeder.createdAt)}</p>
                                 </div>
 
                                 <div>

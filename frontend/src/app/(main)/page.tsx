@@ -13,7 +13,7 @@ import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { announcementService } from '@/app/services/announcementService';
 import { AnnouncementDto } from '@/app/types/announcement';
 import { getErrorMessage } from '@/app/utils/apiClient';
-import { formatDate, formatDateTime } from '@/app/utils/formatters';
+import { formatDateTime, formatInstantDate } from '@/app/utils/formatters';
 
 export default function HomePage() {
     const { user, isAuthResolved } = useAuth();
@@ -155,7 +155,7 @@ export default function HomePage() {
                                                 )}
                                                 <span
                                                     className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
-                                                        {formatDate(post.createdAt)}
+                                                        {formatInstantDate(post.createdAt)}
                                                 </span>
                                             </div>
                                         </div>

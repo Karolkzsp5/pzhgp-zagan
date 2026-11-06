@@ -1,3 +1,6 @@
+import { AccountStatus } from '@/app/types/breeder';
+import { UserRole } from '@/app/utils/authSession';
+
 /** Data i godzina (bez sekund) w czasie lokalnym, np. "04.11.2026, 14:05". */
 export const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '—';
@@ -25,7 +28,8 @@ export const formatDateTimeWithSeconds = (isoTime: string | null): string => {
     });
 };
 
-export const formatDate = (dateString: string | null) => {
+/** Sama data z momentu w czasie (Instant z backendu) w strefie przeglądarki, np. "04.11.2026". */
+export const formatInstantDate = (dateString: string | null) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('pl-PL', {
         day: '2-digit',
@@ -33,7 +37,7 @@ export const formatDate = (dateString: string | null) => {
         year: 'numeric' });
 };
 
-/** Data bez strefy czasowej (np. "2026-05-17" z backendu) zapisana jako "17.05.2026". */
+/** Data kalendarzowa bez strefy czasowej (LocalDate z backendu, np. "2026-05-17") zapisana jako "17.05.2026". */
 export const formatLocalDate = (dateString: string | null) => {
     if (!dateString) return '—';
     const [year, month, day] = dateString.split('-');
@@ -80,17 +84,17 @@ export const formatPhoneInput = (value: string) => {
     return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
 };
 
-const ROLE_LABELS: Record<string, string> = {
+const ROLE_LABELS: Record<UserRole, string> = {
     ADMINISTRATOR: 'Administrator',
     MODERATOR: 'Moderator',
     BREEDER: 'Hodowca'
 };
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<AccountStatus, string> = {
     ACTIVE: 'Aktywny',
     BLOCKED: 'Zablokowany',
     PENDING: 'Oczekujący'
 };
 
-export const formatRole = (role: string) => ROLE_LABELS[role] ?? role;
-export const formatAccountStatus = (status: string) => STATUS_LABELS[status] ?? status;
+export const formatRole = (role: UserRole) => ROLE_LABELS[role] ?? role;
+export const formatAccountStatus = (status: AccountStatus) => STATUS_LABELS[status] ?? status;
