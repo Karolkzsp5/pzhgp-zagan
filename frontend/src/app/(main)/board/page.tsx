@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/app/components/AuthProvider';
 import BoardMemberModal from '@/app/components/BoardMemberModal';
 import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
-import ErrorState from "@/app/components/ErrorState"
-import LoadingState from "@/app/components/LoadingState"
+import ErrorState from '@/app/components/ErrorState';
+import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { boardService } from '@/app/services/boardService';

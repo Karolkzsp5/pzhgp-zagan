@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import Link from "next/link";
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Modal from '@/app/components/Modal';
 import { authService } from '@/app/services/authService';
@@ -122,12 +122,12 @@ export default function RegisterPage() {
     };
 
     const validateStrongPassword = (pass: string): string | null => {
-        if (pass.length < 8) return "Hasło musi zawierać co najmniej 8 znaków.";
-        if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return "Hasło musi zawierać co najmniej jedną dużą literę.";
-        if (!/[a-ząćęłńóśźż]/.test(pass)) return "Hasło musi zawierać co najmniej jedną małą literę.";
-        if (!/\d/.test(pass)) return "Hasło musi zawierać co najmniej jedną cyfrę.";
-        if (!SPECIAL_CHARACTER.test(pass)) return "Hasło musi zawierać co najmniej jeden znak specjalny.";
-        if (pass.length > 72 || new TextEncoder().encode(pass).length > 72) return "Hasło może mieć maksymalnie 72 bajty (UTF-8).";
+        if (pass.length < 8) return 'Hasło musi zawierać co najmniej 8 znaków.';
+        if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return 'Hasło musi zawierać co najmniej jedną dużą literę.';
+        if (!/[a-ząćęłńóśźż]/.test(pass)) return 'Hasło musi zawierać co najmniej jedną małą literę.';
+        if (!/\d/.test(pass)) return 'Hasło musi zawierać co najmniej jedną cyfrę.';
+        if (!SPECIAL_CHARACTER.test(pass)) return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
+        if (pass.length > 72 || new TextEncoder().encode(pass).length > 72) return 'Hasło może mieć maksymalnie 72 bajty (UTF-8).';
         return null;
     };
 

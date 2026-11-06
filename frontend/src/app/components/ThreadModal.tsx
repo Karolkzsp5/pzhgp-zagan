@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { type FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';

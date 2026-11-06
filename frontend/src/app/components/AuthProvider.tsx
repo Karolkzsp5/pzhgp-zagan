@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authService } from '@/app/services/authService';

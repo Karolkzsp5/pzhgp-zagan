@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import Highlight from '@tiptap/extension-highlight';

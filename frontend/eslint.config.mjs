@@ -1,6 +1,6 @@
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
+import { defineConfig, globalIgnores } from 'eslint/config';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -9,24 +9,24 @@ const eslintConfig = defineConfig([
     rules: {
       // Wyłączona świadomie: strony i modale ładują dane albo czyszczą formularz w useEffect,
       // ustawiając przy tym stan (24 miejsca). Włączenie wymaga przebudowy ładowania danych wszędzie.
-      "react-hooks/set-state-in-effect": "off",
+      'react-hooks/set-state-in-effect': 'off',
       // Pozwala pominąć pole przy destrukturyzacji, np. { confirmPassword, ...daneDoWysłania }.
-      "@typescript-eslint/no-unused-vars": ["warn", { ignoreRestSiblings: true }],
+      '@typescript-eslint/no-unused-vars': ['warn', { ignoreRestSiblings: true }],
     },
   },
   {
-    files: ["cypress/**/*.ts", "cypress.config.ts"],
+    files: ['cypress/**/*.ts', 'cypress.config.ts'],
     rules: {
-      "@typescript-eslint/no-namespace": "off",
+      '@typescript-eslint/no-namespace': 'off',
       // Asercje Chai (np. expect(value).to.be.true) są wyrażeniami, a nie wywołaniami.
-      "@typescript-eslint/no-unused-expressions": "off",
+      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
   globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
   ]),
 ]);
 

@@ -8,13 +8,13 @@ export type BoardRole =
     | 'CZLONEK_ZARZADU';
 
 export const BOARD_ROLE_LABELS: Record<BoardRole, string> = {
-    PREZES: "Prezes",
-    WICEPREZES_DS_LOTOWYCH: "V-ce Prezes ds. lotowych",
-    WICEPREZES_DS_FINANSOWYCH: "V-ce Prezes ds. finansowych",
-    WICEPREZES_DS_GOSPODARCZYCH: "V-ce Prezes ds. gospodarczych",
-    SEKRETARZ: "Sekretarz",
-    SKARBNIK: "Skarbnik",
-    CZLONEK_ZARZADU: "Członek Zarządu"
+    PREZES: 'Prezes',
+    WICEPREZES_DS_LOTOWYCH: 'V-ce Prezes ds. lotowych',
+    WICEPREZES_DS_FINANSOWYCH: 'V-ce Prezes ds. finansowych',
+    WICEPREZES_DS_GOSPODARCZYCH: 'V-ce Prezes ds. gospodarczych',
+    SEKRETARZ: 'Sekretarz',
+    SKARBNIK: 'Skarbnik',
+    CZLONEK_ZARZADU: 'Członek Zarządu'
 };
 
 export const BRANCH_ROLE_ORDER: Record<BoardRole, number> = {

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
 import AnnouncementModal from '@/app/components/AnnouncementModal';
 import { useAuth } from '@/app/components/AuthProvider';
-import ConfirmModal from "@/app/components/ConfirmModal"
+import ConfirmModal from '@/app/components/ConfirmModal';
 import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
