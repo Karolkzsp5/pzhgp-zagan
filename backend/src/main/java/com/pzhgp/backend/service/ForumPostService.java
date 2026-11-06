@@ -25,6 +25,9 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class ForumPostService {
 
+    /** Największa dopuszczalna liczba wpisów na stronie wątku. */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ForumPostRepository postRepository;
     private final ForumThreadRepository threadRepository;
     private final BreederRepository breederRepository;
@@ -38,7 +41,7 @@ public class ForumPostService {
 
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
 
         return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));

@@ -27,6 +27,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ForumThreadService {
 
+    /** Największa dopuszczalna liczba wątków na stronie kategorii. */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ForumThreadRepository threadRepository;
     private final ForumCategoryRepository categoryRepository;
     private final BreederRepository breederRepository;
@@ -41,7 +44,7 @@ public class ForumThreadService {
 
         Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size, Sort.by(
                 Sort.Order.desc("isPinned"),
                 Sort.Order.desc("lastPostAt"),

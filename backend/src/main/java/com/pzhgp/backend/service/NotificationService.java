@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    /** Największa dopuszczalna liczba powiadomień na stronie. */
     private static final int MAX_PAGE_SIZE = 50;
 
     private final NotificationRepository notificationRepository;

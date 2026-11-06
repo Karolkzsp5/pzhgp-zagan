@@ -55,6 +55,9 @@ public class PigeonFlightService {
     /** Domyślna tolerancja upraszczania trasy dla widoku mapy, w metrach. */
     private static final double DEFAULT_SIMPLIFY_TOLERANCE_METERS = 10.0;
 
+    /** Największa dopuszczalna liczba lotów na stronie listy. */
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final PigeonFlightRepository flightRepository;
     private final FlightTrackPointRepository trackPointRepository;
     private final BreederRepository breederRepository;
@@ -115,7 +118,7 @@ public class PigeonFlightService {
     @Transactional(readOnly = true)
     public Page<FlightSummaryDto> getMyFlights(String userEmail, int page, int size) {
         Breeder owner = breederRepository.requireByEmail(userEmail);
-        PaginationUtils.validate(page, size, 50);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size);
 
         return flightRepository.findByOwnerOrderByUploadedAtDescIdDesc(owner, pageable).map(flight -> toSummary(flight, owner));

@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementService {
 
+    /** Największa dopuszczalna liczba ogłoszeń na stronie. */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final AnnouncementRepository announcementRepository;
     private final BreederRepository breederRepository;
     private final NotificationService notificationService;
@@ -97,7 +100,7 @@ public class AnnouncementService {
         }
 
         Breeder finalCurrentUser = currentUser;
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size);
 
         return announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(pageable).map(announcement -> mapToDto(announcement, finalCurrentUser));
