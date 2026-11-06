@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { forumService } from '@/app/services/forumService';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import TextEditor from './TextEditor';
 
@@ -51,7 +51,7 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wątku.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas tworzenia wątku.'));
         } finally {
             setIsLoading(false);
         }

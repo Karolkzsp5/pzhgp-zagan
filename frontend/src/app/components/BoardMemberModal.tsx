@@ -6,6 +6,7 @@ import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
 import { BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface BoardMemberModalProps {
@@ -95,7 +96,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     return;
                 }
 
-                setError(error instanceof Error ? error.message : 'Wystąpił problem z połączeniem.');
+                setError(getErrorMessage(error, 'Wystąpił problem z połączeniem.'));
             } finally {
                 if (!controller.signal.aborted) {
                     setIsDictionaryLoading(false);
@@ -169,7 +170,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             }
             onSaved();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania.'));
         } finally {
             setIsLoading(false);
         }

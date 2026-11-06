@@ -12,7 +12,7 @@ import Pagination from '@/app/components/Pagination';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { announcementService } from '@/app/services/announcementService';
 import { AnnouncementDto } from '@/app/types/announcement';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatDate, formatDateTime } from '@/app/utils/formatters';
 
 export default function HomePage() {
@@ -53,8 +53,7 @@ export default function HomePage() {
                 return;
             }
 
-            setAnnouncementError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE :
-                error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania ogłoszeń.'
+            setAnnouncementError(getErrorMessage(error, 'Wystąpił błąd podczas pobierania ogłoszeń.')
             );
         } finally {
             if (isLatestRequest(requestId)) {
@@ -87,7 +86,7 @@ export default function HomePage() {
             await fetchAnnouncements(targetPage);
         } catch (error) {
             setPostToDelete(null);
-            setActionError(error instanceof Error ? error.message : 'Nie udało się usunąć ogłoszenia.');
+            setActionError(getErrorMessage(error, 'Nie udało się usunąć ogłoszenia.'));
         } finally {
             setIsDeleting(false);
         }

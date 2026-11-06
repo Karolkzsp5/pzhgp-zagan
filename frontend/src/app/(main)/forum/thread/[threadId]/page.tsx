@@ -16,7 +16,7 @@ import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { forumService } from '@/app/services/forumService';
 import { ForumPostDto, ForumThreadDto, ThreadStatusChange } from '@/app/types/forum';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatDateTime, formatRole } from '@/app/utils/formatters';
 import { isHtmlEmpty } from '@/app/utils/richText';
 
@@ -93,8 +93,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 return;
             }
 
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE :
-                error instanceof Error ? error.message : 'Nie udało się pobrać dyskusji.');
+            setError(getErrorMessage(error, 'Nie udało się pobrać dyskusji.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -137,7 +136,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                 await loadThreadData();
             }
         } catch (error) {
-            setReplyError(error instanceof Error ? error.message : 'Wystąpił błąd podczas publikowania odpowiedzi.');
+            setReplyError(getErrorMessage(error, 'Wystąpił błąd podczas publikowania odpowiedzi.'));
         } finally {
             setIsReplying(false);
         }
@@ -152,7 +151,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     await forumService.deleteThread(threadId);
                     router.push(thread ? `/forum/${thread.categoryId}` : '/forum');
                 } catch (error) {
-                    showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania wątku.');
+                    showAlert('Błąd', getErrorMessage(error, 'Wystąpił błąd podczas usuwania wątku.'));
                 }
             }
         });
@@ -167,7 +166,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             await forumService.updateThreadStatus(threadId, status);
             setThread(prev => prev ? { ...prev, ...status } : prev);
         } catch (error) {
-            showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas zmiany statusu wątku.');
+            showAlert('Błąd', getErrorMessage(error, 'Wystąpił błąd podczas zmiany statusu wątku.'));
         }
     };
 
@@ -186,7 +185,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             setThread(prev => prev ? { ...prev, title: cleanTitle } : prev);
             setIsEditingTitle(false);
         } catch (error) {
-            showAlert('Błąd edycji', error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania tytułu.');
+            showAlert('Błąd edycji', getErrorMessage(error, 'Wystąpił błąd podczas zapisywania tytułu.'));
         } finally {
             setIsTitleSubmitting(false);
         }
@@ -212,7 +211,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
             cancelEditing();
             await loadThreadData();
         } catch (error) {
-            setEditError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania wpisu.');
+            setEditError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania wpisu.'));
         } finally {
             setIsEditSubmitting(false);
         }
@@ -227,7 +226,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     await forumService.deletePost(postId);
                     await loadThreadData();
                 } catch (error) {
-                    showAlert('Nie można usunąć', error instanceof Error ? error.message : 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.');
+                    showAlert('Nie można usunąć', getErrorMessage(error, 'Nie można usunąć jedynego wpisu. Spróbuj usunąć cały wątek.'));
                 }
             }
         });

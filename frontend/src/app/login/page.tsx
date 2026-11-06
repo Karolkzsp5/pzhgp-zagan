@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
 import { authService } from '@/app/services/authService';
-import { CONNECTION_ERROR_MESSAGE, refreshCsrfToken } from '@/app/utils/apiClient';
+import { getErrorMessage, refreshCsrfToken } from '@/app/utils/apiClient';
 import { invalidateAuthSession } from '@/app/utils/authSession';
 import { safeReturnPath } from '@/app/utils/loginRedirect';
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
             }
             router.push(safeReturnPath(new URLSearchParams(window.location.search).get('next')));
         } catch (error) {
-            setMessage({ text: error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : error instanceof Error ? error.message : 'Wystąpił błąd podczas logowania.', type: 'error' });
+            setMessage({ text: getErrorMessage(error, 'Wystąpił błąd podczas logowania.'), type: 'error' });
             setIsLoading(false);
         }
     };

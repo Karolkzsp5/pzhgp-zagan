@@ -14,7 +14,7 @@ import { adminService } from '@/app/services/adminService';
 import { sectionService } from '@/app/services/sectionService';
 import { AccountAction, BreederDto } from '@/app/types/breeder';
 import { SectionDto } from '@/app/types/section';
-import { ApiError, CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { UserRole } from '@/app/utils/authSession';
 import { formatAccountStatus, formatDate, formatDateTime, formatLocalDate, formatPhoneNumber, formatRole } from '@/app/utils/formatters';
 
@@ -73,13 +73,7 @@ export default function AdminPanelPage() {
         } catch (error) {
             if (!isLatestRequest(requestId)) return;
 
-            if (error instanceof TypeError) {
-                setError(CONNECTION_ERROR_MESSAGE);
-            } else if (error instanceof ApiError && error.status === 403) {
-                setError('Brak uprawnień dostępu. Zaloguj się jako administrator.');
-            } else {
-                setError('Wystąpił błąd podczas pobierania danych.');
-            }
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas pobierania danych.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -113,9 +107,7 @@ export default function AdminPanelPage() {
                 setRegisteredBreeders(prev => prev.map(b => b.id === id ? { ...b, status: 'ACTIVE' } : b));
             }
         } catch (error) {
-            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
-                : error instanceof ApiError ? `Błąd: ${error.message}`
-                    : 'Nie udało się wykonać operacji.');
+            setModalMessage(getErrorMessage(error, 'Nie udało się wykonać operacji.'));
         }
     };
 
@@ -130,9 +122,7 @@ export default function AdminPanelPage() {
             );
             setRoleChangeBreeder(null);
         } catch (error) {
-            setModalMessage(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
-                : error instanceof ApiError ? `Błąd: ${error.message}`
-                    : 'Nie udało się zmienić roli.');
+            setModalMessage(getErrorMessage(error, 'Nie udało się zmienić roli.'));
         }
     };
 

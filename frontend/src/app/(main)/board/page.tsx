@@ -13,7 +13,7 @@ import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
 import { BRANCH_ROLE_ORDER, BoardMemberDto, BoardRole, BoardRoleTranslations, SECTION_ROLE_ORDER } from '@/app/types/board';
 import { SectionDto } from '@/app/types/section';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneNumber } from '@/app/utils/formatters';
 
 export default function BoardPage() {
@@ -48,7 +48,7 @@ export default function BoardPage() {
         } catch (error) {
             if (!isLatestRequest(requestId)) return;
 
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać danych zarządu.');
+            setError(getErrorMessage(error, 'Nie udało się pobrać danych zarządu.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -69,7 +69,7 @@ export default function BoardPage() {
                     await boardService.deleteBoardMember(id);
                     void fetchData();
                 } catch (error) {
-                    showAlert('Błąd', error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.');
+                    showAlert('Błąd', getErrorMessage(error, 'Wystąpił błąd podczas usuwania. Spróbuj ponownie.'));
                 }
             }
         });

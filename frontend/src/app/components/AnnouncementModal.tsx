@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { announcementService } from '@/app/services/announcementService';
 import { AnnouncementDto } from '@/app/types/announcement';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
 import Modal from './Modal';
 import TextEditor from './TextEditor';
@@ -69,11 +69,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             onClose();
         } catch (error) {
             setError(
-                error instanceof TypeError
-                    ? CONNECTION_ERROR_MESSAGE
-                    : error instanceof Error
-                        ? error.message
-                        : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
+                getErrorMessage(error, 'Wystąpił błąd podczas zapisywania ogłoszenia.')
             );
         } finally {
             setIsLoading(false);

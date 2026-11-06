@@ -14,6 +14,7 @@ import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatLocalDate } from '@/app/utils/formatters';
 
 interface FlightPlanYearPageProps {
@@ -56,7 +57,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
         try {
             setPlan(await flightPlanService.getPlanByYear(year));
         } catch (error) {
-            setLoadError(error instanceof Error ? error.message : 'Nie udało się pobrać planu lotów.');
+            setLoadError(getErrorMessage(error, 'Nie udało się pobrać planu lotów.'));
         } finally {
             setIsLoading(false);
         }
@@ -94,7 +95,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
             resultWindow.close();
 
             showAlert('Nie udało się otworzyć wyników',
-                error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania wyników lotu.'
+                getErrorMessage(error, 'Wystąpił błąd podczas pobierania wyników lotu.')
             );
         } finally {
             setOpeningResultId(null);
@@ -127,7 +128,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                     await flightPlanService.deleteEntry(flight.id);
                     await loadPlan();
                 } catch (error) {
-                    showAlert('Nie udało się usunąć lotu', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania lotu.');
+                    showAlert('Nie udało się usunąć lotu', getErrorMessage(error, 'Wystąpił błąd podczas usuwania lotu.'));
                 }
             }
         });

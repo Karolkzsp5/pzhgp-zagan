@@ -12,7 +12,7 @@ import ThreadModal from '@/app/components/ThreadModal';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto, ForumThreadDto } from '@/app/types/forum';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatDateTime } from '@/app/utils/formatters';
 
 export default function CategoryViewPage({ params }: { params: Promise<{ categoryId: string }> }) {
@@ -58,8 +58,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                 return;
             }
 
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE :
-                error instanceof Error ? error.message : 'Nie udało się pobrać danych forum.'
+            setError(getErrorMessage(error, 'Nie udało się pobrać danych forum.')
             );
         } finally {
             if (isLatestRequest(requestId)) {

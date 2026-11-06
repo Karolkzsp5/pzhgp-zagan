@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanEntryDto, FlightPlanEntryRequest, PigeonAgeGroup } from '@/app/types/flightPlan';
+import { getErrorMessage } from '@/app/utils/apiClient';
 
 interface FlightPlanEntryModalProps {
     isOpen: boolean;
@@ -93,7 +94,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
             await onSaved();
             onClose();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się zapisać lotu.');
+            setError(getErrorMessage(error, 'Nie udało się zapisać lotu.'));
         } finally {
             setIsSaving(false);
         }

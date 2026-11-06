@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/components/AuthProvider';
 import { notificationService } from '@/app/services/notificationService';
 import { NotificationDto } from '@/app/types/notification';
-import { CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { getAuthGeneration } from '@/app/utils/authSession';
 import { formatDateTime } from '@/app/utils/formatters';
 
@@ -244,9 +244,7 @@ export default function Navbar() {
             void fetchNotifications(sessionId);
         } catch (error) {
             if (isCurrentNotificationSession(sessionId, generation)) {
-                setNotificationDeleteError(error instanceof TypeError
-                    ? CONNECTION_ERROR_MESSAGE
-                    : error instanceof Error ? error.message : 'Nie udało się usunąć powiadomienia.');
+                setNotificationDeleteError(getErrorMessage(error, 'Nie udało się usunąć powiadomienia.'));
             }
         } finally {
             if (isCurrentNotificationSession(sessionId, generation)) {
@@ -280,7 +278,7 @@ export default function Navbar() {
         try {
             await signOut();
         } catch (error) {
-            setLogoutError(error instanceof Error ? error.message : 'Nie udało się wylogować.');
+            setLogoutError(getErrorMessage(error, 'Nie udało się wylogować.'));
             return;
         }
         invalidateNotificationSession();

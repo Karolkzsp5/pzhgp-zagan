@@ -13,6 +13,7 @@ import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightService } from '@/app/services/flightService';
 import { FlightDetailsDto } from '@/app/types/flight';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { SPEED_RAMP, computeSpeedThresholds, speedLegendLabels } from '@/app/utils/flightScale';
 import { formatDateTimeWithSeconds, formatDuration, formatSpeed, formatTime } from '@/app/utils/formatters';
 
@@ -127,7 +128,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
             if (requestId !== loadRequestRef.current) return;
 
             console.error('Błąd podczas pobierania lotu:', error);
-            setError(error instanceof Error ? error.message : 'Nie udało się pobrać lotu.');
+            setError(getErrorMessage(error, 'Nie udało się pobrać lotu.'));
         } finally {
             if (requestId === loadRequestRef.current) {
                 setIsLoading(false);
@@ -210,7 +211,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
                     await flightService.deleteFlight(flight.id);
                     router.push('/flights');
                 } catch (caught) {
-                    showAlert('Błąd', caught instanceof Error ? caught.message : 'Nie udało się usunąć lotu.');
+                    showAlert('Błąd', getErrorMessage(caught, 'Nie udało się usunąć lotu.'));
                 }
             }
         });

@@ -12,6 +12,7 @@ import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
+import { getErrorMessage } from '@/app/utils/apiClient';
 
 export default function ForumPage() {
     const { user, isLoggedIn } = useAuth();
@@ -31,7 +32,7 @@ export default function ForumPage() {
             const data = await forumService.getCategories();
             setCategories(data);
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się pobrać danych forum.');
+            setError(getErrorMessage(error, 'Nie udało się pobrać danych forum.'));
         } finally {
             setIsLoading(false);
         }
@@ -53,7 +54,7 @@ export default function ForumPage() {
                     await forumService.deleteCategory(id);
                     void loadCategories();
                 } catch (error) {
-                    showAlert('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania kategorii.');
+                    showAlert('Błąd', getErrorMessage(error, 'Wystąpił błąd podczas usuwania kategorii.'));
                 }
             }
         });

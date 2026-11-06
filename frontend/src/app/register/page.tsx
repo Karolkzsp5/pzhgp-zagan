@@ -8,7 +8,7 @@ import { authService } from '@/app/services/authService';
 import { sectionService } from '@/app/services/sectionService';
 import { RegistrationRequest } from '@/app/types/auth';
 import { SectionDto } from '@/app/types/section';
-import { ApiError, CONNECTION_ERROR_MESSAGE } from '@/app/utils/apiClient';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface RegistrationFormData extends RegistrationRequest {
@@ -63,7 +63,7 @@ export default function RegisterPage() {
             try {
                 setSections(await sectionService.getSections());
             } catch (error) {
-                setSectionsError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE : 'Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.');
+                setSectionsError(getErrorMessage(error, 'Nie udało się pobrać listy sekcji. Odśwież stronę i spróbuj ponownie.'));
             }
         };
 
@@ -214,9 +214,7 @@ export default function RegisterPage() {
             await authService.register(cleanDataToSend);
             setIsRegistrationSuccessful(true);
         } catch (error) {
-            setError(error instanceof TypeError ? CONNECTION_ERROR_MESSAGE
-                : error instanceof ApiError ? error.message
-                    : 'Wystąpił błąd podczas rejestracji.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas rejestracji.'));
         } finally {
             setIsLoading(false);
         }

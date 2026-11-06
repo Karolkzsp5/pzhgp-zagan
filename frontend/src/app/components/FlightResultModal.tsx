@@ -6,6 +6,7 @@ import { flightPlanService } from '@/app/services/flightPlanService';
 import { sectionService } from '@/app/services/sectionService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
 import { SectionDto } from '@/app/types/section';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatLocalDate } from '@/app/utils/formatters';
 
 interface FlightResultModalProps {
@@ -83,7 +84,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                     return;
                 }
 
-                setError(error instanceof Error ? error.message : 'Nie udało się pobrać listy sekcji.');
+                setError(getErrorMessage(error, 'Nie udało się pobrać listy sekcji.'));
             } finally {
                 if (!controller.signal.aborted) {
                     setIsLoadingSections(false);
@@ -191,7 +192,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
             setSuccessMessage('Wyniki zostały wgrane.');
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się wgrać wyników lotu.');
+            setError(getErrorMessage(error, 'Nie udało się wgrać wyników lotu.'));
         } finally {
             setIsUploading(false);
         }
@@ -208,7 +209,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
             setResultToDeleteId(null);
             setSuccessMessage('Wyniki zostały usunięte.');
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się usunąć wyników lotu.');
+            setError(getErrorMessage(error, 'Nie udało się usunąć wyników lotu.'));
         } finally {
             setDeletingResultId(null);
         }

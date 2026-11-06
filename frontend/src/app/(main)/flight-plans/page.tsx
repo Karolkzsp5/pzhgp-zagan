@@ -12,6 +12,7 @@ import Modal from '@/app/components/Modal';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanSummaryDto } from '@/app/types/flightPlan';
+import { getErrorMessage } from '@/app/utils/apiClient';
 
 export default function FlightPlansPage() {
     const { user, isLoggedIn } = useAuth();
@@ -36,7 +37,7 @@ export default function FlightPlansPage() {
         try {
             setPlans(await flightPlanService.getAllPlans());
         } catch (error) {
-            setLoadError(error instanceof Error ? error.message : 'Nie udało się pobrać planów lotów.');
+            setLoadError(getErrorMessage(error, 'Nie udało się pobrać planów lotów.'));
         } finally {
             setIsLoading(false);
         }
@@ -79,7 +80,7 @@ export default function FlightPlansPage() {
             setIsCreateModalOpen(false);
             await loadPlans();
         } catch (error) {
-            setFormError(error instanceof Error ? error.message : 'Nie udało się utworzyć planu lotów.');
+            setFormError(getErrorMessage(error, 'Nie udało się utworzyć planu lotów.'));
         } finally {
             setIsSaving(false);
         }
@@ -95,7 +96,7 @@ export default function FlightPlansPage() {
                     await loadPlans();
                 } catch (error) {
                     showAlert('Nie udało się usunąć planu',
-                        error instanceof Error ? error.message : 'Wystąpił błąd podczas usuwania planu lotów.'
+                        getErrorMessage(error, 'Wystąpił błąd podczas usuwania planu lotów.')
                     );
                 }
             }

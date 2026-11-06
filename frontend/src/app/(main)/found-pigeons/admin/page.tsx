@@ -12,6 +12,7 @@ import Pagination from '@/app/components/Pagination';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { ALLOWED_STATUS_TRANSITIONS, FoundPigeonDto, FoundPigeonStatus, STATUS_BADGE_CLASSES, formatReportLanguage, formatReportStatus, formatStatusAction } from '@/app/types/foundPigeon';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatDateTime } from '@/app/utils/formatters';
 
 const PAGE_SIZE = 10;
@@ -83,7 +84,7 @@ export default function FoundPigeonsAdminPage() {
                     return;
                 }
 
-                setLoadError(error instanceof Error ? error.message : 'Nie udało się pobrać zgłoszeń.');
+                setLoadError(getErrorMessage(error, 'Nie udało się pobrać zgłoszeń.'));
             } finally {
                 if (requestControllerRef.current === controller) {
                     requestControllerRef.current = null;
@@ -157,7 +158,7 @@ export default function FoundPigeonsAdminPage() {
 
             await fetchReports(page, statusFilter, appliedSearch);
         } catch (error) {
-            setDetailsError(error instanceof Error ? error.message : 'Nie udało się zmienić statusu.');
+            setDetailsError(getErrorMessage(error, 'Nie udało się zmienić statusu.'));
         } finally {
             setIsChangingStatus(false);
         }
@@ -171,7 +172,7 @@ export default function FoundPigeonsAdminPage() {
         try {
             applyUpdate(await foundPigeonService.updateNote(selected.id, noteDraft));
         } catch (error) {
-            setDetailsError(error instanceof Error ? error.message : 'Nie udało się zapisać notatki.');
+            setDetailsError(getErrorMessage(error, 'Nie udało się zapisać notatki.'));
         } finally {
             setIsSavingNote(false);
         }
@@ -194,7 +195,7 @@ export default function FoundPigeonsAdminPage() {
                     const isLastOnPage = reports.length === 1 && page > 0;
                     await fetchReports(isLastOnPage ? page - 1 : page, statusFilter, appliedSearch);
                 } catch (error) {
-                    showAlert('Błąd', error instanceof Error ? error.message : 'Nie udało się usunąć zgłoszenia.');
+                    showAlert('Błąd', getErrorMessage(error, 'Nie udało się usunąć zgłoszenia.'));
                 } finally {
                     setIsDeleting(false);
                 }

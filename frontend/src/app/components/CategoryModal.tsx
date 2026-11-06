@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
 import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
+import { getErrorMessage } from '@/app/utils/apiClient';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -63,7 +64,7 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania kategorii.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania kategorii.'));
         } finally {
             setIsLoading(false);
         }

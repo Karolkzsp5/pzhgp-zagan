@@ -14,6 +14,7 @@ import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { flightService } from '@/app/services/flightService';
 import { FlightSummaryDto } from '@/app/types/flight';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatDateTimeWithSeconds, formatDuration, formatSpeed } from '@/app/utils/formatters';
 
 const PAGE_SIZE = 10;
@@ -64,7 +65,7 @@ export default function FlightsPage() {
                 return;
             }
 
-            setListError(error instanceof Error ? error.message : 'Nie udało się pobrać listy lotów.');
+            setListError(getErrorMessage(error, 'Nie udało się pobrać listy lotów.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -123,7 +124,7 @@ export default function FlightsPage() {
 
             router.push(`/flights/${flightId}`);
         } catch (error) {
-            setUploadError(error instanceof Error ? error.message : 'Nie udało się wgrać pliku GPX.');
+            setUploadError(getErrorMessage(error, 'Nie udało się wgrać pliku GPX.'));
             setIsUploading(false);
         }
     };
@@ -138,7 +139,7 @@ export default function FlightsPage() {
                     const isLastOnPage = flights.length === 1 && page > 0;
                     await fetchFlights(isLastOnPage ? page - 1 : page);
                 } catch (error) {
-                    showAlert('Błąd', error instanceof Error ? error.message : 'Nie udało się usunąć lotu.');
+                    showAlert('Błąd', getErrorMessage(error, 'Nie udało się usunąć lotu.'));
                 }
             }
         });

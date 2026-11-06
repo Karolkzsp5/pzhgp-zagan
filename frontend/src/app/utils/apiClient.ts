@@ -66,9 +66,23 @@ export class ApiError extends Error {
     }
 }
 
-export const readApiError = async (response: Response, fallback: string): Promise<string> => {
-    const message = await response.text();
-    return message.trim().length > 0 ? message : fallback;
+/**
+ * Komunikat błędu z odpowiedzi serwera. Backend zwraca błędy jako zwykły tekst; pusta treść
+ * albo strona HTML (np. od serwera proxy) daje podany tekst zastępczy.
+ */
+const readApiError = async (response: Response, fallback: string): Promise<string> => {
+    const message = (await response.text()).trim();
+    return message.length > 0 && !message.startsWith('<') ? message : fallback;
+};
+
+/**
+ * Komunikat dla użytkownika po nieudanej operacji: tekst z serwera, informacja o braku połączenia
+ * albo podany tekst zastępczy. Wszystkie strony pokazują błędy w ten sam sposób.
+ */
+export const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof TypeError) return CONNECTION_ERROR_MESSAGE;
+    if (error instanceof Error && error.message.trim().length > 0) return error.message;
+    return fallback;
 };
 
 /** Zgłasza ApiError z komunikatem serwera (albo podanym zastępczym), gdy odpowiedź nie jest poprawna. */

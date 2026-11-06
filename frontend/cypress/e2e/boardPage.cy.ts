@@ -274,7 +274,7 @@ describe('Board Page Tests', () => {
             if (shouldFail) {
                 req.reply({
                     statusCode: 500,
-                    body: 'Internal Server Error'
+                    body: 'Nie udało się pobrać testowego składu zarządu.'
                 });
             } else {
                 req.reply({
@@ -287,7 +287,7 @@ describe('Board Page Tests', () => {
         cy.reload();
         cy.wait('@getBoardRetry');
 
-        cy.contains('Nie udało się pobrać danych zarządu.').should('be.visible');
+        cy.contains('Nie udało się pobrać testowego składu zarządu.').should('be.visible');
         cy.contains('button', 'Spróbuj ponownie').should('be.visible');
 
         cy.then(() => {
@@ -297,7 +297,7 @@ describe('Board Page Tests', () => {
         cy.contains('button', 'Spróbuj ponownie').click();
         cy.wait('@getBoardRetry');
 
-        cy.contains('Nie udało się pobrać danych zarządu.').should('not.exist');
+        cy.contains('Nie udało się pobrać testowego składu zarządu.').should('not.exist');
         cy.contains('h2', 'Zarząd Oddziału:').should('be.visible');
         getMemberCard('Jan Kowalski').should('be.visible');
     });
@@ -808,7 +808,7 @@ describe('Board Page Tests', () => {
     it('Should display an error modal when board member deletion fails', () => {
         cy.intercept('DELETE', '**/api/board/2', {
             statusCode: 500,
-            body: 'Internal Server Error'
+            body: 'Nie udało się usunąć testowego członka zarządu.'
         }).as('deleteBoardMemberError');
 
         cy.get('button[aria-label="Usuń Adam Nowak"]').click();
@@ -821,7 +821,7 @@ describe('Board Page Tests', () => {
 
         cy.get('[role="dialog"]').should('be.visible').within(() => {
             cy.contains('h2', 'Błąd').should('be.visible');
-            cy.contains('Wystąpił błąd podczas usuwania. Spróbuj ponownie.').should('be.visible');
+            cy.contains('Nie udało się usunąć testowego członka zarządu.').should('be.visible');
             cy.contains('button', 'OK').click();
         });
 
