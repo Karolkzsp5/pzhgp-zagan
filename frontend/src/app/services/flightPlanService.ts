@@ -1,11 +1,5 @@
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
 import { FlightPlanDetailsDto, FlightPlanEntryRequest, FlightPlanSummaryDto, FlightResultUploadRequest } from '@/app/types/flightPlan';
-
-const ensureOk = async (response: Response, fallback: string): Promise<void> => {
-    if (!response.ok) {
-        throw new Error(await readApiError(response, fallback));
-    }
-};
+import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
 
 export const flightPlanService = {
     getAllPlans: async (): Promise<FlightPlanSummaryDto[]> => {

@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from 'react';
-import { ForumCategoryDto, createCategory, updateCategory } from '@/app/services/forumService';
+import { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
+import { forumService } from '@/app/services/forumService';
+import { ForumCategoryDto } from '@/app/types/forum';
+import { getErrorMessage } from '@/app/utils/apiClient';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -55,14 +57,14 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
 
         try {
             if (categoryToEdit) {
-                await updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
+                await forumService.updateCategory(categoryToEdit.id, cleanName, description.trim(), finalSortOrder);
             } else {
-                await createCategory(cleanName, description.trim(), finalSortOrder);
+                await forumService.createCategory(cleanName, description.trim(), finalSortOrder);
             }
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania kategorii.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania kategorii.'));
         } finally {
             setIsLoading(false);
         }
@@ -99,8 +101,8 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                     <div>
                         <label htmlFor="category-description" className="block text-sm font-bold text-gray-700 mb-1">
                             Opis kategorii
-                            <span className="text-gray-400 font-normal">
-                                (Opcjonalny)
+                            <span className="ml-1 text-gray-400 font-normal">
+                                (opcjonalnie)
                             </span>
                         </label>
                         <textarea

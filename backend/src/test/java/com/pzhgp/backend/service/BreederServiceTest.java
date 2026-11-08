@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Breeder Service Unit Tests")
 class BreederServiceTest {
 
     @Mock
@@ -54,7 +55,7 @@ class BreederServiceTest {
     void setUp() {
         validRegistrationRequest = new RegistrationRequest(
                 "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
-                "Testowa", "15b", 1, "testcypress@test.com", "444444444", "Testcypress1@"
+                "Testowa", "15b", 1L, "testcypress@test.com", "444444444", "Testcypress1@"
         );
 
         activeBreeder = new Breeder();
@@ -91,7 +92,7 @@ class BreederServiceTest {
     void shouldNormalizeEmailDuringRegistration() {
         RegistrationRequest request = new RegistrationRequest(
                 "Tomasz", "Nowak", LocalDate.parse("2003-01-12"), "11-111", "Test",
-                "Testowa", "15b", 1, "  TestCypress@TEST.COM  ", "444444444", "Testcypress1@"
+                "Testowa", "15b", 1L, "  TestCypress@TEST.COM  ", "444444444", "Testcypress1@"
         );
 
         assertEquals("testcypress@test.com", request.email());
@@ -151,7 +152,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should log in successfully and return a JWT token")
     void shouldLoginSuccessfullyAndReturnToken() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
@@ -164,25 +165,27 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should normalize email address during login")
     void shouldNormalizeEmailDuringLogin() {
-        LoginRequest request = new LoginRequest("  TestCypress@TEST.COM  ", "Testcypress1@");
+        LoginRequest request = new LoginRequest("  TestCypress@TEST.COM  ", "Testcypress1@", false);
         assertEquals("testcypress@test.com", request.email());
     }
 
     @Test
     @DisplayName("Should reject login with a non-existent email address")
     void shouldThrowExceptionWhenLoginEmailDoesNotExist() {
-        LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("nieistnieje@test.com", "Testcypress1@", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.empty());
 
         BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> breederService.login(loginRequest));
         assertEquals("Nieprawidłowy adres e-mail lub hasło.", ex.getMessage());
+        // Hasło jest porównywane także dla nieistniejącego konta, żeby czas odpowiedzi był taki sam.
+        verify(passwordEncoder, times(1)).matches(eq(loginRequest.password()), any());
     }
 
     @Test
     @DisplayName("Should reject login with an incorrect password")
     void shouldThrowExceptionWhenLoginPasswordIsIncorrect() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "ZleHaslo123", false);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(false);
@@ -194,7 +197,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should block logins for the account marked as PENDING")
     void shouldThrowExceptionWhenLoggingInWithPendingAccount() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
         activeBreeder.setStatus(AccountStatus.PENDING);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
@@ -207,7 +210,7 @@ class BreederServiceTest {
     @Test
     @DisplayName("Should block logins for the account marked as BLOCKED")
     void shouldThrowExceptionWhenLoggingInWithBlockedAccount() {
-        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@");
+        LoginRequest loginRequest = new LoginRequest("testcypress@test.com", "Testcypress1@", false);
         activeBreeder.setStatus(AccountStatus.BLOCKED);
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));

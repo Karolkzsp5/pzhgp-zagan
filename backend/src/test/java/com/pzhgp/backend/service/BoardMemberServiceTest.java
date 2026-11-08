@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Board Member Service Unit Tests")
 class BoardMemberServiceTest {
 
     @Mock
@@ -56,7 +57,6 @@ class BoardMemberServiceTest {
         breeder.setSection(section);
         breeder.setStatus(AccountStatus.ACTIVE);
     }
-
 
     @Test
     @DisplayName("Should successfully map and return a list of all board members")
@@ -183,7 +183,7 @@ class BoardMemberServiceTest {
         when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () -> boardMemberService.createBoardMember(request));
-        assertTrue(exception.getMessage().contains("jest już zajęte w tym zarządzie"));
+        assertEquals("Stanowisko „Prezes” jest już zajęte w tym zarządzie.", exception.getMessage());
     }
 
     @Test

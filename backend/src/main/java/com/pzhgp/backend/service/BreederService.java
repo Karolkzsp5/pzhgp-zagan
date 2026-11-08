@@ -1,6 +1,6 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.CurrentUserResponseDto;
+import com.pzhgp.backend.dto.CurrentUserDto;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
@@ -16,6 +16,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,10 @@ public class BreederService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    // Hash losowego hasła, liczony przy pierwszym logowaniu na nieistniejące konto.
+    private volatile String dummyPasswordHash;
+
+    @Transactional
     public void registerNewBreeder(RegistrationRequest request) {
         if (breederRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ResourceConflictException("Użytkownik z podanym adresem e-mail już istnieje.");
@@ -35,7 +43,7 @@ public class BreederService {
             throw new ResourceConflictException("Użytkownik z podanym numerem telefonu już istnieje.");
         }
 
-        Section section = sectionRepository.findById(request.sectionId().longValue()).orElseThrow(() ->
+        Section section = sectionRepository.findById(request.sectionId()).orElseThrow(() ->
                 new EntityNotFoundException("Nie znaleziono sekcji o podanym ID: " + request.sectionId()));
 
         Breeder newBreeder = new Breeder();
@@ -58,13 +66,20 @@ public class BreederService {
         }
     }
 
+    @Transactional(readOnly = true)
     public String login(LoginRequest request) {
-        Breeder breeder = breederRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() ->
-                new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło."));
+        Optional<Breeder> account = breederRepository.findByEmailIgnoreCase(request.email());
 
-        if (!passwordEncoder.matches(request.password(), breeder.getPasswordHash())) {
+        // Gdy konto nie istnieje, i tak porównujemy hasło (z hashem-atrapą), żeby czas odpowiedzi
+        // nie zdradzał, czy podany adres e-mail jest zarejestrowany.
+        String passwordHash = account.map(Breeder::getPasswordHash).orElseGet(this::getDummyPasswordHash);
+        boolean passwordMatches = passwordEncoder.matches(request.password(), passwordHash);
+
+        if (account.isEmpty() || !passwordMatches) {
             throw new BadCredentialsException("Nieprawidłowy adres e-mail lub hasło.");
         }
+
+        Breeder breeder = account.get();
 
         if (breeder.getStatus() == AccountStatus.PENDING) {
             throw new ForbiddenOperationException("Twoje konto oczekuje jeszcze na akceptację administratora.");
@@ -77,14 +92,23 @@ public class BreederService {
         return jwtService.generateToken(breeder);
     }
 
-    public CurrentUserResponseDto getCurrentUser(String userEmail) {
+    private String getDummyPasswordHash() {
+        if (dummyPasswordHash == null) {
+            dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
+        }
+
+        return dummyPasswordHash;
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentUserDto getCurrentUser(String userEmail) {
         Breeder breeder = breederRepository.findByEmail(userEmail).orElseThrow(() -> new BadCredentialsException("Wymagane jest uwierzytelnienie."));
 
         if (breeder.getStatus() != AccountStatus.ACTIVE) {
             throw new BadCredentialsException("Wymagane jest uwierzytelnienie.");
         }
 
-        return new CurrentUserResponseDto(
+        return new CurrentUserDto(
                 breeder.getId(),
                 breeder.getEmail(),
                 breeder.getName(),

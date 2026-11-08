@@ -3,16 +3,17 @@ package com.pzhgp.backend.service;
 import com.pzhgp.backend.dto.ForumPostDto;
 import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
-import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -21,7 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,14 +33,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumPostService Unit Tests")
+@DisplayName("Forum Post Service Unit Tests")
 class ForumPostServiceTest {
 
     @Mock
     private ForumPostRepository postRepository;
     @Mock
     private ForumThreadRepository threadRepository;
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
     @Mock
     private NotificationService notificationService;
@@ -68,7 +71,7 @@ class ForumPostServiceTest {
         openingPost.setThread(thread);
         openingPost.setAuthor(threadAuthor);
         openingPost.setBody("Pierwszy wpis wątku");
-        openingPost.setCreatedAt(LocalDateTime.now().minusHours(2));
+        openingPost.setCreatedAt(Instant.now().minus(2, ChronoUnit.HOURS));
 
         postAuthor = new Breeder();
         postAuthor.setId(2L);
@@ -91,15 +94,15 @@ class ForumPostServiceTest {
         thread.setId(100L);
         thread.setAuthor(threadAuthor);
         thread.setTitle("Tytuł Tematu");
-        thread.setIsLocked(false);
-        thread.setLastPostAt(LocalDateTime.now().minusDays(1));
+        thread.setLocked(false);
+        thread.setLastPostAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
         post = new ForumPost();
         post.setId(500L);
         post.setThread(thread);
         post.setAuthor(postAuthor);
         post.setBody("Stara treść posta");
-        post.setCreatedAt(LocalDateTime.now().minusHours(1));
+        post.setCreatedAt(Instant.now().minus(1, ChronoUnit.HOURS));
     }
 
     private void mockSuccessfulPostDeletion() {
@@ -165,7 +168,7 @@ class ForumPostServiceTest {
     @DisplayName("Should add post, explicitly update thread lastPostAt, and send NEW_REPLY notification")
     void addPost_ShouldSaveAndNotify() {
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do tematu");
-        LocalDateTime oldLastPostAt = thread.getLastPostAt();
+        Instant oldLastPostAt = thread.getLastPostAt();
 
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
@@ -184,7 +187,7 @@ class ForumPostServiceTest {
 
         verify(notificationService, times(1)).createNotification(
                 eq(1L),
-                contains("Piotr Nowak dodał/a odpowiedź"),
+                contains("Użytkownik Piotr Nowak dodał odpowiedź"),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_REPLY)
         );
@@ -207,7 +210,7 @@ class ForumPostServiceTest {
     @Test
     @DisplayName("Should throw ResourceConflictException when trying to add post to a locked thread")
     void addPost_WhenThreadIsLocked_ShouldThrowException() {
-        thread.setIsLocked(true);
+        thread.setLocked(true);
         ForumPostRequest request = new ForumPostRequest("Odpowiedź do zamkniętego");
 
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
@@ -317,7 +320,7 @@ class ForumPostServiceTest {
     @DisplayName("Should forbid a breeder from deleting another breeder's post")
     void deletePost_WhenRequesterIsRandomBreeder_ShouldThrowException() {
         when(postRepository.findById(500L)).thenReturn(Optional.of(post));
-        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor is not postAuthor
+        when(breederRepository.findByEmail("thread.author@test.pl")).thenReturn(Optional.of(threadAuthor)); // threadAuthor nie jest autorem wpisu
 
         assertThrows(ForbiddenOperationException.class, () -> {
             postService.deletePost(500L, "thread.author@test.pl");

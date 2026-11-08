@@ -1,23 +1,18 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
-import TextEditor from './TextEditor';
-import Modal from './Modal';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { announcementService } from '@/app/services/announcementService';
+import { AnnouncementDto } from '@/app/types/announcement';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
-
-interface Announcement {
-    id: number;
-    title: string;
-    content: string;
-    isPinned: boolean;
-}
+import Modal from './Modal';
+import TextEditor from './TextEditor';
 
 interface AnnouncementModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    announcementToEdit?: Announcement | null;
+    announcementToEdit?: Pick<AnnouncementDto, 'id' | 'title' | 'content' | 'isPinned'> | null;
 }
 
 export default function AnnouncementModal({ isOpen, onClose, onSuccess, announcementToEdit }: AnnouncementModalProps) {
@@ -62,26 +57,19 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(announcementToEdit ? `${API_URL}/api/announcements/${announcementToEdit.id}` : `${API_URL}/api/announcements`, {
-                method: announcementToEdit ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: cleanTitle, content, isPinned })
-            });
+            const request = { title: cleanTitle, content, isPinned };
 
-            if (!response.ok) {
-                setError(await readApiError(response, 'Wystąpił błąd podczas zapisywania ogłoszenia.'));
-                return;
+            if (announcementToEdit) {
+                await announcementService.updateAnnouncement(announcementToEdit.id, request);
+            } else {
+                await announcementService.createAnnouncement(request);
             }
 
             onSuccess();
             onClose();
         } catch (error) {
             setError(
-                error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
-                    : error instanceof Error
-                        ? error.message
-                        : 'Wystąpił błąd podczas zapisywania ogłoszenia.'
+                getErrorMessage(error, 'Wystąpił błąd podczas zapisywania ogłoszenia.')
             );
         } finally {
             setIsLoading(false);

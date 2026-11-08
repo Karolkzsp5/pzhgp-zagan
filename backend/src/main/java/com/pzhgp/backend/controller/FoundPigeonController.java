@@ -1,7 +1,9 @@
 package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.dto.FoundPigeonRequest;
+import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.service.FoundPigeonService;
+import com.pzhgp.backend.service.SubmissionRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.util.Map;
 public class FoundPigeonController {
 
     private final FoundPigeonService foundPigeonService;
+    private final SubmissionRateLimiter submissionRateLimiter;
 
     /**
      * Przyjmuje zgłoszenie odnalezienia gołębia.
@@ -40,7 +43,11 @@ public class FoundPigeonController {
     ) {
         // Adres zdalny połączenia zamiast nagłówka X-Forwarded-For: nagłówek pochodzi
         // od klienta i można go dowolnie ustawić, więc limit oparty na nim byłby pozorny.
-        Long reportId = foundPigeonService.createReport(request, httpRequest.getRemoteAddr());
+        if (!submissionRateLimiter.tryAcquire(httpRequest.getRemoteAddr())) {
+            throw new SubmissionRateLimitException("Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
+        }
+
+        Long reportId = foundPigeonService.createReport(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", reportId));
     }

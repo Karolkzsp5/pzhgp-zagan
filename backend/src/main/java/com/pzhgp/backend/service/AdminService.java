@@ -1,6 +1,6 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.BreederResponseDto;
+import com.pzhgp.backend.dto.BreederDto;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.NotificationType;
@@ -24,19 +24,19 @@ public class AdminService {
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public List<BreederResponseDto> getPendingAccounts() {
+    public List<BreederDto> getPendingAccounts() {
         return breederRepository.findByStatus(AccountStatus.PENDING).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<BreederResponseDto> getAllRegisteredAccounts() {
+    public List<BreederDto> getAllRegisteredAccounts() {
         return breederRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.BLOCKED)).stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @Transactional
     public void approveAccount(Long id, String adminEmail) {
         Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getStatus() != AccountStatus.PENDING) {
             throw new ResourceConflictException("Konto nie ma statusu oczekującego na akceptację.");
@@ -45,10 +45,9 @@ public class AdminService {
         breeder.setStatus(AccountStatus.ACTIVE);
         breederRepository.save(breeder);
 
-        String adminFullName = admin.getName() + " " + admin.getSurname();
         notificationService.createNotification(
                 breeder.getId(),
-                "Administrator " + adminFullName + " zatwierdził twoje konto. Witaj w systemie PZHGP Żagań!",
+                "Administrator " + admin.getFullName() + " zatwierdził Twoje konto. Witaj w systemie PZHGP Żagań!",
                 "/",
                 NotificationType.ACCOUNT_APPROVED
         );
@@ -94,43 +93,34 @@ public class AdminService {
     }
 
     @Transactional
-    public void changeRole(Long id, String newRoleStr, String adminEmail) {
+    public void changeRole(Long id, Role newRole, String adminEmail) {
         Breeder breeder = breederRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono hodowcy o ID: " + id));
-        Breeder admin = breederRepository.findByEmail(adminEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono administratora."));
+        Breeder admin = breederRepository.requireByEmail(adminEmail);
 
         if (breeder.getRole() == Role.ADMINISTRATOR) {
             throw new ForbiddenOperationException("Nie możesz zmieniać uprawnień innym administratorom.");
         }
 
-        if (newRoleStr == null) {
+        // Administratora można nadać tylko bezpośrednio w bazie danych.
+        if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
             throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
         }
 
-        try {
-            Role newRole = Role.valueOf(newRoleStr.toUpperCase());
-            if (newRole != Role.BREEDER && newRole != Role.MODERATOR) {
-                throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
-            }
-            breeder.setRole(newRole);
-            breederRepository.save(breeder);
+        breeder.setRole(newRole);
+        breederRepository.save(breeder);
 
-            String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
-            String adminFullName = admin.getName() + " " + admin.getSurname();
+        String roleNamePL = (newRole == Role.MODERATOR) ? "Moderator" : "Hodowca";
 
-            notificationService.createNotification(
-                    breeder.getId(),
-                    "Administrator " + adminFullName + " zmienił twoją rolę na: " + roleNamePL,
-                    "/settings",
-                    NotificationType.ROLE_CHANGED
-            );
-
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
-        }
+        notificationService.createNotification(
+                breeder.getId(),
+                "Administrator " + admin.getFullName() + " zmienił Twoją rolę na: " + roleNamePL + ".",
+                "/settings",
+                NotificationType.ROLE_CHANGED
+        );
     }
 
-    private BreederResponseDto mapToDto(Breeder breeder) {
-        return new BreederResponseDto(
+    private BreederDto mapToDto(Breeder breeder) {
+        return new BreederDto(
                 breeder.getId(),
                 breeder.getName(),
                 breeder.getSurname(),
@@ -141,10 +131,10 @@ public class AdminService {
                 breeder.getCity(),
                 breeder.getStreet(),
                 breeder.getHouseNumber(),
-                breeder.getSection().getId().intValue(),
+                breeder.getSection().getId(),
                 breeder.getSection().getName(),
                 breeder.getStatus(),
-                breeder.getRole().name(),
+                breeder.getRole(),
                 breeder.getCreatedAt()
         );
     }

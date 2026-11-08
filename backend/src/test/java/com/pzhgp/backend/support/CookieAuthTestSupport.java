@@ -5,9 +5,9 @@ import jakarta.servlet.http.Cookie;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
- * Authenticates integration-test requests using the same cookie/header
- * combination that the browser sends after obtaining a CSRF token.
- * Missing/invalid CSRF is tested separately in AuthIntegrationTest.
+ * Uwierzytelnia zapytania w testach integracyjnych tym samym zestawem ciasteczek i nagłówków,
+ * który przeglądarka wysyła po pobraniu tokenu CSRF. Brak lub błędny token CSRF sprawdza
+ * osobno AuthIntegrationTest.
  */
 public final class CookieAuthTestSupport {
 

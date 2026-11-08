@@ -2,18 +2,19 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumThreadDto;
 import com.pzhgp.backend.dto.ForumThreadRequest;
-import com.pzhgp.backend.dto.ThreadAction;
+import com.pzhgp.backend.dto.ThreadStatusRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -32,14 +33,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumThreadService Unit Tests")
+@DisplayName("Forum Thread Service Unit Tests")
 class ForumThreadServiceTest {
 
     @Mock
     private ForumThreadRepository threadRepository;
     @Mock
     private ForumCategoryRepository categoryRepository;
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
     @Mock
     private ForumPostRepository postRepository;
@@ -89,8 +91,8 @@ class ForumThreadServiceTest {
         thread.setAuthor(author);
         thread.setCategory(category);
         thread.setTitle("Testowy wątek");
-        thread.setIsLocked(false);
-        thread.setIsPinned(false);
+        thread.setLocked(false);
+        thread.setPinned(false);
         thread.setViews(0);
         thread.setRepliesCount(0);
     }
@@ -150,7 +152,7 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should invoke atomic view increment and map moderator permissions")
-    void getThreadAndIncrementViews_WithModeratorPermissions() {
+    void getThreadCountingView_WithModeratorPermissions() {
         thread.setRepliesCount(4);
 
         ForumThread updatedThread = new ForumThread();
@@ -158,8 +160,8 @@ class ForumThreadServiceTest {
         updatedThread.setAuthor(author);
         updatedThread.setCategory(category);
         updatedThread.setTitle(thread.getTitle());
-        updatedThread.setIsLocked(false);
-        updatedThread.setIsPinned(false);
+        updatedThread.setLocked(false);
+        updatedThread.setPinned(false);
         updatedThread.setViews(1);
         updatedThread.setRepliesCount(4);
 
@@ -167,7 +169,7 @@ class ForumThreadServiceTest {
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
         when(threadRepository.incrementViews(100L)).thenReturn(1);
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "moderator@test.com", true);
 
         assertNotNull(result);
         assertEquals(1, result.views());
@@ -182,14 +184,14 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should not increment views and should grant full permissions to an administrator viewing their own thread")
-    void getThreadAndIncrementViews_WhenAdminIsAuthor_ShouldMapAllTrue() {
+    void getThreadCountingView_WhenAdminIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(admin);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "admin@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "admin@test.com", true);
 
         assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
@@ -200,14 +202,14 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should not increment views and should grant full permissions to a moderator viewing their own thread")
-    void getThreadAndIncrementViews_WhenModeratorIsAuthor_ShouldMapAllTrue() {
+    void getThreadCountingView_WhenModeratorIsAuthor_ShouldMapAllTrue() {
         thread.setAuthor(moderator);
         when(threadRepository.findById(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
         assertEquals(0, thread.getViews());
 
-        ForumThreadDto result = threadService.getThreadAndIncrementViews(100L, "moderator@test.com");
+        ForumThreadDto result = threadService.getThread(100L, "moderator@test.com", true);
 
         assertEquals(0, thread.getViews());
         assertTrue(result.canEdit());
@@ -218,11 +220,11 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should throw EntityNotFoundException when thread is not found")
-    void getThreadAndIncrementViews_WhenThreadNotFound_ShouldThrowException() {
+    void getThreadCountingView_WhenThreadNotFound_ShouldThrowException() {
         when(threadRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> {
-            threadService.getThreadAndIncrementViews(999L, "author@test.com");
+            threadService.getThread(999L, "author@test.com", true);
         });
     }
 
@@ -251,7 +253,7 @@ class ForumThreadServiceTest {
 
         verify(notificationService, times(1)).createBulkNotifications(
                 argThat(list -> list.size() == 1 && list.getFirst().getId().equals(5L)),
-                eq("Jan Kowalski dodał/a nowy wątek na forum"),
+                eq("Użytkownik Jan Kowalski dodał nowy wątek na forum."),
                 eq("/forum/thread/100"),
                 eq(NotificationType.NEW_THREAD)
         );
@@ -271,41 +273,41 @@ class ForumThreadServiceTest {
 
     @Test
     @DisplayName("Should allow an administrator to lock and unlock a thread")
-    void toggleThreadStatus_AdminShouldToggleLock() {
+    void updateThreadStatus_AdminShouldLockAndUnlock() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
 
-        assertFalse(thread.getIsLocked());
+        assertFalse(thread.isLocked());
 
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
-        assertTrue(thread.getIsLocked());
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(true, null), "admin@test.com");
+        assertTrue(thread.isLocked());
 
-        threadService.toggleThreadStatus(100L, "admin@test.com", ThreadAction.LOCK);
-        assertFalse(thread.getIsLocked());
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(false, null), "admin@test.com");
+        assertFalse(thread.isLocked());
     }
 
     @Test
     @DisplayName("Should allow a moderator to pin and unpin a thread")
-    void toggleThreadStatus_ModeratorShouldTogglePin() {
+    void updateThreadStatus_ModeratorShouldPinAndUnpin() {
         when(threadRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(thread));
         when(breederRepository.findByEmail("moderator@test.com")).thenReturn(Optional.of(moderator));
 
-        assertFalse(thread.getIsPinned());
+        assertFalse(thread.isPinned());
 
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
-        assertTrue(thread.getIsPinned());
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, true), "moderator@test.com");
+        assertTrue(thread.isPinned());
 
-        threadService.toggleThreadStatus(100L, "moderator@test.com", ThreadAction.PIN);
-        assertFalse(thread.getIsPinned());
+        threadService.updateThreadStatus(100L, new ThreadStatusRequest(null, false), "moderator@test.com");
+        assertFalse(thread.isPinned());
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when toggling status on non-existent thread")
-    void toggleThreadStatus_WhenThreadNotFound_ShouldThrowException() {
+    @DisplayName("Should throw EntityNotFoundException when changing the status of a non-existent thread")
+    void updateThreadStatus_WhenThreadNotFound_ShouldThrowException() {
         when(threadRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
-            threadService.toggleThreadStatus(999L, "moderator@test.com", ThreadAction.LOCK);
+            threadService.updateThreadStatus(999L, new ThreadStatusRequest(true, null), "moderator@test.com");
         });
 
         assertEquals("Nie znaleziono wątku.", exception.getMessage());

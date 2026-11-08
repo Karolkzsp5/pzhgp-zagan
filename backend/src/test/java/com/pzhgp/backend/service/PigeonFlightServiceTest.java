@@ -4,21 +4,22 @@ import com.pzhgp.backend.dto.FlightDetailsDto;
 import com.pzhgp.backend.dto.FlightSummaryDto;
 import com.pzhgp.backend.dto.FlightUploadRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.GpxParsingException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightTrackPointRepository;
 import com.pzhgp.backend.repository.PigeonFlightRepository;
 import com.pzhgp.backend.service.gpx.FlightAnalyzer;
 import com.pzhgp.backend.service.gpx.GpxParser;
-import com.pzhgp.backend.service.gpx.GpxParsingException;
 import com.pzhgp.backend.service.gpx.GpxPoint;
 import com.pzhgp.backend.service.gpx.GpxTrack;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
-import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,6 +44,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Pigeon Flight Service Unit Tests")
 class PigeonFlightServiceTest {
 
     @Mock
@@ -51,7 +53,8 @@ class PigeonFlightServiceTest {
     @Mock
     private FlightTrackPointRepository trackPointRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @Spy

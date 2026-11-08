@@ -1,35 +1,20 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { formatGlobalDate } from '@/app/utils/formatters';
 import { useAuth } from '@/app/components/AuthProvider';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { notificationService } from '@/app/services/notificationService';
+import { NotificationDto } from '@/app/types/notification';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { getAuthGeneration } from '@/app/utils/authSession';
+import { formatDateTime } from '@/app/utils/formatters';
 
-interface NotificationDto {
-    id: number;
-    message: string;
-    link: string | null;
-    isRead: boolean;
-    type: string;
-    createdAt: string;
-}
-
-interface NotificationPage {
-    content: NotificationDto[];
-    totalElements: number;
-    totalPages: number;
-    number: number;
-    size: number;
-}
-
-const NOTIFICATIONS_PAGE_SIZE = 50;
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 60_000;
 
 export default function Navbar() {
     const { user, isLoggedIn, isAuthResolved, signOut } = useAuth();
-    const userName = user?.name || user?.sub?.split('@')[0] || 'Użytkowniku';
+    const userName = user?.name || user?.email?.split('@')[0] || 'Użytkowniku';
 
     const userRole = user?.role ?? '';
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -50,31 +35,26 @@ export default function Navbar() {
     const notificationsRef = useRef<HTMLDivElement>(null);
     const notificationSessionRef = useRef(0);
     const notificationDataVersionRef = useRef(0);
+    const lastNotificationsFetchRef = useRef(0);
     const isCurrentNotificationSession = useCallback((sessionId: number, generation: number) =>
         sessionId === notificationSessionRef.current && generation === getAuthGeneration(), []);
+    // Odpowiedzi na zapytania z poprzedniej sesji powiadomień zostaną pominięte.
+    const invalidateNotificationSession = useCallback(() => {
+        notificationSessionRef.current++;
+    }, []);
     const router = useRouter();
     const pathname = usePathname();
 
     const fetchNotifications = useCallback(async (sessionId: number) => {
+        lastNotificationsFetchRef.current = Date.now();
         const generation = getAuthGeneration();
         const dataVersion = notificationDataVersionRef.current;
 
         try {
-            const [notifRes, countRes] = await Promise.all([
-                fetchWithAuth(`${API_URL}/api/notifications?page=0&size=${NOTIFICATIONS_PAGE_SIZE}`),
-                fetchWithAuth(`${API_URL}/api/notifications/unread-count`)
+            const [pageData, count] = await Promise.all([
+                notificationService.getNotifications(0),
+                notificationService.getUnreadCount()
             ]);
-
-            if (!notifRes.ok) {
-                throw new Error(await readApiError(notifRes, 'Nie udało się pobrać powiadomień.'));
-            }
-
-            if (!countRes.ok) {
-                throw new Error(await readApiError(countRes, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'));
-            }
-
-            const pageData = await notifRes.json() as NotificationPage;
-            const count = await countRes.json() as number;
 
             if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
@@ -101,13 +81,7 @@ export default function Navbar() {
         setIsLoadingMoreNotifications(true);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications?page=${nextPage}&size=${NOTIFICATIONS_PAGE_SIZE}`);
-
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się pobrać wcześniejszych powiadomień.'));
-            }
-
-            const pageData = await response.json() as NotificationPage;
+            const pageData = await notificationService.getNotifications(nextPage);
 
             if (!isCurrentNotificationSession(sessionId, generation) || dataVersion !== notificationDataVersionRef.current) return;
 
@@ -179,9 +153,42 @@ export default function Navbar() {
         }
 
         return () => {
-            notificationSessionRef.current++;
+            invalidateNotificationSession();
         };
-    }, [fetchNotifications, isLoggedIn, user?.sub]);
+    }, [fetchNotifications, invalidateNotificationSession, isLoggedIn, user?.email]);
+
+    // Navbar jest we wspólnym layoucie i nie montuje się od nowa przy przejściu między podstronami,
+    // dlatego powiadomienia odświeżamy po zmianie podstrony i po powrocie do karty, najwyżej raz na minutę.
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
+        const refreshIfStale = () => {
+            if (Date.now() - lastNotificationsFetchRef.current >= NOTIFICATIONS_REFRESH_INTERVAL_MS) {
+                void fetchNotifications(notificationSessionRef.current);
+            }
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                refreshIfStale();
+            }
+        };
+
+        refreshIfStale();
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [fetchNotifications, isLoggedIn, pathname]);
+
+    // Po przejściu na inną podstronę (także przyciskiem Wstecz) zamykamy otwarte menu i stare komunikaty błędów.
+    useEffect(() => {
+        setIsDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        setIsNotificationsOpen(false);
+        setNotificationDeleteError(null);
+        setLogoutError(null);
+    }, [pathname]);
 
     const handleNotificationClick = async (notif: NotificationDto) => {
         const sessionId = notificationSessionRef.current;
@@ -191,10 +198,7 @@ export default function Navbar() {
 
         if (!notif.isRead) {
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}/read`, { method: 'PUT' });
-                if (!response.ok) {
-                    throw new Error(await readApiError(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.'));
-                }
+                await notificationService.markAsRead(notif.id);
 
                 if (!isCurrentNotificationSession(sessionId, generation)) return;
 
@@ -225,10 +229,7 @@ export default function Navbar() {
         setNotificationDeleteError(null);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications/${notif.id}`, { method: 'DELETE' });
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się usunąć powiadomienia.'));
-            }
+            await notificationService.deleteNotification(notif.id);
 
             if (!isCurrentNotificationSession(sessionId, generation)) return;
 
@@ -243,9 +244,7 @@ export default function Navbar() {
             void fetchNotifications(sessionId);
         } catch (error) {
             if (isCurrentNotificationSession(sessionId, generation)) {
-                setNotificationDeleteError(error instanceof TypeError
-                    ? 'Nie udało się połączyć z serwerem.'
-                    : error instanceof Error ? error.message : 'Nie udało się usunąć powiadomienia.');
+                setNotificationDeleteError(getErrorMessage(error, 'Nie udało się usunąć powiadomienia.'));
             }
         } finally {
             if (isCurrentNotificationSession(sessionId, generation)) {
@@ -261,10 +260,7 @@ export default function Navbar() {
         if (!isCurrentNotificationSession(sessionId, generation)) return;
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.'));
-            }
+            await notificationService.markAllAsRead();
 
             if (!isCurrentNotificationSession(sessionId, generation)) return;
 
@@ -282,10 +278,10 @@ export default function Navbar() {
         try {
             await signOut();
         } catch (error) {
-            setLogoutError(error instanceof Error ? error.message : 'Nie udało się wylogować.');
+            setLogoutError(getErrorMessage(error, 'Nie udało się wylogować.'));
             return;
         }
-        notificationSessionRef.current++;
+        invalidateNotificationSession();
         notificationDataVersionRef.current++;
 
         setNotifications([]);
@@ -322,9 +318,8 @@ export default function Navbar() {
         <nav className="bg-blue-700 text-white shadow-md relative z-40" aria-label="Główna nawigacja">
             <div className="max-w-7xl mx-auto px-2 min-[375px]:px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
-
                     <div className="flex items-center shrink-0">
-                        {/* Mobile menu button */}
+                        {/* Przycisk menu mobilnego */}
                         <button
                             type="button"
                             ref={mobileMenuButtonRef}
@@ -378,8 +373,7 @@ export default function Navbar() {
                                 </>
                             ) : (
                                 <div className="flex items-center space-x-1 sm:space-x-3">
-
-                                    {/* Notification icon */}
+                                    {/* Ikona powiadomień */}
                                     <div className="relative" ref={notificationsRef}>
                                         <button
                                             type="button"
@@ -404,9 +398,9 @@ export default function Navbar() {
                                             )}
                                         </button>
 
-                                        {/* Notification modal */}
+                                        {/* Lista powiadomień */}
                                         {isNotificationsOpen && (
-                                            <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 animate-fadeIn text-gray-800 overflow-hidden">
+                                            <div id="notifications-panel" className="absolute -right-14 sm:right-0 mt-2 w-[300px] sm:w-96 bg-white rounded-md shadow-2xl border border-gray-100 z-50 motion-safe:animate-fade-in text-gray-800 overflow-hidden">
                                                 <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                                                     <h3 className="font-bold text-sm text-gray-900">Powiadomienia</h3>
                                                     {unreadCount > 0 && (
@@ -443,7 +437,7 @@ export default function Navbar() {
                                                                         className="block w-full text-left px-4 py-3 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
                                                                     >
                                                                     <span className="flex justify-between items-start mb-1">
-                                                                        <span className="text-[10px] text-gray-400 font-medium">{formatGlobalDate(notif.createdAt)}</span>
+                                                                        <span className="text-[10px] text-gray-400 font-medium">{formatDateTime(notif.createdAt)}</span>
                                                                         {!notif.isRead && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
                                                                     </span>
 
@@ -487,7 +481,7 @@ export default function Navbar() {
                                         )}
                                     </div>
 
-                                    {/* User profile */}
+                                    {/* Menu użytkownika */}
                                     <div className="relative" ref={dropdownRef}>
                                         <button
                                             type="button"
@@ -509,7 +503,7 @@ export default function Navbar() {
                                         </button>
 
                                         {isDropdownOpen && (
-                                            <div id="profile-dropdown" className="absolute right-0 mt-3 w-56 bg-white rounded-md shadow-lg border border-gray-100 z-50 animate-fadeIn overflow-hidden">
+                                            <div id="profile-dropdown" className="absolute right-0 mt-3 w-56 bg-white rounded-md shadow-lg border border-gray-100 z-50 motion-safe:animate-fade-in overflow-hidden">
                                                 {userRole === 'ADMINISTRATOR' && (
                                                     <>
                                                         <Link
@@ -575,9 +569,9 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile menu */}
+            {/* Menu mobilne */}
             {isMobileMenuOpen && (
-                <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl animate-fadeIn">
+                <div id="mobile-navigation" ref={mobileMenuRef} className="lg:hidden bg-blue-800 border-t border-blue-600 absolute w-full left-0 z-50 shadow-xl motion-safe:animate-fade-in">
                     <div className="flex flex-col">
                         {navLinks.filter(link => link.show).map((link) => (
                             <Link

@@ -1,6 +1,5 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.ForumPostRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.*;
@@ -15,8 +14,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
@@ -97,8 +98,8 @@ class ForumPostIntegrationTest {
         thread.setCategory(category);
         thread.setAuthor(threadAuthor);
         thread.setTitle("Temat do dyskusji");
-        thread.setIsLocked(false);
-        thread.setLastPostAt(LocalDateTime.now().minusDays(1));
+        thread.setLocked(false);
+        thread.setLastPostAt(Instant.now().minus(1, ChronoUnit.DAYS));
         threadRepository.save(thread);
 
         adminPost = new ForumPost();
@@ -152,7 +153,7 @@ class ForumPostIntegrationTest {
     void addPost_ShouldSaveToDbAndUpdateThreadAndNotify() throws Exception {
         long initialPostCount = postRepository.count();
         long initialNotificationCount = notificationRepository.count();
-        LocalDateTime beforePost = threadRepository.findById(thread.getId()).get().getLastPostAt();
+        Instant beforePost = threadRepository.findById(thread.getId()).get().getLastPostAt();
 
         ForumPostRequest request = new ForumPostRequest("Zupełnie nowa odpowiedź");
 
@@ -177,7 +178,7 @@ class ForumPostIntegrationTest {
 
         assertEquals(thread.getAuthor().getId(), replyNotification.getRecipient().getId());
         assertEquals("/forum/thread/" + thread.getId(), replyNotification.getLink());
-        assertTrue(replyNotification.getMessage().contains("dodał/a odpowiedź w twoim wątku na forum"));
+        assertTrue(replyNotification.getMessage().contains("dodał odpowiedź w Twoim wątku na forum."));
     }
 
     @Test
@@ -226,7 +227,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 409 when adding a post to a locked thread")
     void addPost_WhenThreadIsLocked_ShouldReturn409() throws Exception {
-        thread.setIsLocked(true);
+        thread.setLocked(true);
         threadRepository.save(thread);
 
         ForumPostRequest request = new ForumPostRequest("Próba odpisu");
@@ -322,7 +323,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should allow an author to delete a reply and update thread activity time")
     void deletePost_AsAuthor_ShouldRemoveFromDb() throws Exception {
-        LocalDateTime expectedLastPostAt = adminPost.getCreatedAt();
+        Instant expectedLastPostAt = adminPost.getCreatedAt();
 
         mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
                 .with(cookieAuth(postAuthorToken))).andExpect(status().isNoContent());
@@ -359,7 +360,7 @@ class ForumPostIntegrationTest {
         singleThread.setCategory(category);
         singleThread.setAuthor(threadAuthor);
         singleThread.setTitle("Wątek z 1 postem");
-        singleThread.setLastPostAt(LocalDateTime.now());
+        singleThread.setLastPostAt(Instant.now());
         threadRepository.save(singleThread);
 
         ForumPost singlePost = new ForumPost();

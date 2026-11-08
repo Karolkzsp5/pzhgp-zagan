@@ -1,6 +1,5 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ResourceConflictException;
@@ -18,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
@@ -94,6 +94,34 @@ class BoardIntegrationTest {
         breeder.setPasswordHash("hashed");
         breeder.setSection(section);
         return breederRepository.save(breeder);
+    }
+
+    @Test
+    @DisplayName("Should return only active board candidates without contact or address details")
+    void shouldReturnActiveBoardCandidatesWithoutPersonalDetails() throws Exception {
+        Breeder blocked = createRealUser("zablokowany@test.pl", "666666666", Role.BREEDER, sectionZagan);
+        blocked.setStatus(AccountStatus.BLOCKED);
+        breederRepository.save(blocked);
+
+        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[?(@.id == " + blocked.getId() + ")]").isEmpty())
+                .andExpect(jsonPath("$[?(@.id == " + breederWymiarki.getId() + ")].sectionId").value(sectionWymiarki.getId().intValue()))
+                .andExpect(jsonPath("$[0].email").doesNotExist())
+                .andExpect(jsonPath("$[0].phoneNumber").doesNotExist())
+                .andExpect(jsonPath("$[0].dateOfBirth").doesNotExist())
+                .andExpect(jsonPath("$[0].street").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("Should allow only administrators to list board candidates")
+    void shouldDenyBoardCandidatesToNonAdministrators() throws Exception {
+        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(modToken)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/board/candidates"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -282,7 +310,7 @@ class BoardIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią"));
+                .andExpect(content().string("ID hodowcy musi być liczbą dodatnią."));
     }
 
     @Test

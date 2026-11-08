@@ -1,7 +1,7 @@
 package com.pzhgp.backend.service;
 
-import com.pzhgp.backend.dto.AnnouncementRequestDto;
-import com.pzhgp.backend.dto.AnnouncementResponseDto;
+import com.pzhgp.backend.dto.AnnouncementDto;
+import com.pzhgp.backend.dto.AnnouncementRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.AnnouncementRepository;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -19,7 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,12 +29,14 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Announcement Service Unit Tests")
 class AnnouncementServiceTest {
 
     @Mock
     private AnnouncementRepository announcementRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @Mock
@@ -80,7 +83,7 @@ class AnnouncementServiceTest {
         announcement.setTitle("Test title");
         announcement.setContent("Test content");
         announcement.setAuthor(moderator);
-        announcement.setCreatedAt(LocalDateTime.now());
+        announcement.setCreatedAt(Instant.now());
     }
 
     @Test
@@ -90,10 +93,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
         assertTrue(dto.canEdit(), "Autor (moderator) powinien móc edytować swoje ogłoszenie");
         assertTrue(dto.canDelete(), "Autor (moderator) powinien móc usunąć swoje ogłoszenie");
     }
@@ -106,10 +109,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
         assertTrue(dto.canEdit(), "Autor (admin) powinien móc edytować swoje ogłoszenie");
         assertTrue(dto.canDelete(), "Autor (admin) powinien móc usunąć swoje ogłoszenie");
     }
@@ -121,10 +124,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Admin nie powinien mieć prawa edycji cudzego posta");
         assertTrue(dto.canDelete(), "Admin powinien mieć prawo usunięcia posta moderatora");
     }
@@ -137,9 +140,9 @@ class AnnouncementServiceTest {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
 
         assertFalse(dto.canEdit(), "Zdegradowany autor nie powinien móc edytować ogłoszenia");
         assertTrue(dto.canDelete(), "Autor nadal powinien móc usunąć własne ogłoszenie");
@@ -151,10 +154,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(null, 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(null, 0, 10);
 
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Niezalogowany użytkownik nie może edytować");
         assertFalse(dto.canDelete(), "Niezalogowany użytkownik nie może usuwać");
     }
@@ -167,10 +170,10 @@ class AnnouncementServiceTest {
         when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(announcement)));
 
-        Page<AnnouncementResponseDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
+        Page<AnnouncementDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
         assertEquals(1, result.getTotalElements());
-        AnnouncementResponseDto dto = result.getContent().getFirst();
+        AnnouncementDto dto = result.getContent().getFirst();
         assertFalse(dto.canEdit(), "Moderator nie powinien móc edytować cudzego ogłoszenia");
         assertFalse(dto.canDelete(), "Moderator nie powinien móc usuwać cudzego ogłoszenia");
     }
@@ -178,7 +181,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should save announcement details and notify active breeders except the author")
     void createAnnouncement_ShouldSaveAndNotify_WhenUserIsAdmin() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Ważny lot", "Szczegóły", true);
+        AnnouncementRequest request = new AnnouncementRequest("Ważny lot", "Szczegóły", true);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
 
         Breeder anotherActiveBreeder = new Breeder();
@@ -199,7 +202,7 @@ class AnnouncementServiceTest {
 
         verify(notificationService, times(1)).createBulkNotifications(
                 argThat(list -> list.size() == 2 && !list.contains(admin1) && list.contains(standardBreeder) && list.contains(anotherActiveBreeder)),
-                eq("Jan Kowalski dodał/a ogłoszenie na stronie głównej"),
+                eq("Użytkownik Jan Kowalski dodał ogłoszenie na stronie głównej."),
                 eq("/"),
                 eq(NotificationType.NEW_ANNOUNCEMENT)
         );
@@ -208,7 +211,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should reject announcement creation by a breeder")
     void createAnnouncement_ShouldThrowException_WhenUserIsBreeder() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Tytuł", "Treść", false);
+        AnnouncementRequest request = new AnnouncementRequest("Tytuł", "Treść", false);
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
@@ -221,21 +224,21 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when author is not found in the database")
     void createAnnouncement_ShouldThrowException_WhenAuthorNotFound() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Tytuł", "Treść", false);
+        AnnouncementRequest request = new AnnouncementRequest("Tytuł", "Treść", false);
         String unknownEmail = "ghost@test.pl";
         when(breederRepository.findByEmail(unknownEmail)).thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
                 announcementService.createAnnouncement(request, unknownEmail)
         );
-        assertEquals("Nie znaleziono autora.", exception.getMessage());
+        assertEquals("Nie znaleziono użytkownika.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Should successfully update announcement when user is the author")
     void updateAnnouncement_ShouldUpdate_WhenUserIsAuthor() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Zaktualizowany tytuł", "Nowa treść", true);
+        AnnouncementRequest request = new AnnouncementRequest("Zaktualizowany tytuł", "Nowa treść", true);
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
@@ -251,7 +254,7 @@ class AnnouncementServiceTest {
     @DisplayName("Should deny editing when announcement author was downgraded to BREEDER")
     void updateAnnouncement_ShouldDenyDowngradedAuthor() {
         moderator.setRole(Role.BREEDER);
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Nowy tytuł", "Nowa treść", false);
+        AnnouncementRequest request = new AnnouncementRequest("Nowy tytuł", "Nowa treść", false);
 
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
@@ -266,7 +269,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should forbid a breeder from editing an announcement")
     void updateAnnouncement_ShouldThrowException_WhenBreederUpdatesPost() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("X", "Y", false);
+        AnnouncementRequest request = new AnnouncementRequest("X", "Y", false);
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
@@ -276,7 +279,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should forbid an administrator from editing a moderator's announcement")
     void updateAnnouncement_ShouldThrowException_WhenAdminTriesToUpdateModPost() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("Zmieniony", "Treść", false);
+        AnnouncementRequest request = new AnnouncementRequest("Zmieniony", "Treść", false);
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
 
@@ -290,7 +293,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should throw EntityNotFoundException when updating non-existent announcement")
     void updateAnnouncement_ShouldThrowException_WhenAnnouncementNotFound() {
-        AnnouncementRequestDto request = new AnnouncementRequestDto("X", "Y", false);
+        AnnouncementRequest request = new AnnouncementRequest("X", "Y", false);
         when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () ->

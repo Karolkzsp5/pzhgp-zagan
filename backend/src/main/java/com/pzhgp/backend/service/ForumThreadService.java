@@ -2,7 +2,7 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.ForumThreadDto;
 import com.pzhgp.backend.dto.ForumThreadRequest;
-import com.pzhgp.backend.dto.ThreadAction;
+import com.pzhgp.backend.dto.ThreadStatusRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
@@ -10,6 +10,7 @@ import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumPostRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
 import com.pzhgp.backend.utils.PaginationUtils;
+import com.pzhgp.backend.utils.RichTextSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ForumThreadService {
 
+    /** Największa dopuszczalna liczba wątków na stronie kategorii. */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ForumThreadRepository threadRepository;
     private final ForumCategoryRepository categoryRepository;
     private final BreederRepository breederRepository;
@@ -38,9 +42,9 @@ public class ForumThreadService {
             throw new EntityNotFoundException("Nie znaleziono kategorii o ID: " + categoryId);
         }
 
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        PaginationUtils.validate(page, size, 100);
+        PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size, Sort.by(
                 Sort.Order.desc("isPinned"),
                 Sort.Order.desc("lastPostAt"),
@@ -53,7 +57,7 @@ public class ForumThreadService {
     @Transactional
     public void createThread(ForumThreadRequest request, String authorEmail) {
         ForumCategory category = categoryRepository.findById(request.categoryId()).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono kategorii."));
-        Breeder author = breederRepository.findByEmail(authorEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder author = breederRepository.requireByEmail(authorEmail);
 
         ForumThread thread = new ForumThread();
         thread.setCategory(category);
@@ -64,11 +68,10 @@ public class ForumThreadService {
         ForumPost firstPost = new ForumPost();
         firstPost.setThread(thread);
         firstPost.setAuthor(author);
-        firstPost.setBody(request.initialPostContent());
+        firstPost.setBody(RichTextSanitizer.sanitize(request.initialPostContent()));
         postRepository.save(firstPost);
 
-        String authorFullName = author.getName() + " " + author.getSurname();
-        String notificationMessage = authorFullName + " dodał/a nowy wątek na forum";
+        String notificationMessage = "Użytkownik " + author.getFullName() + " dodał nowy wątek na forum.";
         String notificationLink = "/forum/thread/" + thread.getId();
 
         List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream().filter(breeder -> !breeder.getId().equals(author.getId())).collect(Collectors.toList());
@@ -79,14 +82,9 @@ public class ForumThreadService {
     }
 
     @Transactional
-    public ForumThreadDto getThreadAndIncrementViews(Long threadId, String requesterEmail) {
-        return getThread(threadId, requesterEmail, true);
-    }
-
-    @Transactional
     public ForumThreadDto getThread(Long threadId, String requesterEmail, boolean countView) {
         ForumThread thread = threadRepository.findById(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
         if (countView && !thread.getAuthor().getId().equals(requester.getId())) {
             threadRepository.incrementViews(threadId);
@@ -97,43 +95,42 @@ public class ForumThreadService {
     }
 
     @Transactional
-    public void toggleThreadStatus(Long threadId, String requesterEmail, ThreadAction action) {
+    public void updateThreadStatus(Long threadId, ThreadStatusRequest request, String requesterEmail) {
         ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        if (!canModerateContent(thread.getAuthor(), requester)) {
+        if (!PermissionRules.canModerateForumContent(thread.getAuthor(), requester)) {
             throw new ForbiddenOperationException("Brak uprawnień do moderacji tego wątku.");
         }
 
-        switch (action) {
-            case LOCK -> thread.setIsLocked(!thread.getIsLocked());
-            case PIN -> thread.setIsPinned(!thread.getIsPinned());
-            default -> throw new IllegalArgumentException("Nieobsługiwana akcja moderacyjna.");
+        if (request.isLocked() != null) {
+            thread.setLocked(request.isLocked());
+        }
+
+        if (request.isPinned() != null) {
+            thread.setPinned(request.isPinned());
         }
     }
 
     @Transactional
     public void updateThreadTitle(Long threadId, String title, String requesterEmail) {
         ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku."));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        if (!thread.getAuthor().getId().equals(requester.getId())) {
+        if (!PermissionRules.canEditForumContent(thread.getAuthor(), requester)) {
             throw new ForbiddenOperationException("Brak uprawnień. Tylko autor może edytować tytuł wątku.");
         }
 
-        if (title == null || title.trim().length() < 5 || title.trim().length() > 150) {
-            throw new IllegalArgumentException("Tytuł wątku musi mieć od 5 do 150 znaków.");
-        }
-
-        thread.setTitle(title.trim());
+        // Długość tytułu sprawdza ThreadTitleRequest.
+        thread.setTitle(title);
     }
 
     @Transactional
     public void deleteThread(Long threadId, String requesterEmail) {
         ForumThread thread = threadRepository.findByIdForUpdate(threadId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono wątku o ID: " + threadId));
-        Breeder requester = breederRepository.findByEmail(requesterEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
+        Breeder requester = breederRepository.requireByEmail(requesterEmail);
 
-        if (!canDeleteContent(thread.getAuthor(), requester)) {
+        if (!PermissionRules.canDeleteForumContent(thread.getAuthor(), requester)) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego wątku.");
         }
 
@@ -141,58 +138,23 @@ public class ForumThreadService {
         threadRepository.delete(thread);
     }
 
-    // Permission logic
-
-    private boolean canEditContent(Breeder author, Breeder requester) {
-        return author.getId().equals(requester.getId());
-    }
-
-    private boolean canDeleteContent(Breeder author, Breeder requester) {
-        if (author.getId().equals(requester.getId())) {
-            return true;
-        }
-
-        if (requester.getRole() == Role.ADMINISTRATOR) {
-            return author.getRole() != Role.ADMINISTRATOR;
-        }
-
-        if (requester.getRole() == Role.MODERATOR) {
-            return author.getRole() == Role.BREEDER;
-        }
-
-        return false;
-    }
-
-    private boolean canModerateContent(Breeder author, Breeder requester) {
-        if (requester.getRole() == Role.ADMINISTRATOR) {
-            return true;
-        }
-
-        if (requester.getRole() == Role.MODERATOR) {
-            return author.getId().equals(requester.getId()) || author.getRole() == Role.BREEDER;
-        }
-
-        return false;
-    }
-
     private ForumThreadDto mapToDto(ForumThread thread, Breeder requester) {
-        String authorFullName = thread.getAuthor().getName() + " " + thread.getAuthor().getSurname();
         int repliesCount = thread.getRepliesCount() != null ? Math.max(0, thread.getRepliesCount()) : 0;
 
         return new ForumThreadDto(
                 thread.getId(),
                 thread.getCategory().getId(),
                 thread.getTitle(),
-                authorFullName,
+                thread.getAuthor().getFullName(),
                 repliesCount,
-                thread.getIsLocked(),
-                thread.getIsPinned(),
+                thread.isLocked(),
+                thread.isPinned(),
                 thread.getLastPostAt(),
                 thread.getViews(),
                 thread.getCreatedAt(),
-                canEditContent(thread.getAuthor(), requester),
-                canDeleteContent(thread.getAuthor(), requester),
-                canModerateContent(thread.getAuthor(), requester)
+                PermissionRules.canEditForumContent(thread.getAuthor(), requester),
+                PermissionRules.canDeleteForumContent(thread.getAuthor(), requester),
+                PermissionRules.canModerateForumContent(thread.getAuthor(), requester)
         );
     }
 }

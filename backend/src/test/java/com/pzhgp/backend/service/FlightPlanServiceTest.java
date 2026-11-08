@@ -2,7 +2,6 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightPlanCreateRequest;
 import com.pzhgp.backend.dto.FlightPlanDetailsDto;
-import com.pzhgp.backend.dto.FlightPlanEntryDto;
 import com.pzhgp.backend.dto.FlightPlanEntryRequest;
 import com.pzhgp.backend.dto.FlightPlanSummaryDto;
 import com.pzhgp.backend.entity.*;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Flight Plan Service Unit Tests")
 class FlightPlanServiceTest {
 
     @Mock
@@ -46,7 +47,8 @@ class FlightPlanServiceTest {
     @Mock
     private FlightResultRepository flightResultRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @Mock
@@ -279,7 +281,6 @@ class FlightPlanServiceTest {
         verifyNoInteractions(notificationService);
     }
 
-
     @Test
     @DisplayName("Should throw ResourceConflictException when database detects duplicate plan year")
     void rejectsDuplicatePlanYearDetectedByDatabase() {
@@ -306,7 +307,6 @@ class FlightPlanServiceTest {
 
         verify(flightPlanRepository).saveAndFlush(any(FlightPlan.class));
     }
-
 
     @Test
     @DisplayName("Should reject creating another flight plan for the same year")

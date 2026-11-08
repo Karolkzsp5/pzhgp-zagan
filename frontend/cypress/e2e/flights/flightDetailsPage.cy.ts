@@ -143,7 +143,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the flight details page', () => {
@@ -217,7 +217,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // MAP
+        // MAPA
         // ==========================================
 
         it('Should display the start and end markers on the flight map', () => {
@@ -244,7 +244,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // ROUTE PLAYBACK
+        // ODTWARZANIE TRASY
         // ==========================================
 
         it('Should update the active route point using the playback slider', () => {
@@ -294,7 +294,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // FLIGHT PROFILE
+        // PROFIL LOTU
         // ==========================================
 
         it('Should synchronize the playback position after selecting a point on the flight profile', () => {
@@ -305,7 +305,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // FLIGHT WITHOUT TIMESTAMPS
+        // LOT BEZ ZNACZNIKÓW CZASU
         // ==========================================
 
         it('Should correctly render a flight without timestamps or speed data', () => {
@@ -353,7 +353,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading flight details', () => {
@@ -392,7 +392,7 @@ describe('Flight Details Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE FLIGHT
+        // USUWANIE LOTU
         // ==========================================
 
         it('Should cancel flight deletion without removing the flight', () => {
@@ -468,7 +468,7 @@ describe('Flight Details Page Tests', () => {
     });
 
     // ==========================================
-    // INVALID FLIGHT ID
+    // NIEPRAWIDŁOWE ID LOTU
     // ==========================================
 
     describe('Invalid Flight ID', () => {
@@ -489,7 +489,7 @@ describe('Flight Details Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

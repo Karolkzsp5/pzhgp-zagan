@@ -1,4 +1,4 @@
-import { createTestUserFor, TEST_USERS } from '../../support/testUtils';
+import { TEST_USERS, createTestUserFor } from '../../support/testUtils';
 
 type MockPigeonAgeGroup = 'ADULT' | 'YOUNG';
 type MockFlightResultScope = 'BRANCH' | 'SECTION';
@@ -170,7 +170,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render the flight plan and both flight tables', () => {
@@ -231,7 +231,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // RESULT SELECT PLACEHOLDER
+        // PODPOWIEDŹ W LIŚCIE WYNIKÓW
         // ==========================================
 
         it('Should keep "Wybierz wyniki" as a disabled hidden placeholder', () => {
@@ -247,7 +247,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // ACTION MENU
+        // MENU AKCJI
         // ==========================================
 
         it('Should correctly render and support keyboard navigation in the flight ActionMenu', () => {
@@ -281,7 +281,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // ADD FLIGHT MODAL
+        // OKNO DODAWANIA LOTU
         // ==========================================
 
         it('Should correctly render and close the add flight modal', () => {
@@ -308,7 +308,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // FLIGHT FORM VALIDATION
+        // WALIDACJA FORMULARZA LOTU
         // ==========================================
 
         it('Should validate flight data before sending the request', () => {
@@ -330,7 +330,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE FLIGHT
+        // DODAWANIE LOTU
         // ==========================================
 
         it('Should successfully add a flight to the adult table', () => {
@@ -392,7 +392,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // CREATE FLIGHT ERROR
+        // BŁĄD DODAWANIA LOTU
         // ==========================================
 
         it('Should display an API error when adding a flight fails', () => {
@@ -424,7 +424,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // EDIT FLIGHT
+        // EDYCJA LOTU
         // ==========================================
 
         it('Should preload and successfully update an existing flight', () => {
@@ -489,7 +489,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // CANCEL DELETE FLIGHT
+        // ANULOWANIE USUWANIA LOTU
         // ==========================================
 
         it('Should cancel flight deletion', () => {
@@ -508,7 +508,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE FLIGHT
+        // USUWANIE LOTU
         // ==========================================
 
         it('Should successfully delete a flight without results', () => {
@@ -538,7 +538,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE FLIGHT ERROR
+        // BŁĄD USUWANIA LOTU
         // ==========================================
 
         it('Should display an error modal when deleting a flight with results fails', () => {
@@ -564,7 +564,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // RESULT MODAL
+        // OKNO WYNIKÓW
         // ==========================================
 
         it('Should correctly render the result management modal', () => {
@@ -605,7 +605,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // RESULT FILE SELECTION
+        // WYBÓR PLIKU WYNIKÓW
         // ==========================================
 
         it('Should accept a valid TXT file using drag and drop', () => {
@@ -662,7 +662,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // UPLOAD BRANCH RESULT
+        // WGRYWANIE WYNIKÓW ODDZIAŁU
         // ==========================================
 
         it('Should successfully upload Branch results', () => {
@@ -715,7 +715,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // UPLOAD SECTION RESULT
+        // WGRYWANIE WYNIKÓW SEKCJI
         // ==========================================
 
         it('Should successfully upload results for a selected Section', () => {
@@ -774,7 +774,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // UPLOAD RESULT ERROR
+        // BŁĄD WGRYWANIA WYNIKÓW
         // ==========================================
 
         it('Should display an API error when uploading results fails', () => {
@@ -802,7 +802,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE RESULT
+        // USUWANIE WYNIKÓW
         // ==========================================
 
         it('Should successfully delete uploaded results', () => {
@@ -836,7 +836,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE RESULT ERROR
+        // BŁĄD USUWANIA WYNIKÓW
         // ==========================================
 
         it('Should display an API error when deleting results fails', () => {
@@ -857,7 +857,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // OPEN RESULT
+        // OTWIERANIE WYNIKÓW
         // ==========================================
 
         it('Should download the selected result and open it in a new tab', () => {
@@ -867,7 +867,7 @@ describe('Flight Plan Details Page Tests', () => {
                 body: 'Oficjalne wyniki lotu Dahme'
             }).as('getResultFile');
 
-            let openedWindow: any;
+            let openedWindow: { location: { href: string }; close: () => void };
 
             cy.window().then((win) => {
                 openedWindow = {
@@ -899,7 +899,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // BLOCKED POPUP
+        // ZABLOKOWANE OKNO WYSKAKUJĄCE
         // ==========================================
 
         it('Should display an alert when the browser blocks the result window', () => {
@@ -921,7 +921,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // RESULT DOWNLOAD ERROR
+        // BŁĄD POBIERANIA WYNIKÓW
         // ==========================================
 
         it('Should close the new window and display an error when result download fails', () => {
@@ -930,7 +930,7 @@ describe('Flight Plan Details Page Tests', () => {
                 body: 'Nie udało się pobrać testowych wyników.'
             }).as('getResultFileError');
 
-            let openedWindow: any;
+            let openedWindow: { location: { href: string }; close: () => void };
             cy.window().then((win) => {
                 openedWindow = {
                     location: {
@@ -954,7 +954,7 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading the flight plan', () => {
@@ -996,7 +996,7 @@ describe('Flight Plan Details Page Tests', () => {
     });
 
     // ==========================================
-    // READ-ONLY ROLES
+    // ROLE TYLKO DO ODCZYTU
     // ==========================================
 
     describe('Read-only roles', () => {
@@ -1040,7 +1040,7 @@ describe('Flight Plan Details Page Tests', () => {
     });
 
     // ==========================================
-    // INVALID YEAR
+    // NIEPRAWIDŁOWY ROK
     // ==========================================
 
     describe('Invalid Year', () => {
@@ -1056,7 +1056,7 @@ describe('Flight Plan Details Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

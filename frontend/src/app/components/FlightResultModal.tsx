@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
 import {FormEvent, useEffect, useRef, useState} from 'react';
 import Modal from '@/app/components/Modal';
 import { flightPlanService } from '@/app/services/flightPlanService';
+import { sectionService } from '@/app/services/sectionService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { SectionDto } from '@/app/types/section';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatLocalDate } from '@/app/utils/formatters';
-
-interface SectionDto {
-    id: number;
-    name: string;
-}
 
 interface FlightResultModalProps {
     isOpen: boolean;
@@ -77,15 +74,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
             setError('');
 
             try {
-                const response = await fetchWithAuth(`${API_URL}/api/sections`, {
-                    signal: controller.signal
-                });
-
-                if (!response.ok) {
-                    throw new Error(await readApiError(response, 'Nie udało się pobrać listy sekcji.'));
-                }
-
-                const data: SectionDto[] = await response.json();
+                const data = await sectionService.getSections(controller.signal);
 
                 if (!controller.signal.aborted) {
                     setSections(data);
@@ -95,7 +84,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                     return;
                 }
 
-                setError(error instanceof Error ? error.message : 'Nie udało się pobrać listy sekcji.');
+                setError(getErrorMessage(error, 'Nie udało się pobrać listy sekcji.'));
             } finally {
                 if (!controller.signal.aborted) {
                     setIsLoadingSections(false);
@@ -203,7 +192,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
             setSuccessMessage('Wyniki zostały wgrane.');
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się wgrać wyników lotu.');
+            setError(getErrorMessage(error, 'Nie udało się wgrać wyników lotu.'));
         } finally {
             setIsUploading(false);
         }
@@ -220,7 +209,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
             setResultToDeleteId(null);
             setSuccessMessage('Wyniki zostały usunięte.');
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Nie udało się usunąć wyników lotu.');
+            setError(getErrorMessage(error, 'Nie udało się usunąć wyników lotu.'));
         } finally {
             setDeletingResultId(null);
         }

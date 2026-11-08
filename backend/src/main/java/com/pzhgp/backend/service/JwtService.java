@@ -1,6 +1,8 @@
 package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.entity.Breeder;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,62 +11,49 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
+/**
+ * Tworzenie i weryfikacja tokenów JWT przechowywanych w ciasteczku HttpOnly.
+ * <p>
+ * Token zawiera wyłącznie adres e-mail (subject). Rola i status konta są przy każdym
+ * żądaniu odczytywane z bazy danych, dzięki czemu zablokowanie konta działa od razu.
+ */
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
+    private static final Duration TOKEN_LIFETIME = Duration.ofHours(24);
 
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
+    private final SecretKey signingKey;
+    private final JwtParser parser;
+
+    public JwtService(@Value("${jwt.secret}") String secret) {
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.parser = Jwts.parser().verifyWith(signingKey).build();
+    }
 
     public Duration getTokenLifetime() {
-        return Duration.ofMillis(EXPIRATION_TIME);
+        return TOKEN_LIFETIME;
     }
 
     public String generateToken(Breeder breeder) {
+        Instant now = Instant.now();
+
         return Jwts.builder()
                 .subject(breeder.getEmail())
-                .claim("id", breeder.getId())
-                .claim("name", breeder.getName())
-                .claim("role", breeder.getRole())
-                .claim("status", breeder.getStatus())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getSigningKey())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(TOKEN_LIFETIME)))
+                .signWith(signingKey)
                 .compact();
     }
 
+    /**
+     * Adres e-mail zapisany w tokenie.
+     *
+     * @throws JwtException gdy token wygasł, jest uszkodzony lub ma nieprawidłowy podpis
+     */
     public String extractEmail(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-    }
-
-    public String extractRole(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .get("role", String.class);
-    }
-
-    public boolean isTokenValid(String token) {
-        try {
-            Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
-            return true;
-        } catch (Exception e) {
-            return false; // Token wygasł, jest uszkodzony lub ma zły podpis
-        }
-    }
-
-    private SecretKey getSigningKey() {
-        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return parser.parseSignedClaims(token).getPayload().getSubject();
     }
 }

@@ -6,13 +6,12 @@ import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.service.JwtService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final BreederRepository breederRepository;
+    private final AuthCookieService authCookieService;
 
     @Override
     protected void doFilterInternal(
@@ -38,18 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-
-        String jwt = null;
+        String jwt = authCookieService.readToken(request);
         String userEmail = null;
-
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (AuthCookieService.COOKIE_NAME.equals(cookie.getName())) {
-                    jwt = cookie.getValue();
-                    break;
-                }
-            }
-        }
 
         if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
@@ -57,9 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            if (jwtService.isTokenValid(jwt)) {
-                userEmail = jwtService.extractEmail(jwt);
-            }
+            userEmail = jwtService.extractEmail(jwt);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Odrzucono nieprawidłowy token JWT: {}", e.getMessage());
         }
@@ -80,7 +68,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {
-                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", userEmail);
+                // Adres e-mail to dane osobowe, dlatego w logu jest tylko ID konta.
+                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.",
+                        breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
             }
         }
 

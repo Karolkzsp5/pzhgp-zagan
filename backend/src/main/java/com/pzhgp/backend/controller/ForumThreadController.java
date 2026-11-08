@@ -2,17 +2,16 @@ package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.dto.ForumThreadDto;
 import com.pzhgp.backend.dto.ForumThreadRequest;
-import com.pzhgp.backend.dto.ThreadAction;
+import com.pzhgp.backend.dto.PageResponse;
+import com.pzhgp.backend.dto.ThreadStatusRequest;
+import com.pzhgp.backend.dto.ThreadTitleRequest;
 import com.pzhgp.backend.service.ForumThreadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/forum")
@@ -22,13 +21,13 @@ public class ForumThreadController {
     private final ForumThreadService threadService;
 
     @GetMapping("/categories/{categoryId}/threads")
-    public ResponseEntity<Page<ForumThreadDto>> getThreadsByCategory(
+    public ResponseEntity<PageResponse<ForumThreadDto>> getThreadsByCategory(
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(threadService.getThreadsByCategory(categoryId, page, size, authentication.getName()));
+        return ResponseEntity.ok(PageResponse.from(threadService.getThreadsByCategory(categoryId, page, size, authentication.getName())));
     }
 
     @GetMapping("/threads/{threadId}")
@@ -49,13 +48,13 @@ public class ForumThreadController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PutMapping("/threads/{id}/title")
+    @PatchMapping("/threads/{id}/title")
     public ResponseEntity<Void> updateThreadTitle(
             @PathVariable Long id,
-            @RequestBody Map<String, String> request,
+            @Valid @RequestBody ThreadTitleRequest request,
             Authentication authentication) {
-        threadService.updateThreadTitle(id, request.get("title"), authentication.getName());
-        return ResponseEntity.ok().build();
+        threadService.updateThreadTitle(id, request.title(), authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/threads/{id}")
@@ -67,15 +66,12 @@ public class ForumThreadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/threads/{id}/lock")
-    public ResponseEntity<Void> toggleLock(@PathVariable Long id, Authentication authentication) {
-        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.LOCK);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/threads/{id}/pin")
-    public ResponseEntity<Void> togglePin(@PathVariable Long id, Authentication authentication) {
-        threadService.toggleThreadStatus(id, authentication.getName(), ThreadAction.PIN);
-        return ResponseEntity.ok().build();
+    @PatchMapping("/threads/{id}/status")
+    public ResponseEntity<Void> updateThreadStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody ThreadStatusRequest request,
+            Authentication authentication) {
+        threadService.updateThreadStatus(id, request, authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }

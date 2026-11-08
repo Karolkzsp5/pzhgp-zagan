@@ -1,6 +1,6 @@
 package com.pzhgp.backend.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record NotificationDto(
         Long id,
@@ -8,5 +8,5 @@ public record NotificationDto(
         String link,
         boolean isRead,
         String type,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {}

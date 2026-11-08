@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -11,14 +11,20 @@ interface ActionMenuProps {
     children: ReactNode;
     buttonDataCy?: string;
     menuDataCy?: string;
+    /** Treść przycisku zamiast ikony trzech kropek, np. napis „Zarządzaj”. */
+    buttonContent?: ReactNode;
+    /** Klasy przycisku, gdy ma wyglądać inaczej niż domyślna okrągła ikona. */
+    buttonClassName?: string;
 }
+
+const DEFAULT_BUTTON_CLASS = 'text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition focus:outline-none';
 
 interface MenuPosition {
     top: number;
     left: number;
 }
 
-export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, children, buttonDataCy, menuDataCy}: ActionMenuProps) {
+export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, children, buttonDataCy, menuDataCy, buttonContent, buttonClassName = DEFAULT_BUTTON_CLASS}: ActionMenuProps) {
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const menuId = useId();
@@ -158,11 +164,13 @@ export default function ActionMenu({isOpen, onToggle, onClose, ariaLabel, childr
                 aria-haspopup="menu"
                 aria-controls={isOpen ? menuId : undefined}
                 onClick={event => {event.stopPropagation();onToggle();}}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition focus:outline-none"
+                className={buttonClassName}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                    <path d="M479.79-192Q450-192 429-213.21t-21-51Q408-294 429.21-315t51-21Q510-336 531-314.79t21 51Q552-234 530.79-213t-51 21Zm0-216Q450-408 429-429.21t-21-51Q408-510 429.21-531t51-21Q510-552 531-530.79t21 51Q552-450 530.79-429t-51 21Zm0-216Q450-624 429-645.21t-21-51Q408-726 429.21-747t51-21Q510-768 531-746.79t21 51Q552-666 530.79-645t-51 21Z" />
-                </svg>
+                {buttonContent ?? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+                        <path d="M479.79-192Q450-192 429-213.21t-21-51Q408-294 429.21-315t51-21Q510-336 531-314.79t21 51Q552-234 530.79-213t-51 21Zm0-216Q450-408 429-429.21t-21-51Q408-510 429.21-531t51-21Q510-552 531-530.79t21 51Q552-450 530.79-429t-51 21Zm0-216Q450-624 429-645.21t-21-51Q408-726 429.21-747t51-21Q510-768 531-746.79t21 51Q552-666 530.79-645t-51 21Z" />
+                    </svg>
+                )}
             </button>
 
             {isOpen &&

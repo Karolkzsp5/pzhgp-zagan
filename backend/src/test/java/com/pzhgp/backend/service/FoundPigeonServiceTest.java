@@ -4,7 +4,6 @@ import com.pzhgp.backend.dto.FoundPigeonDto;
 import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.exception.InvalidStatusTransitionException;
-import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -30,9 +29,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Found Pigeon Service Unit Tests")
 class FoundPigeonServiceTest {
-
-    private static final String CLIENT_IP = "203.0.113.10";
 
     @Mock
     private FoundPigeonRepository foundPigeonRepository;
@@ -42,9 +40,6 @@ class FoundPigeonServiceTest {
 
     @Mock
     private NotificationService notificationService;
-
-    @Mock
-    private SubmissionRateLimiter rateLimiter;
 
     @InjectMocks
     private FoundPigeonService foundPigeonService;
@@ -72,10 +67,6 @@ class FoundPigeonServiceTest {
                 "Gołąb siedzi na parapecie od wczoraj.", language);
     }
 
-    private void acceptRateLimit() {
-        when(rateLimiter.tryAcquire(any())).thenReturn(true);
-    }
-
     private void stubSave() {
         when(foundPigeonRepository.save(any(FoundPigeonReport.class))).thenAnswer(invocation -> {
             FoundPigeonReport saved = invocation.getArgument(0);
@@ -89,13 +80,12 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should store a new report with PENDING status")
     void newReportStartsAsPending() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE))
                 .thenReturn(List.of(administrator));
 
         Long id = foundPigeonService.createReport(
-                request("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE), CLIENT_IP);
+                request("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE));
 
         assertEquals(42L, id);
 
@@ -108,12 +98,11 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should store both the original and normalized ring number")
     void storesOriginalAndNormalizedRingNumber() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.PL));
 
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
@@ -125,12 +114,11 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should default to Polish when the report language is missing")
     void defaultsToPolishLanguage() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, null), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, null));
 
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
@@ -141,13 +129,12 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should notify active administrators about a new report")
     void notifiesActiveAdministrators() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE))
                 .thenReturn(List.of(administrator));
 
         foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         verify(notificationService).createBulkNotifications(
                 eq(List.of(administrator)),
@@ -159,12 +146,11 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should omit the finder's phone number and email from administrator notifications")
     void notificationOmitsContactDetails() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of(administrator));
 
         foundPigeonService.createReport(
-                request("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
 
         ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
         verify(notificationService).createBulkNotifications(any(), message.capture(), any(), any());
@@ -178,26 +164,13 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should skip notifications when there are no active administrators")
     void skipsNotificationWithoutAdministrators() {
-        acceptRateLimit();
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
         foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP);
+                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         verify(notificationService, never()).createBulkNotifications(any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Should reject a report when the submission rate limit is exceeded")
-    void rejectsReportOverRateLimit() {
-        when(rateLimiter.tryAcquire(CLIENT_IP)).thenReturn(false);
-
-        SubmissionRateLimitException exception = assertThrows(SubmissionRateLimitException.class, () -> foundPigeonService.createReport(
-                request("PL-0369-24-1234", "601234567", null, ReportLanguage.PL), CLIENT_IP));
-
-        assertFalse(exception.getMessage().matches(".*\\d+.*"), "The message must not reveal the configured limit");
-        verify(foundPigeonRepository, never()).save(any());
     }
 
     @Test
@@ -219,8 +192,8 @@ class FoundPigeonServiceTest {
 
         foundPigeonService.searchReports(null, "   ", 0, 10);
 
-        // An empty text, never null: PostgreSQL cannot infer the type of a null LIKE parameter
-        // and rejects the query, while an empty pattern simply matches every ring number.
+        // Pusty tekst, nigdy null: PostgreSQL nie rozpozna typu parametru LIKE równego null
+        // i odrzuci zapytanie, a pusty wzorzec po prostu pasuje do każdego numeru obrączki.
         verify(foundPigeonRepository).search(eq(null), eq(""), any(Pageable.class));
     }
 
@@ -289,7 +262,9 @@ class FoundPigeonServiceTest {
     void rejectsTransitionFromPendingToResolved() {
         when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
 
-        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class,
+                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        assertEquals("Nie można zmienić statusu z „Oczekujące” na „Zakończone”.", exception.getMessage());
         verify(foundPigeonRepository, never()).save(any());
     }
 

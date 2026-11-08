@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service.gpx;
 
+import com.pzhgp.backend.exception.GpxParsingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Flight Analyzer Unit Tests")
 class FlightAnalyzerTest {
 
     private FlightAnalyzer analyzer;

@@ -125,7 +125,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // PAGE RENDERING
+        // WYŚWIETLANIE STRONY
         // ==========================================
 
         it('Should correctly render all visible elements of the forum thread page', () => {
@@ -179,7 +179,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // VIEW COUNTING
+        // ZLICZANIE WYŚWIETLEŃ
         // ==========================================
 
         it('Should count a new visit after a full page reload', () => {
@@ -201,7 +201,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD TITLE
+        // TYTUŁ WĄTKU
         // ==========================================
 
         it('Should allow cancelling thread title editing', () => {
@@ -216,7 +216,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should successfully update the thread title', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/title', (req) => {
+            cy.intercept('PATCH', '**/api/forum/threads/11/title', (req) => {
                 expect(req.body).to.deep.equal({
                     title: 'Zaktualizowany tytuł wątku'
                 });
@@ -226,7 +226,7 @@ describe('Forum Thread Page Tests', () => {
                     title: 'Zaktualizowany tytuł wątku'
                 };
 
-                req.reply({ statusCode: 200 });
+                req.reply({ statusCode: 204 });
             }).as('updateThreadTitle');
 
             cy.get('button[aria-label="Edytuj tytuł wątku"]').click();
@@ -254,7 +254,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should display an error modal when updating the thread title fails', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/title', {
+            cy.intercept('PATCH', '**/api/forum/threads/11/title', {
                 statusCode: 500,
                 body: 'Nie udało się zaktualizować testowego tytułu.'
             }).as('updateThreadTitleError');
@@ -275,37 +275,37 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD MODERATION
+        // MODEROWANIE WĄTKU
         // ==========================================
 
         it('Should successfully pin and unpin a thread', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/pin', {
-                statusCode: 200
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
+                statusCode: 204
             }).as('togglePin');
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Przypnij wątek').click();
 
-            cy.wait('@togglePin');
+            cy.wait('@togglePin').its('request.body').should('deep.equal', { isPinned: true });
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Odepnij wątek').should('be.visible').click();
 
-            cy.wait('@togglePin');
+            cy.wait('@togglePin').its('request.body').should('deep.equal', { isPinned: false });
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Przypnij wątek').should('be.visible');
         });
 
         it('Should successfully lock and unlock a thread', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/lock', {
-                statusCode: 200
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
+                statusCode: 204
             }).as('toggleLock');
 
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Zablokuj wątek').click();
 
-            cy.wait('@toggleLock');
+            cy.wait('@toggleLock').its('request.body').should('deep.equal', { isLocked: true });
 
             cy.contains('h3', 'Wątek zablokowany').should('be.visible');
             cy.contains('Ten wątek został zamknięty przez moderatora. Nie można dodawać nowych odpowiedzi.').should('be.visible');
@@ -314,7 +314,7 @@ describe('Forum Thread Page Tests', () => {
             cy.contains('button', 'Zarządzaj').click();
             cy.contains('[role="menuitem"]', 'Odblokuj wątek').click();
 
-            cy.wait('@toggleLock');
+            cy.wait('@toggleLock').its('request.body').should('deep.equal', { isLocked: false });
 
             cy.contains('h3', 'Wątek zablokowany').should('not.exist');
             cy.contains('h3', 'Dodaj odpowiedź').should('be.visible');
@@ -322,7 +322,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         it('Should display an error modal when thread moderation fails', () => {
-            cy.intercept('PUT', '**/api/forum/threads/11/pin', {
+            cy.intercept('PATCH', '**/api/forum/threads/11/status', {
                 statusCode: 403,
                 body: 'Brak uprawnień do moderacji tego wątku.'
             }).as('togglePinError');
@@ -340,7 +340,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // REPLIES
+        // ODPOWIEDZI
         // ==========================================
 
         it('Should require non-empty reply content', () => {
@@ -423,7 +423,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // EDIT POST
+        // EDYCJA WPISU
         // ==========================================
 
         it('Should validate an empty post while editing', () => {
@@ -505,7 +505,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE POST
+        // USUWANIE WPISU
         // ==========================================
 
         it('Should cancel post deletion without removing the post', () => {
@@ -591,7 +591,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // THREAD PAGINATION
+        // STRONICOWANIE WĄTKU
         // ==========================================
 
         it('Should navigate between post pages', () => {
@@ -687,7 +687,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // SANITIZATION
+        // CZYSZCZENIE TREŚCI
         // ==========================================
 
         it('Should sanitize dangerous HTML before rendering a post', () => {
@@ -733,7 +733,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // LOADING ERROR AND RETRY
+        // BŁĄD ŁADOWANIA I PONOWNA PRÓBA
         // ==========================================
 
         it('Should display an error and successfully retry loading the discussion', () => {
@@ -784,7 +784,7 @@ describe('Forum Thread Page Tests', () => {
         });
 
         // ==========================================
-        // DELETE THREAD
+        // USUWANIE WĄTKU
         // ==========================================
 
         it('Should cancel thread deletion without removing the thread', () => {
@@ -867,7 +867,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // LOCKED THREAD
+    // ZABLOKOWANY WĄTEK
     // ==========================================
 
     describe('Locked Thread', () => {
@@ -907,7 +907,7 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // LIMITED PERMISSIONS
+    // OGRANICZONE UPRAWNIENIA
     // ==========================================
 
     describe('Limited Permissions', () => {
@@ -963,18 +963,19 @@ describe('Forum Thread Page Tests', () => {
     });
 
     // ==========================================
-    // INVALID THREAD ID
+    // NIEPRAWIDŁOWE ID WĄTKU
     // ==========================================
 
     describe('Invalid Thread ID', () => {
         it('Should display an error for an invalid thread identifier', () => {
+            cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/abc', breederUser);
             cy.contains('Nieprawidłowy adres URL. Wątek nie istnieje.').should('be.visible');
         });
     });
 
     // ==========================================
-    // ACCESS CONTROL
+    // KONTROLA DOSTĘPU
     // ==========================================
 
     describe('Access Control', () => {

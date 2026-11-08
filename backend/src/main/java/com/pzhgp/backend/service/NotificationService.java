@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    /** Największa dopuszczalna liczba powiadomień na stronie. */
     private static final int MAX_PAGE_SIZE = 50;
 
     private final NotificationRepository notificationRepository;
@@ -33,20 +34,13 @@ public class NotificationService {
     public void createNotification(Long recipientId, String message, String link, NotificationType type) {
         Breeder recipient = breederRepository.findById(recipientId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono odbiorcy o ID: " + recipientId));
 
-        Notification notification = new Notification();
-        notification.setRecipient(recipient);
-        notification.setMessage(message);
-        notification.setLink(link);
-        notification.setType(type);
-        notification.setRead(false);
-
-        notificationRepository.save(notification);
+        notificationRepository.save(buildNotification(recipient, message, link, type));
     }
 
     @Transactional(readOnly = true)
     public Page<NotificationDto> getUserNotifications(String userEmail, int page, int size) {
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
-        Breeder breeder = getBreederByEmail(userEmail);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
 
         return notificationRepository.findByRecipientId(breeder.getId(), pageable).map(this::mapToDto);
@@ -58,29 +52,21 @@ public class NotificationService {
             return;
         }
 
-        List<Notification> notifications = recipients.stream().map(recipient -> {
-            Notification notification = new Notification();
-            notification.setRecipient(recipient);
-            notification.setMessage(message);
-            notification.setLink(link);
-            notification.setType(type);
-            notification.setRead(false);
-            return notification;
-        }).collect(Collectors.toList());
+        List<Notification> notifications = recipients.stream().map(recipient -> buildNotification(recipient, message, link, type)).collect(Collectors.toList());
 
         notificationRepository.saveAll(notifications);
     }
 
     @Transactional(readOnly = true)
     public long getUnreadCount(String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
         return notificationRepository.countByRecipientIdAndIsReadFalse(breeder.getId());
     }
 
     @Transactional
     public void markAsRead(Long notificationId, String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
+        Notification notification = findNotification(notificationId);
 
         if (!notification.getRecipient().getId().equals(breeder.getId())) {
             throw new ForbiddenOperationException("Brak uprawnień do modyfikacji tego powiadomienia.");
@@ -92,14 +78,14 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
         notificationRepository.markAllAsReadByRecipientId(breeder.getId());
     }
 
     @Transactional
     public void deleteNotification(Long notificationId, String userEmail) {
-        Breeder breeder = getBreederByEmail(userEmail);
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
+        Breeder breeder = breederRepository.requireByEmail(userEmail);
+        Notification notification = findNotification(notificationId);
 
         if (!notification.getRecipient().getId().equals(breeder.getId())) {
             throw new ForbiddenOperationException("Brak uprawnień do usunięcia tego powiadomienia.");
@@ -108,8 +94,18 @@ public class NotificationService {
         notificationRepository.delete(notification);
     }
 
-    private Breeder getBreederByEmail(String email) {
-        return breederRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika: " + email));
+    private Notification buildNotification(Breeder recipient, String message, String link, NotificationType type) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setMessage(message);
+        notification.setLink(link);
+        notification.setType(type);
+        notification.setRead(false);
+        return notification;
+    }
+
+    private Notification findNotification(Long notificationId) {
+        return notificationRepository.findById(notificationId).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono powiadomienia."));
     }
 
     private NotificationDto mapToDto(Notification notification) {

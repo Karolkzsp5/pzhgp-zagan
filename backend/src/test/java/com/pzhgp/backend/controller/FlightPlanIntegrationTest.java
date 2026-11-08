@@ -1,14 +1,13 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.dto.FlightPlanCreateRequest;
 import com.pzhgp.backend.dto.FlightPlanEntryRequest;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightPlanRepository;
-import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
+import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 

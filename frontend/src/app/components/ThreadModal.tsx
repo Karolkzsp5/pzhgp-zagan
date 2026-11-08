@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
-import TextEditor from './TextEditor';
+import { type FormEvent, useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
-import { API_URL, fetchWithAuth, readApiError } from '@/app/utils/apiClient';
+import { forumService } from '@/app/services/forumService';
+import { getErrorMessage } from '@/app/utils/apiClient';
 import { isHtmlEmpty } from '@/app/utils/richText';
+import TextEditor from './TextEditor';
 
 interface ThreadModalProps {
     isOpen: boolean;
@@ -45,21 +46,12 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/forum/threads`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ categoryId, title: cleanTitle, initialPostContent: content })
-            });
-
-            if (!response.ok) {
-                setError(await readApiError(response, 'Wystąpił błąd podczas tworzenia wątku.'));
-                return;
-            }
+            await forumService.createThread(categoryId, cleanTitle, content);
 
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error instanceof TypeError ? 'Nie udało się połączyć z serwerem.' : error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wątku.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas tworzenia wątku.'));
         } finally {
             setIsLoading(false);
         }

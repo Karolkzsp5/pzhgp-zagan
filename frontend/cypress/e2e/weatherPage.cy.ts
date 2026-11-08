@@ -4,7 +4,7 @@ describe('Weather Page Tests', () => {
     const adminUser = createTestUser('ADMINISTRATOR', 'admin@pzhgp.pl', 'Admin');
 
     // ==========================================
-    // PUBLIC USER
+    // NIEZALOGOWANY UŻYTKOWNIK
     // ==========================================
 
     it('Should correctly render the weather page for an unauthenticated user', () => {
@@ -53,7 +53,7 @@ describe('Weather Page Tests', () => {
     });
 
     // ==========================================
-    // AUTHENTICATED USER
+    // ZALOGOWANY UŻYTKOWNIK
     // ==========================================
 
     it('Should correctly render the weather page for an authenticated user', () => {

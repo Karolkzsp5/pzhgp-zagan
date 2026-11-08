@@ -30,12 +30,12 @@ describe('Board Page Tests', () => {
         { id: 3, name: 'Chotków' }
     ];
 
+    // Endpoint kandydatów zwraca tylko aktywnych hodowców, bez danych kontaktowych.
     const mockBreeders = [
-        { id: 10, name: 'Jan', surname: 'Kowalski', status: 'ACTIVE', sectionId: 1 },
-        { id: 11, name: 'Anna', surname: 'Nowak', status: 'ACTIVE', sectionId: 1 },
-        { id: 12, name: 'Piotr', surname: 'Testowy', status: 'ACTIVE', sectionId: 2 },
-        { id: 13, name: 'Blokowany', surname: 'Hodowca', status: 'BLOCKED', sectionId: 1 },
-        { id: 14, name: 'Marek', surname: 'Testowy', status: 'ACTIVE', sectionId: 3 }
+        { id: 10, name: 'Jan', surname: 'Kowalski', sectionId: 1 },
+        { id: 11, name: 'Anna', surname: 'Nowak', sectionId: 1 },
+        { id: 12, name: 'Piotr', surname: 'Testowy', sectionId: 2 },
+        { id: 14, name: 'Marek', surname: 'Testowy', sectionId: 3 }
     ];
 
     const createBoardMembers = (): MockBoardMember[] => [
@@ -145,7 +145,7 @@ describe('Board Page Tests', () => {
             body: mockSections
         }).as('getSections');
 
-        cy.intercept('GET', '**/api/admin/registered', {
+        cy.intercept('GET', '**/api/board/candidates', {
             statusCode: 200,
             body: mockBreeders
         }).as('getRegisteredBreeders');
@@ -157,7 +157,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PAGE RENDERING
+    // WYŚWIETLANIE STRONY
     // ==========================================
 
     it('Should correctly render all visible elements of the board page', () => {
@@ -217,7 +217,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // SORTING
+    // SORTOWANIE
     // ==========================================
 
     it('Should correctly sort board members according to their roles', () => {
@@ -237,7 +237,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // EMPTY STATE
+    // PUSTA LISTA
     // ==========================================
 
     it('Should display empty states when there are no board members', () => {
@@ -264,7 +264,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ERROR AND RETRY
+    // BŁĄD I PONOWNA PRÓBA
     // ==========================================
 
     it('Should display an error and successfully retry loading board data', () => {
@@ -274,7 +274,7 @@ describe('Board Page Tests', () => {
             if (shouldFail) {
                 req.reply({
                     statusCode: 500,
-                    body: 'Internal Server Error'
+                    body: 'Nie udało się pobrać testowego składu zarządu.'
                 });
             } else {
                 req.reply({
@@ -287,7 +287,7 @@ describe('Board Page Tests', () => {
         cy.reload();
         cy.wait('@getBoardRetry');
 
-        cy.contains('Nie udało się pobrać danych zarządu.').should('be.visible');
+        cy.contains('Nie udało się pobrać testowego składu zarządu.').should('be.visible');
         cy.contains('button', 'Spróbuj ponownie').should('be.visible');
 
         cy.then(() => {
@@ -297,19 +297,19 @@ describe('Board Page Tests', () => {
         cy.contains('button', 'Spróbuj ponownie').click();
         cy.wait('@getBoardRetry');
 
-        cy.contains('Nie udało się pobrać danych zarządu.').should('not.exist');
+        cy.contains('Nie udało się pobrać testowego składu zarządu.').should('not.exist');
         cy.contains('h2', 'Zarząd Oddziału:').should('be.visible');
         getMemberCard('Jan Kowalski').should('be.visible');
     });
 
     // ==========================================
-    // PUBLIC ACCESS
+    // DOSTĘP PUBLICZNY
     // ==========================================
 
     it('Should allow an unauthenticated user to view the board without administration controls', () => {
         let adminDictionaryRequests = 0;
 
-        cy.intercept('GET', '**/api/admin/registered', (req) => {
+        cy.intercept('GET', '**/api/board/candidates', (req) => {
             adminDictionaryRequests++;
             req.reply({
                 statusCode: 403,
@@ -351,7 +351,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // BREEDER ACCESS
+    // DOSTĘP HODOWCY
     // ==========================================
 
     it('Should hide administration controls from a breeder', () => {
@@ -373,13 +373,13 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DICTIONARY LOADING
+    // ŁADOWANIE SŁOWNIKÓW
     // ==========================================
 
     it('Should load administrator form dictionaries only after the modal is opened', () => {
         let registeredBreedersRequests = 0;
 
-        cy.intercept('GET', '**/api/admin/registered', (req) => {
+        cy.intercept('GET', '**/api/board/candidates', (req) => {
             registeredBreedersRequests++;
 
             req.reply({
@@ -406,7 +406,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ADD MEMBER MODAL
+    // OKNO DODAWANIA CZŁONKA
     // ==========================================
 
     it('Should correctly render and close the add board member modal', () => {
@@ -429,7 +429,7 @@ describe('Board Page Tests', () => {
             cy.get('#board-breeder').should('be.checked');
             cy.contains('option', '-- Wybierz hodowcę --').should('exist');
 
-            cy.contains('label', 'Publiczny nr telefonu (opcjonalny)').should('be.visible');
+            cy.contains('label', 'Publiczny nr telefonu (opcjonalnie)').should('be.visible');
             cy.get('#contact-phone').should('be.visible').and('have.attr', 'placeholder', 'np. 123 456 789');
 
             cy.contains('button', 'Anuluj').should('be.visible');
@@ -442,7 +442,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // ROLE AND SECTION FILTERING
+    // FILTROWANIE PO ROLI I SEKCJI
     // ==========================================
 
     it('Should correctly change available roles and breeders after selecting a board section', () => {
@@ -477,7 +477,6 @@ describe('Board Page Tests', () => {
             cy.contains('option', 'Jan Kowalski').should('exist');
             cy.contains('option', 'Anna Nowak').should('exist');
             cy.contains('option', 'Piotr Testowy').should('not.exist');
-            cy.contains('option', 'Blokowany Hodowca').should('not.exist');
         });
 
         cy.get('#board-role').select('SKARBNIK');
@@ -498,7 +497,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PERSON SOURCE
+    // ŹRÓDŁO DANYCH OSOBY
     // ==========================================
 
     it('Should switch between a registered breeder and a person without an account', () => {
@@ -526,7 +525,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // PHONE NUMBER
+    // NUMER TELEFONU
     // ==========================================
 
     it('Should correctly format and validate the public phone number', () => {
@@ -546,7 +545,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE REGISTERED MEMBER
+    // DODAWANIE ZAREJESTROWANEGO HODOWCY
     // ==========================================
 
     it('Should successfully add a registered breeder to a section board', () => {
@@ -602,7 +601,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE EXTERNAL MEMBER
+    // DODAWANIE OSOBY SPOZA SYSTEMU
     // ==========================================
 
     it('Should successfully add a person without an account to the branch board', () => {
@@ -656,13 +655,13 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CREATE ERROR
+    // BŁĄD DODAWANIA
     // ==========================================
 
     it('Should display an API error when adding a board member fails', () => {
         cy.intercept('POST', '**/api/board', {
             statusCode: 400,
-            body: 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.'
+            body: 'Stanowisko „Prezes” jest już zajęte w tym zarządzie.'
         }).as('createBoardMemberError');
 
         openAddMemberModal();
@@ -674,13 +673,13 @@ describe('Board Page Tests', () => {
 
         cy.wait('@createBoardMemberError');
 
-        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'To stanowisko (PREZES) jest już zajęte w tym zarządzie.');
+        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Stanowisko „Prezes” jest już zajęte w tym zarządzie.');
 
         cy.get('[role="dialog"]').should('be.visible');
     });
 
     // ==========================================
-    // EDIT REGISTERED MEMBER
+    // EDYCJA ZAREJESTROWANEGO HODOWCY
     // ==========================================
 
     it('Should correctly preload and successfully edit a registered board member', () => {
@@ -735,7 +734,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // EDIT EXTERNAL MEMBER
+    // EDYCJA OSOBY SPOZA SYSTEMU
     // ==========================================
 
     it('Should correctly preload a person without an account when editing', () => {
@@ -756,7 +755,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // CANCEL DELETE
+    // ANULOWANIE USUWANIA
     // ==========================================
 
     it('Should cancel board member deletion without removing the member', () => {
@@ -773,7 +772,7 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DELETE MEMBER
+    // USUWANIE CZŁONKA
     // ==========================================
 
     it('Should successfully delete a board member', () => {
@@ -803,13 +802,13 @@ describe('Board Page Tests', () => {
     });
 
     // ==========================================
-    // DELETE ERROR
+    // BŁĄD USUWANIA
     // ==========================================
 
     it('Should display an error modal when board member deletion fails', () => {
         cy.intercept('DELETE', '**/api/board/2', {
             statusCode: 500,
-            body: 'Internal Server Error'
+            body: 'Nie udało się usunąć testowego członka zarządu.'
         }).as('deleteBoardMemberError');
 
         cy.get('button[aria-label="Usuń Adam Nowak"]').click();
@@ -822,7 +821,7 @@ describe('Board Page Tests', () => {
 
         cy.get('[role="dialog"]').should('be.visible').within(() => {
             cy.contains('h2', 'Błąd').should('be.visible');
-            cy.contains('Wystąpił błąd podczas usuwania. Spróbuj ponownie.').should('be.visible');
+            cy.contains('Nie udało się usunąć testowego członka zarządu.').should('be.visible');
             cy.contains('button', 'OK').click();
         });
 

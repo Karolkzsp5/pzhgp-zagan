@@ -1,12 +1,13 @@
 package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.config.AuthCookieService;
-import com.pzhgp.backend.dto.CurrentUserResponseDto;
+import com.pzhgp.backend.dto.CurrentUserDto;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.exception.AuthRateLimitException;
 import com.pzhgp.backend.service.AuthRateLimiter;
 import com.pzhgp.backend.service.BreederService;
+import com.pzhgp.backend.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.pzhgp.backend.service.JwtService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -47,10 +47,9 @@ public class AuthController {
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
-    @PostMapping("/login-cookie")
-    public ResponseEntity<Void> loginWithCookie(
+    @PostMapping("/login")
+    public ResponseEntity<Void> login(
             @Valid @RequestBody LoginRequest request,
-            @RequestParam(defaultValue = "false") boolean rememberMe,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
@@ -59,7 +58,7 @@ public class AuthController {
         }
 
         String token = breederService.login(request);
-        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), rememberMe);
+        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), request.rememberMe());
         return ResponseEntity.noContent().build();
     }
 
@@ -70,8 +69,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<CurrentUserResponseDto> currentUser(Authentication authentication) {
+    public ResponseEntity<CurrentUserDto> currentUser(Authentication authentication) {
         return ResponseEntity.ok(breederService.getCurrentUser(authentication.getName()));
     }
-
 }

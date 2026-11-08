@@ -1,6 +1,5 @@
 package com.pzhgp.backend.controller;
 
-import tools.jackson.databind.json.JsonMapper;
 import com.pzhgp.backend.entity.*;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
@@ -17,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 
@@ -220,7 +220,6 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return 400 when a category description exceeds the maximum length")
     void createCategory_WithTooLongDescription_ShouldReturn400() throws Exception {
-
         Map<String, Object> request = Map.of(
                 "name", "Poprawna kategoria",
                 "description", "a".repeat(2_001),

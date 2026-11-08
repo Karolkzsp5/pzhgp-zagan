@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { API_URL, fetchApi, fetchWithAuth, readApiError, refreshCsrfToken } from '@/app/utils/apiClient';
-import { AUTH_CHANGED_EVENT, AUTH_SYNC_KEY, clearLegacyAuthStorage, CurrentUser, getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { authService } from '@/app/services/authService';
+import { refreshCsrfToken } from '@/app/utils/apiClient';
+import { AUTH_CHANGED_EVENT, AUTH_SYNC_KEY, CurrentUser, getAuthGeneration, invalidateAuthSession } from '@/app/utils/authSession';
 
 interface AuthContextValue {
     user: CurrentUser | null;
@@ -21,26 +22,26 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const [authCheckFailed, setAuthCheckFailed] = useState(false);
     const latestAuthRequestRef = useRef(0);
 
+    // Trwające sprawdzanie sesji zostanie pominięte, gdy jego wynik przyjdzie po wywołaniu tej funkcji.
+    const invalidateAuthRequests = useCallback(() => {
+        latestAuthRequestRef.current++;
+    }, []);
+
     const refreshAuth = useCallback(async (): Promise<boolean> => {
         const requestId = ++latestAuthRequestRef.current;
         const generation = getAuthGeneration();
 
         try {
-            const response = await fetchApi(`${API_URL}/api/auth/me`, { cache: 'no-store' });
+            const currentUser = await authService.getCurrentUser();
             if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
 
-            if (response.status === 401) {
+            if (currentUser === null) {
                 setUser(null);
                 setAuthCheckFailed(false);
                 setIsAuthResolved(true);
                 return false;
             }
-            if (!response.ok) {
-                throw new Error(await readApiError(response, 'Nie udało się pobrać danych użytkownika.'));
-            }
 
-            const currentUser = await response.json() as CurrentUser;
-            if (requestId !== latestAuthRequestRef.current || generation !== getAuthGeneration()) return false;
             setUser(currentUser);
             setAuthCheckFailed(false);
             setIsAuthResolved(true);
@@ -57,12 +58,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const signOut = useCallback(async () => {
-        const response = await fetchWithAuth(`${API_URL}/api/auth/logout`, { method: 'POST' });
-        if (!response.ok) {
-            throw new Error(await readApiError(response, 'Nie udało się wylogować.'));
-        }
+        await authService.logout();
         invalidateAuthSession(false);
-        latestAuthRequestRef.current++;
+        invalidateAuthRequests();
         setUser(null);
         setAuthCheckFailed(false);
         setIsAuthResolved(true);
@@ -72,10 +70,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Błąd odświeżenia tokenu CSRF po wylogowaniu:', error);
         }
-    }, []);
+    }, [invalidateAuthRequests]);
 
     useEffect(() => {
-        clearLegacyAuthStorage();
         void refreshAuth();
 
         const onStorage = (event: StorageEvent) => {
@@ -91,12 +88,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
         window.addEventListener('focus', onFocus);
         return () => {
-            latestAuthRequestRef.current++;
+            invalidateAuthRequests();
             window.removeEventListener('storage', onStorage);
             window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
             window.removeEventListener('focus', onFocus);
         };
-    }, [refreshAuth]);
+    }, [invalidateAuthRequests, refreshAuth]);
 
     const value = useMemo<AuthContextValue>(() => ({
         user,

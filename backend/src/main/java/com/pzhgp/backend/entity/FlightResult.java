@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "flight_results")
@@ -41,10 +41,10 @@ public class FlightResult {
     private Breeder uploadedBy;
 
     @Column(name = "uploaded_at", nullable = false, updatable = false)
-    private LocalDateTime uploadedAt;
+    private Instant uploadedAt;
 
     @PrePersist
     protected void onCreate() {
-        this.uploadedAt = LocalDateTime.now();
+        this.uploadedAt = Instant.now();
     }
 }

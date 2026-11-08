@@ -16,7 +16,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // PAGE RENDERING
+    // WYŚWIETLANIE STRONY
     // ==========================================
 
     it('Should correctly render all visible elements of the public report form', () => {
@@ -69,7 +69,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // LANGUAGE
+    // JĘZYK
     // ==========================================
 
     it('Should switch the report form between Polish, English and German', () => {
@@ -109,7 +109,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // ACCESS
+    // DOSTĘP
     // ==========================================
 
     it('Should hide the admin reports link from an unauthenticated user', () => {
@@ -137,7 +137,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // RING NUMBER VALIDATION
+    // WALIDACJA NUMERU OBRĄCZKI
     // ==========================================
 
     it('Should require a ring number', () => {
@@ -162,7 +162,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // CONTACT VALIDATION
+    // WALIDACJA KONTAKTU
     // ==========================================
 
     it('Should require at least one contact method', () => {
@@ -198,7 +198,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // SUCCESSFUL SUBMISSION
+    // UDANE WYSŁANIE
     // ==========================================
 
     it('Should successfully submit a complete report and allow reporting another pigeon', () => {
@@ -319,7 +319,7 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
-    // SUBMISSION ERRORS
+    // BŁĘDY WYSYŁANIA
     // ==========================================
 
     it('Should display a localized error when report submission fails', () => {

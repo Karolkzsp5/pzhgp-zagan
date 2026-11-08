@@ -1,24 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import { BoardMemberDto, BoardMemberRequest, BoardRole, BoardRoleTranslations, BRANCH_ROLE_ORDER, SECTION_ROLE_ORDER, SECTION_ROLES } from '@/app/types/board';
-import { boardService } from '@/app/services/boardService';
-import { API_URL, fetchWithAuth } from '@/app/utils/apiClient';
-import { formatPhoneInput } from '@/app/utils/formatters';
+import React, { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
-
-interface Section {
-    id: number;
-    name: string;
-}
-
-interface Breeder {
-    id: number;
-    name: string;
-    surname: string;
-    status: string;
-    sectionId: number;
-}
+import { boardService } from '@/app/services/boardService';
+import { sectionService } from '@/app/services/sectionService';
+import { BOARD_ROLE_LABELS, BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
+import { SectionDto } from '@/app/types/section';
+import { getErrorMessage } from '@/app/utils/apiClient';
+import { formatPhoneInput } from '@/app/utils/formatters';
 
 interface BoardMemberModalProps {
     isOpen: boolean;
@@ -28,7 +17,7 @@ interface BoardMemberModalProps {
 }
 
 export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdit }: BoardMemberModalProps) {
-    const [role, setRole] = useState<BoardRole>(BoardRole.CZLONEK_ZARZADU);
+    const [role, setRole] = useState<BoardRole>('CZLONEK_ZARZADU');
     const [managedSectionId, setManagedSectionId] = useState<number | null>(null);
 
     const [isRegistered, setIsRegistered] = useState<boolean>(true);
@@ -37,18 +26,18 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     const [customSurname, setCustomSurname] = useState('');
     const [contactPhone, setContactPhone] = useState('');
 
-    const [sections, setSections] = useState<Section[]>([]);
-    const [breeders, setBreeders] = useState<Breeder[]>([]);
+    const [sections, setSections] = useState<SectionDto[]>([]);
+    const [breeders, setBreeders] = useState<BoardCandidateDto[]>([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const allowedRoles = managedSectionId === null
-        ? Object.entries(BoardRoleTranslations)
-            .filter(([key]) => key !== BoardRole.SKARBNIK)
+        ? Object.entries(BOARD_ROLE_LABELS)
+            .filter(([key]) => key !== 'SKARBNIK')
             .sort((a, b) => (BRANCH_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (BRANCH_ROLE_ORDER[b[0] as BoardRole] ?? 99))
-        : Object.entries(BoardRoleTranslations)
+        : Object.entries(BOARD_ROLE_LABELS)
             .filter(([key]) => SECTION_ROLES
             .includes(key as BoardRole))
             .sort((a, b) => (SECTION_ROLE_ORDER[a[0] as BoardRole] ?? 99) - (SECTION_ROLE_ORDER[b[0] as BoardRole] ?? 99));
@@ -64,7 +53,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
         if (newSectionId !== null) {
             if (!SECTION_ROLES.includes(role)) {
-                setRole(BoardRole.PREZES);
+                setRole('PREZES');
             }
 
             if (breederId) {
@@ -74,8 +63,8 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                     setBreederId(null);
                 }
             }
-        } else if (role === BoardRole.SKARBNIK) {
-            setRole(BoardRole.PREZES);
+        } else if (role === 'SKARBNIK') {
+            setRole('PREZES');
         }
     };
 
@@ -92,33 +81,22 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             setError(null);
 
             try {
-                const [sectionsRes, breedersRes] = await Promise.all([fetchWithAuth(`${API_URL}/api/sections`, {
-                    signal: controller.signal
-                }),
-                    fetchWithAuth(`${API_URL}/api/admin/registered`, {
-                            signal: controller.signal
-                    })
+                const [sectionsData, candidatesData] = await Promise.all([sectionService.getSections(controller.signal),
+                    boardService.getBoardCandidates(controller.signal)
                 ]);
-
-                if (!sectionsRes.ok || !breedersRes.ok) {
-                    throw new Error('Nie udało się pobrać danych formularza. Spróbuj ponownie.');
-                }
-
-                const sectionsData: Section[] = await sectionsRes.json();
-                const allBreeders: Breeder[] = await breedersRes.json();
 
                 if (controller.signal.aborted) {
                     return;
                 }
 
                 setSections(sectionsData);
-                setBreeders(allBreeders.filter(breeder => breeder.status === 'ACTIVE'));
+                setBreeders(candidatesData);
             } catch (error) {
                 if (controller.signal.aborted) {
                     return;
                 }
 
-                setError(error instanceof Error ? error.message : 'Wystąpił problem z połączeniem.');
+                setError(getErrorMessage(error, 'Wystąpił problem z połączeniem.'));
             } finally {
                 if (!controller.signal.aborted) {
                     setIsDictionaryLoading(false);
@@ -151,7 +129,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
                 setCustomSurname(memberToEdit.lastName);
             }
         } else {
-            setRole(BoardRole.CZLONEK_ZARZADU);
+            setRole('CZLONEK_ZARZADU');
             setManagedSectionId(null);
             setIsRegistered(true);
             setBreederId(null);
@@ -192,7 +170,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             }
             onSaved();
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Wystąpił błąd podczas zapisywania.');
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania.'));
         } finally {
             setIsLoading(false);
         }
@@ -336,7 +314,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
                     <div>
                         <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-800 mb-1">
-                            Publiczny nr telefonu (opcjonalny)
+                            Publiczny nr telefonu
+                            <span className="ml-1 text-gray-400 font-normal">
+                                (opcjonalnie)
+                            </span>
                         </label>
                         <p className="text-xs text-gray-600 mb-2">
                             Wypełnienie tego pola sprawi, że numer będzie widoczny na stronie dla wszystkich.

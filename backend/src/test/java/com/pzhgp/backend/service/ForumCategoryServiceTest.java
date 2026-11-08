@@ -5,16 +5,17 @@ import com.pzhgp.backend.dto.ForumCategoryRequest;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.ForumCategory;
 import com.pzhgp.backend.entity.Role;
+import com.pzhgp.backend.exception.ForbiddenOperationException;
+import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.ForumCategoryRepository;
 import com.pzhgp.backend.repository.ForumThreadRepository;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
-import com.pzhgp.backend.exception.ResourceConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,7 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ForumCategoryService Unit Tests")
+@DisplayName("Forum Category Service Unit Tests")
 class ForumCategoryServiceTest {
 
     @Mock
@@ -37,7 +38,8 @@ class ForumCategoryServiceTest {
     @Mock
     private ForumThreadRepository threadRepository;
 
-    @Mock
+    // CALLS_REAL_METHODS wywołuje prawdziwą metodę domyślną requireByEmail, która korzysta z zaślepionego findByEmail.
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private BreederRepository breederRepository;
 
     @InjectMocks

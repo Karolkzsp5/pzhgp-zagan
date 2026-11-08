@@ -2,13 +2,13 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.*;
 import com.pzhgp.backend.entity.*;
-import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.exception.ResourceConflictException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FlightPlanEntryRepository;
 import com.pzhgp.backend.repository.FlightPlanRepository;
 import com.pzhgp.backend.repository.FlightResultRepository;
 import com.pzhgp.backend.repository.projection.FlightResultSummaryProjection;
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
@@ -173,13 +173,8 @@ public class FlightPlanService {
     }
 
     private Breeder requireAdministrator(String userEmail) {
-        Breeder user = breederRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("Nie znaleziono użytkownika."));
-
-        if (user.getRole() != Role.ADMINISTRATOR) {
-            throw new ForbiddenOperationException("Brak uprawnień. Planami lotów może zarządzać wyłącznie administrator.");
-        }
-
-        return user;
+        Breeder user = breederRepository.requireByEmail(userEmail);
+        return PermissionRules.requireAdministrator(user, "Brak uprawnień. Planami lotów może zarządzać wyłącznie administrator.");
     }
 
     private void validateEntryRequest(FlightPlan plan, FlightPlanEntryRequest request) {
@@ -193,7 +188,7 @@ public class FlightPlanService {
         entry.setScheduledDate(request.scheduledDate());
         entry.setLocation(request.location().trim());
         entry.setDistanceKm(request.distanceKm());
-        entry.setCategory(trimToNull(request.category()));
+        entry.setCategory(TextUtils.trimToNull(request.category()));
         entry.setListType(request.listType().trim());
     }
 
@@ -219,14 +214,5 @@ public class FlightPlanService {
                 result.getSectionSortOrder(),
                 result.getOriginalFileName()
         );
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }

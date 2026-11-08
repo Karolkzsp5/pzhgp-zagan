@@ -1,5 +1,6 @@
 package com.pzhgp.backend.controller;
 
+import com.pzhgp.backend.dto.BoardCandidateDto;
 import com.pzhgp.backend.dto.BoardMemberDto;
 import com.pzhgp.backend.dto.BoardMemberRequest;
 import com.pzhgp.backend.service.BoardMemberService;
@@ -21,6 +22,11 @@ public class BoardController {
     @GetMapping
     public ResponseEntity<List<BoardMemberDto>> getAllBoardMembers() {
         return ResponseEntity.ok(boardMemberService.getAllBoardMembers());
+    }
+
+    @GetMapping("/candidates")
+    public ResponseEntity<List<BoardCandidateDto>> getBoardCandidates() {
+        return ResponseEntity.ok(boardMemberService.getBoardCandidates());
     }
 
     @PostMapping

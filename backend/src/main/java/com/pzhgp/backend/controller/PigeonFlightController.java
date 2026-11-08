@@ -3,10 +3,10 @@ package com.pzhgp.backend.controller;
 import com.pzhgp.backend.dto.FlightDetailsDto;
 import com.pzhgp.backend.dto.FlightSummaryDto;
 import com.pzhgp.backend.dto.FlightUploadRequest;
+import com.pzhgp.backend.dto.PageResponse;
 import com.pzhgp.backend.service.PigeonFlightService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,12 +44,12 @@ public class PigeonFlightController {
      * Lista lotów zalogowanego hodowcy.
      */
     @GetMapping
-    public ResponseEntity<Page<FlightSummaryDto>> getMyFlights(
+    public ResponseEntity<PageResponse<FlightSummaryDto>> getMyFlights(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(pigeonFlightService.getMyFlights(authentication.getName(), page, size));
+        return ResponseEntity.ok(PageResponse.from(pigeonFlightService.getMyFlights(authentication.getName(), page, size)));
     }
 
     /**

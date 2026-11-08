@@ -3,15 +3,13 @@ package com.pzhgp.backend.controller;
 import com.pzhgp.backend.dto.FoundPigeonDto;
 import com.pzhgp.backend.dto.FoundPigeonNoteRequest;
 import com.pzhgp.backend.dto.FoundPigeonStatusRequest;
+import com.pzhgp.backend.dto.PageResponse;
 import com.pzhgp.backend.entity.FoundPigeonStatus;
 import com.pzhgp.backend.service.FoundPigeonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * Panel obsługi zgłoszeń odnalezienia gołębi.
@@ -30,19 +28,19 @@ public class AdminFoundPigeonController {
      * Lista zgłoszeń od najnowszego, z opcjonalnym filtrem statusu i numeru obrączki.
      */
     @GetMapping
-    public ResponseEntity<Page<FoundPigeonDto>> getReports(
+    public ResponseEntity<PageResponse<FoundPigeonDto>> getReports(
             @RequestParam(required = false) FoundPigeonStatus status,
             @RequestParam(required = false) String ringNumber,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(foundPigeonService.searchReports(status, ringNumber, page, size));
+        return ResponseEntity.ok(PageResponse.from(foundPigeonService.searchReports(status, ringNumber, page, size)));
     }
 
     /** Liczba zgłoszeń oczekujących na weryfikację. */
     @GetMapping("/pending-count")
-    public ResponseEntity<Map<String, Long>> getPendingCount() {
-        return ResponseEntity.ok(Map.of("count", foundPigeonService.countPendingReports()));
+    public ResponseEntity<Long> getPendingCount() {
+        return ResponseEntity.ok(foundPigeonService.countPendingReports());
     }
 
     @GetMapping("/{id}")

@@ -1,7 +1,6 @@
 package com.pzhgp.backend.config;
 
 import com.pzhgp.backend.entity.Role;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +28,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final AuthCookieService authCookieService;
 
-    @Value("${cors.allowed-origins:http://localhost:3000}")
+    @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
 
     @Bean
@@ -47,10 +47,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login-cookie", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/csrf", "/api/sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/announcements").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
+                        // DELETE celowo nie ma tu reguły roli: autor może usunąć własne ogłoszenie także po odebraniu roli moderatora.
+                        // Uprawnienia do usuwania sprawdza AnnouncementService.
 
                         .requestMatchers(HttpMethod.POST, "/api/forum/categories").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/forum/categories/**").hasAnyAuthority(Role.ADMINISTRATOR.name(), Role.MODERATOR.name())
@@ -59,6 +61,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/found-pigeons").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/board").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/board/candidates").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.POST, "/api/board").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.PUT, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").hasAuthority(Role.ADMINISTRATOR.name())
@@ -100,20 +104,12 @@ public class SecurityConfig {
 
         // Te operacje zawsze wymagają tokenu CSRF, także przed zalogowaniem.
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        if ("/api/auth/login-cookie".equals(path) || "/api/auth/logout".equals(path)) {
+        if ("/api/auth/login".equals(path) || "/api/auth/logout".equals(path)) {
             return true;
         }
 
         // Wszystkie operacje z ciasteczkiem uwierzytelniającym wymagają CSRF.
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (AuthCookieService.COOKIE_NAME.equals(cookie.getName())) {
-                    return true;
-                }
-            }
-        }
-
-        // Żądania bez cookie uwierzytelniającego nie wykorzystują sesji użytkownika.
-        return false;
+        // Żądania bez tego ciasteczka nie wykorzystują sesji użytkownika.
+        return authCookieService.hasAuthenticationCookie(request);
     }
 }

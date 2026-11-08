@@ -1,12 +1,13 @@
-// W ciasteczku HttpOnly znajduje się token JWT. Frontend nie odczytuje jego wartości.
+import type { AccountStatus } from '@/app/types/breeder';
+
 export type UserRole = 'BREEDER' | 'MODERATOR' | 'ADMINISTRATOR';
 
 export interface CurrentUser {
     id: number;
-    sub: string;
+    email: string;
     name: string;
     role: UserRole;
-    status: string;
+    status: AccountStatus;
 }
 
 export const AUTH_CHANGED_EVENT = 'pzhgp-auth-changed';
@@ -26,13 +27,4 @@ export const invalidateAuthSession = (notify = true, broadcast = true) => {
         // W storage trafia wyłącznie sygnał między kartami, NIGDY JWT.
         localStorage.setItem(AUTH_SYNC_KEY, `${Date.now()}-${authGeneration}`);
     }
-};
-
-export const clearLegacyAuthStorage = () => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('auth_persistence');
-    sessionStorage.removeItem('jwt_token');
-    // Usuwamy dawny znacznik sesji, a nie ciasteczko JWT HttpOnly.
-    document.cookie = `pzhgp_session=; Path=/; Max-Age=0; SameSite=Strict${window.location.protocol === 'https:' ? '; Secure' : ''}`;
 };

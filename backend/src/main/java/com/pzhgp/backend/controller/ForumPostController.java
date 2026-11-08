@@ -2,10 +2,10 @@ package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.dto.ForumPostDto;
 import com.pzhgp.backend.dto.ForumPostRequest;
+import com.pzhgp.backend.dto.PageResponse;
 import com.pzhgp.backend.service.ForumPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,13 +19,13 @@ public class ForumPostController {
     private final ForumPostService postService;
 
     @GetMapping("/threads/{threadId}/posts")
-    public ResponseEntity<Page<ForumPostDto>> getPostsByThread(
+    public ResponseEntity<PageResponse<ForumPostDto>> getPostsByThread(
             @PathVariable Long threadId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(postService.getPostsByThread(threadId, page, size, authentication.getName()));
+        return ResponseEntity.ok(PageResponse.from(postService.getPostsByThread(threadId, page, size, authentication.getName())));
     }
 
     @PostMapping("/threads/{threadId}/posts")

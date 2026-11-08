@@ -1,0 +1,258 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
+import AnnouncementModal from '@/app/components/AnnouncementModal';
+import { useAuth } from '@/app/components/AuthProvider';
+import ConfirmModal from '@/app/components/ConfirmModal';
+import EmptyState from '@/app/components/EmptyState';
+import ErrorState from '@/app/components/ErrorState';
+import LoadingState from '@/app/components/LoadingState';
+import Pagination from '@/app/components/Pagination';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
+import { announcementService } from '@/app/services/announcementService';
+import { AnnouncementDto } from '@/app/types/announcement';
+import { getErrorMessage } from '@/app/utils/apiClient';
+import { formatDateTime, formatInstantDate } from '@/app/utils/formatters';
+
+export default function HomePage() {
+    const { user, isAuthResolved } = useAuth();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const { beginRequest, isLatestRequest } = useLatestRequest();
+
+    const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<AnnouncementDto | null>(null);
+    const [announcementError, setAnnouncementError] = useState('');
+
+    const [postToDelete, setPostToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
+    const fetchAnnouncements = useCallback(async (page = 0) => {
+        const requestId = beginRequest();
+
+        setIsLoading(true);
+        setAnnouncementError('');
+
+        try {
+            const data = await announcementService.getAnnouncements(page);
+
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
+            setAnnouncements(data.content);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.number);
+        } catch (error) {
+            if (!isLatestRequest(requestId)) {
+                return;
+            }
+
+            setAnnouncementError(getErrorMessage(error, 'Wystąpił błąd podczas pobierania ogłoszeń.'));
+        } finally {
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
+        }
+    }, [beginRequest, isLatestRequest]);
+
+    useEffect(() => {
+        if (!isAuthResolved) return;
+
+        void fetchAnnouncements(0);
+    }, [fetchAnnouncements, isAuthResolved, user?.email, user?.role]);
+
+    const canAddAnnouncement = user?.role === 'ADMINISTRATOR' || user?.role === 'MODERATOR';
+
+    const confirmDelete = async () => {
+        if (postToDelete === null) return;
+
+        const deletingId = postToDelete;
+        setIsDeleting(true);
+
+        try {
+            await announcementService.deleteAnnouncement(deletingId);
+
+            const isLastOnPage = announcements.length === 1 && currentPage > 0;
+            const targetPage = isLastOnPage ? currentPage - 1 : currentPage;
+
+            setPostToDelete(null);
+            await fetchAnnouncements(targetPage);
+        } catch (error) {
+            setPostToDelete(null);
+            setActionError(getErrorMessage(error, 'Nie udało się usunąć ogłoszenia.'));
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <>
+            <header className="bg-white shadow">
+                <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+                        Oddział 0369 Żagań
+                    </h1>
+                    <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
+                        Oficjalny portal Polskiego Związku Hodowców Gołębi Pocztowych.
+                    </p>
+                </div>
+            </header>
+
+            <main className="grow max-w-5xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
+                <section className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                        <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>
+
+                        {canAddAnnouncement && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditingAnnouncement(null);
+                                    setIsModalOpen(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md shadow-sm transition"
+                            >
+                                + Dodaj ogłoszenie
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="space-y-6">
+                        {isLoading ? (
+                            <LoadingState/>
+                        ) : announcementError ? (
+                            <ErrorState message={announcementError} onRetry={() => void fetchAnnouncements(currentPage)}/>
+                        ) : announcements.length === 0 ? (
+                            <EmptyState>Brak aktualnych ogłoszeń.</EmptyState>
+                        ) : (
+                            <>
+                                {announcements.map((post) => (
+                                    <article
+                                        key={post.id}
+                                        className={`bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition duration-200 ${
+                                            post.isPinned ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-xl font-bold text-blue-700 wrap-anywhere">
+                                                    {post.title}
+                                                </h3>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 ml-4">
+                                                {post.isPinned && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#2b7fff" className="shrink-0" aria-hidden="true">
+                                                        <path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/>
+                                                    </svg>
+                                                )}
+                                                <span
+                                                    className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                                                        {formatInstantDate(post.createdAt)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="prose prose-sm sm:prose-base max-w-[820px] w-full px-4 box-border text-gray-600 mt-3 leading-relaxed prose-p:my-0 wrap-anywhere"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+                                        />
+
+                                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-end justify-between">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="text-sm text-gray-400 font-medium">
+                                                    Dodał: <span className="text-gray-600">{post.authorName}</span>
+                                                </div>
+                                                {post.updatedAt && (
+                                                    <div className="text-xs text-gray-400 italic">
+                                                        Edytowano: {formatDateTime(post.updatedAt)}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Przyciski edycji i usuwania */}
+                                            {(post.canEdit || post.canDelete) && (
+                                                <div className="flex items-center gap-2">
+                                                    {post.canEdit && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingAnnouncement(post);
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition font-medium border border-gray-200"
+                                                        >
+                                                            Edytuj
+                                                        </button>
+                                                    )}
+                                                    {post.canDelete && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPostToDelete(post.id)}
+                                                            className="text-sm bg-white hover:bg-red-50 text-red-600 px-3 py-1 rounded transition font-medium border border-red-200"
+                                                        >
+                                                            Usuń
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </article>
+                                ))}
+
+                                <Pagination
+                                    page={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={(target) => void fetchAnnouncements(target)}
+                                    disabled={isLoading}
+                                    className="mt-8 pt-4 border-t border-gray-200"
+                                />
+                            </>
+                        )}
+                    </div>
+                </section>
+            </main>
+
+            <AnnouncementModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingAnnouncement(null);
+                }}
+                onSuccess={() => void fetchAnnouncements(0)}
+                announcementToEdit={editingAnnouncement}
+            />
+
+            <ConfirmModal
+                isOpen={postToDelete !== null}
+                title="Usuń ogłoszenie"
+                message="Czy na pewno chcesz trwale usunąć to ogłoszenie? Tej operacji nie można cofnąć."
+                variant="danger"
+                confirmLabel="Usuń"
+                isLoading={isDeleting}
+                onCancel={() => {
+                    if (!isDeleting) {
+                        setPostToDelete(null);
+                    }
+                }}
+                onConfirm={() => void confirmDelete()}
+            />
+
+            <ConfirmModal
+                isOpen={actionError !== null}
+                title="Nie udało się wykonać operacji"
+                message={actionError ?? ''}
+                isAlert
+                variant="primary"
+                confirmLabel="OK"
+                onConfirm={() => setActionError(null)}
+                onCancel={() => setActionError(null)}
+            />
+        </>
+    );
+}
