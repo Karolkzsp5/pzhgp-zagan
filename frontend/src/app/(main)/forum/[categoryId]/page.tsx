@@ -58,8 +58,7 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
                 return;
             }
 
-            setError(getErrorMessage(error, 'Nie udało się pobrać danych forum.')
-            );
+            setError(getErrorMessage(error, 'Nie udało się pobrać danych forum.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);

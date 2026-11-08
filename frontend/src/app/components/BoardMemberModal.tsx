@@ -314,7 +314,10 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
                     <div>
                         <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-800 mb-1">
-                            Publiczny nr telefonu (opcjonalny)
+                            Publiczny nr telefonu
+                            <span className="ml-1 text-gray-400 font-normal">
+                                (opcjonalnie)
+                            </span>
                         </label>
                         <p className="text-xs text-gray-600 mb-2">
                             Wypełnienie tego pola sprawi, że numer będzie widoczny na stronie dla wszystkich.

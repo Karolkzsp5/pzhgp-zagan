@@ -182,7 +182,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                         <label htmlFor="flight-category" className="block text-sm font-medium text-gray-700 mb-1">
                             Kategoria
                             <span className="ml-1 text-gray-400 font-normal">
-                                (opcjonalna)
+                                (opcjonalnie)
                             </span>
                         </label>
 

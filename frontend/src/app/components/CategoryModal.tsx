@@ -101,8 +101,8 @@ export default function CategoryModal({ isOpen, onClose, onSuccess, categoryToEd
                     <div>
                         <label htmlFor="category-description" className="block text-sm font-bold text-gray-700 mb-1">
                             Opis kategorii
-                            <span className="text-gray-400 font-normal">
-                                (Opcjonalny)
+                            <span className="ml-1 text-gray-400 font-normal">
+                                (opcjonalnie)
                             </span>
                         </label>
                         <textarea

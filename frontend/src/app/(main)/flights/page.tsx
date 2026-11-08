@@ -226,7 +226,10 @@ export default function FlightsPage() {
 
                             <div>
                                 <label htmlFor="ring-number" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Numer obrączki <span className="text-gray-400 font-normal">(opcjonalnie)</span>
+                                    Numer obrączki
+                                    <span className="text-gray-400 font-normal">
+                                        (opcjonalnie)
+                                    </span>
                                 </label>
                                 <input
                                     id="ring-number"

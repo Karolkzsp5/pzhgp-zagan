@@ -2,7 +2,7 @@ import { getAuthGeneration, invalidateAuthSession } from './authSession';
 import { loginUrlReturningTo } from './loginRedirect';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-export const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
+const CONNECTION_ERROR_MESSAGE = 'Nie udało się połączyć z serwerem.';
 const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 let csrfRefreshPromise: Promise<string> | null = null;
 

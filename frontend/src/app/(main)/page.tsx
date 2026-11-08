@@ -53,8 +53,7 @@ export default function HomePage() {
                 return;
             }
 
-            setAnnouncementError(getErrorMessage(error, 'Wystąpił błąd podczas pobierania ogłoszeń.')
-            );
+            setAnnouncementError(getErrorMessage(error, 'Wystąpił błąd podczas pobierania ogłoszeń.'));
         } finally {
             if (isLatestRequest(requestId)) {
                 setIsLoading(false);
@@ -105,7 +104,7 @@ export default function HomePage() {
                 </div>
             </header>
 
-            <main className="flex-grow max-w-5xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
+            <main className="grow max-w-5xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8">
                 <section className="space-y-6">
                     <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                         <h2 className="text-2xl font-bold text-gray-800">Najnowsze ogłoszenia</h2>

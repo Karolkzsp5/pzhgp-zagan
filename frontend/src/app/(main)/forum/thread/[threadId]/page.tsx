@@ -276,7 +276,7 @@ export default function ThreadViewPage({ params }: { params: Promise<{ threadId:
                     ) : thread ? (
                         <>
                             <div className="bg-white p-6 rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div className="flex-grow w-full sm:w-auto">
+                                <div className="grow w-full sm:w-auto">
                                     {isEditingTitle ? (
                                         <div className="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] gap-2 w-full max-w-2xl">
                                             <input

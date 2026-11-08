@@ -1,4 +1,5 @@
-// W ciasteczku HttpOnly znajduje się token JWT. Frontend nie odczytuje jego wartości.
+import type { AccountStatus } from '@/app/types/breeder';
+
 export type UserRole = 'BREEDER' | 'MODERATOR' | 'ADMINISTRATOR';
 
 export interface CurrentUser {
@@ -6,7 +7,7 @@ export interface CurrentUser {
     email: string;
     name: string;
     role: UserRole;
-    status: string;
+    status: AccountStatus;
 }
 
 export const AUTH_CHANGED_EVENT = 'pzhgp-auth-changed';
