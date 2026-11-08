@@ -968,6 +968,7 @@ describe('Forum Thread Page Tests', () => {
 
     describe('Invalid Thread ID', () => {
         it('Should display an error for an invalid thread identifier', () => {
+            cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/thread/abc', breederUser);
             cy.contains('Nieprawidłowy adres URL. Wątek nie istnieje.').should('be.visible');
         });

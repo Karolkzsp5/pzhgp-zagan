@@ -271,6 +271,8 @@ describe('Forum Category Page Tests', () => {
             cy.contains('button', '+ Nowy wątek').click();
             cy.get('#thread-title').type('Testowy wątek');
             cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]').click().type('Treść wiadomości.');
+            cy.get('#thread-title').should('have.value', 'Testowy wątek');
+            cy.get('[role="textbox"][aria-label="Treść pierwszej wiadomości"]').should('contain.text', 'Treść wiadomości.');
             cy.contains('button', 'Opublikuj wątek').click();
 
             cy.wait('@createThreadError');
@@ -455,6 +457,7 @@ describe('Forum Category Page Tests', () => {
 
     describe('Invalid Category ID', () => {
         it('Should display an error for an invalid category identifier', () => {
+            cy.mockNavbarNotifications();
             cy.visitAsUser('/forum/abc', breederUser);
             cy.contains('Nieprawidłowy adres URL. Kategoria nie istnieje.').should('be.visible');
         });
