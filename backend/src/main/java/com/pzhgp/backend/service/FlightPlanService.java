@@ -157,8 +157,7 @@ public class FlightPlanService {
         Throwable cause = exception;
 
         while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation
-                    && "uk_flight_plans_year".equalsIgnoreCase(violation.getConstraintName())) {
+            if (cause instanceof ConstraintViolationException violation && "uk_flight_plans_year".equalsIgnoreCase(violation.getConstraintName())) {
                 return true;
             }
 

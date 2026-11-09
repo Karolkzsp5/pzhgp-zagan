@@ -345,7 +345,6 @@ describe('Forum Thread Page Tests', () => {
 
         it('Should require non-empty reply content', () => {
             cy.contains('button', 'Opublikuj odpowiedź').click();
-
             cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Treść odpowiedzi nie może być pusta.');
         });
 

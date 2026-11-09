@@ -15,13 +15,10 @@ import java.time.Instant;
  * są danymi osobowymi i widzi je wyłącznie administrator oddziału.
  */
 @Entity
-@Table(
-        name = "found_pigeon_reports",
-        indexes = {
-                @Index(name = "idx_found_pigeon_ring", columnList = "ring_number_normalized"),
-                @Index(name = "idx_found_pigeon_status", columnList = "status")
-        }
-)
+@Table(name = "found_pigeon_reports", indexes = {
+        @Index(name = "idx_found_pigeon_ring", columnList = "ring_number_normalized"),
+        @Index(name = "idx_found_pigeon_status", columnList = "status")
+})
 @Getter
 @Setter
 @NoArgsConstructor

@@ -30,18 +30,13 @@ public class ForumCategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> createCategory(
-            @Valid @RequestBody ForumCategoryRequest request,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> createCategory(@Valid @RequestBody ForumCategoryRequest request, Authentication authentication) {
         categoryService.createCategory(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateCategory(
-            @PathVariable Long id,
-            @Valid @RequestBody ForumCategoryRequest request,
+    public ResponseEntity<Void> updateCategory(@PathVariable Long id, @Valid @RequestBody ForumCategoryRequest request,
             Authentication authentication
     ) {
         categoryService.updateCategory(id, request, authentication.getName());

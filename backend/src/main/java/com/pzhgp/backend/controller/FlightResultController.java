@@ -37,28 +37,18 @@ public class FlightResultController {
     }
 
     @GetMapping("/{resultId}/file")
-    public ResponseEntity<String> getResultFile(
-            @PathVariable Long resultId
-    ) {
+    public ResponseEntity<String> getResultFile(@PathVariable Long resultId) {
         FlightResultFileDto file = flightResultService.getResultFile(resultId);
+        ContentDisposition contentDisposition = ContentDisposition.inline().filename(file.originalFileName(), StandardCharsets.UTF_8).build();
 
-        ContentDisposition contentDisposition = ContentDisposition.inline()
-                .filename(file.originalFileName(), StandardCharsets.UTF_8)
-                .build();
-
-        return ResponseEntity.ok()
-                .contentType(new MediaType("text", "plain", StandardCharsets.UTF_8))
+        return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8))
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .body(file.content());
     }
 
     @DeleteMapping("/{resultId}")
-    public ResponseEntity<Void> deleteResult(
-            @PathVariable Long resultId,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> deleteResult(@PathVariable Long resultId, Authentication authentication) {
         flightResultService.deleteResult(resultId, authentication.getName());
-
         return ResponseEntity.noContent().build();
     }
 }

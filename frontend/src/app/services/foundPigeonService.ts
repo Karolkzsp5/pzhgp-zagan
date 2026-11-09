@@ -57,7 +57,6 @@ export const foundPigeonService = {
 
     deleteReport: async (id: number): Promise<void> => {
         const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons/${id}`, { method: 'DELETE' });
-
         await ensureOk(response, 'Nie udało się usunąć zgłoszenia.');
     }
 };

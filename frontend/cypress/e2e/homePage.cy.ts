@@ -501,8 +501,7 @@ describe('Home Page - Announcements Tests', () => {
 
         openAddAnnouncementModal();
 
-        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress')
-            .should('have.value', 'Nowe ogłoszenie Cypress');
+        cy.get('#announcement-title').type('Nowe ogłoszenie Cypress').should('have.value', 'Nowe ogłoszenie Cypress');
         getAnnouncementEditor().click().type('Treść nowego ogłoszenia testowego.');
         getAnnouncementEditor().should('contain.text', 'Treść nowego ogłoszenia testowego.');
         cy.get('#isPinned').check();

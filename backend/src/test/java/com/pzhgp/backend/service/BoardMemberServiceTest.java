@@ -136,9 +136,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should skip exclusive-role conflict check for ordinary board members")
     void shouldAllowMultipleMembersWithNonUniqueRole() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.CZLONEK_ZARZADU, null, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.CZLONEK_ZARZADU, null, 1L, null, null, null);
 
         when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
         when(boardMemberRepository.existsByBreederAndRoleForBranch(anyLong(), any(), any())).thenReturn(false);
@@ -152,9 +150,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should prevent assigning an invalid role (e.g., Vice President) in a Section board")
     void shouldThrowExceptionWhenInvalidRoleAssignedToSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.WICEPREZES_DS_LOTOWYCH, 1L, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.WICEPREZES_DS_LOTOWYCH, 1L, 1L, null, null, null);
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
 
@@ -165,9 +161,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should prevent assigning a Treasurer in a Branch board")
     void shouldThrowExceptionWhenSkarbnikAssignedToBranch() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SKARBNIK, null, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.SKARBNIK, null, 1L, null, null, null);
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> boardMemberService.createBoardMember(request));
         assertTrue(exception.getMessage().contains("Zarząd Oddziału nie posiada stanowiska Skarbnika"));
@@ -176,9 +170,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should reject assigning an occupied unique role in the branch board")
     void shouldThrowExceptionWhenUniqueRoleConflictInBranch() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, null, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, null, 1L, null, null, null);
 
         when(boardMemberRepository.existsConflictForBranch(eq(BoardRole.PREZES), any())).thenReturn(true);
 
@@ -189,9 +181,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should reject assigning an occupied unique role in a section board")
     void shouldThrowExceptionWhenUniqueRoleConflictInSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.SEKRETARZ, 1L, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.SEKRETARZ, 1L, 1L, null, null, null);
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(boardMemberRepository.existsConflictForSection(eq(BoardRole.SEKRETARZ), eq(1L), any())).thenReturn(true);
@@ -208,9 +198,7 @@ class BoardMemberServiceTest {
         otherSection.setName("Szprotawa");
         breeder.setSection(otherSection);
 
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, 1L, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, 1L, 1L, null, null, null);
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));
@@ -222,9 +210,7 @@ class BoardMemberServiceTest {
     @Test
     @DisplayName("Should reject assigning the same role twice to a breeder in one section board")
     void shouldThrowExceptionWhenBreederAlreadyHasSameRoleInSection() {
-        BoardMemberRequest request = new BoardMemberRequest(
-                BoardRole.PREZES, 1L, 1L, null, null, null
-        );
+        BoardMemberRequest request = new BoardMemberRequest(BoardRole.PREZES, 1L, 1L, null, null, null);
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
         when(breederRepository.findById(1L)).thenReturn(Optional.of(breeder));

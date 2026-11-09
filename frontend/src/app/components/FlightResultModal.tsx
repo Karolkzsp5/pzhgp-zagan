@@ -331,9 +331,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                     value={scope}
                                     onChange={event => {
                                         clearMessages();
-                                        setScope(
-                                            event.target.value as FlightResultScope
-                                        );
+                                        setScope(event.target.value as FlightResultScope);
                                         setSectionId('');
                                     }}
                                     disabled={isUploading}
@@ -344,9 +342,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                         {hasBranchResult ? ' — wyniki już dodane' : ''}
                                     </option>
 
-                                    <option value="SECTION"
-                                            disabled={!isLoadingSections && availableSections.length === 0}
-                                    >
+                                    <option value="SECTION" disabled={!isLoadingSections && availableSections.length === 0}>
                                         Sekcja
                                     </option>
                                 </select>
@@ -411,9 +407,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                         accept=".txt,text/plain"
                                         disabled={isUploading}
                                         className="sr-only"
-                                        onChange={event =>
-                                            selectFile(event.target.files?.[0] ?? null)
-                                        }
+                                        onChange={event => selectFile(event.target.files?.[0] ?? null)}
                                     />
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-gray-400 mb-3" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                         <path d="M240-192q-80 0-136-56.5T48-385q0-76 51.5-131.5T227-576q23.43-85.75 93.7-138.87Q390.98-768 480-768q107 0 185.5 68.5T744-528q70 0 119 49t49 118q0 70.42-49 119.71Q814-192 744-192H516q-29.7 0-50.85-21.15Q444-234.3 444-264v-174l-57 57-51-51 144-144 144 144-51 51-57-57v174h228q40.32 0 68.16-27.77 27.84-27.78 27.84-68Q840-400 812.16-428q-27.84-28-68.16-28h-72v-72q0-73-57.5-120.5t-135-47.5Q402-696 348-639.5T283-504h-43q-49.71 0-84.86 35.2-35.14 35.2-35.14 85t35.14 84.8q35.15 35 84.86 35h132v72H240Zm240-246Z"/>
@@ -421,8 +415,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
                                     {file ? (
                                         <>
-                                            <span
-                                                className="text-sm font-semibold text-gray-900 text-center max-w-full [overflow-wrap:anywhere]">
+                                            <span className="text-sm font-semibold text-gray-900 text-center max-w-full [overflow-wrap:anywhere]">
                                                 {file.name}
                                             </span>
 

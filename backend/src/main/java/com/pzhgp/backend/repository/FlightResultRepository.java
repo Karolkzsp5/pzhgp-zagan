@@ -32,14 +32,7 @@ public interface FlightResultRepository extends JpaRepository<FlightResult, Long
 
     boolean existsByFlightPlanEntryId(Long flightPlanEntryId);
 
-    boolean existsByFlightPlanEntryIdAndScope(
-            Long flightPlanEntryId,
-            FlightResultScope scope
-    );
+    boolean existsByFlightPlanEntryIdAndScope(Long flightPlanEntryId, FlightResultScope scope);
 
-    boolean existsByFlightPlanEntryIdAndScopeAndSectionId(
-            Long flightPlanEntryId,
-            FlightResultScope scope,
-            Long sectionId
-    );
+    boolean existsByFlightPlanEntryIdAndScopeAndSectionId(Long flightPlanEntryId, FlightResultScope scope, Long sectionId);
 }

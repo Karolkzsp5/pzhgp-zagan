@@ -93,6 +93,7 @@ class BoardIntegrationTest {
         breeder.setPhoneNumber(phoneNumber);
         breeder.setPasswordHash("hashed");
         breeder.setSection(section);
+
         return breederRepository.save(breeder);
     }
 
@@ -117,11 +118,8 @@ class BoardIntegrationTest {
     @Test
     @DisplayName("Should allow only administrators to list board candidates")
     void shouldDenyBoardCandidatesToNonAdministrators() throws Exception {
-        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(modToken)))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(get("/api/board/candidates"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/board/candidates").with(cookieAuth(modToken))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/board/candidates")).andExpect(status().isUnauthorized());
     }
 
     @Test

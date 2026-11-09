@@ -71,8 +71,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     useEffect(() => {
         if (!isOpen) return;
 
-        const controller =
-            new AbortController();
+        const controller = new AbortController();
 
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);

@@ -42,8 +42,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.spa()
-                        .requireCsrfProtectionMatcher(this::requiresCsrfProtection))
+                .csrf(csrf -> csrf.spa().requireCsrfProtectionMatcher(this::requiresCsrfProtection))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(restAuthenticationEntryPoint).accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
@@ -97,8 +96,7 @@ public class SecurityConfig {
 
     private boolean requiresCsrfProtection(HttpServletRequest request) {
         String method = request.getMethod();
-        if ("GET".equals(method) || "HEAD".equals(method)
-                || "OPTIONS".equals(method) || "TRACE".equals(method)) {
+        if ("GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method) || "TRACE".equals(method)) {
             return false;
         }
 

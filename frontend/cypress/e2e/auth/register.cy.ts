@@ -144,7 +144,6 @@ describe('Breeder Registration Process Test', () => {
     it('Date of birth test - Should trigger HTML5 validation when left empty', () => {
         cy.get('input[name="dateOfBirth"]').clear();
         cy.get('button[type="submit"]').click();
-
         cy.get('input[name="dateOfBirth"]').should('match', ':invalid');
     });
 

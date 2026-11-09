@@ -225,8 +225,7 @@ public class PigeonFlightService {
         while (true) {
             GpxPoint from = points.get(left);
             GpxPoint to = points.get(right);
-            if (from.time() != null && to.time() != null
-                    && Duration.between(from.time(), to.time()).getSeconds() >= SPEED_SMOOTHING_WINDOW_SECONDS) {
+            if (from.time() != null && to.time() != null && Duration.between(from.time(), to.time()).getSeconds() >= SPEED_SMOOTHING_WINDOW_SECONDS) {
                 break;
             }
 

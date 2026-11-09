@@ -118,8 +118,7 @@ class TrackSimplifierTest {
             List<Integer> keptIndices = TrackSimplifier.selectIndices(points, 10.0);
             double worstDeviation = maxDeviation(points, keptIndices);
 
-            assertTrue(worstDeviation <= 10.0 + 1e-6,
-                    "Deviation " + worstDeviation + " m exceeds the configured 10 m tolerance");
+            assertTrue(worstDeviation <= 10.0 + 1e-6, "Deviation " + worstDeviation + " m exceeds the configured 10 m tolerance");
         }
     }
 

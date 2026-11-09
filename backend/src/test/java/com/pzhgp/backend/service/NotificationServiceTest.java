@@ -92,8 +92,7 @@ class NotificationServiceTest {
     void shouldCreateBulkNotifications() {
         List<Breeder> recipients = List.of(testBreeder, anotherBreeder);
 
-        assertDoesNotThrow(() -> notificationService.createBulkNotifications(
-                recipients, "Masowa wiadomość", "/updates", NotificationType.NEW_ANNOUNCEMENT));
+        assertDoesNotThrow(() -> notificationService.createBulkNotifications(recipients, "Masowa wiadomość", "/updates", NotificationType.NEW_ANNOUNCEMENT));
 
         ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationRepository, times(1)).saveAll(captor.capture());
@@ -158,8 +157,7 @@ class NotificationServiceTest {
         assertNotNull(idOrder);
 
         assertEquals(Sort.Direction.DESC, createdAtOrder.getDirection());
-        assertEquals(Sort.Direction.DESC, idOrder.getDirection()
-        );
+        assertEquals(Sort.Direction.DESC, idOrder.getDirection());
     }
 
     @Test
@@ -225,8 +223,7 @@ class NotificationServiceTest {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
         when(notificationRepository.findById(999L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.markAsRead(999L, "test@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.markAsRead(999L, "test@test.pl"));
 
         assertEquals("Nie znaleziono powiadomienia.", ex.getMessage());
         verify(notificationRepository, never()).save(any());
@@ -237,8 +234,7 @@ class NotificationServiceTest {
     void shouldThrowExceptionWhenMarkAsReadUserDoesNotExist() {
         when(breederRepository.findByEmail("ghost@test.pl")).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.markAsRead(100L, "ghost@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.markAsRead(100L, "ghost@test.pl"));
 
         assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
         verify(notificationRepository, never()).save(any());
@@ -261,8 +257,7 @@ class NotificationServiceTest {
         when(breederRepository.findByEmail("other@test.pl")).thenReturn(Optional.of(anotherBreeder));
         when(notificationRepository.findById(100L)).thenReturn(Optional.of(testNotification));
 
-        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class,
-                () -> notificationService.deleteNotification(100L, "other@test.pl"));
+        ForbiddenOperationException ex = assertThrows(ForbiddenOperationException.class, () -> notificationService.deleteNotification(100L, "other@test.pl"));
 
         assertEquals("Brak uprawnień do usunięcia tego powiadomienia.", ex.getMessage());
         verify(notificationRepository, never()).delete(any(Notification.class));
@@ -274,8 +269,7 @@ class NotificationServiceTest {
         when(breederRepository.findByEmail("test@test.pl")).thenReturn(Optional.of(testBreeder));
         when(notificationRepository.findById(999L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> notificationService.deleteNotification(999L, "test@test.pl"));
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class, () -> notificationService.deleteNotification(999L, "test@test.pl"));
 
         assertEquals("Nie znaleziono powiadomienia.", ex.getMessage());
         verify(notificationRepository, never()).delete(any(Notification.class));

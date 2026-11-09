@@ -540,7 +540,6 @@ describe('Board Page Tests', () => {
         cy.contains('button', 'Zapisz').click();
 
         cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Numer telefonu musi składać się dokładnie z 9 cyfr.');
-
         cy.get('[role="dialog"]').should('be.visible');
     });
 
@@ -674,7 +673,6 @@ describe('Board Page Tests', () => {
         cy.wait('@createBoardMemberError');
 
         cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Stanowisko „Prezes” jest już zajęte w tym zarządzie.');
-
         cy.get('[role="dialog"]').should('be.visible');
     });
 

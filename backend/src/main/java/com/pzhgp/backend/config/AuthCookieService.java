@@ -46,10 +46,6 @@ public class AuthCookieService {
     }
 
     private ResponseCookie.ResponseCookieBuilder authenticationCookie(String value) {
-        return ResponseCookie.from(COOKIE_NAME, value)
-                .httpOnly(true)
-                .secure(secure)
-                .sameSite("Lax")
-                .path("/");
+        return ResponseCookie.from(COOKIE_NAME, value).httpOnly(true).secure(secure).sameSite("Lax").path("/");
     }
 }

@@ -137,8 +137,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should allow an authenticated user to list forum categories")
     void getAllCategories_ShouldReturn200() throws Exception {
-        mockMvc.perform(get("/api/forum/categories")
-                        .with(cookieAuth(breederToken)))
+        mockMvc.perform(get("/api/forum/categories").with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Wystawy i loty"));
     }
@@ -152,8 +151,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return an existing forum category by its ID")
     void getCategoryById_ShouldReturn200() throws Exception {
-        mockMvc.perform(get("/api/forum/categories/" + adminCategory.getId())
-                        .with(cookieAuth(breederToken)))
+        mockMvc.perform(get("/api/forum/categories/" + adminCategory.getId()).with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Wystawy i loty"));
     }
@@ -161,9 +159,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return 404 when requesting a non-existent forum category")
     void getCategoryById_WhenMissing_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/categories/9999")
-                        .with(cookieAuth(breederToken)))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/forum/categories/9999").with(cookieAuth(breederToken))).andExpect(status().isNotFound());
     }
 
     @Test
@@ -331,9 +327,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should allow an administrator to delete an empty category")
     void deleteCategory_AsAdmin_ShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
 
         assertTrue(categoryRepository.findById(adminCategory.getId()).isEmpty());
     }
@@ -347,8 +341,7 @@ class ForumCategoryIntegrationTest {
         thread.setTitle("Wątek blokujący");
         threadRepository.save(thread);
 
-        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId()).with(cookieAuth(adminToken)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string("Nie można usunąć kategorii, która zawiera wątki."));
 
@@ -358,9 +351,7 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a moderator deletes a category")
     void deleteCategory_AsModerator_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId())
-                        .with(cookieAuth(modToken)))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/forum/categories/" + modCategory.getId()).with(cookieAuth(modToken))).andExpect(status().isForbidden());
 
         assertTrue(categoryRepository.findById(modCategory.getId()).isPresent());
     }
@@ -368,8 +359,6 @@ class ForumCategoryIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a breeder deletes a category")
     void deleteCategory_AsBreeder_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId())
-                        .with(cookieAuth(breederToken)))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/forum/categories/" + adminCategory.getId()).with(cookieAuth(breederToken))).andExpect(status().isForbidden());
     }
 }

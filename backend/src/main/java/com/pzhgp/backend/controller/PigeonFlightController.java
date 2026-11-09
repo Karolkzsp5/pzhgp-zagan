@@ -63,8 +63,7 @@ public class PigeonFlightController {
             @RequestParam(required = false) Double tolerance,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                pigeonFlightService.getFlightDetails(id, authentication.getName(), tolerance));
+        return ResponseEntity.ok(pigeonFlightService.getFlightDetails(id, authentication.getName(), tolerance));
     }
 
     @DeleteMapping("/{id}")

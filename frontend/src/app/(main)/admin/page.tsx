@@ -345,18 +345,18 @@ export default function AdminPanelPage() {
                                                                 {breeder.name} {breeder.surname}
                                                                 {breeder.role === 'ADMINISTRATOR' && (
                                                                     <span data-cy="badge-admin" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                                                                            ADMIN
-                                                                        </span>
+                                                                        ADMIN
+                                                                    </span>
                                                                 )}
                                                                 {breeder.role === 'MODERATOR' && (
                                                                     <span data-cy="badge-moderator" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                                                            MODERATOR
-                                                                        </span>
+                                                                        MODERATOR
+                                                                    </span>
                                                                 )}
                                                                 {breeder.email === currentUserEmail && (
                                                                     <span data-cy="badge-you" className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                                                                            TO TY
-                                                                        </span>
+                                                                        TO TY
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -367,12 +367,12 @@ export default function AdminPanelPage() {
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             {breeder.status === 'ACTIVE' ? (
                                                                 <span data-cy="status-active" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                                        Aktywny
-                                                                    </span>
+                                                                    Aktywny
+                                                                </span>
                                                             ) : (
                                                                 <span data-cy="status-blocked" className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                                        Zablokowany
-                                                                    </span>
+                                                                    Zablokowany
+                                                                </span>
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">

@@ -131,8 +131,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return mapped posts belonging to the requested thread")
     void getPostsByThread_ShouldReturnRealData() throws Exception {
-        mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts")
-                        .with(cookieAuth(postAuthorToken)))
+        mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts").with(cookieAuth(postAuthorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[1].body").value("Początkowa treść posta hodowcy"))
@@ -143,9 +142,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 404 when listing posts in a non-existent thread")
     void getPostsByThread_WhenThreadNotFound_ShouldReturn404() throws Exception {
-        mockMvc.perform(get("/api/forum/threads/9999/posts")
-                        .with(cookieAuth(otherBreederToken)))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/forum/threads/9999/posts").with(cookieAuth(otherBreederToken))).andExpect(status().isNotFound());
     }
 
     @Test
@@ -325,8 +322,7 @@ class ForumPostIntegrationTest {
     void deletePost_AsAuthor_ShouldRemoveFromDb() throws Exception {
         Instant expectedLastPostAt = adminPost.getCreatedAt();
 
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                .with(cookieAuth(postAuthorToken))).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId()).with(cookieAuth(postAuthorToken))).andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
         ForumThread updatedThread = threadRepository.findById(thread.getId()).orElseThrow();
@@ -336,9 +332,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should allow an administrator to delete another user's post")
     void deletePost_AsAdmin_ShouldRemoveFromDb() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId()).with(cookieAuth(adminToken))).andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
     }
@@ -346,9 +340,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should allow a moderator to delete a breeder's post")
     void deletePost_AsModeratorOnBreederPost_ShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                        .with(cookieAuth(modToken)))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId()).with(cookieAuth(modToken))).andExpect(status().isNoContent());
 
         assertTrue(postRepository.findById(breederPost.getId()).isEmpty());
     }
@@ -369,9 +361,7 @@ class ForumPostIntegrationTest {
         singlePost.setBody("To jest jedyny post w tym wątku");
         postRepository.save(singlePost);
 
-        mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId())
-                        .with(cookieAuth(threadAuthorToken)))
-                .andExpect(status().isConflict());
+        mockMvc.perform(delete("/api/forum/posts/" + singlePost.getId()).with(cookieAuth(threadAuthorToken))).andExpect(status().isConflict());
 
         assertTrue(postRepository.existsById(singlePost.getId()));
     }
@@ -390,9 +380,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a moderator deletes an administrator's post")
     void deletePost_AsModeratorOnAdminPost_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId())
-                        .with(cookieAuth(modToken)))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/forum/posts/" + adminPost.getId()).with(cookieAuth(modToken))).andExpect(status().isForbidden());
 
         assertTrue(postRepository.existsById(adminPost.getId()));
     }
@@ -400,8 +388,7 @@ class ForumPostIntegrationTest {
     @Test
     @DisplayName("Should return 403 when a breeder deletes another user's post")
     void deletePost_AsRegularUser_ShouldReturn403() throws Exception {
-        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId())
-                .with(cookieAuth(otherBreederToken))).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/forum/posts/" + breederPost.getId()).with(cookieAuth(otherBreederToken))).andExpect(status().isForbidden());
         assertTrue(postRepository.existsById(breederPost.getId()));
     }
 }

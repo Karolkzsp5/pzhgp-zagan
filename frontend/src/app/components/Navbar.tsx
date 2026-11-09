@@ -393,8 +393,8 @@ export default function Navbar() {
 
                                             {unreadCount > 0 && (
                                                 <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                                {unreadCount > 99 ? '99+' : unreadCount}
-                                            </span>
+                                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                                </span>
                                             )}
                                         </button>
 
@@ -427,23 +427,23 @@ export default function Navbar() {
                                                     ) : (
                                                         <>
                                                             {notifications.map((notif) => (
-                                                                <div
-                                                                    key={notif.id}
-                                                                    className={`relative border-b border-gray-50 ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}
-                                                                >
+                                                                <div key={notif.id} className={`relative border-b border-gray-50 ${!notif.isRead ? 'bg-blue-50/50' : 'bg-white'}`}>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => void handleNotificationClick(notif)}
                                                                         className="block w-full text-left px-4 py-3 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
                                                                     >
                                                                     <span className="flex justify-between items-start mb-1">
-                                                                        <span className="text-[10px] text-gray-400 font-medium">{formatDateTime(notif.createdAt)}</span>
+                                                                        <span className="text-[10px] text-gray-400 font-medium">
+                                                                            {formatDateTime(notif.createdAt)}
+                                                                        </span>
                                                                         {!notif.isRead && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
                                                                     </span>
 
-                                                                        <span className={`block pr-10 text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                                                                    <span className={`block pr-10 text-sm ${!notif.isRead ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
                                                                         {notif.message}
                                                                     </span>
+
                                                                     </button>
                                                                     <button
                                                                         type="button"
@@ -494,9 +494,12 @@ export default function Navbar() {
                                             aria-controls="profile-dropdown"
                                             aria-haspopup="true"
                                         >
-
-                                            <span className="hidden sm:inline">Witaj, <strong className="font-semibold">{userName}</strong></span>
-                                            <span className="sm:hidden font-semibold">{userName}</span>
+                                            <span className="hidden sm:inline">
+                                                Witaj, <strong className="font-semibold">{userName}</strong>
+                                            </span>
+                                            <span className="sm:hidden font-semibold">
+                                                {userName}
+                                            </span>
                                             <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
                                                 <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
                                             </svg>

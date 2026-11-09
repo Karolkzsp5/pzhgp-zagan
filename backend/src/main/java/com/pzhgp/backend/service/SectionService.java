@@ -20,11 +20,7 @@ public class SectionService {
     public List<SectionDto> getAllSections() {
         return sectionRepository.findAllByOrderBySortOrderAsc()
                 .stream()
-                .map(section -> new SectionDto(
-                        section.getId(),
-                        section.getName(),
-                        section.getSortOrder()
-                ))
+                .map(section -> new SectionDto(section.getId(), section.getName(), section.getSortOrder()))
                 .collect(Collectors.toList());
     }
 }

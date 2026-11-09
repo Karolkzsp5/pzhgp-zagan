@@ -68,9 +68,7 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             onSuccess();
             onClose();
         } catch (error) {
-            setError(
-                getErrorMessage(error, 'Wystąpił błąd podczas zapisywania ogłoszenia.')
-            );
+            setError(getErrorMessage(error, 'Wystąpił błąd podczas zapisywania ogłoszenia.'));
         } finally {
             setIsLoading(false);
         }
@@ -81,7 +79,9 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="announcement-title" className="block text-sm font-bold text-gray-700 mb-1">Tytuł ogłoszenia</label>
+                        <label htmlFor="announcement-title" className="block text-sm font-bold text-gray-700 mb-1">
+                            Tytuł ogłoszenia
+                        </label>
                         <input
                             id="announcement-title"
                             type="text"
@@ -97,7 +97,9 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Treść ogłoszenia</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">
+                            Treść ogłoszenia
+                        </label>
                         <TextEditor content={content} onChange={setContent} ariaLabel="Treść ogłoszenia" />
                     </div>
 
@@ -110,7 +112,9 @@ export default function AnnouncementModal({ isOpen, onClose, onSuccess, announce
                             disabled={isLoading}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
                         />
-                        <label htmlFor="isPinned" className="ml-2 block text-sm font-medium text-gray-700">Przypnij ogłoszenie</label>
+                        <label htmlFor="isPinned" className="ml-2 block text-sm font-medium text-gray-700">
+                            Przypnij ogłoszenie
+                        </label>
                     </div>
 
                     {error && (

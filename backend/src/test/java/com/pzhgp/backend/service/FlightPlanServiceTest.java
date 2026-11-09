@@ -290,14 +290,9 @@ class FlightPlanServiceTest {
 
         SQLException sqlException = new SQLException("Duplicate key", "23505");
 
-        ConstraintViolationException constraintException = new ConstraintViolationException(
-                "Duplicate plan year",
-                sqlException,
-                "uk_flight_plans_year"
-        );
+        ConstraintViolationException constraintException = new ConstraintViolationException("Duplicate plan year", sqlException, "uk_flight_plans_year");
 
-        when(flightPlanRepository.saveAndFlush(any(FlightPlan.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate plan year", constraintException));
+        when(flightPlanRepository.saveAndFlush(any(FlightPlan.class))).thenThrow(new DataIntegrityViolationException("Duplicate plan year", constraintException));
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
                 flightPlanService.createPlan(new FlightPlanCreateRequest(2026), administrator.getEmail())
@@ -465,11 +460,7 @@ class FlightPlanServiceTest {
 
         FlightPlanEntryRequest request = request(LocalDate.of(2027, 1, 1));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> flightPlanService.updateEntry(
-                adultFlight.getId(),
-                request,
-                administrator.getEmail()
-        ));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> flightPlanService.updateEntry(adultFlight.getId(), request, administrator.getEmail()));
 
         assertEquals("Data lotu musi należeć do roku planu: 2026.", exception.getMessage());
         verify(flightPlanEntryRepository, never()).save(any());

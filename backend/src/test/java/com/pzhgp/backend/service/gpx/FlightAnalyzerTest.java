@@ -93,8 +93,7 @@ class FlightAnalyzerTest {
 
             FlightAnalysis analysis = analyzer.analyze(points);
 
-            assertEquals(analysis.averageSpeedMetersPerMinute(),
-                    analysis.straightLineSpeedMetersPerMinute(), 1.0);
+            assertEquals(analysis.averageSpeedMetersPerMinute(), analysis.straightLineSpeedMetersPerMinute(), 1.0);
         }
 
         @Test
@@ -278,14 +277,12 @@ class FlightAnalyzerTest {
         }
     }
 
-    private List<GpxPoint> straightLine(double startLat, double longitude, double latitudeStep,
-                                        int count, int secondsStep) {
+    private List<GpxPoint> straightLine(double startLat, double longitude, double latitudeStep, int count, int secondsStep) {
         List<GpxPoint> points = new ArrayList<>(count);
         Instant base = Instant.parse("2026-08-30T05:00:00Z");
 
         for (int i = 0; i < count; i++) {
-            points.add(new GpxPoint(startLat + i * latitudeStep, longitude, 120.0,
-                    base.plus((long) i * secondsStep, ChronoUnit.SECONDS)));
+            points.add(new GpxPoint(startLat + i * latitudeStep, longitude, 120.0, base.plus((long) i * secondsStep, ChronoUnit.SECONDS)));
         }
 
         return points;

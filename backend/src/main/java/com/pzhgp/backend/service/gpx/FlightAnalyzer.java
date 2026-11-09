@@ -57,8 +57,7 @@ public class FlightAnalyzer {
         GpxPoint end = points.getLast();
 
         double trackDistance = pathLength(points);
-        double straightLineDistance = GeoMath.distance(
-                start.latitude(), start.longitude(), end.latitude(), end.longitude());
+        double straightLineDistance = GeoMath.distance(start.latitude(), start.longitude(), end.latitude(), end.longitude());
 
         long duration = durationBetween(start.time(), end.time());
         boolean timestampsAvailable = duration > 0;
@@ -115,8 +114,7 @@ public class FlightAnalyzer {
                 if (seconds > MAX_SPEED_MAX_WINDOW_SECONDS) {
                     break;
                 }
-                double speed = metersPerMinute(GeoMath.distance(
-                        from.latitude(), from.longitude(), to.latitude(), to.longitude()), seconds);
+                double speed = metersPerMinute(GeoMath.distance(from.latitude(), from.longitude(), to.latitude(), to.longitude()), seconds);
                 if (speed > best && speed <= IMPLAUSIBLE_SPEED_METERS_PER_MINUTE) {
                     best = speed;
                 }
@@ -216,8 +214,7 @@ public class FlightAnalyzer {
         for (int i = 1; i < points.size(); i++) {
             GpxPoint previous = points.get(i - 1);
             GpxPoint current = points.get(i);
-            total += GeoMath.distance(
-                    previous.latitude(), previous.longitude(), current.latitude(), current.longitude());
+            total += GeoMath.distance(previous.latitude(), previous.longitude(), current.latitude(), current.longitude());
         }
         return total;
     }

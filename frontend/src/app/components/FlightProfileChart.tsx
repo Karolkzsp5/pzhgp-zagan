@@ -58,10 +58,7 @@ export default function FlightProfileChart({
 
     // Wysokość wygładzana medianą — pojedynczy błędny odczyt potrafiłby rozciągnąć oś
     // wykresu tak, że cały przebieg spłaszczyłby się do linii.
-    const elevations = useMemo(
-        () => smoothElevations(points.map(point => point.elevation)),
-        [points]
-    );
+    const elevations = useMemo(() => smoothElevations(points.map(point => point.elevation)), [points]);
     const speeds = useMemo(() => points.map(point => point.speedMetersPerMinute), [points]);
 
     /**
