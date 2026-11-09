@@ -107,16 +107,12 @@ class FoundPigeonIntegrationTest {
     }
 
     private void submitExpectingCreated(FoundPigeonRequest request) throws Exception {
-        mockMvc.perform(post("/api/found-pigeons")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(post("/api/found-pigeons").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
     }
 
     private void submitExpectingBadRequest(FoundPigeonRequest request) throws Exception {
-        mockMvc.perform(post("/api/found-pigeons")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(post("/api/found-pigeons").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -363,8 +359,7 @@ class FoundPigeonIntegrationTest {
     void administratorSeesContactDetails() throws Exception {
         Long reportId = storeReport(FoundPigeonStatus.PENDING);
 
-        mockMvc.perform(get("/api/admin/found-pigeons/" + reportId)
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons/" + reportId).with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ringNumber").value("PL-0369-26-1234"))
                 .andExpect(jsonPath("$.contactPhone").value("+48 601 234 567"))
@@ -379,22 +374,16 @@ class FoundPigeonIntegrationTest {
         storeReport(FoundPigeonStatus.PENDING);
         storeReport(FoundPigeonStatus.APPROVED);
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("status", "PENDING")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("status", "PENDING").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
         // Wyszukiwanie nie zależy od wielkości liter ani od znaków rozdzielających.
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("ringNumber", "pl 0369")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("ringNumber", "pl 0369").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("ringNumber", "PL-9999")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("ringNumber", "PL-9999").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
@@ -406,33 +395,24 @@ class FoundPigeonIntegrationTest {
             storeReport(FoundPigeonStatus.PENDING);
         }
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.content.length()").value(10))
                 .andExpect(jsonPath("$.totalElements").value(12));
 
         // Rozmiar strony powyżej dozwolonego maksimum jest odrzucany, a nie po cichu przycinany.
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("size", "500")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("size", "500").with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("page", "-1")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("page", "-1").with(cookieAuth(adminToken)))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("size", "50")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("size", "50").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(50));
 
-        mockMvc.perform(get("/api/admin/found-pigeons")
-                        .param("page", "1")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons").param("page", "1").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value(1))
                 .andExpect(jsonPath("$.content.length()").value(2));
@@ -445,8 +425,7 @@ class FoundPigeonIntegrationTest {
         storeReport(FoundPigeonStatus.PENDING);
         storeReport(FoundPigeonStatus.APPROVED);
 
-        mockMvc.perform(get("/api/admin/found-pigeons/pending-count")
-                        .with(cookieAuth(adminToken)))
+        mockMvc.perform(get("/api/admin/found-pigeons/pending-count").with(cookieAuth(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("2"));
     }

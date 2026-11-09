@@ -270,9 +270,7 @@ describe('Found Pigeons Admin Page Tests', () => {
             }).as('getRejectedReports');
 
             cy.contains('button', 'Odrzucone').click();
-
             cy.wait('@getRejectedReports');
-
             cy.contains('Brak zgłoszeń spełniających wybrane kryteria.').should('be.visible');
         });
 
@@ -684,7 +682,6 @@ describe('Found Pigeons Admin Page Tests', () => {
             }).as('deleteReportError');
 
             openReport('PL-0369-26-1234');
-
             cy.contains('button', 'Usuń zgłoszenie').click();
 
             cy.get('[role="dialog"]').within(() => {

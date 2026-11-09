@@ -80,12 +80,12 @@ export default function ThreadModal({ isOpen, onClose, onSuccess, categoryId }: 
                             required
                         />
                     </div>
-                     <div>
-                         <p className="block text-sm font-bold text-gray-700 mb-1">
-                             Treść pierwszej wiadomości
-                         </p>
-                         <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości" />
-                     </div>
+                    <div>
+                        <p className="block text-sm font-bold text-gray-700 mb-1">
+                            Treść pierwszej wiadomości
+                        </p>
+                        <TextEditor content={content} onChange={setContent} ariaLabel="Treść pierwszej wiadomości"/>
+                    </div>
 
                     {error && (
                         <div role="alert" className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-100">

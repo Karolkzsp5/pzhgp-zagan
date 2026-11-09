@@ -12,10 +12,12 @@ import java.util.List;
 @Repository
 public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> {
 
-    @Query("SELECT b FROM BoardMember b " +
-            "LEFT JOIN FETCH b.managedSection " +
-            "LEFT JOIN FETCH b.breeder " +
-            "ORDER BY b.managedSection.id NULLS FIRST")
+    @Query("""
+            SELECT b FROM BoardMember b
+            LEFT JOIN FETCH b.managedSection
+            LEFT JOIN FETCH b.breeder
+            ORDER BY b.managedSection.id NULLS FIRST
+            """)
     List<BoardMember> findAllWithDetails();
 
     @Query("SELECT COUNT(b) > 0 FROM BoardMember b WHERE b.role = :role AND b.managedSection.id = :sectionId AND b.id != :excludeId")

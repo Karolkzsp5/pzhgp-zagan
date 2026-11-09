@@ -94,9 +94,7 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
         } catch (error) {
             resultWindow.close();
 
-            showAlert('Nie udało się otworzyć wyników',
-                getErrorMessage(error, 'Wystąpił błąd podczas pobierania wyników lotu.')
-            );
+            showAlert('Nie udało się otworzyć wyników', getErrorMessage(error, 'Wystąpił błąd podczas pobierania wyników lotu.'));
         } finally {
             setOpeningResultId(null);
         }

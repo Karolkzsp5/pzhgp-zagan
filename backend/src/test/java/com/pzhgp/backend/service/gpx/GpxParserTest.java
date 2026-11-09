@@ -238,8 +238,7 @@ class GpxParserTest {
     @Test
     @DisplayName("Should throw a readable GPX parsing exception for malformed XML")
     void rejectsMalformedXml() {
-        InputStream stream = new ByteArrayInputStream(
-                "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
+        InputStream stream = new ByteArrayInputStream("<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
 
         GpxParsingException exception = assertThrows(GpxParsingException.class, () -> parser.parse(stream));
         assertTrue(exception.getMessage().contains("GPX"));

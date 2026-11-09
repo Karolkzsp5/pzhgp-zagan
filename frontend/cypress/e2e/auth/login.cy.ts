@@ -125,6 +125,7 @@ describe('Breeder Login Process', () => {
             expect(request.body).to.deep.equal({ email: 'test.cypress1@test.cy', password: 'Test.cypress1', rememberMe: false });
             expect(request.headers['x-xsrf-token']).to.eq('cypress-test-csrf');
         });
+
         cy.location('pathname').should('eq', '/');
         cy.wait(['@getHomeAnnouncements', '@getNotifications', '@getUnreadCount']);
         cy.contains('Witaj, Test');
@@ -148,6 +149,7 @@ describe('Breeder Login Process', () => {
             expect(request.body.rememberMe).to.eq(true);
             expect(request.headers['x-xsrf-token']).to.eq('cypress-test-csrf');
         });
+
         cy.location('pathname').should('eq', '/');
         cy.contains('Witaj, Test');
 

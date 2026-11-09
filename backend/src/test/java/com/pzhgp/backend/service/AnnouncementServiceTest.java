@@ -90,8 +90,7 @@ class AnnouncementServiceTest {
     @DisplayName("Should set both canEdit and canDelete flags to true when user is the author (Moderator)")
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenUserIsAuthor() {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
@@ -106,8 +105,7 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsTrue_WhenAdminIsAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
@@ -121,8 +119,7 @@ class AnnouncementServiceTest {
     @DisplayName("Should set canDelete=true and canEdit=false flags for administrator viewing moderator's post")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAdmin() {
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementDto> result = announcementService.getAllAnnouncements(admin1.getEmail(), 0, 10);
 
@@ -151,8 +148,7 @@ class AnnouncementServiceTest {
     @Test
     @DisplayName("Should set false flags for both actions when user is anonymous")
     void getAllAnnouncements_ShouldSetCorrectFlags_WhenUserIsAnonymous() {
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementDto> result = announcementService.getAllAnnouncements(null, 0, 10);
 
@@ -167,8 +163,7 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldSetBothFlagsFalse_WhenUserIsModeratorAndNotAuthor() {
         announcement.setAuthor(admin1);
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
-        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(announcement)));
+        when(announcementRepository.findAllByOrderByIsPinnedDescCreatedAtDescIdDesc(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(announcement)));
 
         Page<AnnouncementDto> result = announcementService.getAllAnnouncements(moderator.getEmail(), 0, 10);
 
@@ -217,6 +212,7 @@ class AnnouncementServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.createAnnouncement(request, standardBreeder.getEmail())
         );
+
         assertEquals("Zwykły hodowca nie może dodawać ogłoszeń.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
@@ -228,9 +224,7 @@ class AnnouncementServiceTest {
         String unknownEmail = "ghost@test.pl";
         when(breederRepository.findByEmail(unknownEmail)).thenReturn(Optional.empty());
 
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
-                announcementService.createAnnouncement(request, unknownEmail)
-        );
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> announcementService.createAnnouncement(request, unknownEmail));
         assertEquals("Nie znaleziono użytkownika.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
@@ -260,7 +254,8 @@ class AnnouncementServiceTest {
         when(breederRepository.findByEmail(moderator.getEmail())).thenReturn(Optional.of(moderator));
 
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
-                announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail()));
+                announcementService.updateAnnouncement(announcement.getId(), request, moderator.getEmail())
+        );
 
         assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
@@ -286,6 +281,7 @@ class AnnouncementServiceTest {
         ForbiddenOperationException exception = assertThrows(ForbiddenOperationException.class, () ->
                 announcementService.updateAnnouncement(announcement.getId(), request, admin1.getEmail())
         );
+
         assertEquals("Brak uprawnień. Tylko autor ogłoszenia posiadający rolę administratora lub moderatora może je modyfikować.", exception.getMessage());
         verify(announcementRepository, never()).save(any());
     }
@@ -296,9 +292,7 @@ class AnnouncementServiceTest {
         AnnouncementRequest request = new AnnouncementRequest("X", "Y", false);
         when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
-                announcementService.updateAnnouncement(99L, request, admin1.getEmail())
-        );
+        assertThrows(EntityNotFoundException.class, () -> announcementService.updateAnnouncement(99L, request, admin1.getEmail()));
     }
 
     @Test
@@ -353,9 +347,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.findById(announcement.getId())).thenReturn(Optional.of(announcement));
         when(breederRepository.findByEmail(standardBreeder.getEmail())).thenReturn(Optional.of(standardBreeder));
 
-        assertThrows(ForbiddenOperationException.class, () ->
-                announcementService.deleteAnnouncement(announcement.getId(), standardBreeder.getEmail())
-        );
+        assertThrows(ForbiddenOperationException.class, () -> announcementService.deleteAnnouncement(announcement.getId(), standardBreeder.getEmail()));
     }
 
     @Test
@@ -377,8 +369,6 @@ class AnnouncementServiceTest {
     void deleteAnnouncement_ShouldThrowException_WhenAnnouncementNotFound() {
         when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
-                announcementService.deleteAnnouncement(99L, admin1.getEmail())
-        );
+        assertThrows(EntityNotFoundException.class, () -> announcementService.deleteAnnouncement(99L, admin1.getEmail()));
     }
 }

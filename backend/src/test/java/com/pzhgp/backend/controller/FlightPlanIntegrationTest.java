@@ -105,8 +105,7 @@ class FlightPlanIntegrationTest {
     void allowsAuthenticatedUsersToReadPlans() throws Exception {
         createPlan(2026);
 
-        mockMvc.perform(get("/api/flight-plans")
-                        .with(cookieAuth(breederToken)))
+        mockMvc.perform(get("/api/flight-plans").with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].year").value(2026));

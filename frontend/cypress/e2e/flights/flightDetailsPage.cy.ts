@@ -203,12 +203,10 @@ describe('Flight Details Page Tests', () => {
             cy.contains('span', 'Koniec nagrania').parent().parent().should('contain.text', expectedTime(flight.endTime));
             cy.contains('span', 'Pokonany dystans').parent().parent().should('contain.text', '5.80 km');
             cy.contains('span', 'Prędkość w linii prostej').parent().parent().should('contain.text', 'm/min');
-            cy.contains('span', 'Wysokość lotu').parent().parent()
-                .should('contain.text', '100–140 m n.p.m.')
+            cy.contains('span', 'Wysokość lotu').parent().parent().should('contain.text', '100–140 m n.p.m.')
                 .and('contain.text', 'suma wznosów 40 m');
 
-            cy.contains('span', 'Punkty trasy').parent().parent()
-                .should('contain.text', '120')
+            cy.contains('span', 'Punkty trasy').parent().parent().should('contain.text', '120')
                 .and('contain.text', 'na mapie wyświetlono 5');
 
             cy.contains('span', 'Plik źródłowy').parent().parent().should('contain.text', 'dessau-2026.gpx');
@@ -336,8 +334,7 @@ describe('Flight Details Page Tests', () => {
             cy.reload();
             cy.wait('@getFlightWithoutTimestamps');
 
-            cy.contains('p', /^Czas nagrania$/).parent()
-                .should('contain.text', '—')
+            cy.contains('p', /^Czas nagrania$/).parent().should('contain.text', '—')
                 .and('contain.text', 'plik bez znaczników czasu');
 
             cy.contains('p', /^Prędkość średnia$/).parent().should('contain.text', '—');

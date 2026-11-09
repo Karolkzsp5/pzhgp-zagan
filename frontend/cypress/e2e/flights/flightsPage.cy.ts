@@ -554,11 +554,7 @@ describe('Flights Page Tests', () => {
             });
 
             cy.visit('/flights');
-
-            cy.wait('@getUnauthenticatedUser')
-                .its('response.statusCode')
-                .should('eq', 401);
-
+            cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
             cy.location('pathname').should('eq', '/login');
         });
     });

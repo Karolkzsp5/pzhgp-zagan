@@ -352,8 +352,7 @@ class PigeonFlightServiceTest {
         when(file.getOriginalFilename()).thenReturn("track.gpx");
         when(file.getInputStream()).thenThrow(new IOException("Disk read error"));
 
-        GpxParsingException exception = assertThrows(GpxParsingException.class,
-                () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+        GpxParsingException exception = assertThrows(GpxParsingException.class, () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
 
         assertNotNull(exception.getCause());
         assertInstanceOf(IOException.class, exception.getCause());
@@ -378,8 +377,7 @@ class PigeonFlightServiceTest {
     void rejectsUnknownBreeder() {
         when(breederRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class,
-                () -> pigeonFlightService.uploadFlight(null, null, "missing@example.com"));
+        assertThrows(EntityNotFoundException.class, () -> pigeonFlightService.uploadFlight(null, null, "missing@example.com"));
 
         verifyNoInteractions(flightRepository);
         verifyNoInteractions(trackPointRepository);
@@ -520,8 +518,7 @@ class PigeonFlightServiceTest {
     private MockMultipartFile realGpxFile() throws IOException {
         try (InputStream stream = getClass().getResourceAsStream("/gpx/skyleader-lot-konkursowy.gpx")) {
             assertNotNull(stream);
-            return new MockMultipartFile("file", "Lot_konkursowy_30.08.2026.gpx",
-                    "application/gpx+xml", stream.readAllBytes());
+            return new MockMultipartFile("file", "Lot_konkursowy_30.08.2026.gpx", "application/gpx+xml", stream.readAllBytes());
         }
     }
 

@@ -122,10 +122,7 @@ export default function FlightPlanEntryModal({isOpen, onClose, onSaved, year, pi
                 </div>
 
                 <div>
-                    <label
-                        htmlFor="flight-date"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                    >
+                    <label htmlFor="flight-date" className="block text-sm font-medium text-gray-700 mb-1">
                         Data
                     </label>
 

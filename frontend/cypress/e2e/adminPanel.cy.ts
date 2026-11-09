@@ -479,9 +479,7 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="role-change-modal"]').should('not.exist');
 
         cy.get('[data-cy="registered-row-2"]').within(() => {
-            cy.get('[data-cy="badge-moderator"]')
-                .should('be.visible')
-                .and('contain.text', 'MODERATOR');
+            cy.get('[data-cy="badge-moderator"]').should('be.visible').and('contain.text', 'MODERATOR');
         });
     });
 
@@ -542,11 +540,7 @@ describe('Administrator route guard', () => {
         }).as('getUnauthenticatedUser');
 
         cy.visit('/admin');
-
-        cy.wait('@getUnauthenticatedUser')
-            .its('response.statusCode')
-            .should('eq', 401);
-
+        cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
         cy.location('pathname').should('eq', '/login');
     });
 

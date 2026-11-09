@@ -174,7 +174,9 @@ export default function CategoryViewPage({ params }: { params: Promise<{ categor
 
                                                                 <div className="text-xs text-gray-500 mt-1">
                                                                     Autor:{' '}
-                                                                    <span className="font-medium text-gray-700">{thread.authorName}</span>
+                                                                    <span className="font-medium text-gray-700">
+                                                                        {thread.authorName}
+                                                                    </span>
                                                                     {' • '}
                                                                     {formatDateTime(thread.createdAt)}
                                                                 </div>

@@ -33,7 +33,6 @@ class HealthEndpointIntegrationTest {
     @Test
     @DisplayName("Should not expose other actuator endpoints")
     void shouldNotExposeOtherActuatorEndpoints() throws Exception {
-        mockMvc.perform(get("/actuator/env"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
     }
 }

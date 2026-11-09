@@ -40,10 +40,7 @@ public class ForumThreadController {
     }
 
     @PostMapping("/threads")
-    public ResponseEntity<Void> createThread(
-            @Valid @RequestBody ForumThreadRequest request,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> createThread(@Valid @RequestBody ForumThreadRequest request, Authentication authentication) {
         threadService.createThread(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -58,10 +55,7 @@ public class ForumThreadController {
     }
 
     @DeleteMapping("/threads/{id}")
-    public ResponseEntity<Void> deleteThread(
-            @PathVariable Long id,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> deleteThread(@PathVariable Long id, Authentication authentication) {
         threadService.deleteThread(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }

@@ -184,8 +184,7 @@ export default function FoundPigeonsAdminPage() {
         }
         showConfirm({
             title: 'Usuń zgłoszenie',
-            message: `Czy na pewno chcesz trwale usunąć zgłoszenie obrączki ${report.ringNumber} `
-                + 'razem z danymi kontaktowymi znalazcy? Tej operacji nie można cofnąć.',
+            message: `Czy na pewno chcesz trwale usunąć zgłoszenie obrączki ${report.ringNumber} ` + 'razem z danymi kontaktowymi znalazcy? Tej operacji nie można cofnąć.',
             onConfirm: async () => {
                 setIsDeleting(true);
 
@@ -221,8 +220,7 @@ export default function FoundPigeonsAdminPage() {
                     <div className="border-b border-gray-200 pb-5 mb-6">
                         <h1 className="text-3xl font-bold text-gray-900">Zgłoszenia znalezionych gołębi</h1>
                         <p className="mt-2 text-sm text-gray-600">
-                            Dane kontaktowe znalazców są widoczne wyłącznie na tej stronie. Usuń zgłoszenie,
-                            gdy przestanie być potrzebne.
+                            Dane kontaktowe znalazców są widoczne wyłącznie na tej stronie. Usuń zgłoszenie, gdy przestanie być potrzebne.
                         </p>
                     </div>
 

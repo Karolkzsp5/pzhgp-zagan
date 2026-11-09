@@ -33,12 +33,8 @@ public class FlightPlanController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> createPlan(
-            @Valid @RequestBody FlightPlanCreateRequest request,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Map<String, Long>> createPlan(@Valid @RequestBody FlightPlanCreateRequest request, Authentication authentication) {
         Long planId = flightPlanService.createPlan(request, authentication.getName());
-
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", planId));
     }
 
@@ -53,9 +49,8 @@ public class FlightPlanController {
     }
 
     @PutMapping("/entries/{entryId}")
-    public ResponseEntity<Void> updateEntry(
-            @PathVariable Long entryId,
-            @Valid @RequestBody FlightPlanEntryRequest request,
+    public ResponseEntity<Void> updateEntry(@PathVariable Long entryId, @Valid
+            @RequestBody FlightPlanEntryRequest request,
             Authentication authentication
     ) {
         flightPlanService.updateEntry(entryId, request, authentication.getName());
@@ -63,19 +58,13 @@ public class FlightPlanController {
     }
 
     @DeleteMapping("/entries/{entryId}")
-    public ResponseEntity<Void> deleteEntry(
-            @PathVariable Long entryId,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> deleteEntry(@PathVariable Long entryId, Authentication authentication) {
         flightPlanService.deleteEntry(entryId, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{year}")
-    public ResponseEntity<Void> deletePlan(
-            @PathVariable Integer year,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> deletePlan(@PathVariable Integer year, Authentication authentication) {
         flightPlanService.deletePlan(year, authentication.getName());
         return ResponseEntity.noContent().build();
     }

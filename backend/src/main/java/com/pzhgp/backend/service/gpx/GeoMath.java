@@ -37,9 +37,7 @@ public final class GeoMath {
      * lokalnie na płaszczyznę (odwzorowanie równoprostokątne), co przy odległościach
      * rzędu kilometrów nie wprowadza istotnego błędu.
      */
-    public static double distanceToSegment(double lat, double lon,
-                                           double lat1, double lon1,
-                                           double lat2, double lon2) {
+    public static double distanceToSegment(double lat, double lon, double lat1, double lon1, double lat2, double lon2) {
         double metersPerDegreeLat = Math.PI * EARTH_RADIUS_METERS / 180.0;
         double metersPerDegreeLon = metersPerDegreeLat * Math.cos(Math.toRadians(lat1));
 

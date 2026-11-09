@@ -142,8 +142,7 @@ class PigeonFlightIntegrationTest {
 
         Long flightId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
 
-        mockMvc.perform(get("/api/flights/" + flightId)
-                        .with(cookieAuth(ownerToken)))
+        mockMvc.perform(get("/api/flights/" + flightId).with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Lot z Dessau"))
                 .andExpect(jsonPath("$.ringNumber").value("PL-0208-24-99"))
@@ -166,10 +165,7 @@ class PigeonFlightIntegrationTest {
         MockMultipartFile file = new MockMultipartFile("file", "zlosliwy.exe",
                 "application/octet-stream", "MZ".getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/api/flights")
-                        .file(file)
-                        .with(cookieAuth(ownerToken)))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(multipart("/api/flights").file(file).with(cookieAuth(ownerToken))).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -178,10 +174,7 @@ class PigeonFlightIntegrationTest {
         MockMultipartFile file = new MockMultipartFile("file", "uszkodzony.gpx",
                 "application/gpx+xml", "<gpx><trk><trkseg><trkpt lat=".getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/api/flights")
-                        .file(file)
-                        .with(cookieAuth(ownerToken)))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(multipart("/api/flights").file(file).with(cookieAuth(ownerToken))).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -189,8 +182,7 @@ class PigeonFlightIntegrationTest {
     void returnsFlightStatistics() throws Exception {
         Long flightId = uploadRealFlight();
 
-        mockMvc.perform(get("/api/flights/" + flightId)
-                        .with(cookieAuth(ownerToken)))
+        mockMvc.perform(get("/api/flights/" + flightId).with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ringNumber").value("8414"))
                 .andExpect(jsonPath("$.ownerName").value("Jan Kowalski"))
@@ -207,14 +199,11 @@ class PigeonFlightIntegrationTest {
     void appliesTrackSimplification() throws Exception {
         Long flightId = uploadRealFlight();
 
-        MvcResult simplified = mockMvc.perform(get("/api/flights/" + flightId)
-                        .with(cookieAuth(ownerToken)))
+        MvcResult simplified = mockMvc.perform(get("/api/flights/" + flightId).with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        MvcResult full = mockMvc.perform(get("/api/flights/" + flightId)
-                        .param("tolerance", "0")
-                        .with(cookieAuth(ownerToken)))
+        MvcResult full = mockMvc.perform(get("/api/flights/" + flightId).param("tolerance", "0").with(cookieAuth(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.returnedPoints").value(1230))
                 .andReturn();

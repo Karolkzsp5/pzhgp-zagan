@@ -377,8 +377,7 @@ class AnnouncementIntegrationTest {
         moderator.setRole(Role.BREEDER);
         breederRepository.save(moderator);
 
-        mockMvc.perform(delete("/api/announcements/{id}", announcement.getId()).with(cookieAuth(modToken)))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/announcements/{id}", announcement.getId()).with(cookieAuth(modToken))).andExpect(status().isNoContent());
         assertEquals(0, announcementRepository.count());
     }
 

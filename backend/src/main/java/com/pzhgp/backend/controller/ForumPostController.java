@@ -49,10 +49,7 @@ public class ForumPostController {
     }
 
     @DeleteMapping("/posts/{postId}")
-    public ResponseEntity<Void> deletePost(
-            @PathVariable Long postId,
-            Authentication authentication
-    ) {
+    public ResponseEntity<Void> deletePost(@PathVariable Long postId, Authentication authentication) {
         postService.deletePost(postId, authentication.getName());
         return ResponseEntity.noContent().build();
     }

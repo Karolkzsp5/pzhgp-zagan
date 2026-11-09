@@ -92,8 +92,6 @@ public final class TrackSimplifier {
         if (points == null) {
             return List.of();
         }
-        return selectIndices(points, toleranceMeters).stream()
-                .map(points::get)
-                .toList();
+        return selectIndices(points, toleranceMeters).stream().map(points::get).toList();
     }
 }

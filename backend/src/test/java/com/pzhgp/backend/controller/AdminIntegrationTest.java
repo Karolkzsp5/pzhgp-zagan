@@ -143,9 +143,7 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should return 404 when approving a non-existent account")
     void shouldReturnNotFoundWhenEntityDoesNotExist() throws Exception {
-        mockMvc.perform(put("/api/admin/accounts/99999/approve")
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/admin/accounts/99999/approve").with(cookieAuth(adminToken))).andExpect(status().isNotFound());
     }
 
     @Test
@@ -167,9 +165,7 @@ class AdminIntegrationTest {
     @Test
     @DisplayName("Should return 403 when an administrator attempts to block another administrator")
     void shouldReturnForbiddenWhenActionIsDenied() throws Exception {
-        mockMvc.perform(put("/api/admin/accounts/" + anotherAdmin.getId() + "/block")
-                        .with(cookieAuth(adminToken)))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/accounts/" + anotherAdmin.getId() + "/block").with(cookieAuth(adminToken))).andExpect(status().isForbidden());
     }
 
     @Test

@@ -95,9 +95,7 @@ export default function FlightPlansPage() {
                     await flightPlanService.deletePlan(plan.year);
                     await loadPlans();
                 } catch (error) {
-                    showAlert('Nie udało się usunąć planu',
-                        getErrorMessage(error, 'Wystąpił błąd podczas usuwania planu lotów.')
-                    );
+                    showAlert('Nie udało się usunąć planu', getErrorMessage(error, 'Wystąpił błąd podczas usuwania planu lotów.'));
                 }
             }
         });

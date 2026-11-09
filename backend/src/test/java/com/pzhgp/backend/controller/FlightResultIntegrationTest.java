@@ -165,8 +165,7 @@ class FlightResultIntegrationTest {
     @Test
     @DisplayName("Should notify active users except the uploader when branch results are uploaded")
     void createsNotificationsForBranchResults() throws Exception {
-        uploadResult(textFile("oddzial.txt", "Wyniki oddziałowe"),
-                new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
+        uploadResult(textFile("oddzial.txt", "Wyniki oddziałowe"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
         var notifications = notificationRepository.findAll();
         assertEquals(2, notifications.size());
@@ -185,8 +184,7 @@ class FlightResultIntegrationTest {
         chotkowBreeder.setSection(sectionThree);
         breederRepository.save(chotkowBreeder);
 
-        uploadResult(textFile("sekcja3.txt", "Wyniki sekcyjne"),
-                new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
+        uploadResult(textFile("sekcja3.txt", "Wyniki sekcyjne"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionThree.getId()));
 
         var notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size());
@@ -388,8 +386,7 @@ class FlightResultIntegrationTest {
         String originalContent = "PZHGP Żagań\nZażółć gęślą jaźń\n12345";
         Long resultId = uploadResult(textFile("wyniki-dahme.txt", originalContent), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
 
-        mockMvc.perform(get("/api/flight-results/" + resultId + "/file")
-                        .with(cookieAuth(breederToken)))
+        mockMvc.perform(get("/api/flight-results/" + resultId + "/file").with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
@@ -404,8 +401,7 @@ class FlightResultIntegrationTest {
         uploadResult(textFile("oddzial.txt", "Oddział"), new FlightResultUploadRequest(FlightResultScope.BRANCH, null));
         uploadResult(textFile("sekcja1.txt", "Sekcja 1"), new FlightResultUploadRequest(FlightResultScope.SECTION, sectionOne.getId()));
 
-        mockMvc.perform(get("/api/flight-plans/2026")
-                        .with(cookieAuth(breederToken)))
+        mockMvc.perform(get("/api/flight-plans/2026").with(cookieAuth(breederToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.adultFlights[0].results.length()").value(3))
                 .andExpect(jsonPath("$.adultFlights[0].results[0].scope").value("BRANCH"))

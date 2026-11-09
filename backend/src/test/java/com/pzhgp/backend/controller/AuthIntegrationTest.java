@@ -284,8 +284,7 @@ class AuthIntegrationTest {
         breederRepository.save(savedBreeder);
 
         Cookie authCookie = loginWithCookie(obtainCsrf(), false);
-        mockMvc.perform(get("/api/notifications/unread-count").cookie(authCookie))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/notifications/unread-count").cookie(authCookie)).andExpect(status().isOk());
     }
 
     @Test
@@ -315,8 +314,7 @@ class AuthIntegrationTest {
     void shouldReturnUnauthorizedOnInvalidLogin() throws Exception {
         LoginRequest invalidLogin = new LoginRequest("doesntexist@test.pl", "BadPassword123", false);
 
-        loginWithCookieJson(objectMapper.writeValueAsString(invalidLogin), null)
-                .andExpect(status().isUnauthorized());
+        loginWithCookieJson(objectMapper.writeValueAsString(invalidLogin), null).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -370,8 +368,7 @@ class AuthIntegrationTest {
         LoginRequest request = new LoginRequest("unknown@test.pl", "WrongPassword123!", false);
 
         for (int i = 0; i < 30; i++) {
-            loginWithCookieJson(objectMapper.writeValueAsString(request), clientAddress)
-                    .andExpect(status().isUnauthorized());
+            loginWithCookieJson(objectMapper.writeValueAsString(request), clientAddress).andExpect(status().isUnauthorized());
         }
 
         loginWithCookieJson(objectMapper.writeValueAsString(request), clientAddress)
@@ -442,8 +439,7 @@ class AuthIntegrationTest {
         breeder.setStatus(AccountStatus.BLOCKED);
         breederRepository.saveAndFlush(breeder);
 
-        mockMvc.perform(get("/api/auth/me").cookie(authCookie))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/auth/me").cookie(authCookie)).andExpect(status().isUnauthorized());
     }
 
     private org.springframework.test.web.servlet.ResultActions loginWithCookieJson(
@@ -476,13 +472,9 @@ class AuthIntegrationTest {
     private record CsrfValues(Cookie cookie, String token) {}
 
     private CsrfValues obtainCsrf() throws Exception {
-        var response = mockMvc.perform(get("/api/auth/csrf"))
-                .andExpect(status().isNoContent())
-                .andReturn().getResponse();
+        var response = mockMvc.perform(get("/api/auth/csrf")).andExpect(status().isNoContent()).andReturn().getResponse();
 
-        String setCookie = response.getHeaders(HttpHeaders.SET_COOKIE).stream()
-                .filter(header -> header.startsWith("XSRF-TOKEN="))
-                .findFirst().orElseThrow();
+        String setCookie = response.getHeaders(HttpHeaders.SET_COOKIE).stream().filter(header -> header.startsWith("XSRF-TOKEN=")).findFirst().orElseThrow();
         String cookieToken = setCookie.substring("XSRF-TOKEN=".length()).split(";", 2)[0];
         return new CsrfValues(new Cookie("XSRF-TOKEN", cookieToken), cookieToken);
     }
@@ -528,8 +520,7 @@ class AuthIntegrationTest {
         createActiveBreeder();
         Cookie authCookie = loginWithCookie(obtainCsrf(), false);
 
-        mockMvc.perform(get("/api/notifications/unread-count").cookie(authCookie))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/notifications/unread-count").cookie(authCookie)).andExpect(status().isOk());
     }
 
     @Test
@@ -549,8 +540,7 @@ class AuthIntegrationTest {
         createActiveBreeder();
         Cookie authCookie = loginWithCookie(obtainCsrf(), false);
 
-        mockMvc.perform(put("/api/notifications/123456789/read").cookie(authCookie))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/notifications/123456789/read").cookie(authCookie)).andExpect(status().isForbidden());
     }
 
     @Test
@@ -635,9 +625,7 @@ class AuthIntegrationTest {
         CsrfValues csrf = obtainCsrf();
         Cookie authCookie = loginWithCookie(csrf, false);
 
-        mockMvc.perform(post("/api/auth/logout")
-                        .cookie(authCookie, csrf.cookie()))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/auth/logout").cookie(authCookie, csrf.cookie())).andExpect(status().isForbidden());
     }
 
     @Test

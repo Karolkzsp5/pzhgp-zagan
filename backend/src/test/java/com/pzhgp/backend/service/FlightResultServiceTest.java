@@ -132,8 +132,7 @@ class FlightResultServiceTest {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(sectionRepository.findById(chotkow.getId())).thenReturn(Optional.of(chotkow));
-        when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
-                flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(false);
+        when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(false);
 
         when(flightResultRepository.save(any(FlightResult.class))).thenAnswer(invocation -> {
             FlightResult saved = invocation.getArgument(0);
@@ -441,8 +440,7 @@ class FlightResultServiceTest {
     void rejectsDuplicateBranchResult() {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
-        when(flightResultRepository.existsByFlightPlanEntryIdAndScope(
-                flight.getId(), FlightResultScope.BRANCH)).thenReturn(true);
+        when(flightResultRepository.existsByFlightPlanEntryIdAndScope(flight.getId(), FlightResultScope.BRANCH)).thenReturn(true);
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
                 flightResultService.uploadResult(
@@ -499,8 +497,7 @@ class FlightResultServiceTest {
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanEntryRepository.findByIdForUpdate(flight.getId())).thenReturn(Optional.of(flight));
         when(sectionRepository.findById(chotkow.getId())).thenReturn(Optional.of(chotkow));
-        when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(
-                flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(true);
+        when(flightResultRepository.existsByFlightPlanEntryIdAndScopeAndSectionId(flight.getId(), FlightResultScope.SECTION, chotkow.getId())).thenReturn(true);
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class, () ->
                 flightResultService.uploadResult(
@@ -698,11 +695,6 @@ class FlightResultServiceTest {
     }
 
     private MockMultipartFile textFile(String fileName, String content) {
-        return new MockMultipartFile(
-                "file",
-                fileName,
-                "text/plain",
-                content.getBytes(StandardCharsets.UTF_8)
-        );
+        return new MockMultipartFile("file", fileName, "text/plain", content.getBytes(StandardCharsets.UTF_8));
     }
 }

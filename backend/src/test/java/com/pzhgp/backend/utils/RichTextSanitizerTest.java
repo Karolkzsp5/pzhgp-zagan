@@ -35,8 +35,7 @@ class RichTextSanitizerTest {
     void shouldSanitizeLinks() {
         String html = "<p><a href=\"javascript:alert(1)\">zły</a> <a href=\"https://pzhgp.pl\" target=\"_blank\">dobry</a></p>";
 
-        assertEquals(
-                "<p><a rel=\"noopener noreferrer nofollow\">zły</a> "
+        assertEquals("<p><a rel=\"noopener noreferrer nofollow\">zły</a> "
                         + "<a href=\"https://pzhgp.pl\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">dobry</a></p>",
                 RichTextSanitizer.sanitize(html)
         );

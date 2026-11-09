@@ -325,8 +325,7 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[role="dialog"]').contains('button', 'Dodaj lot').click();
 
-            cy.get('[role="alert"]').should('be.visible')
-                .and('have.text', 'Dystans musi mieścić się w zakresie od 1 do 3000 km.');
+            cy.get('[role="alert"]').should('be.visible').and('have.text', 'Dystans musi mieścić się w zakresie od 1 do 3000 km.');
         });
 
         // ==========================================
@@ -396,16 +395,12 @@ describe('Flight Plan Details Page Tests', () => {
         // ==========================================
 
         it('Should display an API error when adding a flight fails', () => {
-            cy.intercept(
-                'POST',
-                '**/api/flight-plans/2026/entries',
-                (req) => {
-                    req.reply({
-                        statusCode: 400,
-                        body: 'Testowy błąd podczas dodawania lotu.'
-                    });
-                }
-            ).as('createFlightError');
+            cy.intercept('POST', '**/api/flight-plans/2026/entries', (req) => {
+                req.reply({
+                    statusCode: 400,
+                    body: 'Testowy błąd podczas dodawania lotu.'
+                });
+            }).as('createFlightError');
 
             getFlightSection('Gołębie dorosłe').contains('button', '+ Dodaj lot').click();
 
@@ -636,9 +631,7 @@ describe('Flight Plan Details Page Tests', () => {
                 force: true
             });
 
-            cy.get('[role="alert"]').should('be.visible')
-                .and('have.text', 'Dozwolone są wyłącznie pliki z rozszerzeniem .txt.');
-
+            cy.get('[role="alert"]').should('be.visible').and('have.text', 'Dozwolone są wyłącznie pliki z rozszerzeniem .txt.');
             cy.contains('wyniki.pdf').should('not.exist');
             cy.contains('button', 'Wgraj wyniki').should('be.disabled');
         });
@@ -806,18 +799,16 @@ describe('Flight Plan Details Page Tests', () => {
         // ==========================================
 
         it('Should successfully delete uploaded results', () => {
-            cy.intercept('DELETE', '**/api/flight-results/1001',
-                (req) => {
-                    updateFlight(101, (flight) => ({
-                        ...flight,
-                        results: flight.results.filter((result) => result.id !== 1001)
-                    }));
+            cy.intercept('DELETE', '**/api/flight-results/1001', (req) => {
+                updateFlight(101, (flight) => ({
+                    ...flight,
+                    results: flight.results.filter((result) => result.id !== 1001)
+                }));
 
-                    req.reply({
-                        statusCode: 204
-                    });
-                }
-            ).as('deleteResult');
+                req.reply({
+                    statusCode: 204
+                });
+            }).as('deleteResult');
 
             openResultsModal(101, 'Zarządzaj wynikami');
             getUploadedResult('oddzial-dahme.txt').contains('button', 'Usuń').click();
@@ -913,9 +904,7 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('[role="dialog"]').should('be.visible').within(() => {
                 cy.contains('h2', 'Nie można otworzyć wyników').should('be.visible');
-                cy.contains('Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.')
-                    .should('be.visible');
-
+                cy.contains('Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.').should('be.visible');
                 cy.contains('button', 'OK').click();
             });
         });

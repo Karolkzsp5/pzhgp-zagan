@@ -59,18 +59,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String dbRole = breederOpt.get().getRole().name();
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority(dbRole);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userEmail,
-                        null,
-                        Collections.singletonList(authority)
-                );
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userEmail, null, Collections.singletonList(authority));
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {
                 // Adres e-mail to dane osobowe, dlatego w logu jest tylko ID konta.
-                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.",
-                        breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
+                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
             }
         }
 

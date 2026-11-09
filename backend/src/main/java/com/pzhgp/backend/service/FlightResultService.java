@@ -76,8 +76,7 @@ public class FlightResultService {
 
         List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
                 .filter(breeder -> !breeder.getId().equals(uploader.getId()))
-                .filter(breeder -> request.scope() == FlightResultScope.BRANCH
-                        || breeder.getSection().getId().equals(section.getId()))
+                .filter(breeder -> request.scope() == FlightResultScope.BRANCH || breeder.getSection().getId().equals(section.getId()))
                 .toList();
 
         if (!recipients.isEmpty()) {

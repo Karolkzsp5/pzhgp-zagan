@@ -11,10 +11,7 @@ import java.time.Instant;
  * Pojedynczy punkt trasy lotu odczytany z pliku GPX.
  */
 @Entity
-@Table(
-        name = "flight_track_points",
-        indexes = @Index(name = "idx_track_point_flight", columnList = "flight_id, point_index")
-)
+@Table(name = "flight_track_points", indexes = @Index(name = "idx_track_point_flight", columnList = "flight_id, point_index"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,8 +46,7 @@ public class FlightTrackPoint {
     @Column(name = "speed_m_per_min")
     private Double speedMetersPerMinute;
 
-    public FlightTrackPoint(int pointIndex, double latitude, double longitude,
-                            Double elevationMeters, Instant recordedAt, Double speedMetersPerMinute) {
+    public FlightTrackPoint(int pointIndex, double latitude, double longitude, Double elevationMeters, Instant recordedAt, Double speedMetersPerMinute) {
         this.pointIndex = pointIndex;
         this.latitude = latitude;
         this.longitude = longitude;

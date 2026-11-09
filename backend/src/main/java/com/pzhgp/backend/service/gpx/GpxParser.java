@@ -122,8 +122,7 @@ public class GpxParser {
                         insidePoint = false;
                         if (latitude != null && longitude != null && isOnEarth(latitude, longitude)) {
                             if (points.size() >= MAX_POINTS) {
-                                throw new GpxParsingException(
-                                        "Plik zawiera zbyt wiele punktów trasy (limit: " + MAX_POINTS + ").");
+                                throw new GpxParsingException("Plik zawiera zbyt wiele punktów trasy (limit: " + MAX_POINTS + ").");
                             }
                             points.add(new GpxPoint(latitude, longitude, elevation, time));
                         }
@@ -137,8 +136,7 @@ public class GpxParser {
                 }
             }
         } catch (XMLStreamException e) {
-            throw new GpxParsingException("Nie udało się odczytać pliku GPX — plik jest uszkodzony "
-                    + "lub nie jest poprawnym dokumentem XML.", e);
+            throw new GpxParsingException("Nie udało się odczytać pliku GPX — plik jest uszkodzony lub nie jest poprawnym dokumentem XML.", e);
         } finally {
             closeQuietly(reader);
         }

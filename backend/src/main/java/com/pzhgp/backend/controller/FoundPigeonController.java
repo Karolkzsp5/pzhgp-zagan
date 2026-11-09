@@ -37,10 +37,7 @@ public class FoundPigeonController {
      * @return identyfikator zgłoszenia — bez żadnych danych podanych w formularzu
      */
     @PostMapping
-    public ResponseEntity<Map<String, Long>> submitReport(
-            @Valid @RequestBody FoundPigeonRequest request,
-            HttpServletRequest httpRequest
-    ) {
+    public ResponseEntity<Map<String, Long>> submitReport(@Valid @RequestBody FoundPigeonRequest request, HttpServletRequest httpRequest) {
         // Adres zdalny połączenia zamiast nagłówka X-Forwarded-For: nagłówek pochodzi
         // od klienta i można go dowolnie ustawić, więc limit oparty na nim byłby pozorny.
         if (!submissionRateLimiter.tryAcquire(httpRequest.getRemoteAddr())) {

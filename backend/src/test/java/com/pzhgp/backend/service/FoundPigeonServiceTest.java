@@ -81,11 +81,9 @@ class FoundPigeonServiceTest {
     @DisplayName("Should store a new report with PENDING status")
     void newReportStartsAsPending() {
         stubSave();
-        when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE))
-                .thenReturn(List.of(administrator));
+        when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE)).thenReturn(List.of(administrator));
 
-        Long id = foundPigeonService.createReport(
-                request("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE));
+        Long id = foundPigeonService.createReport(request("PL-0369-26-1234", "+49 30 12345678", null, ReportLanguage.DE));
 
         assertEquals(42L, id);
 
@@ -101,8 +99,7 @@ class FoundPigeonServiceTest {
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
-        foundPigeonService.createReport(
-                request("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.PL));
+        foundPigeonService.createReport(request("PL-0369-26-1234", null, "finder@example.com", ReportLanguage.PL));
 
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
@@ -117,9 +114,7 @@ class FoundPigeonServiceTest {
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
-        foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, null));
-
+        foundPigeonService.createReport(request("PL-0369-26-1234", "601234567", null, null));
         ArgumentCaptor<FoundPigeonReport> captor = ArgumentCaptor.forClass(FoundPigeonReport.class);
         verify(foundPigeonRepository).save(captor.capture());
 
@@ -130,11 +125,9 @@ class FoundPigeonServiceTest {
     @DisplayName("Should notify active administrators about a new report")
     void notifiesActiveAdministrators() {
         stubSave();
-        when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE))
-                .thenReturn(List.of(administrator));
+        when(breederRepository.findByRoleAndStatus(Role.ADMINISTRATOR, AccountStatus.ACTIVE)).thenReturn(List.of(administrator));
 
-        foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
+        foundPigeonService.createReport(request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         verify(notificationService).createBulkNotifications(
                 eq(List.of(administrator)),
@@ -149,15 +142,13 @@ class FoundPigeonServiceTest {
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of(administrator));
 
-        foundPigeonService.createReport(
-                request("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
+        foundPigeonService.createReport(request("PL-0369-26-1234", "+48 601 234 567", "finder@example.com", ReportLanguage.PL));
 
         ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
         verify(notificationService).createBulkNotifications(any(), message.capture(), any(), any());
 
         assertFalse(message.getValue().contains("601"), "The phone number must not leak into the notification");
-        assertFalse(message.getValue().contains("finder@example.com"),
-                "The e-mail address must not leak into the notification");
+        assertFalse(message.getValue().contains("finder@example.com"), "The e-mail address must not leak into the notification");
         assertTrue(message.getValue().contains("PL-0369-26-1234"));
     }
 
@@ -167,8 +158,7 @@ class FoundPigeonServiceTest {
         stubSave();
         when(breederRepository.findByRoleAndStatus(any(), any())).thenReturn(List.of());
 
-        foundPigeonService.createReport(
-                request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
+        foundPigeonService.createReport(request("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
 
         verify(notificationService, never()).createBulkNotifications(any(), any(), any(), any());
     }
@@ -230,12 +220,9 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should reject pagination parameters outside the allowed range")
     void rejectsInvalidPaginationParameters() {
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, -1, 10));
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, 0, 0));
-        assertThrows(IllegalArgumentException.class,
-                () -> foundPigeonService.searchReports(null, null, 0, 51));
+        assertThrows(IllegalArgumentException.class, () -> foundPigeonService.searchReports(null, null, -1, 10));
+        assertThrows(IllegalArgumentException.class, () -> foundPigeonService.searchReports(null, null, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> foundPigeonService.searchReports(null, null, 0, 51));
 
         verify(foundPigeonRepository, never()).search(any(), any(), any());
     }
@@ -262,8 +249,7 @@ class FoundPigeonServiceTest {
     void rejectsTransitionFromPendingToResolved() {
         when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.PENDING)));
 
-        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class,
-                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
+        InvalidStatusTransitionException exception = assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.RESOLVED));
         assertEquals("Nie można zmienić statusu z „Oczekujące” na „Zakończone”.", exception.getMessage());
         verify(foundPigeonRepository, never()).save(any());
     }
@@ -271,17 +257,11 @@ class FoundPigeonServiceTest {
     @Test
     @DisplayName("Should reject reopening closed reports")
     void rejectsReopeningClosedReports() {
-        when(foundPigeonRepository.findByIdForUpdate(1L))
-                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.RESOLVED)));
+        when(foundPigeonRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.RESOLVED)));
+        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED));
 
-        assertThrows(InvalidStatusTransitionException.class,
-                () -> foundPigeonService.updateStatus(1L, FoundPigeonStatus.APPROVED));
-
-        when(foundPigeonRepository.findByIdForUpdate(2L))
-                .thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.REJECTED)));
-
-        assertThrows(InvalidStatusTransitionException.class,
-                () -> foundPigeonService.updateStatus(2L, FoundPigeonStatus.APPROVED));
+        when(foundPigeonRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(reportWithStatus(FoundPigeonStatus.REJECTED)));
+        assertThrows(InvalidStatusTransitionException.class, () -> foundPigeonService.updateStatus(2L, FoundPigeonStatus.APPROVED));
     }
 
     @Test

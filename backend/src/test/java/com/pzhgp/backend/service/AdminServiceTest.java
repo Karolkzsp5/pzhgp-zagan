@@ -242,12 +242,7 @@ class AdminServiceTest {
 
         assertEquals(Role.MODERATOR, activeBreeder.getRole());
         verify(breederRepository, times(1)).save(activeBreeder);
-        verify(notificationService, times(1)).createNotification(
-                eq(2L),
-                contains("Prezes Oddzialu"),
-                anyString(),
-                any()
-        );
+        verify(notificationService, times(1)).createNotification(eq(2L), contains("Prezes Oddzialu"), anyString(), any());
     }
 
     @Test

@@ -149,11 +149,7 @@ export default function FlightDetailsPage({ params }: { params: Promise<{ flight
     const trackPoints = useMemo(() => flight?.trackPoints ?? [], [flight]);
 
     const pointIndexes = useMemo(() => trackPoints.map((_, index) => index), [trackPoints]);
-
-    const speedLegend = useMemo(
-        () => speedLegendLabels(computeSpeedThresholds(trackPoints)),
-        [trackPoints]
-    );
+    const speedLegend = useMemo(() => speedLegendLabels(computeSpeedThresholds(trackPoints)), [trackPoints]);
 
     // Odtwarzanie trasy: znacznik przesuwa się po kolejnych punktach fazy lotu.
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
