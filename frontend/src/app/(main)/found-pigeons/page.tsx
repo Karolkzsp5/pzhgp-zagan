@@ -342,11 +342,6 @@ export default function FoundPigeonsPage() {
                                 )}
                             </div>
 
-                            <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                <h3 className="text-sm font-bold text-blue-900 mb-1">{text.privacyTitle}</h3>
-                                <p className="text-sm text-blue-900/90 leading-relaxed">{text.privacyBody}</p>
-                            </section>
-
                             <div className="mb-6">
                                 <TurnstileWidget
                                     ref={captchaRef}
@@ -361,6 +356,11 @@ export default function FoundPigeonsPage() {
                                     {submitError}
                                 </p>
                             )}
+
+                            <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <h3 className="text-sm font-bold text-blue-900 mb-1">{text.privacyTitle}</h3>
+                                <p className="text-sm text-blue-900/90 leading-relaxed">{text.privacyBody}</p>
+                            </section>
 
                             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <p className="text-xs text-gray-500">
