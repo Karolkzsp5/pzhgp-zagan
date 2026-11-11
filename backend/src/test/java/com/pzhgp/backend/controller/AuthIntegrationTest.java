@@ -6,7 +6,10 @@ import com.pzhgp.backend.dto.RegistrationRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
+import com.pzhgp.backend.exception.CaptchaUnavailableException;
+import com.pzhgp.backend.exception.CaptchaVerificationException;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.service.TurnstileService;
 import com.pzhgp.backend.support.MutableClock;
 import com.pzhgp.backend.support.TestClockConfig;
 import jakarta.servlet.http.Cookie;
@@ -21,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -31,6 +35,11 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -48,6 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Authorization Integration Tests")
 class AuthIntegrationTest {
 
+    private static final String CAPTCHA_TOKEN = "captcha-test-token";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -63,6 +74,10 @@ class AuthIntegrationTest {
     @Autowired
     private RequestMappingHandlerMapping requestMappingHandlerMapping;
 
+    // Atrapa zamiast zapytań do Cloudflare: domyślnie przyjmuje każdy token.
+    @MockitoBean
+    private TurnstileService turnstileService;
+
     private RegistrationRequest validRequest;
 
     @BeforeEach
@@ -71,7 +86,16 @@ class AuthIntegrationTest {
         clock.advance(Duration.ofDays(1));
         validRequest = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1L, "integration.test@pzhgp.pl", "444444444", "SecurePass1!"
+                "Słowackiego", "10", 1L, "integration.test@pzhgp.pl", "444444444", "SecurePass1!", CAPTCHA_TOKEN
+        );
+    }
+
+    private RegistrationRequest validRequestWithCaptchaToken(String captchaToken) {
+        return new RegistrationRequest(
+                validRequest.name(), validRequest.surname(), validRequest.dateOfBirth(),
+                validRequest.postalCode(), validRequest.city(), validRequest.street(),
+                validRequest.houseNumber(), validRequest.sectionId(), validRequest.email(),
+                validRequest.phoneNumber(), validRequest.password(), captchaToken
         );
     }
 
@@ -89,7 +113,7 @@ class AuthIntegrationTest {
     void shouldReportFirstInvalidFieldWhenSeveralAreInvalid() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jan", "", LocalDate.parse("1995-05-15"), "68100", "Żagań",
-                "Słowackiego", "10", 1L, "not-an-email", "123", "SecurePass1!"
+                "Słowackiego", "10", 1L, "not-an-email", "123", "SecurePass1!", CAPTCHA_TOKEN
         );
 
         for (int attempt = 0; attempt < 3; attempt++) {
@@ -106,7 +130,7 @@ class AuthIntegrationTest {
     void shouldAcceptAnyNonAlphanumericSpecialCharacter() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jan", "Kowalski", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1L, "special.char@pzhgp.pl", "444444446", "Haslo123;"
+                "Słowackiego", "10", 1L, "special.char@pzhgp.pl", "444444446", "Haslo123;", CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -120,7 +144,7 @@ class AuthIntegrationTest {
     void shouldRegisterUserWithForeignLettersAndApostrophesIntegration() throws Exception {
         RegistrationRequest request = new RegistrationRequest(
                 "Jürgen", "O'Connor-Müller", LocalDate.parse("1995-05-15"), "68-100", "Żagań",
-                "Słowackiego", "10", 1L, "foreign.name@pzhgp.pl", "444444445", "SecurePass1!"
+                "Słowackiego", "10", 1L, "foreign.name@pzhgp.pl", "444444445", "SecurePass1!", CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -148,7 +172,8 @@ class AuthIntegrationTest {
                   "sectionId": 1,
                   "email": "  Integration.MixedCase@PZHGP.PL  ",
                   "phoneNumber": "555666777",
-                  "password": "SecurePass1!"
+                  "password": "SecurePass1!",
+                  "captchaToken": "captcha-test-token"
                 }
                 """;
 
@@ -162,7 +187,7 @@ class AuthIntegrationTest {
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(
                 "", "", null, "", "",
-                "", "", null, "niepoprawny-email", "", ""
+                "", "", null, "niepoprawny-email", "", "", CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -180,7 +205,7 @@ class AuthIntegrationTest {
                 validRequest.name(), validRequest.surname(), validRequest.dateOfBirth(),
                 validRequest.postalCode(), validRequest.city(), validRequest.street(),
                 validRequest.houseNumber(), validRequest.sectionId(), validRequest.email(),
-                validRequest.phoneNumber(), tooLongPassword
+                validRequest.phoneNumber(), tooLongPassword, CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -200,7 +225,7 @@ class AuthIntegrationTest {
 
         RegistrationRequest duplicateRequest = new RegistrationRequest(
                 "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
-                "Długa", "5", 1L, "integration.test@pzhgp.pl", "111222333", "OtherPass1!"
+                "Długa", "5", 1L, "integration.test@pzhgp.pl", "111222333", "OtherPass1!", CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -220,7 +245,7 @@ class AuthIntegrationTest {
 
         RegistrationRequest duplicatePhoneRequest = new RegistrationRequest(
                 "Andrzej", "Nowak", LocalDate.parse("1990-01-01"), "68-100", "Żagań",
-                "Długa", "5", 1L, "inny.mail@pzhgp.pl", "444444444", "InneHaslo1!"
+                "Długa", "5", 1L, "inny.mail@pzhgp.pl", "444444444", "InneHaslo1!", CAPTCHA_TOKEN
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -247,7 +272,8 @@ class AuthIntegrationTest {
                     1L,
                     "rate-limit-" + i + "@pzhgp.pl",
                     "88888888" + i,
-                    "SecurePass1!"
+                    "SecurePass1!",
+                    CAPTCHA_TOKEN
             );
 
             mockMvc.perform(post("/api/auth/register")
@@ -269,6 +295,65 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(content().string("Zbyt wiele prób rejestracji. Spróbuj ponownie później."));
+
+        // Żądanie ponad limit zostało odrzucone, zanim serwer zapytał Cloudflare.
+        verify(turnstileService, times(5)).verifyToken(CAPTCHA_TOKEN);
+    }
+
+    @Test
+    @DisplayName("Should verify the CAPTCHA token before creating an account")
+    void shouldVerifyCaptchaTokenDuringRegistration() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isCreated());
+
+        verify(turnstileService).verifyToken(CAPTCHA_TOKEN);
+    }
+
+    @Test
+    @DisplayName("Should return 400 when the CAPTCHA token is missing")
+    void shouldRejectRegistrationWithoutCaptchaToken() throws Exception {
+        for (String missingToken : new String[]{null, "   "}) {
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(validRequestWithCaptchaToken(missingToken))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Dokończ weryfikację CAPTCHA."));
+        }
+
+        verify(turnstileService, never()).verifyToken(any());
+        assertFalse(breederRepository.findByEmail(validRequest.email()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Should return 400 and not create an account when the CAPTCHA token is rejected")
+    void shouldRejectRegistrationWhenCaptchaVerificationFails() throws Exception {
+        doThrow(new CaptchaVerificationException("Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie."))
+                .when(turnstileService).verifyToken(CAPTCHA_TOKEN);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie."));
+
+        assertFalse(breederRepository.findByEmail(validRequest.email()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Should return 503 and not create an account when the CAPTCHA service is unavailable")
+    void shouldReturnServiceUnavailableWhenCaptchaCannotBeVerified() throws Exception {
+        doThrow(new CaptchaUnavailableException("Weryfikacja CAPTCHA jest chwilowo niedostępna. Spróbuj ponownie później."))
+                .when(turnstileService).verifyToken(CAPTCHA_TOKEN);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().string("Weryfikacja CAPTCHA jest chwilowo niedostępna. Spróbuj ponownie później."));
+
+        assertFalse(breederRepository.findByEmail(validRequest.email()).isPresent());
     }
 
     @Test

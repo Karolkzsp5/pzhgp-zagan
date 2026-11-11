@@ -64,7 +64,7 @@ class FoundPigeonServiceTest {
 
     private FoundPigeonRequest request(String ringNumber, String phone, String email, ReportLanguage language) {
         return new FoundPigeonRequest(ringNumber, phone, email, "Cottbus", "Niemcy",
-                "Gołąb siedzi na parapecie od wczoraj.", language);
+                "Gołąb siedzi na parapecie od wczoraj.", language, "captcha-token");
     }
 
     private void stubSave() {

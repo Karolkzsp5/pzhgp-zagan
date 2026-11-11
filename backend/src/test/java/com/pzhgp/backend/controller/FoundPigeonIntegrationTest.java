@@ -5,11 +5,14 @@ import com.pzhgp.backend.dto.FoundPigeonNoteRequest;
 import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.dto.FoundPigeonStatusRequest;
 import com.pzhgp.backend.entity.*;
+import com.pzhgp.backend.exception.CaptchaUnavailableException;
+import com.pzhgp.backend.exception.CaptchaVerificationException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.FoundPigeonRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
 import com.pzhgp.backend.repository.SectionRepository;
 import com.pzhgp.backend.service.JwtService;
+import com.pzhgp.backend.service.TurnstileService;
 import com.pzhgp.backend.support.MutableClock;
 import com.pzhgp.backend.support.TestClockConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +35,8 @@ import java.util.List;
 
 import static com.pzhgp.backend.support.CookieAuthTestSupport.cookieAuth;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestClockConfig.class)
 @DisplayName("Found Pigeon Integration Tests")
 class FoundPigeonIntegrationTest {
+
+    private static final String CAPTCHA_TOKEN = "captcha-test-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -62,6 +70,10 @@ class FoundPigeonIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    // Atrapa zamiast zapytań do Cloudflare: domyślnie przyjmuje każdy token.
+    @MockitoBean
+    private TurnstileService turnstileService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -103,7 +115,7 @@ class FoundPigeonIntegrationTest {
     }
 
     private FoundPigeonRequest report(String ringNumber, String phone, String email, ReportLanguage language) {
-        return new FoundPigeonRequest(ringNumber, phone, email, "Cottbus", "Niemcy", "Gołąb siedzi na parapecie.", language);
+        return new FoundPigeonRequest(ringNumber, phone, email, "Cottbus", "Niemcy", "Gołąb siedzi na parapecie.", language, CAPTCHA_TOKEN);
     }
 
     private void submitExpectingCreated(FoundPigeonRequest request) throws Exception {
@@ -160,6 +172,59 @@ class FoundPigeonIntegrationTest {
         assertFalse(response.contains("601234567"));
         assertFalse(response.contains("finder@example.com"));
         assertFalse(response.contains("PL-0369-26-1234"));
+    }
+
+    @Test
+    @DisplayName("Should verify the CAPTCHA token before storing a report")
+    void verifiesCaptchaToken() throws Exception {
+        submitExpectingCreated(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL));
+
+        verify(turnstileService).verifyToken(CAPTCHA_TOKEN);
+    }
+
+    @Test
+    @DisplayName("Should reject a report without a CAPTCHA token")
+    void requiresCaptchaToken() throws Exception {
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-26-1234", "601234567", null,
+                null, null, null, ReportLanguage.PL, null));
+
+        submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-26-1234", "601234567", null,
+                null, null, null, ReportLanguage.PL, "   "));
+
+        verify(turnstileService, never()).verifyToken(any());
+        assertEquals(0, foundPigeonRepository.count());
+    }
+
+    @Test
+    @DisplayName("Should return 400 and store nothing when the CAPTCHA token is rejected")
+    void rejectsReportWhenCaptchaVerificationFails() throws Exception {
+        doThrow(new CaptchaVerificationException("Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie."))
+                .when(turnstileService).verifyToken(CAPTCHA_TOKEN);
+
+        mockMvc.perform(post("/api/found-pigeons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL))))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie."));
+
+        assertEquals(0, foundPigeonRepository.count());
+        assertEquals(0, notificationRepository.count());
+    }
+
+    @Test
+    @DisplayName("Should return 503 and store nothing when the CAPTCHA service is unavailable")
+    void returnsServiceUnavailableWhenCaptchaCannotBeVerified() throws Exception {
+        doThrow(new CaptchaUnavailableException("Weryfikacja CAPTCHA jest chwilowo niedostępna. Spróbuj ponownie później."))
+                .when(turnstileService).verifyToken(CAPTCHA_TOKEN);
+
+        mockMvc.perform(post("/api/found-pigeons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(report("PL-0369-26-1234", "601234567", null, ReportLanguage.PL))))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().string("Weryfikacja CAPTCHA jest chwilowo niedostępna. Spróbuj ponownie później."));
+
+        assertEquals(0, foundPigeonRepository.count());
+        assertEquals(0, notificationRepository.count());
     }
 
     @Test
@@ -257,21 +322,21 @@ class FoundPigeonIntegrationTest {
     @DisplayName("Should enforce the maximum lengths of report fields")
     void enforcesMaximumLengths() throws Exception {
         submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "1234567890123456", null,
-                null, null, null, ReportLanguage.PL));
+                null, null, null, ReportLanguage.PL, CAPTCHA_TOKEN));
 
         submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
-                "x".repeat(151), null, null, ReportLanguage.PL));
+                "x".repeat(151), null, null, ReportLanguage.PL, CAPTCHA_TOKEN));
 
         submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
-                null, "x".repeat(101), null, ReportLanguage.PL));
+                null, "x".repeat(101), null, ReportLanguage.PL, CAPTCHA_TOKEN));
 
         submitExpectingBadRequest(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
-                null, null, "x".repeat(1001), ReportLanguage.PL));
+                null, null, "x".repeat(1001), ReportLanguage.PL, CAPTCHA_TOKEN));
 
         assertEquals(0, foundPigeonRepository.count());
 
         submitExpectingCreated(new FoundPigeonRequest("PL-0369-24-1234", "601234567", null,
-                null, null, "x".repeat(1000), ReportLanguage.PL));
+                null, null, "x".repeat(1000), ReportLanguage.PL, CAPTCHA_TOKEN));
     }
 
     @Test
@@ -322,6 +387,9 @@ class FoundPigeonIntegrationTest {
                 .andExpect(content().string("Zbyt wiele zgłoszeń. Spróbuj ponownie później."));
 
         assertEquals(5, foundPigeonRepository.count());
+
+        // Zgłoszenie ponad limit zostało odrzucone, zanim serwer zapytał Cloudflare.
+        verify(turnstileService, times(5)).verifyToken(CAPTCHA_TOKEN);
     }
 
     // --- Prywatność i uprawnienia -----------------------------------------

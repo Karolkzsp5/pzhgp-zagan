@@ -18,4 +18,6 @@ export interface RegistrationRequest {
     email: string;
     phoneNumber: string;
     password: string;
+    /** Token z widżetu Cloudflare Turnstile; backend sprawdza go przed utworzeniem konta. */
+    captchaToken: string;
 }

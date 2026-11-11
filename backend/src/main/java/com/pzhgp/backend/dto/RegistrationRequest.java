@@ -54,7 +54,11 @@ public record RegistrationRequest(
         @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[^\\p{L}\\p{N}]).{8,}$",
                 message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny."
         )
-        String password
+        String password,
+
+        @NotBlank(message = "Dokończ weryfikację CAPTCHA.")
+        @Size(max = 2048, message = "Token CAPTCHA jest nieprawidłowy.")
+        String captchaToken
 ) {
         public RegistrationRequest {
                 if (email != null) {

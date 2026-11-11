@@ -56,6 +56,8 @@ export interface FoundPigeonRequest {
     foundCountry?: string | null;
     description?: string | null;
     preferredLanguage: ReportLanguage;
+    /** Token z widżetu Cloudflare Turnstile; backend sprawdza go przed zapisaniem zgłoszenia. */
+    captchaToken: string;
 }
 
 /** Pełne dane zgłoszenia — dostępne wyłącznie w panelu administratora. */

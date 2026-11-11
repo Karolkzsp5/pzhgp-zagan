@@ -1,9 +1,10 @@
 'use client';
 
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Modal from '@/app/components/Modal';
+import TurnstileWidget, { TurnstileWidgetHandle } from '@/app/components/TurnstileWidget';
 import { authService } from '@/app/services/authService';
 import { sectionService } from '@/app/services/sectionService';
 import { RegistrationRequest } from '@/app/types/auth';
@@ -11,7 +12,8 @@ import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
 
-interface RegistrationFormData extends RegistrationRequest {
+// Token CAPTCHA nie jest polem formularza: przekazuje go widżet Turnstile.
+interface RegistrationFormData extends Omit<RegistrationRequest, 'captchaToken'> {
     confirmPassword: string;
 }
 
@@ -36,6 +38,8 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     // Ustawiane po załadowaniu w przeglądarce, żeby statycznie wygenerowana strona nie miała daty z dnia budowania.
     const [latestBirthDate, setLatestBirthDate] = useState<string | undefined>(undefined);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const captchaRef = useRef<TurnstileWidgetHandle>(null);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -199,6 +203,11 @@ export default function RegisterPage() {
             return;
         }
 
+        if (!captchaToken) {
+            setError('Dokończ weryfikację CAPTCHA przed wysłaniem formularza.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const {
@@ -208,13 +217,16 @@ export default function RegisterPage() {
 
             const cleanDataToSend = {
                 ...registrationData,
-                phoneNumber: rawPhoneNumber
+                phoneNumber: rawPhoneNumber,
+                captchaToken
             };
 
             await authService.register(cleanDataToSend);
             setIsRegistrationSuccessful(true);
         } catch (error) {
             setError(getErrorMessage(error, 'Wystąpił błąd podczas rejestracji.'));
+            // Token CAPTCHA jest jednorazowy, więc kolejna próba wymaga nowego.
+            captchaRef.current?.reset();
         } finally {
             setIsLoading(false);
         }
@@ -407,6 +419,8 @@ export default function RegisterPage() {
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
                     </div>
+
+                    <TurnstileWidget ref={captchaRef} onTokenChange={setCaptchaToken} />
 
                     {error && (
                         <div className="p-4 my-4 rounded bg-red-100 text-red-700" role="alert">
