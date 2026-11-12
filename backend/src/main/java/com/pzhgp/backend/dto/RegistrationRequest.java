@@ -51,9 +51,7 @@ public record RegistrationRequest(
         String phoneNumber,
 
         @NotBlank(message = "Hasło nie może być puste.")
-        @Pattern(regexp = "^(?=.*[a-zżźćńółęąś])(?=.*[A-ZŻŹĆŃÓŁĘĄŚ])(?=.*\\d)(?=.*[^\\p{L}\\p{N}]).{8,}$",
-                message = "Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny."
-        )
+        @Pattern(regexp = PasswordUtils.STRONG_PASSWORD_REGEX, message = PasswordUtils.STRONG_PASSWORD_MESSAGE)
         String password,
 
         @NotBlank(message = "Dokończ weryfikację CAPTCHA.")

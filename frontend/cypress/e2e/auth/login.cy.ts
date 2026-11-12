@@ -31,6 +31,8 @@ describe('Breeder Login Process', () => {
         cy.get('input[name="remember-me"]').should('be.visible');
         cy.get('label[for="remember-me"]').should('be.visible');
         cy.get('button[type="submit"]').should('be.visible').and('not.be.disabled');
+        cy.contains('Nie pamiętasz hasła?').should('be.visible');
+        cy.contains('a', 'Odzyskaj hasło').should('be.visible').and('have.attr', 'href', '/forgot-password');
         cy.contains('Nie masz jeszcze konta?').should('be.visible');
         cy.contains('a', 'Zarejestruj się tutaj').should('be.visible').and('have.attr', 'href', '/register');
     });

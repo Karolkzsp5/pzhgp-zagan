@@ -21,3 +21,16 @@ export interface RegistrationRequest {
     /** Token z widżetu Cloudflare Turnstile; backend sprawdza go przed utworzeniem konta. */
     captchaToken: string;
 }
+
+/** Prośba o link do zmiany hasła wysyłana do /api/auth/forgot-password. */
+export interface ForgotPasswordRequest {
+    email: string;
+    /** Token z widżetu Cloudflare Turnstile; backend sprawdza go przed wysłaniem wiadomości. */
+    captchaToken: string;
+}
+
+/** Nowe hasło wysyłane do /api/auth/reset-password razem z tokenem z linku w wiadomości e-mail. */
+export interface ResetPasswordRequest {
+    token: string;
+    password: string;
+}

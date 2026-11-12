@@ -63,6 +63,13 @@ public class Breeder {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /** Skrót SHA-256 jednorazowego tokenu do zmiany hasła. Sam token zna tylko odbiorca e-maila. */
+    @Column(name = "password_reset_token_hash", length = 64)
+    private String passwordResetTokenHash;
+
+    @Column(name = "password_reset_token_expires_at")
+    private Instant passwordResetTokenExpiresAt;
+
     /** Imię i nazwisko w postaci wyświetlanej innym użytkownikom. */
     public String getFullName() {
         return name + " " + surname;

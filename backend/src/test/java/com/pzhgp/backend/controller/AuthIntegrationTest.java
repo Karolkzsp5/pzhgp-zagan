@@ -1,14 +1,17 @@
 package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.config.AuthCookieService;
+import com.pzhgp.backend.dto.ForgotPasswordRequest;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
+import com.pzhgp.backend.dto.ResetPasswordRequest;
 import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Role;
 import com.pzhgp.backend.exception.CaptchaUnavailableException;
 import com.pzhgp.backend.exception.CaptchaVerificationException;
 import com.pzhgp.backend.repository.BreederRepository;
+import com.pzhgp.backend.service.MailService;
 import com.pzhgp.backend.service.TurnstileService;
 import com.pzhgp.backend.support.MutableClock;
 import com.pzhgp.backend.support.TestClockConfig;
@@ -16,6 +19,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -26,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tools.jackson.databind.json.JsonMapper;
@@ -36,10 +41,13 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -77,6 +85,10 @@ class AuthIntegrationTest {
     // Atrapa zamiast zapytań do Cloudflare: domyślnie przyjmuje każdy token.
     @MockitoBean
     private TurnstileService turnstileService;
+
+    // Atrapa zamiast serwera pocztowego: testy odczytują z niej link przekazany do wysyłki.
+    @MockitoBean
+    private MailService mailService;
 
     private RegistrationRequest validRequest;
 
@@ -357,6 +369,124 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should send a password reset link and accept the new password at login")
+    void shouldResetPasswordWithLinkFromEmail() throws Exception {
+        createActiveBreeder();
+
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent()).andExpect(content().string(""));
+
+        resetPassword(sentResetToken(), "NoweHaslo1!").andExpect(status().isNoContent());
+
+        loginWithCookieJson(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password(), false)), null)
+                .andExpect(status().isUnauthorized());
+        loginWithCookieJson(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), "NoweHaslo1!", false)), null)
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should give the same answer and send nothing for an unknown e-mail address")
+    void shouldNotRevealUnknownEmailDuringPasswordReset() throws Exception {
+        requestPasswordReset("nieznany@pzhgp.pl").andExpect(status().isNoContent()).andExpect(content().string(""));
+
+        verify(turnstileService).verifyToken(CAPTCHA_TOKEN);
+        verifyNoInteractions(mailService);
+    }
+
+    @Test
+    @DisplayName("Should reject a password reset link that was already used")
+    void shouldRejectUsedPasswordResetLink() throws Exception {
+        createActiveBreeder();
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        String token = sentResetToken();
+
+        resetPassword(token, "NoweHaslo1!").andExpect(status().isNoContent());
+
+        resetPassword(token, "InneHaslo2!")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Link do zmiany hasła jest nieprawidłowy lub wygasł. Poproś o nowy link."));
+    }
+
+    @Test
+    @DisplayName("Should reject an expired password reset link")
+    void shouldRejectExpiredPasswordResetLink() throws Exception {
+        createActiveBreeder();
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        String token = sentResetToken();
+
+        clock.advance(Duration.ofMinutes(30));
+
+        resetPassword(token, "NoweHaslo1!")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Link do zmiany hasła jest nieprawidłowy lub wygasł. Poproś o nowy link."));
+
+        loginWithCookieJson(objectMapper.writeValueAsString(new LoginRequest(validRequest.email(), validRequest.password(), false)), null)
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should invalidate the previous password reset link when a new one is requested")
+    void shouldInvalidatePreviousPasswordResetLink() throws Exception {
+        createActiveBreeder();
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        String firstToken = sentResetToken();
+
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        String secondToken = sentResetToken();
+
+        resetPassword(firstToken, "NoweHaslo1!").andExpect(status().isBadRequest());
+        resetPassword(secondToken, "NoweHaslo1!").andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should reject a new password that breaks the password rules and keep the link valid")
+    void shouldRejectWeakPasswordDuringPasswordReset() throws Exception {
+        createActiveBreeder();
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        String token = sentResetToken();
+
+        resetPassword(token, "slabe")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Hasło musi mieć min. 8 znaków, zawierać dużą i małą literę, cyfrę oraz znak specjalny."));
+
+        resetPassword(token, "Aa1!" + "ą".repeat(35))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Hasło może mieć maksymalnie 72 bajty (UTF-8)."));
+
+        resetPassword(token, "NoweHaslo1!").andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should return 400 and send nothing when the password reset request has no CAPTCHA token")
+    void shouldRejectPasswordResetRequestWithoutCaptchaToken() throws Exception {
+        createActiveBreeder();
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ForgotPasswordRequest(validRequest.email(), null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Dokończ weryfikację CAPTCHA."));
+
+        verifyNoInteractions(mailService);
+    }
+
+    @Test
+    @DisplayName("Should return 429 when the password reset attempt limit is exceeded")
+    void shouldReturnTooManyRequestsAfterPasswordResetLimit() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            requestPasswordReset("nieznany-" + i + "@pzhgp.pl").andExpect(status().isNoContent());
+        }
+
+        requestPasswordReset("nieznany@pzhgp.pl")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().string("Zbyt wiele prób odzyskiwania hasła. Spróbuj ponownie później."));
+
+        // Ustawienie nowego hasła korzysta z tego samego limitu.
+        resetPassword("dowolny-token", "NoweHaslo1!").andExpect(status().isTooManyRequests());
+
+        verify(turnstileService, times(5)).verifyToken(CAPTCHA_TOKEN);
+    }
+
+    @Test
     @DisplayName("Should authenticate an active user with an HttpOnly cookie")
     void shouldLoginSuccessfullyWithCookieIntegration() throws Exception {
         mockMvc.perform(post("/api/auth/register")
@@ -542,6 +672,27 @@ class AuthIntegrationTest {
             });
         }
         return mockMvc.perform(request);
+    }
+
+    private ResultActions requestPasswordReset(String email) throws Exception {
+        return mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new ForgotPasswordRequest(email, CAPTCHA_TOKEN))));
+    }
+
+    private ResultActions resetPassword(String token, String password) throws Exception {
+        return mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new ResetPasswordRequest(token, password))));
+    }
+
+    /** Token z linku w ostatniej wiadomości przekazanej do wysyłki. */
+    private String sentResetToken() {
+        ArgumentCaptor<String> link = ArgumentCaptor.forClass(String.class);
+        verify(mailService, atLeastOnce()).sendPasswordResetEmail(eq(validRequest.email()), eq(validRequest.name()), link.capture(), eq(30L));
+
+        String marker = "/reset-password?token=";
+        return link.getValue().substring(link.getValue().indexOf(marker) + marker.length());
     }
 
     private void createActiveBreeder() throws Exception {

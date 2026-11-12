@@ -18,6 +18,7 @@ public interface BreederRepository extends JpaRepository<Breeder, Long> {
 
     Optional<Breeder> findByEmail(String email);
     Optional<Breeder> findByEmailIgnoreCase(String email);
+    Optional<Breeder> findByPasswordResetTokenHash(String passwordResetTokenHash);
 
     /**
      * Konto o podanym adresie e-mail — zwykle zalogowanego użytkownika.

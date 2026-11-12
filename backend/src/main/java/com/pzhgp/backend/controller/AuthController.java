@@ -2,12 +2,15 @@ package com.pzhgp.backend.controller;
 
 import com.pzhgp.backend.config.AuthCookieService;
 import com.pzhgp.backend.dto.CurrentUserDto;
+import com.pzhgp.backend.dto.ForgotPasswordRequest;
 import com.pzhgp.backend.dto.LoginRequest;
 import com.pzhgp.backend.dto.RegistrationRequest;
+import com.pzhgp.backend.dto.ResetPasswordRequest;
 import com.pzhgp.backend.exception.AuthRateLimitException;
 import com.pzhgp.backend.service.AuthRateLimiter;
 import com.pzhgp.backend.service.BreederService;
 import com.pzhgp.backend.service.JwtService;
+import com.pzhgp.backend.service.PasswordResetService;
 import com.pzhgp.backend.service.TurnstileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +33,7 @@ public class AuthController {
     private final AuthCookieService authCookieService;
     private final JwtService jwtService;
     private final TurnstileService turnstileService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest request, HttpServletRequest httpRequest) {
@@ -64,6 +68,29 @@ public class AuthController {
 
         String token = breederService.login(request);
         authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), request.rememberMe());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+        if (!authRateLimiter.tryAcquirePasswordReset(httpRequest.getRemoteAddr())) {
+            throw new AuthRateLimitException("Zbyt wiele prób odzyskiwania hasła. Spróbuj ponownie później.");
+        }
+
+        turnstileService.verifyToken(request.captchaToken());
+
+        // Odpowiedź jest taka sama dla istniejącego i nieistniejącego konta, żeby nie zdradzać zarejestrowanych adresów.
+        passwordResetService.requestPasswordReset(request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
+        if (!authRateLimiter.tryAcquirePasswordReset(httpRequest.getRemoteAddr())) {
+            throw new AuthRateLimitException("Zbyt wiele prób odzyskiwania hasła. Spróbuj ponownie później.");
+        }
+
+        passwordResetService.resetPassword(request.token(), request.password());
         return ResponseEntity.noContent().build();
     }
 
