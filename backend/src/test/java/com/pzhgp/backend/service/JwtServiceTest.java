@@ -1,5 +1,6 @@
 package com.pzhgp.backend.service;
 
+import com.pzhgp.backend.entity.Breeder;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -10,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("JWT Service Unit Tests")
@@ -29,6 +31,36 @@ class JwtServiceTest {
                 .signWith(Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8)))
                 .compact();
 
-        assertThrows(ExpiredJwtException.class, () -> jwtService.extractEmail(expiredToken));
+        assertThrows(ExpiredJwtException.class, () -> jwtService.readToken(expiredToken));
+    }
+
+    @Test
+    @DisplayName("Should store the e-mail address and the session version in the token")
+    void shouldStoreEmailAndSessionVersion() {
+        JwtService jwtService = new JwtService(TEST_SECRET);
+        Breeder breeder = new Breeder();
+        breeder.setEmail("breeder@test.pl");
+        breeder.endAllSessions();
+        breeder.endAllSessions();
+
+        JwtService.TokenData tokenData = jwtService.readToken(jwtService.generateToken(breeder));
+
+        assertEquals("breeder@test.pl", tokenData.email());
+        assertEquals(2, tokenData.sessionVersion());
+    }
+
+    @Test
+    @DisplayName("Should treat a token without the session version as version 0")
+    void shouldReadTokenWithoutSessionVersion() {
+        JwtService jwtService = new JwtService(TEST_SECRET);
+
+        String oldToken = Jwts.builder()
+                .subject("breeder@test.pl")
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(Instant.now().plusSeconds(3600)))
+                .signWith(Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        assertEquals(0, jwtService.readToken(oldToken).sessionVersion());
     }
 }

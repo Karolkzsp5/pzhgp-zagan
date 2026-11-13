@@ -1,6 +1,7 @@
 package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.entity.Breeder;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -17,13 +18,18 @@ import java.util.Date;
 /**
  * Tworzenie i weryfikacja tokenów JWT przechowywanych w ciasteczku HttpOnly.
  * <p>
- * Token zawiera wyłącznie adres e-mail (subject). Rola i status konta są przy każdym
- * żądaniu odczytywane z bazy danych, dzięki czemu zablokowanie konta działa od razu.
+ * Token zawiera adres e-mail (subject) i wersję sesji konta. Rola, status i aktualna wersja sesji
+ * są przy każdym żądaniu odczytywane z bazy danych, dzięki czemu zablokowanie konta, zmiana hasła
+ * i wylogowanie ze wszystkich urządzeń działają od razu.
  */
 @Service
 public class JwtService {
 
     private static final Duration TOKEN_LIFETIME = Duration.ofHours(24);
+    private static final String SESSION_VERSION_CLAIM = "sessionVersion";
+
+    /** Dane odczytane z poprawnego tokenu. */
+    public record TokenData(String email, int sessionVersion) {}
 
     private final SecretKey signingKey;
     private final JwtParser parser;
@@ -42,6 +48,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(breeder.getEmail())
+                .claim(SESSION_VERSION_CLAIM, breeder.getSessionVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(TOKEN_LIFETIME)))
                 .signWith(signingKey)
@@ -49,11 +56,14 @@ public class JwtService {
     }
 
     /**
-     * Adres e-mail zapisany w tokenie.
+     * Adres e-mail i wersja sesji zapisane w tokenie.
      *
      * @throws JwtException gdy token wygasł, jest uszkodzony lub ma nieprawidłowy podpis
      */
-    public String extractEmail(String token) {
-        return parser.parseSignedClaims(token).getPayload().getSubject();
+    public TokenData readToken(String token) {
+        Claims claims = parser.parseSignedClaims(token).getPayload();
+        // Token wydany przed wprowadzeniem wersji sesji jej nie zawiera, co odpowiada wersji 0.
+        Integer sessionVersion = claims.get(SESSION_VERSION_CLAIM, Integer.class);
+        return new TokenData(claims.getSubject(), sessionVersion == null ? 0 : sessionVersion);
     }
 }

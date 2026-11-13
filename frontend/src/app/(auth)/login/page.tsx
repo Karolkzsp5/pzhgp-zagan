@@ -19,9 +19,16 @@ interface MessageState {
     type: 'success' | 'error' | 'info' | '';
 }
 
+/** Komunikaty dla parametru notice, z którym strona ustawień przekierowuje na logowanie. */
+const LOGIN_NOTICES: Record<string, string> = {
+    'password-changed': 'Hasło zostało zmienione. Zaloguj się nowym hasłem.',
+    'logged-out-everywhere': 'Wylogowano Cię ze wszystkich urządzeń. Zaloguj się ponownie.'
+};
+
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [sessionExpired, setSessionExpired] = useState(false);
+    const [notice, setNotice] = useState<string | null>(null);
     const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
     const [rememberMe, setRememberMe] = useState(false);
     const [message, setMessage] = useState<MessageState>({ text: '', type: '' });
@@ -29,7 +36,9 @@ export default function LoginPage() {
     const { refreshAuth } = useAuth();
 
     useEffect(() => {
-        setSessionExpired(new URLSearchParams(window.location.search).get('expired') === 'true');
+        const params = new URLSearchParams(window.location.search);
+        setSessionExpired(params.get('expired') === 'true');
+        setNotice(LOGIN_NOTICES[params.get('notice') ?? ''] ?? null);
     }, []);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -131,6 +140,12 @@ export default function LoginPage() {
                                 message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                             {message.text}
+                        </div>
+                    )}
+
+                    {notice && !message.text && (
+                        <div role="status" className="p-4 mb-4 rounded bg-green-100 text-green-700 text-sm">
+                            {notice}
                         </div>
                     )}
 

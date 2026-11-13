@@ -57,4 +57,22 @@ class MailServiceTest {
 
         assertDoesNotThrow(() -> mailService.sendPasswordResetEmail("jan.kowalski@test.pl", "Jan", RESET_LINK, 30));
     }
+
+    @Test
+    @DisplayName("Should inform the account owner that the password was changed")
+    void shouldSendPasswordChangedEmail() {
+        mailService.sendPasswordChangedEmail("jan.kowalski@test.pl", "Jan");
+
+        ArgumentCaptor<SimpleMailMessage> message = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(message.capture());
+
+        assertArrayEquals(new String[]{"jan.kowalski@test.pl"}, message.getValue().getTo());
+        assertEquals("Hasło do konta zostało zmienione", message.getValue().getSubject());
+
+        String text = message.getValue().getText();
+        assertNotNull(text);
+        assertTrue(text.startsWith("Dzień dobry Jan,"));
+        assertTrue(text.contains("wylogowaliśmy Cię ze wszystkich urządzeń"));
+        assertTrue(text.contains("Nie pamiętasz hasła?"));
+    }
 }

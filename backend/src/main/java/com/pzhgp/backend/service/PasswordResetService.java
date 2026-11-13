@@ -83,7 +83,7 @@ public class PasswordResetService {
     }
 
     /**
-     * Ustawia nowe hasło konta wskazanego przez token i unieważnia ten token.
+     * Ustawia nowe hasło konta wskazanego przez token, unieważnia ten token i kończy wszystkie sesje konta.
      *
      * @throws IllegalArgumentException gdy token jest nieprawidłowy, już wykorzystany albo przeterminowany
      */
@@ -96,7 +96,11 @@ public class PasswordResetService {
         breeder.setPasswordHash(passwordEncoder.encode(newPassword));
         breeder.setPasswordResetTokenHash(null);
         breeder.setPasswordResetTokenExpiresAt(null);
+        // Ktoś, kto znał stare hasło, mógł być zalogowany na innym urządzeniu.
+        breeder.endAllSessions();
         breederRepository.save(breeder);
+
+        mailService.sendPasswordChangedEmail(breeder.getEmail(), breeder.getName());
 
         log.info("Zmieniono hasło konta o ID {} za pomocą linku z wiadomości e-mail.", breeder.getId());
     }

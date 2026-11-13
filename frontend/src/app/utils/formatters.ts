@@ -84,6 +84,90 @@ export const formatPhoneInput = (value: string) => {
     return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
 };
 
+// Pola adresu wspólne dla rejestracji i ustawień konta. Te same reguły sprawdza backend.
+
+/** Numer domu lub lokalu, np. 12, 12A, 12/4. */
+export const HOUSE_NUMBER_PATTERN = /^[1-9]\d*\s?[a-zA-Z]?(\s?[\/-]\s?[1-9]\d*\s?[a-zA-Z]?)?$/;
+
+/** Kod pocztowy w formacie XX-XXX; myślnik dopisuje się sam, a przy kasowaniu znika razem z cyfrą. */
+export const formatPostalCodeInput = (val: string, prevVal: string) => {
+    if (val.length < prevVal.length) {
+        if (val.endsWith('-')) {
+            return val.slice(0, -1);
+        }
+        return val;
+    }
+
+    const digits = val.replace(/\D/g, '').slice(0, 5);
+
+    if (digits.length >= 2) {
+        return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    }
+    return digits;
+};
+
+/** Imię, nazwisko lub miejscowość: litery z dowolnego alfabetu (np. Müller), spacje, myślniki i apostrofy (np. O'Connor). */
+export const formatNameInput = (value: string) => {
+    return value.replace(/[^\p{L}\p{M}\s'’-]/gu, '');
+};
+
+export const formatStreetInput = (value: string) => {
+    return value.replace(/[^0-9a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s./-]/g, '');
+};
+
+export const formatHouseNumberInput = (value: string) => {
+    return value.replace(/[^0-9a-zA-Z\s\/-]/g, '');
+};
+
+/** Odmiana liczebnika, np. 1 rok, 2 lata, 5 lat. */
+const pluralize = (count: number, one: string, few: string, many: string) => {
+    const lastTwoDigits = count % 100;
+    const lastDigit = count % 10;
+
+    if (count === 1) return one;
+    if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) return few;
+    return many;
+};
+
+/**
+ * Staż konta liczony w dniach kalendarzowych, np. "1 rok, 8 miesięcy i 3 dni".
+ * Konto założone dzisiaj daje "mniej niż dzień".
+ */
+export const formatAccountAge = (createdAt: string, now: Date = new Date()): string => {
+    const created = new Date(createdAt);
+
+    let years = now.getFullYear() - created.getFullYear();
+    let months = now.getMonth() - created.getMonth();
+
+    if (now.getDate() < created.getDate()) {
+        months -= 1;
+    }
+
+    if (months < 0) {
+        years -= 1;
+        months += 12;
+    }
+
+    // Data założenia przesunięta o pełne lata i miesiące; dzień miesiąca nie wychodzi poza jego koniec
+    // (31 stycznia + 1 miesiąc = 28 lutego). Pozostała różnica to pełne dni kalendarzowe.
+    const targetMonth = created.getMonth() + months;
+    const targetYear = created.getFullYear() + years + Math.floor(targetMonth / 12);
+    const daysInTargetMonth = new Date(targetYear, (targetMonth % 12) + 1, 0).getDate();
+    const anniversary = new Date(targetYear, targetMonth % 12, Math.min(created.getDate(), daysInTargetMonth));
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const days = Math.round((today.getTime() - anniversary.getTime()) / 86_400_000);
+
+    const parts = [
+        years > 0 ? `${years} ${pluralize(years, 'rok', 'lata', 'lat')}` : null,
+        months > 0 ? `${months} ${pluralize(months, 'miesiąc', 'miesiące', 'miesięcy')}` : null,
+        days > 0 ? `${days} ${days === 1 ? 'dzień' : 'dni'}` : null
+    ].filter((part): part is string => part !== null);
+
+    if (parts.length === 0) return 'mniej niż dzień';
+    if (parts.length === 1) return parts[0];
+    return `${parts.slice(0, -1).join(', ')} i ${parts[parts.length - 1]}`;
+};
+
 const ROLE_LABELS: Record<UserRole, string> = {
     ADMINISTRATOR: 'Administrator',
     MODERATOR: 'Moderator',

@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         String jwt = authCookieService.readToken(request);
-        String userEmail = null;
+        JwtService.TokenData tokenData = null;
 
         if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
@@ -47,15 +47,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            userEmail = jwtService.extractEmail(jwt);
+            tokenData = jwtService.readToken(jwt);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Odrzucono nieprawidłowy token JWT: {}", e.getMessage());
         }
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (tokenData != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            String userEmail = tokenData.email();
             Optional<Breeder> breederOpt = breederRepository.findByEmail(userEmail);
 
-            if (breederOpt.isPresent() && breederOpt.get().getStatus() == AccountStatus.ACTIVE) {
+            if (breederOpt.isEmpty() || breederOpt.get().getStatus() != AccountStatus.ACTIVE) {
+                // Adres e-mail to dane osobowe, dlatego w logu jest tylko ID konta.
+                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
+            } else if (breederOpt.get().getSessionVersion() != tokenData.sessionVersion()) {
+                // Token wydany przed zmianą hasła albo wylogowaniem ze wszystkich urządzeń.
+                log.debug("Odrzucono token zakończonej sesji konta o ID {}.", breederOpt.get().getId());
+            } else {
                 String dbRole = breederOpt.get().getRole().name();
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority(dbRole);
 
@@ -63,9 +70,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-            } else {
-                // Adres e-mail to dane osobowe, dlatego w logu jest tylko ID konta.
-                log.warn("Odrzucono token: konto {} nie istnieje lub jest nieaktywne.", breederOpt.map(breeder -> "o ID " + breeder.getId()).orElse("z tokenu"));
             }
         }
 

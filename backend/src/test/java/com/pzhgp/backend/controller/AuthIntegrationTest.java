@@ -384,6 +384,20 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should log out other devices after the password is reset with the e-mail link")
+    void shouldEndSessionsAfterPasswordReset() throws Exception {
+        createActiveBreeder();
+        Cookie otherDeviceCookie = loginWithCookie(obtainCsrf(), false);
+        mockMvc.perform(get("/api/auth/me").cookie(otherDeviceCookie)).andExpect(status().isOk());
+
+        requestPasswordReset(validRequest.email()).andExpect(status().isNoContent());
+        resetPassword(sentResetToken(), "NoweHaslo1!").andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/auth/me").cookie(otherDeviceCookie)).andExpect(status().isUnauthorized());
+        verify(mailService).sendPasswordChangedEmail(validRequest.email(), validRequest.name());
+    }
+
+    @Test
     @DisplayName("Should give the same answer and send nothing for an unknown e-mail address")
     void shouldNotRevealUnknownEmailDuringPasswordReset() throws Exception {
         requestPasswordReset("nieznany@pzhgp.pl").andExpect(status().isNoContent()).andExpect(content().string(""));

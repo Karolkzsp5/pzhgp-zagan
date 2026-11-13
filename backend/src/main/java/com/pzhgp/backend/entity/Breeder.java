@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -70,9 +71,22 @@ public class Breeder {
     @Column(name = "password_reset_token_expires_at")
     private Instant passwordResetTokenExpiresAt;
 
+    /**
+     * Wersja sesji zapisywana w tokenie JWT. Zwiększenie jej (zmiana hasła, „Wyloguj ze wszystkich urządzeń”)
+     * unieważnia wszystkie wydane wcześniej tokeny. Wartość domyślna pozwala dodać kolumnę do istniejącej tabeli.
+     */
+    @ColumnDefault("0")
+    @Column(name = "session_version", nullable = false)
+    private int sessionVersion;
+
     /** Imię i nazwisko w postaci wyświetlanej innym użytkownikom. */
     public String getFullName() {
         return name + " " + surname;
+    }
+
+    /** Kończy wszystkie sesje konta: tokeny wydane przed wywołaniem tej metody przestają działać. */
+    public void endAllSessions() {
+        sessionVersion++;
     }
 
     @PrePersist

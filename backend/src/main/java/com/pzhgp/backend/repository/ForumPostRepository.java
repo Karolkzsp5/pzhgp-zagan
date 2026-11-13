@@ -10,10 +10,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
+
+    /** Wpisy użytkownika, od najstarszego — do eksportu jego danych. */
+    @EntityGraph(attributePaths = {"thread"})
+    List<ForumPost> findByAuthorIdOrderByCreatedAtAscIdAsc(Long authorId);
 
     @Modifying
     @Query("DELETE FROM ForumPost p WHERE p.thread.id = :threadId")
