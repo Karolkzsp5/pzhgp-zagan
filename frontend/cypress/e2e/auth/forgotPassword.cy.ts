@@ -47,9 +47,14 @@ describe('Password Reset Request Test', () => {
     it('Should prevent sending the request until the CAPTCHA verification is completed', () => {
         cy.intercept('POST', '**/api/auth/forgot-password', cy.spy().as('forgotPasswordRequest'));
 
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('currentUserAfterReload');
+
         cy.mockTurnstile(null);
         cy.visit('/forgot-password');
-        cy.wait('@initialCurrentUser');
+        cy.wait('@currentUserAfterReload');
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('button[type="submit"]').click();

@@ -9,6 +9,7 @@ declare namespace Cypress {
         checkLoggedOutNavbar(): Chainable<void>;
         mockNavbarNotifications(): Chainable<void>;
         mockTurnstile(token?: string | null): Chainable<void>;
+        waitForHydration(selector?: string): Chainable<void>;
         visitAsUser(url: string, user: import('./testUtils').MockCurrentUser): Chainable<void>;
     }
 }
@@ -92,6 +93,13 @@ Cypress.Commands.add('mockTurnstile', (token: string | null = 'cypress-captcha-t
         headers: { 'content-type': 'application/javascript' },
         body: script
     }).as('getTurnstileScript');
+});
+
+Cypress.Commands.add('waitForHydration', (selector = 'form') => {
+    cy.get(selector, { timeout: 10000 }).should(($element) => {
+        const isHydrated = Object.keys($element[0]).some((key) => key.startsWith('__reactProps$'));
+        expect(isHydrated, 'hydracja strony').to.eq(true);
+    });
 });
 
 Cypress.Commands.add('visitAsUser', (url: string, user: import('./testUtils').MockCurrentUser) => {

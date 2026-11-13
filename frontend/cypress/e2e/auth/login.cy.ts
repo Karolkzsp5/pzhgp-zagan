@@ -165,7 +165,7 @@ describe('Breeder Login Process', () => {
     it('Should return to the page passed in the next parameter after logging in', () => {
         mockSuccessfulLogin();
         cy.visit('/login?next=%2Fweather');
-        cy.wait('@currentUser');
+        cy.waitForHydration();
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');
@@ -178,7 +178,7 @@ describe('Breeder Login Process', () => {
     it('Should ignore a next parameter that points outside the application', () => {
         mockSuccessfulLogin();
         cy.visit('/login?next=%2F%2Fexample.com');
-        cy.wait('@currentUser');
+        cy.waitForHydration();
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');

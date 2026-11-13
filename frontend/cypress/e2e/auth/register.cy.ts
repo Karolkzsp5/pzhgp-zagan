@@ -374,9 +374,14 @@ describe('Breeder Registration Process Test', () => {
     it('CAPTCHA test - Should prevent registration until the CAPTCHA verification is completed', () => {
         cy.intercept('POST', '**/api/auth/register', cy.spy().as('registrationRequest'));
 
+        cy.intercept('GET', '**/api/sections', {
+            statusCode: 200,
+            body: mockSections
+        }).as('getSectionsAfterReload');
+
         cy.mockTurnstile(null);
         cy.visit('/register');
-        cy.wait('@getSections');
+        cy.wait('@getSectionsAfterReload');
 
         cy.get('form').invoke('attr', 'novalidate', '');
 

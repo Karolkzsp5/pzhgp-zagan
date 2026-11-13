@@ -205,9 +205,14 @@ describe('Found Pigeons Page Tests', () => {
     it('Should prevent submitting a report until the CAPTCHA verification is completed', () => {
         cy.intercept('POST', '**/api/found-pigeons', cy.spy().as('submitReport'));
 
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('getUserAfterReload');
+
         cy.mockTurnstile(null);
         cy.visit('/found-pigeons');
-        cy.wait('@getUnauthenticatedUser');
+        cy.wait('@getUserAfterReload');
 
         cy.contains('button', 'English').click();
         cy.get('#ring-number').type('PL-0369-26-1234');
