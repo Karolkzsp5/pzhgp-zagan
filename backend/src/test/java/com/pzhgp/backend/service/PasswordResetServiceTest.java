@@ -116,6 +116,8 @@ class PasswordResetServiceTest {
         assertEquals("new-hash", breeder.getPasswordHash());
         assertNull(breeder.getPasswordResetTokenHash());
         assertNull(breeder.getPasswordResetTokenExpiresAt());
+        assertEquals(1, breeder.getSessionVersion());
+        verify(mailService).sendPasswordChangedEmail(EMAIL, "Jan");
     }
 
     @Test
@@ -141,6 +143,7 @@ class PasswordResetServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> passwordResetService.resetPassword(token, "NoweHaslo1!"));
         assertEquals("Link do zmiany hasła jest nieprawidłowy lub wygasł. Poproś o nowy link.", exception.getMessage());
         assertEquals("old-hash", breeder.getPasswordHash());
+        assertEquals(0, breeder.getSessionVersion());
         verifyNoInteractions(passwordEncoder);
     }
 

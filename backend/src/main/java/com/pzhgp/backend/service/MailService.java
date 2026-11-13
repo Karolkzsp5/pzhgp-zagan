@@ -34,11 +34,7 @@ public class MailService {
      */
     @Async
     public void sendPasswordResetEmail(String recipient, String name, String resetLink, long validityInMinutes) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(sender);
-        message.setTo(recipient);
-        message.setSubject("Zmiana hasła w serwisie PZHGP Oddział Żagań");
-        message.setText("""
+        send(recipient, "Zmiana hasła w serwisie PZHGP Oddział Żagań", """
                 Dzień dobry %s,
 
                 otrzymaliśmy prośbę o zmianę hasła do Twojego konta w serwisie PZHGP Oddział Żagań.
@@ -48,11 +44,40 @@ public class MailService {
 
                 Jeśli to nie Ty prosiłeś o zmianę hasła, zignoruj tę wiadomość. Twoje hasło pozostanie bez zmian.
                 """.formatted(name, validityInMinutes, resetLink));
+    }
+
+    /**
+     * Informuje właściciela konta, że jego hasło zostało zmienione. Jeśli zmiany dokonał ktoś inny,
+     * właściciel dowie się o tym i może odzyskać dostęp do konta. Metoda działa w tle, tak jak wysyłka linku.
+     *
+     * @param recipient adres e-mail konta
+     * @param name      imię właściciela konta
+     */
+    @Async
+    public void sendPasswordChangedEmail(String recipient, String name) {
+        send(recipient, "Hasło do konta zostało zmienione", """
+                Dzień dobry %s,
+
+                hasło do Twojego konta w serwisie PZHGP Oddział Żagań zostało właśnie zmienione.
+                Ze względów bezpieczeństwa wylogowaliśmy Cię ze wszystkich urządzeń.
+
+                Jeśli to nie Ty zmieniłeś hasło, od razu ustaw nowe za pomocą opcji „Nie pamiętasz hasła?”
+                na stronie logowania i skontaktuj się z administratorem oddziału.
+                """.formatted(name));
+    }
+
+    // Nieudana wysyłka trafia wyłącznie do logu, bez treści wiadomości i bez adresu odbiorcy.
+    private void send(String recipient, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(sender);
+        message.setTo(recipient);
+        message.setSubject(subject);
+        message.setText(text);
 
         try {
             mailSender.send(message);
         } catch (MailException ex) {
-            log.error("Nie udało się wysłać wiadomości z linkiem do zmiany hasła.", ex);
+            log.error("Nie udało się wysłać wiadomości „{}”.", subject, ex);
         }
     }
 }

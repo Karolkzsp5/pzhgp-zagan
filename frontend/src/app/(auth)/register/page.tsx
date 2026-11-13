@@ -11,7 +11,7 @@ import { sectionService } from '@/app/services/sectionService';
 import { RegistrationRequest } from '@/app/types/auth';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
-import { formatPhoneInput } from '@/app/utils/formatters';
+import { HOUSE_NUMBER_PATTERN, formatHouseNumberInput, formatNameInput, formatPhoneInput, formatPostalCodeInput, formatStreetInput } from '@/app/utils/formatters';
 import { validateStrongPassword } from '@/app/utils/password';
 
 // Token CAPTCHA nie jest polem formularza: przekazuje go widżet Turnstile.
@@ -73,31 +73,6 @@ export default function RegisterPage() {
         void fetchSections();
     }, []);
 
-    const formatPostalCode = (val: string, prevVal: string) => {
-        if (val.length < prevVal.length) {
-            if (val.endsWith('-')) {
-                return val.slice(0, -1);
-            }
-            return val;
-        }
-
-        const digits = val.replace(/\D/g, '').slice(0, 5);
-
-        if (digits.length >= 2) {
-            return `${digits.slice(0, 2)}-${digits.slice(2)}`;
-        }
-        return digits;
-    };
-
-    // Litery z dowolnego alfabetu (np. Müller), spacje, myślniki i apostrofy (np. O'Connor).
-    const formatPersonOrCityName = (value: string) => {
-        return value.replace(/[^\p{L}\p{M}\s'’-]/gu, '');
-    };
-
-    const formatStreet = (value: string) => {
-        return value.replace(/[^0-9a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s./-]/g, '');
-    };
-
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
 
@@ -106,15 +81,15 @@ export default function RegisterPage() {
         if (name === 'phoneNumber') {
             formattedValue = formatPhoneInput(value);
         } else if (name === 'postalCode') {
-            formattedValue = formatPostalCode(value, formData.postalCode);
+            formattedValue = formatPostalCodeInput(value, formData.postalCode);
         } else if (['name', 'surname', 'city'].includes(name)) {
-            formattedValue = formatPersonOrCityName(value);
+            formattedValue = formatNameInput(value);
         } else if (name === 'street') {
-            formattedValue = formatStreet(value);
+            formattedValue = formatStreetInput(value);
         } else if (name === 'sectionId') {
             formattedValue = parseInt(value) || 0;
         } else if (name === 'houseNumber') {
-            formattedValue = value.replace(/[^0-9a-zA-Z\s\/-]/g, '');
+            formattedValue = formatHouseNumberInput(value);
         }
 
         setFormData((prev) => ({
@@ -160,8 +135,7 @@ export default function RegisterPage() {
             return;
         }
 
-        const houseNumberRegex = /^[1-9]\d*\s?[a-zA-Z]?(\s?[\/-]\s?[1-9]\d*\s?[a-zA-Z]?)?$/;
-        if (!houseNumberRegex.test(formData.houseNumber)) {
+        if (!HOUSE_NUMBER_PATTERN.test(formData.houseNumber)) {
             setError('Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).');
             return;
         }

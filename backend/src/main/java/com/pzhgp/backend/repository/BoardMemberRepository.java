@@ -2,6 +2,7 @@ package com.pzhgp.backend.repository;
 
 import com.pzhgp.backend.entity.BoardMember;
 import com.pzhgp.backend.entity.BoardRole;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,10 @@ import java.util.List;
 
 @Repository
 public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> {
+
+    /** Funkcje w zarządzie pełnione przez hodowcę, ze stanowiskiem i sekcją. */
+    @EntityGraph(attributePaths = {"managedSection"})
+    List<BoardMember> findByBreederId(Long breederId);
 
     @Query("""
             SELECT b FROM BoardMember b

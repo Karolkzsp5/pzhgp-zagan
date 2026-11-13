@@ -12,10 +12,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> {
+
+    /** Wątki założone przez użytkownika, od najstarszego — do eksportu jego danych. */
+    @EntityGraph(attributePaths = {"category"})
+    List<ForumThread> findByAuthorIdOrderByCreatedAtAscIdAsc(Long authorId);
 
     @EntityGraph(attributePaths = {"author"})
     Page<ForumThread> findByCategoryId(Long categoryId, Pageable pageable);
