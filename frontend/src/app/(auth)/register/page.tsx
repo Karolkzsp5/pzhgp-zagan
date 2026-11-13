@@ -1,22 +1,23 @@
 'use client';
 
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Modal from '@/app/components/Modal';
+import PasswordStrengthMeter from '@/app/components/PasswordStrengthMeter';
+import TurnstileWidget, { TurnstileWidgetHandle } from '@/app/components/TurnstileWidget';
 import { authService } from '@/app/services/authService';
 import { sectionService } from '@/app/services/sectionService';
 import { RegistrationRequest } from '@/app/types/auth';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { formatPhoneInput } from '@/app/utils/formatters';
+import { validateStrongPassword } from '@/app/utils/password';
 
-interface RegistrationFormData extends RegistrationRequest {
+// Token CAPTCHA nie jest polem formularza: przekazuje go widżet Turnstile.
+interface RegistrationFormData extends Omit<RegistrationRequest, 'captchaToken'> {
     confirmPassword: string;
 }
-
-// Znak specjalny to każdy znak, który nie jest literą ani cyfrą (np. ! ; ' [ ] ~ lub spacja), tak samo jak w backendzie.
-const SPECIAL_CHARACTER = /[^\p{L}\p{N}]/u;
 
 // Backend przyjmuje wyłącznie datę z przeszłości (@Past), więc ostatni dozwolony dzień to wczoraj.
 const getLatestBirthDate = () => {
@@ -36,6 +37,8 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     // Ustawiane po załadowaniu w przeglądarce, żeby statycznie wygenerowana strona nie miała daty z dnia budowania.
     const [latestBirthDate, setLatestBirthDate] = useState<string | undefined>(undefined);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const captchaRef = useRef<TurnstileWidgetHandle>(null);
 
     const [formData, setFormData] = useState<RegistrationFormData>({
         name: '',
@@ -93,42 +96,6 @@ export default function RegisterPage() {
 
     const formatStreet = (value: string) => {
         return value.replace(/[^0-9a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s./-]/g, '');
-    };
-
-    const getPasswordStrength = (pass: string) => {
-        let score = 0;
-        if (!pass) return { score: 0, label: '', widthClass: 'w-0', colorClass: 'bg-transparent' };
-
-        if (pass.length >= 8) score += 1;
-        if (/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) score += 1;
-        if (/[a-ząćęłńóśźż]/.test(pass)) score += 1;
-        if (/\d/.test(pass)) score += 1;
-        if (SPECIAL_CHARACTER.test(pass)) score += 1;
-
-        switch (score) {
-            case 1:
-                return { score, label: 'Bardzo słabe', widthClass: 'w-1/5', colorClass: 'bg-red-500' };
-            case 2:
-                return { score, label: 'Słabe', widthClass: 'w-2/5', colorClass: 'bg-red-500' };
-            case 3:
-                return { score, label: 'Średnie', widthClass: 'w-3/5', colorClass: 'bg-yellow-500' };
-            case 4:
-                return { score, label: 'Dobre', widthClass: 'w-4/5', colorClass: 'bg-blue-500' };
-            case 5:
-                return { score, label: 'Bardzo silne', widthClass: 'w-full', colorClass: 'bg-green-500' };
-            default:
-                return { score: 0, label: '', widthClass: 'w-0', colorClass: 'bg-transparent' };
-        }
-    };
-
-    const validateStrongPassword = (pass: string): string | null => {
-        if (pass.length < 8) return 'Hasło musi zawierać co najmniej 8 znaków.';
-        if (!/[A-ZĄĆĘŁŃÓŚŹŻ]/.test(pass)) return 'Hasło musi zawierać co najmniej jedną dużą literę.';
-        if (!/[a-ząćęłńóśźż]/.test(pass)) return 'Hasło musi zawierać co najmniej jedną małą literę.';
-        if (!/\d/.test(pass)) return 'Hasło musi zawierać co najmniej jedną cyfrę.';
-        if (!SPECIAL_CHARACTER.test(pass)) return 'Hasło musi zawierać co najmniej jeden znak specjalny.';
-        if (pass.length > 72 || new TextEncoder().encode(pass).length > 72) return 'Hasło może mieć maksymalnie 72 bajty (UTF-8).';
-        return null;
     };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -199,6 +166,11 @@ export default function RegisterPage() {
             return;
         }
 
+        if (!captchaToken) {
+            setError('Dokończ weryfikację CAPTCHA przed wysłaniem formularza.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const {
@@ -208,19 +180,20 @@ export default function RegisterPage() {
 
             const cleanDataToSend = {
                 ...registrationData,
-                phoneNumber: rawPhoneNumber
+                phoneNumber: rawPhoneNumber,
+                captchaToken
             };
 
             await authService.register(cleanDataToSend);
             setIsRegistrationSuccessful(true);
         } catch (error) {
             setError(getErrorMessage(error, 'Wystąpił błąd podczas rejestracji.'));
+            // Token CAPTCHA jest jednorazowy, więc kolejna próba wymaga nowego.
+            captchaRef.current?.reset();
         } finally {
             setIsLoading(false);
         }
     };
-
-    const passwordStrength = getPasswordStrength(formData.password);
 
     const closeRegistrationModal = () => {
         setIsRegistrationSuccessful(false);
@@ -312,17 +285,7 @@ export default function RegisterPage() {
                                    required
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
 
-                            {formData.password.length > 0 && (
-                                <div className="mt-2">
-                                    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                        <div className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength.widthClass} ${passwordStrength.colorClass}`} />
-                                    </div>
-                                    <p className="text-xs text-gray-600 mt-1 flex justify-between">
-                                        <span>Siła hasła: <strong className="text-gray-800">{passwordStrength.label}</strong></span>
-                                        <span className="text-gray-400">{passwordStrength.score}/5</span>
-                                    </p>
-                                </div>
-                            )}
+                            <PasswordStrengthMeter password={formData.password} />
                         </div>
 
                         <div>
@@ -407,6 +370,8 @@ export default function RegisterPage() {
                                    className="mt-1 block w-full p-2 border text-gray-700 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
                         </div>
                     </div>
+
+                    <TurnstileWidget ref={captchaRef} onTokenChange={setCaptchaToken} />
 
                     {error && (
                         <div className="p-4 my-4 rounded bg-red-100 text-red-700" role="alert">

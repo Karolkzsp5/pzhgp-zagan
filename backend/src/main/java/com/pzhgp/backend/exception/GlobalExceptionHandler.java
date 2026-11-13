@@ -128,6 +128,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
+    @ExceptionHandler(CaptchaVerificationException.class)
+    public ResponseEntity<String> handleCaptchaVerification(CaptchaVerificationException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(CaptchaUnavailableException.class)
+    public ResponseEntity<String> handleCaptchaUnavailable(CaptchaUnavailableException ex) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidStatusTransitionException.class)
     public ResponseEntity<String> handleInvalidStatusTransition(InvalidStatusTransitionException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage());

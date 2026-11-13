@@ -10,6 +10,7 @@ describe('Found Pigeons Page Tests', () => {
             body: 'Wymagane jest uwierzytelnienie.'
         }).as('getUnauthenticatedUser');
 
+        cy.mockTurnstile();
         cy.visit('/found-pigeons');
         cy.wait('@getUnauthenticatedUser').its('response.statusCode').should('eq', 401);
         cy.checkLoggedOutNavbar();
@@ -198,6 +199,34 @@ describe('Found Pigeons Page Tests', () => {
     });
 
     // ==========================================
+    // CAPTCHA
+    // ==========================================
+
+    it('Should prevent submitting a report until the CAPTCHA verification is completed', () => {
+        cy.intercept('POST', '**/api/found-pigeons', cy.spy().as('submitReport'));
+
+        cy.intercept('GET', '**/api/auth/me', {
+            statusCode: 401,
+            body: 'Wymagane jest uwierzytelnienie.'
+        }).as('getUserAfterReload');
+
+        cy.mockTurnstile(null);
+        cy.visit('/found-pigeons');
+        cy.wait('@getUserAfterReload');
+
+        cy.contains('button', 'English').click();
+        cy.get('#ring-number').type('PL-0369-26-1234');
+        cy.get('#contact-email').type('finder@example.com');
+        cy.contains('button', 'Send report').click();
+
+        cy.get('[role="alert"]').should('be.visible')
+            .and('contain.text', 'Please complete the CAPTCHA verification before sending the report.');
+
+        cy.get('@submitReport').should('not.have.been.called');
+        cy.contains('h2', 'Report form').should('be.visible');
+    });
+
+    // ==========================================
     // UDANE WYSŁANIE
     // ==========================================
 
@@ -210,7 +239,8 @@ describe('Found Pigeons Page Tests', () => {
                 foundCountry: 'Niemcy',
                 foundLocation: 'Cottbus',
                 description: 'Gołąb siedzi na parapecie od wczoraj.',
-                preferredLanguage: 'PL'
+                preferredLanguage: 'PL',
+                captchaToken: 'cypress-captcha-token'
             });
 
             req.reply({
@@ -254,7 +284,8 @@ describe('Found Pigeons Page Tests', () => {
                 foundCountry: null,
                 foundLocation: null,
                 description: null,
-                preferredLanguage: 'PL'
+                preferredLanguage: 'PL',
+                captchaToken: 'cypress-captcha-token'
             });
 
             req.reply({
@@ -280,7 +311,8 @@ describe('Found Pigeons Page Tests', () => {
                 foundCountry: null,
                 foundLocation: null,
                 description: null,
-                preferredLanguage: 'PL'
+                preferredLanguage: 'PL',
+                captchaToken: 'cypress-captcha-token'
             });
 
             req.reply({

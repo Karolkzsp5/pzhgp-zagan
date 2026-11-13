@@ -429,7 +429,7 @@ describe('Board Page Tests', () => {
             cy.get('#board-breeder').should('be.checked');
             cy.contains('option', '-- Wybierz hodowcę --').should('exist');
 
-            cy.contains('label', 'Publiczny nr telefonu (opcjonalnie)').should('be.visible');
+            cy.contains('label', 'Publiczny nr telefonu').should('be.visible');
             cy.get('#contact-phone').should('be.visible').and('have.attr', 'placeholder', 'np. 123 456 789');
 
             cy.contains('button', 'Anuluj').should('be.visible');

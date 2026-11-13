@@ -5,22 +5,26 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 
-/** Ograniczenie liczby prób logowania i rejestracji z jednego adresu. */
+/** Ograniczenie liczby prób logowania, rejestracji i odzyskiwania hasła z jednego adresu. */
 @Component
 public class AuthRateLimiter {
 
     private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
     private static final Duration REGISTRATION_WINDOW = Duration.ofHours(1);
+    private static final Duration PASSWORD_RESET_WINDOW = Duration.ofHours(1);
 
     private static final int MAX_LOGIN_ATTEMPTS = 30;
     private static final int MAX_REGISTRATION_ATTEMPTS = 5;
+    private static final int MAX_PASSWORD_RESET_ATTEMPTS = 5;
 
     private final SlidingWindowRateLimiter loginAttempts;
     private final SlidingWindowRateLimiter registrationAttempts;
+    private final SlidingWindowRateLimiter passwordResetAttempts;
 
     public AuthRateLimiter(Clock clock) {
         this.loginAttempts = new SlidingWindowRateLimiter(LOGIN_WINDOW, MAX_LOGIN_ATTEMPTS, clock);
         this.registrationAttempts = new SlidingWindowRateLimiter(REGISTRATION_WINDOW, MAX_REGISTRATION_ATTEMPTS, clock);
+        this.passwordResetAttempts = new SlidingWindowRateLimiter(PASSWORD_RESET_WINDOW, MAX_PASSWORD_RESET_ATTEMPTS, clock);
     }
 
     public boolean tryAcquireLogin(String clientAddress) {
@@ -29,5 +33,10 @@ public class AuthRateLimiter {
 
     public boolean tryAcquireRegistration(String clientAddress) {
         return registrationAttempts.tryAcquire(clientAddress);
+    }
+
+    /** Wspólny limit dla prośby o link i dla ustawienia nowego hasła. */
+    public boolean tryAcquirePasswordReset(String clientAddress) {
+        return passwordResetAttempts.tryAcquire(clientAddress);
     }
 }

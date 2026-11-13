@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/components/AuthProvider';
+import TurnstileWidget, { TurnstileLanguage, TurnstileWidgetHandle } from '@/app/components/TurnstileWidget';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { ReportLanguage } from '@/app/types/foundPigeon';
 import { ApiError } from '@/app/utils/apiClient';
@@ -11,6 +12,9 @@ import { FORM_TRANSLATIONS, LANGUAGE_ORDER } from './translations';
 const RING_NUMBER_PATTERN = /^PL-0369-\d{2}-\d{4}$/;
 const MAX_RING_NUMBER_LENGTH = 15;
 const MAX_DESCRIPTION_LENGTH = 1000;
+
+/** Język widżetu CAPTCHA odpowiadający językowi formularza. */
+const CAPTCHA_LANGUAGES: Record<ReportLanguage, TurnstileLanguage> = { PL: 'pl', EN: 'en', DE: 'de' };
 
 /** Pola formularza obsługiwane przez jeden stan, żeby czyszczenie po wysyłce było proste. */
 interface FormValues {
@@ -43,6 +47,8 @@ export default function FoundPigeonsPage() {
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const captchaRef = useRef<TurnstileWidgetHandle>(null);
 
     const text = FORM_TRANSLATIONS[language];
 
@@ -108,6 +114,11 @@ export default function FoundPigeonsPage() {
         event.preventDefault();
         if (isSubmitting || !validate()) return;
 
+        if (!captchaToken) {
+            setSubmitError(text.errorCaptchaRequired);
+            return;
+        }
+
         setIsSubmitting(true);
         setSubmitError('');
 
@@ -119,7 +130,8 @@ export default function FoundPigeonsPage() {
                 foundCountry: values.foundCountry.trim() || null,
                 foundLocation: values.foundLocation.trim() || null,
                 description: values.description.trim() || null,
-                preferredLanguage: language
+                preferredLanguage: language,
+                captchaToken
             });
 
             setIsSubmitted(true);
@@ -129,6 +141,8 @@ export default function FoundPigeonsPage() {
             // dlatego pokazujemy komunikat w języku wybranym przez użytkownika.
             const isThrottled = error instanceof ApiError && error.status === 429;
             setSubmitError(isThrottled ? text.errorTooManyRequests : text.errorSubmitFailed);
+            // Token CAPTCHA jest jednorazowy, więc kolejna próba wymaga nowego.
+            captchaRef.current?.reset();
         } finally {
             setIsSubmitting(false);
         }
@@ -328,16 +342,25 @@ export default function FoundPigeonsPage() {
                                 )}
                             </div>
 
-                            <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                <h3 className="text-sm font-bold text-blue-900 mb-1">{text.privacyTitle}</h3>
-                                <p className="text-sm text-blue-900/90 leading-relaxed">{text.privacyBody}</p>
-                            </section>
+                            <div className="mb-6">
+                                <TurnstileWidget
+                                    ref={captchaRef}
+                                    onTokenChange={setCaptchaToken}
+                                    language={CAPTCHA_LANGUAGES[language]}
+                                    errorMessage={text.errorCaptchaUnavailable}
+                                />
+                            </div>
 
                             {submitError && (
                                 <p role="alert" className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                                     {submitError}
                                 </p>
                             )}
+
+                            <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <h3 className="text-sm font-bold text-blue-900 mb-1">{text.privacyTitle}</h3>
+                                <p className="text-sm text-blue-900/90 leading-relaxed">{text.privacyBody}</p>
+                            </section>
 
                             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <p className="text-xs text-gray-500">

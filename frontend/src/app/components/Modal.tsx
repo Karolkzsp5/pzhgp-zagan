@@ -35,11 +35,9 @@ export default function Modal({isOpen, title, children, onClose, closeDisabled =
 
         document.body.style.overflow = 'hidden';
 
-        const frameId = requestAnimationFrame(() => {
-            const elements = focusableElements();
-            if (elements.length > 0) elements[0].focus();
-            else panelRef.current?.focus();
-        });
+        const elements = focusableElements();
+        if (elements.length > 0) elements[0].focus();
+        else panelRef.current?.focus();
 
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape' && !closeDisabledRef.current) {
@@ -72,7 +70,6 @@ export default function Modal({isOpen, title, children, onClose, closeDisabled =
         document.addEventListener('keydown', handleKeyDown);
 
         return () => {
-            cancelAnimationFrame(frameId);
             document.removeEventListener('keydown', handleKeyDown);
             document.body.style.overflow = previousOverflow;
             previousActiveElement?.focus();

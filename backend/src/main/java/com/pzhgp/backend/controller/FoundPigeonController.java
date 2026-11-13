@@ -4,6 +4,7 @@ import com.pzhgp.backend.dto.FoundPigeonRequest;
 import com.pzhgp.backend.exception.SubmissionRateLimitException;
 import com.pzhgp.backend.service.FoundPigeonService;
 import com.pzhgp.backend.service.SubmissionRateLimiter;
+import com.pzhgp.backend.service.TurnstileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class FoundPigeonController {
 
     private final FoundPigeonService foundPigeonService;
     private final SubmissionRateLimiter submissionRateLimiter;
+    private final TurnstileService turnstileService;
 
     /**
      * Przyjmuje zgłoszenie odnalezienia gołębia.
@@ -43,6 +45,9 @@ public class FoundPigeonController {
         if (!submissionRateLimiter.tryAcquire(httpRequest.getRemoteAddr())) {
             throw new SubmissionRateLimitException("Zbyt wiele zgłoszeń. Spróbuj ponownie później.");
         }
+
+        // CAPTCHA jest sprawdzana po limicie zgłoszeń, żeby nie dało się wymuszać dowolnie wielu zapytań serwera do Cloudflare.
+        turnstileService.verifyToken(request.captchaToken());
 
         Long reportId = foundPigeonService.createReport(request);
 

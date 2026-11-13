@@ -39,6 +39,8 @@ export interface FormTranslation {
     errorDescriptionTooLong: string;
     errorSubmitFailed: string;
     errorTooManyRequests: string;
+    errorCaptchaRequired: string;
+    errorCaptchaUnavailable: string;
 }
 
 export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
@@ -78,7 +80,9 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Podaj poprawny numer telefonu (od 6 do 15 cyfr).',
         errorDescriptionTooLong: 'Opis może mieć maksymalnie 1000 znaków.',
         errorSubmitFailed: 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie za chwilę.',
-        errorTooManyRequests: 'Wysłano zbyt wiele zgłoszeń. Spróbuj ponownie później.'
+        errorTooManyRequests: 'Wysłano zbyt wiele zgłoszeń. Spróbuj ponownie później.',
+        errorCaptchaRequired: 'Dokończ weryfikację CAPTCHA przed wysłaniem zgłoszenia.',
+        errorCaptchaUnavailable: 'Nie udało się wczytać weryfikacji CAPTCHA. Odśwież stronę i spróbuj ponownie.'
     },
 
     EN: {
@@ -117,7 +121,9 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Please enter a valid phone number (6 to 15 digits).',
         errorDescriptionTooLong: 'The description may contain at most 1000 characters.',
         errorSubmitFailed: 'The report could not be sent. Please try again in a moment.',
-        errorTooManyRequests: 'Too many reports have been submitted. Please try again later.'
+        errorTooManyRequests: 'Too many reports have been submitted. Please try again later.',
+        errorCaptchaRequired: 'Please complete the CAPTCHA verification before sending the report.',
+        errorCaptchaUnavailable: 'The CAPTCHA verification could not be loaded. Please refresh the page and try again.'
     },
 
     DE: {
@@ -156,7 +162,9 @@ export const FORM_TRANSLATIONS: Record<ReportLanguage, FormTranslation> = {
         errorPhoneInvalid: 'Bitte geben Sie eine gültige Telefonnummer an (6 bis 15 Ziffern).',
         errorDescriptionTooLong: 'Die Beschreibung darf höchstens 1000 Zeichen enthalten.',
         errorSubmitFailed: 'Die Meldung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.',
-        errorTooManyRequests: 'Es wurden zu viele Meldungen gesendet. Bitte versuchen Sie es später erneut.'
+        errorTooManyRequests: 'Es wurden zu viele Meldungen gesendet. Bitte versuchen Sie es später erneut.',
+        errorCaptchaRequired: 'Bitte schließen Sie die CAPTCHA-Überprüfung ab, bevor Sie die Meldung senden.',
+        errorCaptchaUnavailable: 'Die CAPTCHA-Überprüfung konnte nicht geladen werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.'
     }
 };
 

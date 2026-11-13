@@ -33,6 +33,7 @@ describe('Breeder Registration Process Test', () => {
             body: mockSections
         }).as('getSections');
 
+        cy.mockTurnstile();
         cy.visit('/register');
 
         cy.wait('@getSections');
@@ -367,6 +368,56 @@ describe('Breeder Registration Process Test', () => {
     });
 
     ///////////////////////////
+    ///////Testy CAPTCHA///////
+    ///////////////////////////
+
+    it('CAPTCHA test - Should prevent registration until the CAPTCHA verification is completed', () => {
+        cy.intercept('POST', '**/api/auth/register', cy.spy().as('registrationRequest'));
+
+        cy.intercept('GET', '**/api/sections', {
+            statusCode: 200,
+            body: mockSections
+        }).as('getSectionsAfterReload');
+
+        cy.mockTurnstile(null);
+        cy.visit('/register');
+        cy.wait('@getSectionsAfterReload');
+
+        cy.get('form').invoke('attr', 'novalidate', '');
+
+        fillEmail();
+        fillPhoneNumber();
+        fillPassword();
+        selectSection();
+        fillHouseNumber();
+
+        cy.get('button[type="submit"]').click();
+
+        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Dokończ weryfikację CAPTCHA przed wysłaniem formularza.');
+        cy.get('@registrationRequest').should('not.have.been.called');
+    });
+
+    it('CAPTCHA test - Should display the server error when the CAPTCHA token is rejected', () => {
+        cy.intercept('POST', '**/api/auth/register', {
+            statusCode: 400,
+            body: 'Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie.'
+        }).as('rejectedCaptchaRequest');
+
+        cy.get('form').invoke('attr', 'novalidate', '');
+
+        fillEmail();
+        fillPhoneNumber();
+        fillPassword();
+        selectSection();
+        fillHouseNumber();
+
+        cy.get('button[type="submit"]').click();
+        cy.wait('@rejectedCaptchaRequest').its('request.body.captchaToken').should('eq', 'cypress-captcha-token');
+
+        cy.get('[role="alert"]').should('be.visible').and('contain.text', 'Weryfikacja CAPTCHA nie powiodła się. Spróbuj ponownie.');
+    });
+
+    ///////////////////////////
     /////Test rejestracji//////
     ///////////////////////////
 
@@ -402,7 +453,8 @@ describe('Breeder Registration Process Test', () => {
                 postalCode: '11-111',
                 city: 'Test',
                 street: 'Testowa',
-                houseNumber: '15b'
+                houseNumber: '15b',
+                captchaToken: 'cypress-captcha-token'
             });
         });
 

@@ -149,11 +149,19 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4">
-                    Nie masz jeszcze konta?{' '}
-                    <Link href="/register" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
-                        Zarejestruj się tutaj
-                    </Link>
+                <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4 space-y-2">
+                    <p>
+                        Nie pamiętasz hasła?{' '}
+                        <Link href="/forgot-password" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
+                            Odzyskaj hasło
+                        </Link>
+                    </p>
+                    <p>
+                        Nie masz jeszcze konta?{' '}
+                        <Link href="/register" className="text-blue-600 hover:text-blue-800 font-semibold transition duration-200">
+                            Zarejestruj się tutaj
+                        </Link>
+                    </p>
                 </div>
             </div>
         </div>

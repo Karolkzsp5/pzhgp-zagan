@@ -19,6 +19,7 @@ import jakarta.validation.constraints.*;
  * @param foundCountry      kraj odnalezienia
  * @param description       krótki opis okoliczności
  * @param preferredLanguage język formularza; brak wartości oznacza polski
+ * @param captchaToken      token z widżetu Cloudflare Turnstile, sprawdzany przed zapisaniem zgłoszenia
  */
 public record FoundPigeonRequest(
         @NotBlank(message = "Podaj numer obrączki gołębia.")
@@ -46,7 +47,11 @@ public record FoundPigeonRequest(
         @Size(max = 1000, message = "Opis może mieć maksymalnie 1000 znaków.")
         String description,
 
-        ReportLanguage preferredLanguage
+        ReportLanguage preferredLanguage,
+
+        @NotBlank(message = "Dokończ weryfikację CAPTCHA.")
+        @Size(max = 2048, message = "Token CAPTCHA jest nieprawidłowy.")
+        String captchaToken
 ) {
     private static final int MIN_PHONE_DIGITS = 6;
     private static final int MAX_PHONE_DIGITS = 15;

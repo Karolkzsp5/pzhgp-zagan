@@ -31,6 +31,8 @@ describe('Breeder Login Process', () => {
         cy.get('input[name="remember-me"]').should('be.visible');
         cy.get('label[for="remember-me"]').should('be.visible');
         cy.get('button[type="submit"]').should('be.visible').and('not.be.disabled');
+        cy.contains('Nie pamiętasz hasła?').should('be.visible');
+        cy.contains('a', 'Odzyskaj hasło').should('be.visible').and('have.attr', 'href', '/forgot-password');
         cy.contains('Nie masz jeszcze konta?').should('be.visible');
         cy.contains('a', 'Zarejestruj się tutaj').should('be.visible').and('have.attr', 'href', '/register');
     });
@@ -163,7 +165,7 @@ describe('Breeder Login Process', () => {
     it('Should return to the page passed in the next parameter after logging in', () => {
         mockSuccessfulLogin();
         cy.visit('/login?next=%2Fweather');
-        cy.wait('@currentUser');
+        cy.waitForHydration();
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');
@@ -176,7 +178,7 @@ describe('Breeder Login Process', () => {
     it('Should ignore a next parameter that points outside the application', () => {
         mockSuccessfulLogin();
         cy.visit('/login?next=%2F%2Fexample.com');
-        cy.wait('@currentUser');
+        cy.waitForHydration();
 
         cy.get('input[name="email"]').type('test.cypress1@test.cy');
         cy.get('input[name="password"]').type('Test.cypress1');

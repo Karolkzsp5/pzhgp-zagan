@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 // Własne komendy Cypressa używane w testach: sprawdzanie Navbara i stopki,
-// udawane odpowiedzi powiadomień oraz otwieranie stron jako zalogowany użytkownik.
+// udawane odpowiedzi powiadomień, zastępczy widżet CAPTCHA oraz otwieranie stron jako zalogowany użytkownik.
 
 declare namespace Cypress {
     interface Chainable {
@@ -8,6 +8,8 @@ declare namespace Cypress {
         checkLoggedInNavbar(userName: string): Chainable<void>;
         checkLoggedOutNavbar(): Chainable<void>;
         mockNavbarNotifications(): Chainable<void>;
+        mockTurnstile(token?: string | null): Chainable<void>;
+        waitForHydration(selector?: string): Chainable<void>;
         visitAsUser(url: string, user: import('./testUtils').MockCurrentUser): Chainable<void>;
     }
 }
@@ -58,6 +60,46 @@ Cypress.Commands.add('mockNavbarNotifications', () => {
         statusCode: 200,
         body: 0
     }).as('getUnreadCount');
+});
+
+// Zastępuje skrypt Cloudflare Turnstile, żeby testy nie łączyły się z Cloudflare.
+// Zastępczy widżet od razu wydaje podany token; wartość null oznacza weryfikację, która się nie zakończyła.
+Cypress.Commands.add('mockTurnstile', (token: string | null = 'cypress-captcha-token') => {
+    const script = `
+        (() => {
+            const token = ${JSON.stringify(token)};
+            const callbacks = {};
+            let nextWidgetId = 0;
+
+            const issueToken = (widgetId) => setTimeout(() => {
+                if (token !== null && callbacks[widgetId]) callbacks[widgetId](token);
+            });
+
+            window.turnstile = {
+                render: (container, options) => {
+                    const widgetId = 'cypress-widget-' + nextWidgetId++;
+                    callbacks[widgetId] = options.callback;
+                    issueToken(widgetId);
+                    return widgetId;
+                },
+                reset: (widgetId) => issueToken(widgetId),
+                remove: (widgetId) => { delete callbacks[widgetId]; }
+            };
+        })();
+    `;
+
+    cy.intercept('GET', 'https://challenges.cloudflare.com/turnstile/v0/api.js*', {
+        statusCode: 200,
+        headers: { 'content-type': 'application/javascript' },
+        body: script
+    }).as('getTurnstileScript');
+});
+
+Cypress.Commands.add('waitForHydration', (selector = 'form') => {
+    cy.get(selector, { timeout: 10000 }).should(($element) => {
+        const isHydrated = Object.keys($element[0]).some((key) => key.startsWith('__reactProps$'));
+        expect(isHydrated, 'hydracja strony').to.eq(true);
+    });
 });
 
 Cypress.Commands.add('visitAsUser', (url: string, user: import('./testUtils').MockCurrentUser) => {
