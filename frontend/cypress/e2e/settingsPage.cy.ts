@@ -219,7 +219,7 @@ describe('Settings Page Tests', () => {
 
         cy.location('pathname').should('eq', '/login');
         cy.location('search').should('eq', '?notice=password-changed');
-        cy.get('[role="status"]').should('be.visible').and('contain.text', 'Hasło zostało zmienione. Zaloguj się nowym hasłem.');
+        cy.get('[role="status"]').should('be.visible').and('contain.text', 'Hasło zostało zmienione. Zaloguj się ponownie.');
     });
 
     it('Should apply the password rules before sending the request', () => {

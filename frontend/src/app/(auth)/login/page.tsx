@@ -21,7 +21,7 @@ interface MessageState {
 
 /** Komunikaty dla parametru notice, z którym strona ustawień przekierowuje na logowanie. */
 const LOGIN_NOTICES: Record<string, string> = {
-    'password-changed': 'Hasło zostało zmienione. Zaloguj się nowym hasłem.',
+    'password-changed': 'Hasło zostało zmienione. Zaloguj się ponownie.',
     'logged-out-everywhere': 'Wylogowano Cię ze wszystkich urządzeń. Zaloguj się ponownie.'
 };
 
