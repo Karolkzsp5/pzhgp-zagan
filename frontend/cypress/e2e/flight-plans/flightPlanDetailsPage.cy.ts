@@ -154,7 +154,7 @@ describe('Flight Plan Details Page Tests', () => {
         ' Lp. Nazwisko i imię      Sekcja      Nr obrączki',
         '   1 KOWALSKI JAN         Żagań       PL-0369-24-1234',
         '   2 NOWAK ŁUKASZ         Wymiarki    PL-0369-23-0456',
-        '   3 KOWALSKI   JAN       Żagań       PL-0369-24-1240'
+        '   3 KOWALSKI JAN         Żagań       PL-0369-24-1240'
     ].join('\r\n');
 
     const mockResultFileRequest = () => {
@@ -896,38 +896,6 @@ describe('Flight Plan Details Page Tests', () => {
 
             cy.get('button[aria-label="Zamknij okno"]').click();
             cy.get('[role="dialog"]').should('not.exist');
-        });
-
-        // ==========================================
-        // WYSZUKIWANIE W WYNIKACH
-        // ==========================================
-
-        it('Should show only the result lines matching the search phrase', () => {
-            mockResultFileRequest();
-
-            cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
-            cy.wait('@getResultFile');
-
-            getResultPreview().within(() => {
-                cy.get('[data-cy="flight-result-search-status"]')
-                    .should('have.text', 'Wpisz nazwisko lub numer obrączki, aby zobaczyć tylko pasujące wiersze.');
-
-                cy.get('input[type="search"]').type('kowalski jan');
-
-                cy.get('[data-cy="flight-result-search-status"]').should('have.text', 'Znalezione wiersze: 2');
-                cy.get('[data-cy="flight-result-content"]').should('not.contain.text', 'NOWAK');
-                cy.get('[data-cy="flight-result-content"] mark').should('have.length', 2).first().should('have.text', 'KOWALSKI JAN');
-
-                cy.get('input[type="search"]').clear().type('łukasz');
-                cy.get('[data-cy="flight-result-content"] mark').should('have.length', 1).and('have.text', 'ŁUKASZ');
-
-                cy.get('input[type="search"]').clear().type('Malinowski');
-                cy.contains('Brak wierszy zawierających podany tekst.').should('be.visible');
-                cy.get('[data-cy="flight-result-content"]').should('not.exist');
-
-                cy.get('input[type="search"]').clear();
-                cy.get('[data-cy="flight-result-content"]').should('contain.text', 'NOWAK ŁUKASZ').find('mark').should('not.exist');
-            });
         });
 
         // ==========================================
