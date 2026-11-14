@@ -149,6 +149,26 @@ describe('Flight Plan Details Page Tests', () => {
         return cy.contains('p', fileName).parent().parent();
     };
 
+    const resultFileContent = [
+        'ODDZIAŁ ŻAGAŃ                         LISTA KONKURSOWA',
+        ' Lp. Nazwisko i imię      Sekcja      Nr obrączki',
+        '   1 KOWALSKI JAN         Żagań       PL-0369-24-1234',
+        '   2 NOWAK ŁUKASZ         Wymiarki    PL-0369-23-0456',
+        '   3 KOWALSKI JAN         Żagań       PL-0369-24-1240'
+    ].join('\r\n');
+
+    const mockResultFileRequest = () => {
+        cy.intercept('GET', '**/api/flight-results/1001/file', {
+            statusCode: 200,
+            headers: {'content-type': 'text/plain; charset=UTF-8'},
+            body: resultFileContent
+        }).as('getResultFile');
+    };
+
+    const getResultPreview = () => {
+        return cy.contains('[role="dialog"]', 'Wyniki lotu Dahme');
+    };
+
     const updateFlight = (flightId: number, update: (flight: MockFlightPlanEntry) => MockFlightPlanEntry) => {
         plan = {
             ...plan,
@@ -848,97 +868,92 @@ describe('Flight Plan Details Page Tests', () => {
         });
 
         // ==========================================
-        // OTWIERANIE WYNIKÓW
+        // PODGLĄD WYNIKÓW
         // ==========================================
 
-        it('Should download the selected result and open it in a new tab', () => {
-            cy.intercept('GET', '**/api/flight-results/1001/file', {
-                statusCode: 200,
-                headers: {'content-type': 'text/plain; charset=UTF-8'},
-                body: 'Oficjalne wyniki lotu Dahme'
-            }).as('getResultFile');
-
-            let openedWindow: { location: { href: string }; close: () => void };
-
-            cy.window().then((win) => {
-                openedWindow = {
-                    location: {
-                        href: ''
-                    },
-                    close: cy.stub()
-                };
-
-                const windowOpenStub = cy.stub(win, 'open').returns(openedWindow);
-                const createObjectUrlStub = cy.stub(win.URL, 'createObjectURL').returns('blob:test-flight-result');
-
-                cy.wrap(windowOpenStub).as('windowOpen');
-                cy.wrap(createObjectUrlStub).as('createObjectUrl');
-            });
+        it('Should open the selected result in a preview modal', () => {
+            mockResultFileRequest();
 
             cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
-
             cy.wait('@getResultFile');
 
-            cy.get('@windowOpen').should('have.been.calledOnceWith', '', '_blank');
-            cy.get('@createObjectUrl').should('have.been.calledOnce');
+            getResultPreview().should('be.visible').within(() => {
+                cy.get('[data-cy="flight-result-details"]')
+                    .should('contain.text', 'Oddział')
+                    .and('contain.text', '26.04.2026')
+                    .and('contain.text', '130 km')
+                    .and('contain.text', 'oddzial-dahme.txt');
 
-            cy.then(() => {
-                expect(openedWindow.location.href).to.eq('blob:test-flight-result');
+                cy.get('[data-cy="flight-result-content"]')
+                    .should('be.visible')
+                    .and('contain.text', 'ODDZIAŁ ŻAGAŃ')
+                    .and('contain.text', 'NOWAK ŁUKASZ');
+
+                cy.contains('button', 'Pobierz plik').should('be.visible');
             });
 
-            cy.get('select[aria-label="Wyniki lotu Dahme"]').should('be.visible').find('option[value=""]').should('be.selected');
+            cy.get('select[aria-label="Wyniki lotu Dahme"]').find('option[value=""]').should('be.selected');
+
+            cy.get('button[aria-label="Zamknij okno"]').click();
+            cy.get('[role="dialog"]').should('not.exist');
         });
 
         // ==========================================
-        // ZABLOKOWANE OKNO WYSKAKUJĄCE
+        // POBIERANIE PLIKU Z WYNIKAMI
         // ==========================================
 
-        it('Should display an alert when the browser blocks the result window', () => {
-            cy.window().then((win) => {
-                const windowOpenStub = cy.stub(win, 'open').returns(null);
-                cy.wrap(windowOpenStub).as('windowOpen');
-            });
+        it('Should download the previewed result file', () => {
+            mockResultFileRequest();
 
             cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
-            cy.get('@windowOpen').should('have.been.calledOnceWith', '', '_blank');
+            cy.wait('@getResultFile');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Nie można otworzyć wyników').should('be.visible');
-                cy.contains('Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.').should('be.visible');
-                cy.contains('button', 'OK').click();
-            });
+            getResultPreview().contains('button', 'Pobierz plik').click();
+
+            cy.readFile(`${Cypress.config('downloadsFolder')}/oddzial-dahme.txt`).should('eq', resultFileContent);
         });
 
         // ==========================================
         // BŁĄD POBIERANIA WYNIKÓW
         // ==========================================
 
-        it('Should close the new window and display an error when result download fails', () => {
-            cy.intercept('GET', '**/api/flight-results/1001/file', {
-                statusCode: 500,
-                body: 'Nie udało się pobrać testowych wyników.'
-            }).as('getResultFileError');
+        it('Should display an error in the preview and successfully retry loading the result', () => {
+            let shouldFail = true;
 
-            let openedWindow: { location: { href: string }; close: () => void };
-            cy.window().then((win) => {
-                openedWindow = {
-                    location: {
-                        href: ''
-                    },
-                    close: cy.stub().as('closeResultWindow')
-                };
+            cy.intercept('GET', '**/api/flight-results/1002/file', (req) => {
+                if (shouldFail) {
+                    req.reply({
+                        statusCode: 500,
+                        body: 'Nie udało się pobrać testowych wyników.'
+                    });
 
-                cy.stub(win, 'open').returns(openedWindow);
-            });
+                    return;
+                }
 
-            cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
-            cy.wait('@getResultFileError');
-            cy.get('@closeResultWindow').should('have.been.calledOnce');
+                req.reply({
+                    statusCode: 200,
+                    headers: {'content-type': 'text/plain; charset=UTF-8'},
+                    body: 'Wyniki sekcji 1 Żagań'
+                });
+            }).as('getSectionResultFile');
 
-            cy.get('[role="dialog"]').should('be.visible').within(() => {
-                cy.contains('h2', 'Nie udało się otworzyć wyników').should('be.visible');
+            cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1002');
+            cy.wait('@getSectionResultFile');
+
+            getResultPreview().within(() => {
+                cy.get('[data-cy="flight-result-details"]')
+                    .should('contain.text', 'Sekcja 1 Żagań')
+                    .and('contain.text', 'sekcja1-dahme.txt');
+
                 cy.contains('Nie udało się pobrać testowych wyników.').should('be.visible');
-                cy.contains('button', 'OK').click();
+                cy.get('[data-cy="flight-result-content"]').should('not.exist');
+
+                cy.then(() => {
+                    shouldFail = false;
+                });
+
+                cy.contains('button', 'Spróbuj ponownie').click();
+                cy.get('[data-cy="flight-result-content"]').should('have.text', 'Wyniki sekcji 1 Żagań');
             });
         });
 
@@ -1025,6 +1040,21 @@ describe('Flight Plan Details Page Tests', () => {
             getFlightRow('Luckau').should('be.visible');
 
             cy.get('select[aria-label="Wyniki lotu Dahme"]').should('be.visible');
+        });
+
+        it('Should allow a Breeder to preview flight results', () => {
+            mockResultFileRequest();
+            cy.visitAsUser('/flight-plans/2026', breederUser);
+
+            cy.wait(['@getFlightPlan', '@getNotifications', '@getUnreadCount']);
+
+            cy.get('select[aria-label="Wyniki lotu Dahme"]').select('1001');
+            cy.wait('@getResultFile');
+
+            getResultPreview().within(() => {
+                cy.get('[data-cy="flight-result-content"]').should('contain.text', 'KOWALSKI JAN');
+                cy.contains('button', 'Pobierz plik').should('be.visible');
+            });
         });
     });
 

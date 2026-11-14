@@ -7,7 +7,7 @@ import { sectionService } from '@/app/services/sectionService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
 import { SectionDto } from '@/app/types/section';
 import { getErrorMessage } from '@/app/utils/apiClient';
-import { formatLocalDate } from '@/app/utils/formatters';
+import { formatFlightResultLabel, formatLocalDate } from '@/app/utils/formatters';
 
 interface FlightResultModalProps {
     isOpen: boolean;
@@ -254,7 +254,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
                                 <div key={result.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-gray-800">
-                                            {formatResultLabel(result)}
+                                            {formatFlightResultLabel(result)}
                                         </p>
 
                                         <p className="text-xs text-gray-500 truncate">
@@ -491,16 +491,4 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
             </div>
         </Modal>
     );
-}
-
-function formatResultLabel(result: FlightResultSummaryDto): string {
-    if (result.scope === 'BRANCH') {
-        return 'Oddział';
-    }
-
-    if (result.sectionSortOrder !== null && result.sectionName) {
-        return `Sekcja ${result.sectionSortOrder} ${result.sectionName}`;
-    }
-
-    return result.sectionName ?? 'Sekcja';
 }

@@ -1,4 +1,5 @@
 import { AccountStatus } from '@/app/types/breeder';
+import { FlightResultSummaryDto } from '@/app/types/flightPlan';
 import { UserRole } from '@/app/utils/authSession';
 
 /** Data i godzina (bez sekund) w czasie lokalnym, np. "04.11.2026, 14:05". */
@@ -42,6 +43,19 @@ export const formatLocalDate = (dateString: string | null) => {
     if (!dateString) return '—';
     const [year, month, day] = dateString.split('-');
     return year && month && day ? `${day}.${month}.${year}` : dateString;
+};
+
+/** Etykieta wyników lotu widoczna dla użytkownika: "Oddział" albo np. "Sekcja 1 Żagań". */
+export const formatFlightResultLabel = (result: FlightResultSummaryDto): string => {
+    if (result.scope === 'BRANCH') {
+        return 'Oddział';
+    }
+
+    if (result.sectionSortOrder !== null && result.sectionName) {
+        return `Sekcja ${result.sectionSortOrder} ${result.sectionName}`;
+    }
+
+    return result.sectionName ?? 'Sekcja';
 };
 
 /** Sama godzina z sekundami w czasie lokalnym. */
