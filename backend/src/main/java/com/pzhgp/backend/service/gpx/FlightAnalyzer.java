@@ -32,6 +32,13 @@ public class FlightAnalyzer {
     private static final long MAX_SPEED_MAX_WINDOW_SECONDS = 60;
 
     /**
+     * Najwięcej punktów sprawdzanych w jednym oknie prędkości maksymalnej. Przy zapisie co 1–5 s okno 60 s
+     * ma najwyżej 61 punktów, więc limit nie zmienia wyniku. Chroni przed plikiem z powtarzającymi się
+     * znacznikami czasu, w którym okno nie osiąga 15 s i analiza porównywałaby każdą parę punktów trasy.
+     */
+    private static final int MAX_SPEED_WINDOW_POINTS = 200;
+
+    /**
      * Prędkość, powyżej której odczyt uznajemy za błąd GPS, a nie za lot gołębia.
      * 3333 m/min to ok. 200 km/h — ponad dwukrotnie więcej niż rekordowe przeloty.
      */
@@ -102,7 +109,7 @@ public class FlightAnalyzer {
             if (from.time() == null) {
                 continue;
             }
-            for (int j = i + 1; j < points.size(); j++) {
+            for (int j = i + 1; j < points.size() && j - i <= MAX_SPEED_WINDOW_POINTS; j++) {
                 GpxPoint to = points.get(j);
                 if (to.time() == null) {
                     continue;

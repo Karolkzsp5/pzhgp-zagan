@@ -1,5 +1,6 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,4 +18,9 @@ public record ForumThreadRequest(
         @NotBlank(message = "Treść pierwszej wiadomości nie może być pusta.")
         @Size(max = 20_000, message = "Treść pierwszej wiadomości może mieć maksymalnie 20000 znaków.")
         String initialPostContent
-) {}
+) {
+    public ForumThreadRequest {
+        // Długość tytułu jest sprawdzana bez spacji na początku i końcu, tak jak przy zmianie tytułu.
+        title = TextUtils.trim(title);
+    }
+}

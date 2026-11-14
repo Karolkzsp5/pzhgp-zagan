@@ -130,6 +130,22 @@ class ForumPostServiceTest {
     }
 
     @Test
+    @DisplayName("Should not allow deleting the first post of a thread separately, even by its author")
+    void getPostsByThread_WhenPostIsFirstInThread_ShouldDisallowDeletion() {
+        Page<ForumPost> page = new PageImpl<>(List.of(post));
+
+        when(threadRepository.existsById(100L)).thenReturn(true);
+        when(breederRepository.findByEmail("post.author@test.pl")).thenReturn(Optional.of(postAuthor));
+        when(postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(100L)).thenReturn(Optional.of(post));
+        when(postRepository.findByThreadId(eq(100L), any(Pageable.class))).thenReturn(page);
+
+        ForumPostDto dto = postService.getPostsByThread(100L, 0, 10, "post.author@test.pl").getContent().getFirst();
+
+        assertTrue(dto.canEdit());
+        assertFalse(dto.canDelete());
+    }
+
+    @Test
     @DisplayName("Should return mapped page of posts with edit=false and delete=true for Moderator viewing Breeder's post")
     void getPostsByThread_WhenRequesterIsModerator_ShouldMapFlagsCorrectly() {
         Page<ForumPost> page = new PageImpl<>(List.of(post));

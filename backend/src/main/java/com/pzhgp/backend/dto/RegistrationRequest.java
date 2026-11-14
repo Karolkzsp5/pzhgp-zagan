@@ -1,6 +1,7 @@
 package com.pzhgp.backend.dto;
 
 import com.pzhgp.backend.utils.PasswordUtils;
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
@@ -58,14 +59,19 @@ public record RegistrationRequest(
         @Size(max = 2048, message = "Token CAPTCHA jest nieprawidłowy.")
         String captchaToken
 ) {
-        public RegistrationRequest {
-                if (email != null) {
-                        email = email.trim().toLowerCase(Locale.ROOT);
-                }
-        }
+    public RegistrationRequest {
+        name = TextUtils.trim(name);
+        surname = TextUtils.trim(surname);
+        city = TextUtils.trim(city);
+        street = TextUtils.trim(street);
 
-        @AssertTrue(message = "Hasło może mieć maksymalnie 72 bajty (UTF-8).")
-        public boolean isPasswordLengthValid() {
-                return PasswordUtils.fitsBcryptLimit(password);
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
         }
+    }
+
+    @AssertTrue(message = "Hasło może mieć maksymalnie 72 bajty (UTF-8).")
+    public boolean isPasswordLengthValid() {
+        return PasswordUtils.fitsBcryptLimit(password);
+    }
 }

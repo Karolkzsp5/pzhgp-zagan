@@ -57,7 +57,7 @@ public record FoundPigeonRequest(
     private static final int MAX_PHONE_DIGITS = 15;
 
     public FoundPigeonRequest {
-        ringNumber = trim(ringNumber);
+        ringNumber = TextUtils.trim(ringNumber);
         contactPhone = TextUtils.trimToNull(contactPhone);
         contactEmail = TextUtils.trimToNull(contactEmail);
         foundLocation = TextUtils.trimToNull(foundLocation);
@@ -78,9 +78,5 @@ public record FoundPigeonRequest(
 
         long digits = contactPhone.chars().filter(Character::isDigit).count();
         return digits >= MIN_PHONE_DIGITS && digits <= MAX_PHONE_DIGITS;
-    }
-
-    private static String trim(String value) {
-        return value == null ? null : value.trim();
     }
 }

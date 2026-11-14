@@ -195,6 +195,35 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should trim the name and address fields before saving a new account")
+    void shouldTrimNameAndAddressFieldsOnRegistration() throws Exception {
+        String requestJson = """
+                {
+                  "name": "  Jan  ",
+                  "surname": " Kowalski ",
+                  "dateOfBirth": "1995-05-15",
+                  "postalCode": "68-100",
+                  "city": "  Żagań ",
+                  "street": " Słowackiego  ",
+                  "houseNumber": "10",
+                  "sectionId": 1,
+                  "email": "trimmed.fields@pzhgp.pl",
+                  "phoneNumber": "555666888",
+                  "password": "SecurePass1!",
+                  "captchaToken": "captcha-test-token"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestJson)).andExpect(status().isCreated());
+
+        Breeder saved = breederRepository.findByEmail("trimmed.fields@pzhgp.pl").orElseThrow();
+        assertEquals("Jan", saved.getName());
+        assertEquals("Kowalski", saved.getSurname());
+        assertEquals("Żagań", saved.getCity());
+        assertEquals("Słowackiego", saved.getStreet());
+    }
+
+    @Test
     @DisplayName("Should return 400 for invalid registration data")
     void shouldReturnBadRequestOnInvalidInputData() throws Exception {
         RegistrationRequest invalidRequest = new RegistrationRequest(

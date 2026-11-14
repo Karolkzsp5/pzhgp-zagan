@@ -469,17 +469,17 @@ describe('Flight Details Page Tests', () => {
     // ==========================================
 
     describe('Invalid Flight ID', () => {
-        it('Should display an error for an invalid flight identifier', () => {
+        it('Should display the 404 page for an invalid flight identifier', () => {
             cy.mockNavbarNotifications();
-            cy.visitAsUser('/flights/abc', breederUser);
+            cy.visitAsUser('/flights/abc', breederUser, { failOnStatusCode: false });
 
             cy.wait(['@getNotifications', '@getUnreadCount']);
 
             cy.checkLoggedInNavbar('Hodowca');
 
-            cy.get('h1').should('be.visible').and('have.text', 'Nie udało się otworzyć lotu');
-            cy.contains('Nieprawidłowy identyfikator lotu.').should('be.visible');
-            cy.contains('a', 'Wróć do listy lotów').should('be.visible').and('have.attr', 'href', '/flights');
+            cy.contains('h1', 'Nie znaleziono strony').should('be.visible');
+            cy.contains('a', 'Wróć na stronę główną').should('be.visible').and('have.attr', 'href', '/');
+            cy.title().should('eq', 'Nie znaleziono strony | PZHGP Żagań');
 
             cy.checkFooter();
         });

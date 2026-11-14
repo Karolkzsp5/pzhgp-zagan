@@ -2,6 +2,7 @@
 
 import {FormEvent, useEffect, useRef, useState} from 'react';
 import Modal from '@/app/components/Modal';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { sectionService } from '@/app/services/sectionService';
 import { FlightPlanEntryDto, FlightResultScope, FlightResultSummaryDto } from '@/app/types/flightPlan';
@@ -20,6 +21,7 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 export default function FlightResultModal({isOpen, entry, onClose, onChanged}: FlightResultModalProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { beginRequest, isLatestRequest, invalidateRequests } = useLatestRequest();
 
     const [sections, setSections] = useState<SectionDto[]>([]);
     const [scope, setScope] = useState<FlightResultScope>('BRANCH');
@@ -65,8 +67,7 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
     useEffect(() => {
         if (!isOpen) return;
 
-        const controller =
-            new AbortController();
+        const requestId = beginRequest();
 
         const loadSections = async () => {
             setIsLoadingSections(true);
@@ -74,19 +75,19 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
             setError('');
 
             try {
-                const data = await sectionService.getSections(controller.signal);
+                const data = await sectionService.getSections();
 
-                if (!controller.signal.aborted) {
+                if (isLatestRequest(requestId)) {
                     setSections(data);
                 }
             } catch (error) {
-                if (controller.signal.aborted) {
+                if (!isLatestRequest(requestId)) {
                     return;
                 }
 
                 setError(getErrorMessage(error, 'Nie udało się pobrać listy sekcji.'));
             } finally {
-                if (!controller.signal.aborted) {
+                if (isLatestRequest(requestId)) {
                     setIsLoadingSections(false);
                 }
             }
@@ -94,10 +95,9 @@ export default function FlightResultModal({isOpen, entry, onClose, onChanged}: F
 
         void loadSections();
 
-        return () => {
-            controller.abort();
-        };
-    }, [isOpen]);
+        // Po zamknięciu okna odpowiedź na trwające zapytanie zostanie pominięta.
+        return invalidateRequests;
+    }, [isOpen, beginRequest, isLatestRequest, invalidateRequests]);
 
     const clearMessages = () => {
         setError('');

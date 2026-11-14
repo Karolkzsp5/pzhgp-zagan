@@ -46,6 +46,9 @@ export default function AdminPanelPage() {
     const [selectedBreeder, setSelectedBreeder] = useState<BreederDto | null>(null);
     const [roleChangeBreeder, setRoleChangeBreeder] = useState<BreederDto | null>(null);
     const [newRole, setNewRole] = useState<UserRole>('BREEDER');
+    // Okno potwierdzenia i okno zmiany roli zostają otwarte do końca zapytania, żeby nie dało się go wysłać dwa razy.
+    const [isActionPending, setIsActionPending] = useState(false);
+    const [isSavingRole, setIsSavingRole] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSection, setFilterSection] = useState<string>('ALL');
@@ -69,7 +72,6 @@ export default function AdminPanelPage() {
             setPendingBreeders(pendingData);
             setRegisteredBreeders(registeredData);
             setSectionsList(sectionsData);
-
         } catch (error) {
             if (!isLatestRequest(requestId)) return;
 
@@ -112,7 +114,15 @@ export default function AdminPanelPage() {
     };
 
     const submitRoleChange = async () => {
-        if (!roleChangeBreeder) return;
+        if (!roleChangeBreeder || isSavingRole) return;
+
+        // Ta sama rola niczego nie zmienia, więc okno zamyka się bez zapytania do serwera.
+        if (newRole === roleChangeBreeder.role) {
+            setRoleChangeBreeder(null);
+            return;
+        }
+
+        setIsSavingRole(true);
 
         try {
             await adminService.changeRole(roleChangeBreeder.id, newRole);
@@ -123,19 +133,25 @@ export default function AdminPanelPage() {
             setRoleChangeBreeder(null);
         } catch (error) {
             setModalMessage(getErrorMessage(error, 'Nie udało się zmienić roli.'));
+        } finally {
+            setIsSavingRole(false);
         }
     };
 
     const processBreeders = useCallback((breeders: BreederDto[]) => {
+        const search = searchTerm.trim().toLocaleLowerCase('pl').replace(/\s+/g, ' ');
+        const searchDigits = search.replace(/\s+/g, '');
+
         return breeders.filter((b) => {
-            const searchLower = searchTerm.trim().toLowerCase();
-            const normalizedSearch = searchLower.replace(/\s+/g, '');
+            // Imię i nazwisko w obu kolejnościach, żeby wyszukać np. „Jan Kowalski” albo „Kowalski Jan”.
+            const fullName = `${b.name} ${b.surname}`.toLocaleLowerCase('pl');
+            const reversedFullName = `${b.surname} ${b.name}`.toLocaleLowerCase('pl');
 
             const matchesSearch =
-                b.name.toLowerCase().includes(searchLower) ||
-                b.surname.toLowerCase().includes(searchLower) ||
-                b.email.toLowerCase().includes(searchLower) ||
-                b.phoneNumber.replace(/\s+/g, '').includes(normalizedSearch);
+                fullName.includes(search) ||
+                reversedFullName.includes(search) ||
+                b.email.toLowerCase().includes(search) ||
+                b.phoneNumber.replace(/\s+/g, '').includes(searchDigits);
 
             const matchesSection = filterSection === 'ALL' || b.sectionId.toString() === filterSection;
 
@@ -159,11 +175,22 @@ export default function AdminPanelPage() {
 
     const closeConfirmDialog = () => setConfirmDialog({ isOpen: false, message: '', action: null, breederId: null });
 
-    const confirmAdminAction = () => {
-        if (confirmDialog.breederId !== null && confirmDialog.action) {
-            void handleAction(confirmDialog.breederId, confirmDialog.action);
+    const confirmAdminAction = async () => {
+        if (isActionPending) return;
+
+        if (confirmDialog.breederId === null || !confirmDialog.action) {
+            closeConfirmDialog();
+            return;
         }
-        closeConfirmDialog();
+
+        setIsActionPending(true);
+
+        try {
+            await handleAction(confirmDialog.breederId, confirmDialog.action);
+        } finally {
+            setIsActionPending(false);
+            closeConfirmDialog();
+        }
     };
 
     const hasActiveFilters = searchTerm.trim().length > 0 || filterSection !== 'ALL';
@@ -551,7 +578,7 @@ export default function AdminPanelPage() {
             {/* Okno zmiany roli */}
             {roleChangeBreeder && (
                 <div data-cy="role-change-modal">
-                    <Modal isOpen title="Zmień rolę" onClose={() => setRoleChangeBreeder(null)} maxWidthClass="max-w-sm">
+                    <Modal isOpen title="Zmień rolę" onClose={() => setRoleChangeBreeder(null)} closeDisabled={isSavingRole} maxWidthClass="max-w-sm">
                         <div className="p-6">
                             <p className="text-sm text-gray-600 mb-6">
                                 Wybierz nowe uprawnienia dla użytkownika:
@@ -567,6 +594,7 @@ export default function AdminPanelPage() {
                                     data-cy="role-select"
                                     value={newRole}
                                     onChange={(e) => setNewRole(e.target.value as UserRole)}
+                                    disabled={isSavingRole}
                                     className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm"
                                 >
                                     <option value="BREEDER">Hodowca</option>
@@ -575,11 +603,11 @@ export default function AdminPanelPage() {
                             </div>
 
                             <div className="flex justify-end space-x-3">
-                                <button data-cy="cancel-role-btn" type="button" onClick={() => setRoleChangeBreeder(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm">
+                                <button data-cy="cancel-role-btn" type="button" onClick={() => setRoleChangeBreeder(null)} disabled={isSavingRole} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition shadow-sm disabled:opacity-50">
                                     Anuluj
                                 </button>
-                                <button data-cy="save-role-btn" type="button" onClick={submitRoleChange} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm">
-                                    Zapisz zmiany
+                                <button data-cy="save-role-btn" type="button" onClick={() => void submitRoleChange()} disabled={isSavingRole} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm disabled:bg-blue-400 disabled:cursor-wait">
+                                    {isSavingRole ? 'Zapisywanie...' : 'Zapisz zmiany'}
                                 </button>
                             </div>
                         </div>
@@ -607,7 +635,8 @@ export default function AdminPanelPage() {
                 variant={confirmDialog.action === 'reject' || confirmDialog.action === 'block' ? 'danger' : 'primary'}
                 confirmLabel="Potwierdź"
                 confirmButtonDataCy="confirm-dialog-btn"
-                onConfirm={confirmAdminAction}
+                isLoading={isActionPending}
+                onConfirm={() => void confirmAdminAction()}
                 onCancel={closeConfirmDialog}
             />
         </AuthGuard>

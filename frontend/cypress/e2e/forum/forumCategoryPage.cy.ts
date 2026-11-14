@@ -456,10 +456,19 @@ describe('Forum Category Page Tests', () => {
     // ==========================================
 
     describe('Invalid Category ID', () => {
-        it('Should display an error for an invalid category identifier', () => {
+        it('Should display the 404 page for an invalid category identifier', () => {
             cy.mockNavbarNotifications();
-            cy.visitAsUser('/forum/abc', breederUser);
-            cy.contains('Nieprawidłowy adres URL. Kategoria nie istnieje.').should('be.visible');
+            cy.visitAsUser('/forum/abc', breederUser, { failOnStatusCode: false });
+
+            cy.contains('h1', 'Nie znaleziono strony').should('be.visible');
+            cy.contains('a', 'Wróć na stronę główną').should('be.visible').and('have.attr', 'href', '/');
+        });
+
+        it('Should display the 404 page for a category identifier that is not a positive number', () => {
+            cy.mockNavbarNotifications();
+            cy.visitAsUser('/forum/0', breederUser, { failOnStatusCode: false });
+
+            cy.contains('h1', 'Nie znaleziono strony').should('be.visible');
         });
     });
 

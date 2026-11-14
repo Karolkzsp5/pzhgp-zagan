@@ -1,5 +1,6 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -29,4 +30,9 @@ public record ContactUpdateRequest(
         @Size(max = 10, message = "Numer domu/lokalu może mieć maksymalnie 10 znaków.")
         @Pattern(regexp = "^[1-9]\\d*\\s?[a-zA-Z]?(\\s?[\\/-]\\s?[1-9]\\d*\\s?[a-zA-Z]?)?$", message = "Podaj poprawny numer domu/lokalu (np. 12, 12A, 12/4).")
         String houseNumber
-) {}
+) {
+    public ContactUpdateRequest {
+        city = TextUtils.trim(city);
+        street = TextUtils.trim(street);
+    }
+}

@@ -1063,14 +1063,14 @@ describe('Flight Plan Details Page Tests', () => {
     // ==========================================
 
     describe('Invalid Year', () => {
-        it('Should display an error for an invalid flight plan year', () => {
+        it('Should display the 404 page for an invalid flight plan year', () => {
             cy.mockNavbarNotifications();
-            cy.visitAsUser('/flight-plans/abc', breederUser);
+            cy.visitAsUser('/flight-plans/abc', breederUser, { failOnStatusCode: false });
 
             cy.wait(['@getNotifications', '@getUnreadCount']);
 
-            cy.contains('Nieprawidłowy rok planu lotów.').should('be.visible');
-            cy.contains('button', 'Spróbuj ponownie').should('be.visible');
+            cy.contains('h1', 'Nie znaleziono strony').should('be.visible');
+            cy.contains('a', 'Wróć na stronę główną').should('be.visible').and('have.attr', 'href', '/');
         });
     });
 

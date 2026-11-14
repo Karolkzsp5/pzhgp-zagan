@@ -1,5 +1,6 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,4 +14,8 @@ public record AnnouncementRequest(
         String content,
 
         boolean isPinned
-) {}
+) {
+    public AnnouncementRequest {
+        title = TextUtils.trim(title);
+    }
+}

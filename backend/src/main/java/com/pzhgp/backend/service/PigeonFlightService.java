@@ -49,6 +49,13 @@ public class PigeonFlightService {
     /** Okno czasowe wygładzania prędkości chwilowej, w sekundach. */
     private static final long SPEED_SMOOTHING_WINDOW_SECONDS = 10;
 
+    /**
+     * Najwięcej punktów w oknie wygładzania prędkości. Przy zapisie co 1–5 s okno 10 s ma kilka punktów,
+     * więc limit nie zmienia wyniku. Chroni przed plikiem z powtarzającymi się znacznikami czasu,
+     * w którym okno rozszerzałoby się dla każdego punktu na całą trasę.
+     */
+    private static final int MAX_SMOOTHING_WINDOW_POINTS = 100;
+
     /** Nazwa zapisywana, gdy przeglądarka nie przesłała nazwy pliku. */
     private static final String DEFAULT_FILE_NAME = "trasa.gpx";
 
@@ -222,7 +229,7 @@ public class PigeonFlightService {
         int left = index;
         int right = index;
 
-        while (true) {
+        while (right - left < MAX_SMOOTHING_WINDOW_POINTS) {
             GpxPoint from = points.get(left);
             GpxPoint to = points.get(right);
             if (from.time() != null && to.time() != null && Duration.between(from.time(), to.time()).getSeconds() >= SPEED_SMOOTHING_WINDOW_SECONDS) {

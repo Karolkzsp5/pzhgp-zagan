@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -275,6 +276,30 @@ class FlightAnalyzerTest {
             assertEquals(60, analysis.durationSeconds());
             assertTrue(analysis.averageSpeedMetersPerMinute() > 0);
         }
+    }
+
+    @Test
+    @DisplayName("Should analyze a long track with repeated timestamps without comparing every pair of points")
+    void analyzesRepeatedTimestampsQuickly() {
+        List<GpxPoint> points = repeatedTimestampTrack(100_000);
+
+        FlightAnalysis analysis = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> analyzer.analyze(points));
+
+        assertEquals(100_001, analysis.totalPoints());
+        assertEquals(3600, analysis.durationSeconds());
+    }
+
+    /** Trasa, w której wszystkie punkty poza ostatnim mają ten sam znacznik czasu. */
+    private List<GpxPoint> repeatedTimestampTrack(int repeatedPoints) {
+        Instant base = Instant.parse("2026-08-30T05:00:00Z");
+        List<GpxPoint> points = new ArrayList<>(repeatedPoints + 1);
+
+        for (int i = 0; i < repeatedPoints; i++) {
+            points.add(new GpxPoint(51.0 + i * 0.00001, 15.0, 120.0, base));
+        }
+
+        points.add(new GpxPoint(51.6, 15.0, 120.0, base.plusSeconds(3600)));
+        return points;
     }
 
     private List<GpxPoint> straightLine(double startLat, double longitude, double latitudeStep, int count, int secondsStep) {

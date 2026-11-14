@@ -10,6 +10,7 @@ import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { forumService } from '@/app/services/forumService';
 import { ForumCategoryDto } from '@/app/types/forum';
 import { getErrorMessage } from '@/app/utils/apiClient';
@@ -23,20 +24,30 @@ export default function ForumPage() {
     const [editingCategory, setEditingCategory] = useState<ForumCategoryDto | null>(null);
 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const loadCategories = useCallback(async () => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setError('');
 
         try {
             const data = await forumService.getCategories();
+
+            if (!isLatestRequest(requestId)) return;
+
             setCategories(data);
         } catch (error) {
+            if (!isLatestRequest(requestId)) return;
+
             setError(getErrorMessage(error, 'Nie udało się pobrać danych forum.'));
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         if (!isLoggedIn) return;

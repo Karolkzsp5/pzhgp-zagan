@@ -129,6 +129,17 @@ class ForumPostIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should mark the first post of a thread as not deletable, even for its author")
+    void getPostsByThread_ShouldNotAllowDeletingFirstPost() throws Exception {
+        mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts").with(cookieAuth(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].body").value("Admin otworzył wątek"))
+                .andExpect(jsonPath("$.content[0].canEdit").value(true))
+                .andExpect(jsonPath("$.content[0].canDelete").value(false))
+                .andExpect(jsonPath("$.content[1].canDelete").value(true));
+    }
+
+    @Test
     @DisplayName("Should return mapped posts belonging to the requested thread")
     void getPostsByThread_ShouldReturnRealData() throws Exception {
         mockMvc.perform(get("/api/forum/threads/" + thread.getId() + "/posts").with(cookieAuth(postAuthorToken)))

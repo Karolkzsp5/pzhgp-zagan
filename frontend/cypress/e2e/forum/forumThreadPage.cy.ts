@@ -966,10 +966,12 @@ describe('Forum Thread Page Tests', () => {
     // ==========================================
 
     describe('Invalid Thread ID', () => {
-        it('Should display an error for an invalid thread identifier', () => {
+        it('Should display the 404 page for an invalid thread identifier', () => {
             cy.mockNavbarNotifications();
-            cy.visitAsUser('/forum/thread/abc', breederUser);
-            cy.contains('Nieprawidłowy adres URL. Wątek nie istnieje.').should('be.visible');
+            cy.visitAsUser('/forum/thread/abc', breederUser, { failOnStatusCode: false });
+
+            cy.contains('h1', 'Nie znaleziono strony').should('be.visible');
+            cy.contains('a', 'Wróć na stronę główną').should('be.visible').and('have.attr', 'href', '/');
         });
     });
 

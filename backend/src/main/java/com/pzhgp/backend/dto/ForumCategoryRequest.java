@@ -1,5 +1,6 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,4 +17,9 @@ public record ForumCategoryRequest(
         @NotNull(message = "Kolejność wyświetlania jest wymagana.")
         @Min(value = 1, message = "Kolejność wyświetlania musi wynosić co najmniej 1.")
         Integer sortOrder
-) {}
+) {
+    public ForumCategoryRequest {
+        name = TextUtils.trim(name);
+        description = TextUtils.trim(description);
+    }
+}

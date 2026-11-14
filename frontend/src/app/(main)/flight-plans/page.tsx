@@ -10,6 +10,7 @@ import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
 import Modal from '@/app/components/Modal';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { flightPlanService } from '@/app/services/flightPlanService';
 import { FlightPlanSummaryDto } from '@/app/types/flightPlan';
 import { getErrorMessage } from '@/app/utils/apiClient';
@@ -27,21 +28,32 @@ export default function FlightPlansPage() {
     const [formError, setFormError] = useState('');
 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const isAdministrator = user?.role === 'ADMINISTRATOR';
 
     const loadPlans = useCallback(async () => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setLoadError('');
 
         try {
-            setPlans(await flightPlanService.getAllPlans());
+            const data = await flightPlanService.getAllPlans();
+
+            if (!isLatestRequest(requestId)) return;
+
+            setPlans(data);
         } catch (error) {
+            if (!isLatestRequest(requestId)) return;
+
             setLoadError(getErrorMessage(error, 'Nie udało się pobrać planów lotów.'));
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         if (!isLoggedIn) return;
