@@ -11,6 +11,7 @@ import { accountService } from '@/app/services/accountService';
 import { AccountDto } from '@/app/types/account';
 import { getErrorMessage } from '@/app/utils/apiClient';
 import { invalidateAuthSession } from '@/app/utils/authSession';
+import { downloadFile } from '@/app/utils/download';
 import { formatAccountAge, formatInstantDate, formatLocalDate, formatRole } from '@/app/utils/formatters';
 import ContactDetailsForm from './ContactDetailsForm';
 import PasswordChangeForm from './PasswordChangeForm';
@@ -92,18 +93,7 @@ export default function SettingsPage() {
         try {
             const data = await accountService.exportData();
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const objectUrl = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = `pzhgp-moje-dane-${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            window.setTimeout(() => {
-                URL.revokeObjectURL(objectUrl);
-            }, 60_000);
+            downloadFile(blob, `pzhgp-moje-dane-${new Date().toISOString().slice(0, 10)}.json`);
         } catch (error) {
             showAlert('Nie udało się pobrać danych', getErrorMessage(error, 'Wystąpił błąd podczas przygotowywania pliku z danymi.'));
         } finally {

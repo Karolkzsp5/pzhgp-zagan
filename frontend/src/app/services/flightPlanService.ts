@@ -83,11 +83,11 @@ export const flightPlanService = {
         return body.id as number;
     },
 
-    getResultFile: async (resultId: number): Promise<Blob> => {
+    getResultText: async (resultId: number): Promise<string> => {
         const response = await fetchWithAuth(`${API_URL}/api/flight-results/${resultId}/file`);
         await ensureOk(response, 'Nie udało się pobrać wyników lotu.');
 
-        return response.blob();
+        return response.text();
     },
 
     deleteResult: async (resultId: number): Promise<void> => {

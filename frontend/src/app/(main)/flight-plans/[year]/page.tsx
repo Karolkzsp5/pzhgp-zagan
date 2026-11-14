@@ -10,12 +10,13 @@ import EmptyState from '@/app/components/EmptyState';
 import ErrorState from '@/app/components/ErrorState';
 import FlightPlanEntryModal from '@/app/components/FlightPlanEntryModal';
 import FlightResultModal from '@/app/components/FlightResultModal';
+import FlightResultPreviewModal from '@/app/components/FlightResultPreviewModal';
 import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
 import { flightPlanService } from '@/app/services/flightPlanService';
-import { FlightPlanDetailsDto, FlightPlanEntryDto, FlightResultSummaryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
+import { FlightPlanDetailsDto, FlightPlanEntryDto, PigeonAgeGroup } from '@/app/types/flightPlan';
 import { getErrorMessage } from '@/app/utils/apiClient';
-import { formatLocalDate } from '@/app/utils/formatters';
+import { formatFlightResultLabel, formatLocalDate } from '@/app/utils/formatters';
 
 interface FlightPlanYearPageProps {
     params: Promise<{
@@ -31,18 +32,21 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
-    const [openingResultId, setOpeningResultId] = useState<number | null>(null);
     const [openActionsId, setOpenActionsId] = useState<number | null>(null);
 
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [entryAgeGroup, setEntryAgeGroup] = useState<PigeonAgeGroup>('ADULT');
     const [editingEntry, setEditingEntry] = useState<FlightPlanEntryDto | null>(null);
     const [resultEntryId, setResultEntryId] = useState<number | null>(null);
+    const [previewResultId, setPreviewResultId] = useState<number | null>(null);
 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
 
     const isAdministrator = user?.role === 'ADMINISTRATOR';
-    const resultEntry = plan ? [...plan.adultFlights, ...plan.youngFlights].find(flight => flight.id === resultEntryId) ?? null : null;
+    const allFlights = plan ? [...plan.adultFlights, ...plan.youngFlights] : [];
+    const resultEntry = allFlights.find(flight => flight.id === resultEntryId) ?? null;
+    const previewFlight = allFlights.find(flight => flight.results.some(result => result.id === previewResultId)) ?? null;
+    const previewResult = previewFlight?.results.find(result => result.id === previewResultId) ?? null;
 
     const loadPlan = useCallback(async () => {
         if (!Number.isInteger(year)) {
@@ -68,37 +72,6 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
 
         void loadPlan();
     }, [isLoggedIn, loadPlan]);
-
-    const handleOpenResult = async (resultId: number) => {
-        const resultWindow = window.open('', '_blank');
-
-        if (!resultWindow) {
-            showAlert(
-                'Nie można otworzyć wyników',
-                'Przeglądarka zablokowała otwarcie nowej karty. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.'
-            );
-            return;
-        }
-
-        setOpeningResultId(resultId);
-
-        try {
-            const blob = await flightPlanService.getResultFile(resultId);
-            const objectUrl = URL.createObjectURL(blob);
-
-            resultWindow.location.href = objectUrl;
-
-            window.setTimeout(() => {
-                URL.revokeObjectURL(objectUrl);
-            }, 60_000);
-        } catch (error) {
-            resultWindow.close();
-
-            showAlert('Nie udało się otworzyć wyników', getErrorMessage(error, 'Wystąpił błąd podczas pobierania wyników lotu.'));
-        } finally {
-            setOpeningResultId(null);
-        }
-    };
 
     const handleAddFlight = (ageGroup: PigeonAgeGroup) => {
         setEntryAgeGroup(ageGroup);
@@ -172,11 +145,10 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                                 ageGroup="ADULT"
                                 flights={plan.adultFlights}
                                 isAdministrator={isAdministrator}
-                                openingResultId={openingResultId}
                                 openActionsId={openActionsId}
                                 onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
-                                onOpenResult={handleOpenResult}
+                                onOpenResult={setPreviewResultId}
                                 onManageResults={handleManageResults}
                                 onAddFlight={handleAddFlight}
                                 onEditFlight={handleEditFlight}
@@ -188,11 +160,10 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                                 ageGroup="YOUNG"
                                 flights={plan.youngFlights}
                                 isAdministrator={isAdministrator}
-                                openingResultId={openingResultId}
                                 openActionsId={openActionsId}
                                 onToggleActions={id => setOpenActionsId(previous => previous === id ? null : id)}
                                 onCloseActions={() => setOpenActionsId(null)}
-                                onOpenResult={handleOpenResult}
+                                onOpenResult={setPreviewResultId}
                                 onManageResults={handleManageResults}
                                 onAddFlight={handleAddFlight}
                                 onEditFlight={handleEditFlight}
@@ -223,6 +194,15 @@ export default function FlightPlanYearPage({params}: FlightPlanYearPageProps) {
                     />
                 )}
 
+                {previewFlight && previewResult && (
+                    <FlightResultPreviewModal
+                        key={previewResult.id}
+                        flight={previewFlight}
+                        result={previewResult}
+                        onClose={() => setPreviewResultId(null)}
+                    />
+                )}
+
                 <ConfirmModal {...dialog} />
             </>
         </AuthGuard>
@@ -234,11 +214,10 @@ interface FlightTableSectionProps {
     ageGroup: PigeonAgeGroup;
     flights: FlightPlanEntryDto[];
     isAdministrator: boolean;
-    openingResultId: number | null;
     openActionsId: number | null;
     onToggleActions: (flightId: number) => void;
     onCloseActions: () => void;
-    onOpenResult: (resultId: number) => Promise<void>;
+    onOpenResult: (resultId: number) => void;
     onManageResults: (flight: FlightPlanEntryDto) => void;
     onAddFlight: (ageGroup: PigeonAgeGroup) => void;
     onEditFlight: (flight: FlightPlanEntryDto) => void;
@@ -250,7 +229,6 @@ function FlightTableSection({
                                 ageGroup,
                                 flights,
                                 isAdministrator,
-                                openingResultId,
                                 openActionsId,
                                 onToggleActions,
                                 onCloseActions,
@@ -308,7 +286,6 @@ function FlightTableSection({
                                 rowNumber={index + 1}
                                 flight={flight}
                                 isAdministrator={isAdministrator}
-                                openingResultId={openingResultId}
                                 openActionsId={openActionsId}
                                 onToggleActions={onToggleActions}
                                 onCloseActions={onCloseActions}
@@ -341,11 +318,10 @@ interface FlightTableRowProps {
     rowNumber: number;
     flight: FlightPlanEntryDto;
     isAdministrator: boolean;
-    openingResultId: number | null;
     openActionsId: number | null;
     onToggleActions: (flightId: number) => void;
     onCloseActions: () => void;
-    onOpenResult: (resultId: number) => Promise<void>;
+    onOpenResult: (resultId: number) => void;
     onManageResults: (flight: FlightPlanEntryDto) => void;
     onEditFlight: (flight: FlightPlanEntryDto) => void;
     onDeleteFlight: (flight: FlightPlanEntryDto) => void;
@@ -355,7 +331,6 @@ function FlightTableRow({
                             rowNumber,
                             flight,
                             isAdministrator,
-                            openingResultId,
                             openActionsId,
                             onToggleActions,
                             onCloseActions,
@@ -370,10 +345,8 @@ function FlightTableRow({
         if (!resultId) return;
 
         event.target.value = '';
-        void onOpenResult(resultId);
+        onOpenResult(resultId);
     };
-
-    const isOpeningThisFlight = flight.results.some(result => result.id === openingResultId);
 
     return (
         <tr className="bg-white even:bg-slate-50 transition duration-150">
@@ -410,17 +383,16 @@ function FlightTableRow({
                     <select
                         defaultValue=""
                         onChange={handleResultChange}
-                        disabled={isOpeningThisFlight}
                         aria-label={`Wyniki lotu ${flight.location}`}
                         className="block w-48 max-w-full mx-auto px-3 py-1.5 border border-gray-300 rounded-md text-sm text-left text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                         <option value="" disabled hidden>
-                            {isOpeningThisFlight ? 'Otwieranie...' : 'Wybierz wyniki'}
+                            Wybierz wyniki
                         </option>
 
                         {flight.results.map(result => (
                             <option key={result.id} value={result.id}>
-                                {formatResultLabel(result)}
+                                {formatFlightResultLabel(result)}
                             </option>
                         ))}
                     </select>
@@ -477,16 +449,4 @@ function FlightTableRow({
             )}
         </tr>
     );
-}
-
-function formatResultLabel(result: FlightResultSummaryDto): string {
-    if (result.scope === 'BRANCH') {
-        return 'Oddział';
-    }
-
-    if (result.sectionSortOrder !== null && result.sectionName) {
-        return `Sekcja ${result.sectionSortOrder} ${result.sectionName}`;
-    }
-
-    return result.sectionName ?? 'Sekcja';
 }
