@@ -34,7 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -256,6 +258,36 @@ class PigeonFlightServiceTest {
 
         assertFalse(captor.getValue().isTimestampsAvailable());
         assertTrue(captor.getValue().getTrackPoints().stream().allMatch(point -> point.getSpeedMetersPerMinute() == null));
+    }
+
+    @Test
+    @DisplayName("Should calculate point speeds for a long track with repeated timestamps without scanning the whole route for every point")
+    void computesSpeedsForRepeatedTimestampsQuickly() {
+        when(breederRepository.findByEmail("jan@example.com")).thenReturn(Optional.of(owner));
+        when(flightRepository.countByOwner(owner)).thenReturn(0L);
+        when(flightRepository.save(any(PigeonFlight.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Instant base = Instant.parse("2026-08-30T05:00:00Z");
+        List<GpxPoint> points = new ArrayList<>();
+        for (int i = 0; i < 100_000; i++) {
+            points.add(new GpxPoint(51.0 + i * 0.00001, 15.0, 120.0, base));
+        }
+        points.add(new GpxPoint(51.6, 15.0, 120.0, base.plusSeconds(3600)));
+
+        doReturn(new GpxTrack("Ring-1234", "1234", "Test", points)).when(gpxParser).parse(any(InputStream.class));
+
+        MockMultipartFile file = new MockMultipartFile("file", "repeated-time.gpx",
+                "application/gpx+xml", "<gpx/>".getBytes(StandardCharsets.UTF_8));
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> pigeonFlightService.uploadFlight(file, null, "jan@example.com"));
+
+        ArgumentCaptor<PigeonFlight> captor = ArgumentCaptor.forClass(PigeonFlight.class);
+        verify(flightRepository).save(captor.capture());
+
+        List<FlightTrackPoint> storedPoints = captor.getValue().getTrackPoints();
+        assertEquals(100_001, storedPoints.size());
+        // Punkty z tym samym czasem nie mają prędkości: ich okno nie obejmuje upływu czasu.
+        assertNull(storedPoints.get(1000).getSpeedMetersPerMinute());
     }
 
     @Test

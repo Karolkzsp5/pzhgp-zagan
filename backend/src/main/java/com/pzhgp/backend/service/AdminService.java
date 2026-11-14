@@ -106,6 +106,15 @@ public class AdminService {
             throw new IllegalArgumentException("Przekazano nieprawidłową rolę.");
         }
 
+        if (breeder.getStatus() == AccountStatus.PENDING) {
+            throw new ResourceConflictException("Nie można zmienić roli konta, które czeka na akceptację.");
+        }
+
+        // Ta sama rola niczego nie zmienia, więc nie ma też o czym powiadamiać.
+        if (breeder.getRole() == newRole) {
+            return;
+        }
+
         breeder.setRole(newRole);
         breederRepository.save(breeder);
 

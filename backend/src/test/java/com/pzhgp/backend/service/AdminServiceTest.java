@@ -259,6 +259,47 @@ class AdminServiceTest {
     }
 
     @Test
+    @DisplayName("Should neither save nor notify when the new role is the same as the current one")
+    void shouldIgnoreRoleChangeToTheSameRole() {
+        when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
+
+        assertDoesNotThrow(() -> adminService.changeRole(2L, Role.BREEDER, "admin@test.pl"));
+
+        assertEquals(Role.BREEDER, activeBreeder.getRole());
+        verify(breederRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceConflictException when changing the role of an account waiting for approval")
+    void shouldRejectRoleChangeForPendingAccount() {
+        when(breederRepository.findById(1L)).thenReturn(Optional.of(pendingBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
+
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> adminService.changeRole(1L, Role.MODERATOR, "admin@test.pl"));
+
+        assertEquals("Nie można zmienić roli konta, które czeka na akceptację.", ex.getMessage());
+        assertEquals(Role.BREEDER, pendingBreeder.getRole());
+        verify(breederRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("Should allow changing the role of a blocked account")
+    void shouldChangeRoleOfBlockedAccount() {
+        activeBreeder.setStatus(AccountStatus.BLOCKED);
+        activeBreeder.setRole(Role.MODERATOR);
+        when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));
+        when(breederRepository.findByEmail("admin@test.pl")).thenReturn(Optional.of(adminBreeder));
+
+        assertDoesNotThrow(() -> adminService.changeRole(2L, Role.BREEDER, "admin@test.pl"));
+
+        assertEquals(Role.BREEDER, activeBreeder.getRole());
+        verify(breederRepository).save(activeBreeder);
+    }
+
+    @Test
     @DisplayName("Should throw IllegalArgumentException when trying to grant the administrator role")
     void shouldThrowExceptionOnAdministratorRole() {
         when(breederRepository.findById(2L)).thenReturn(Optional.of(activeBreeder));

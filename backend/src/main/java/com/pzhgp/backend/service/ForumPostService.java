@@ -44,7 +44,10 @@ public class ForumPostService {
         PaginationUtils.validate(page, size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id")));
 
-        return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester));
+        // Pierwszego wpisu nie da się usunąć osobno (usuwa się cały wątek), więc nie dostaje przycisku „Usuń”.
+        Long firstPostId = postRepository.findFirstByThreadIdOrderByCreatedAtAscIdAsc(threadId).map(ForumPost::getId).orElse(null);
+
+        return postRepository.findByThreadId(threadId, pageable).map(post -> mapToDto(post, requester, post.getId().equals(firstPostId)));
     }
 
     @Transactional
@@ -120,7 +123,7 @@ public class ForumPostService {
         threadRepository.save(thread);
     }
 
-    private ForumPostDto mapToDto(ForumPost post, Breeder requester) {
+    private ForumPostDto mapToDto(ForumPost post, Breeder requester, boolean isFirstPost) {
         return new ForumPostDto(
                 post.getId(),
                 post.getAuthor().getFullName(),
@@ -129,7 +132,7 @@ public class ForumPostService {
                 post.getCreatedAt(),
                 post.getEditedAt(),
                 PermissionRules.canEditForumContent(post.getAuthor(), requester),
-                PermissionRules.canDeleteForumContent(post.getAuthor(), requester)
+                !isFirstPost && PermissionRules.canDeleteForumContent(post.getAuthor(), requester)
         );
     }
 }

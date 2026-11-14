@@ -254,6 +254,21 @@ class ForumThreadIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should check the length of a new thread title without leading and trailing spaces")
+    void createThread_WithTitleTooShortAfterTrimming_ShouldReturn400() throws Exception {
+        String requestJson = """
+                {"categoryId": %d, "title": "   abc   ", "initialPostContent": "Prawidłowa treść"}
+                """.formatted(category.getId());
+
+        mockMvc.perform(post("/api/forum/threads")
+                        .with(cookieAuth(authorToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Tytuł wątku musi mieć od 5 do 150 znaków."));
+    }
+
+    @Test
     @DisplayName("Should return 400 when creating a thread with an empty title")
     void createThread_WithEmptyTitle_ShouldReturn400() throws Exception {
         ForumThreadRequest request = new ForumThreadRequest(category.getId(), "", "Prawidłowa treść");

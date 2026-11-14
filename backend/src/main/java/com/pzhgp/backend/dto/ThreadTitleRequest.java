@@ -1,5 +1,6 @@
 package com.pzhgp.backend.dto;
 
+import com.pzhgp.backend.utils.TextUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -10,6 +11,6 @@ public record ThreadTitleRequest(
 ) {
     public ThreadTitleRequest {
         // Długość jest sprawdzana bez spacji na początku i końcu.
-        title = title == null ? null : title.trim();
+        title = TextUtils.trim(title);
     }
 }
