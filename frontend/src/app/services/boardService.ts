@@ -10,8 +10,8 @@ export const boardService = {
     },
 
     /** Aktywni hodowcy do wyboru w formularzu zarządu (tylko dla administratora). */
-    getBoardCandidates: async (signal?: AbortSignal): Promise<BoardCandidateDto[]> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board/candidates`, { signal });
+    getBoardCandidates: async (): Promise<BoardCandidateDto[]> => {
+        const response = await fetchWithAuth(`${API_URL}/api/board/candidates`);
         await ensureOk(response, 'Nie udało się pobrać listy hodowców.');
         return response.json();
     },

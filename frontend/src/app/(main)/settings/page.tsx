@@ -7,6 +7,7 @@ import ConfirmModal from '@/app/components/ConfirmModal';
 import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { accountService } from '@/app/services/accountService';
 import { AccountDto } from '@/app/types/account';
 import { getErrorMessage } from '@/app/utils/apiClient';
@@ -52,19 +53,30 @@ export default function SettingsPage() {
     const [isExporting, setIsExporting] = useState(false);
 
     const { dialog, showAlert, showConfirm } = useConfirmDialog();
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const loadAccount = useCallback(async () => {
+        const requestId = beginRequest();
+
         setIsLoading(true);
         setError('');
 
         try {
-            setAccount(await accountService.getAccount());
+            const data = await accountService.getAccount();
+
+            if (!isLatestRequest(requestId)) return;
+
+            setAccount(data);
         } catch (error) {
+            if (!isLatestRequest(requestId)) return;
+
             setError(getErrorMessage(error, 'Nie udało się pobrać danych konta.'));
         } finally {
-            setIsLoading(false);
+            if (isLatestRequest(requestId)) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [beginRequest, isLatestRequest]);
 
     useEffect(() => {
         if (!isLoggedIn) return;

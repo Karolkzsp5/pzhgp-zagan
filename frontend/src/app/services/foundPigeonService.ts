@@ -23,12 +23,12 @@ export const foundPigeonService = {
     },
 
     /** Lista zgłoszeń dla panelu administratora. */
-    getReports: async (status: FoundPigeonStatus | null, ringNumber: string, page = 0, size = 10, signal?: AbortSignal): Promise<PageResponse<FoundPigeonDto>> => {
+    getReports: async (status: FoundPigeonStatus | null, ringNumber: string, page = 0, size = 10): Promise<PageResponse<FoundPigeonDto>> => {
         const params = new URLSearchParams({ page: String(page), size: String(size) });
         if (status) params.set('status', status);
         if (ringNumber.trim()) params.set('ringNumber', ringNumber.trim());
 
-        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons?${params}`, { signal });
+        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons?${params}`);
         await ensureOk(response, 'Nie udało się pobrać zgłoszeń.');
         return response.json();
     },

@@ -10,7 +10,7 @@ declare namespace Cypress {
         mockNavbarNotifications(): Chainable<void>;
         mockTurnstile(token?: string | null): Chainable<void>;
         waitForHydration(selector?: string): Chainable<void>;
-        visitAsUser(url: string, user: import('./testUtils').MockCurrentUser): Chainable<void>;
+        visitAsUser(url: string, user: import('./testUtils').MockCurrentUser, options?: Partial<VisitOptions>): Chainable<void>;
     }
 }
 
@@ -102,13 +102,15 @@ Cypress.Commands.add('waitForHydration', (selector = 'form') => {
     });
 });
 
-Cypress.Commands.add('visitAsUser', (url: string, user: import('./testUtils').MockCurrentUser) => {
+// Opcje trafiają do cy.visit, np. { failOnStatusCode: false } dla strony 404.
+Cypress.Commands.add('visitAsUser', (url: string, user: import('./testUtils').MockCurrentUser, options: Partial<Cypress.VisitOptions> = {}) => {
     cy.intercept('GET', '**/api/auth/me', {
         statusCode: 200,
         body: user
     }).as('getCurrentUser');
 
     cy.visit(url, {
+        ...options,
         onBeforeLoad: (win) => {
             // Mockowany token CSRF dla żądań POST/PUT/DELETE wykonywanych przez fetchApi.
             win.document.cookie = 'XSRF-TOKEN=cypress-test-csrf; Path=/; SameSite=Lax';

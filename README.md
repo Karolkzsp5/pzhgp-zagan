@@ -265,6 +265,7 @@ npm run cypress:run      # testy end-to-end w trybie bez okna
 Przy uruchamianiu aplikacji na serwerze zwróć uwagę na kilka ustawień:
 
 - **HTTPS:** aplikacja powinna działać przez HTTPS, z `AUTH_COOKIE_SECURE=true`.
+- **Jeden adres dla frontendu i backendu:** frontend odczytuje token CSRF z ciasteczka ustawianego przez backend, a przeglądarka udostępnia je tylko stronom z tego samego hosta. Oba serwery muszą więc działać pod jednym adresem, np. nginx przekazuje zapytania `/api/` do backendu, a pozostałe do frontendu. `NEXT_PUBLIC_API_URL` to wtedy publiczny adres aplikacji (np. `https://zagan.example.pl`). Przy backendzie pod osobną domeną (np. `api.zagan.example.pl`) zapisywanie danych nie zadziała.
 - **Adresy:** `CORS_ALLOWED_ORIGINS` i `FRONTEND_URL` muszą wskazywać publiczny adres frontendu.
 - **Reverse proxy:** za proxy ustaw `FORWARD_HEADERS_STRATEGY=native`, żeby limity zapytań widziały adres klienta.
 - **CAPTCHA:** zamiast kluczy testowych użyj kluczy własnego widżetu Turnstile i dodaj domenę aplikacji w panelu Cloudflare.

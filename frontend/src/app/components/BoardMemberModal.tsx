@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Modal from '@/app/components/Modal';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { boardService } from '@/app/services/boardService';
 import { sectionService } from '@/app/services/sectionService';
 import { BOARD_ROLE_LABELS, BRANCH_ROLE_ORDER, BoardCandidateDto, BoardMemberDto, BoardMemberRequest, BoardRole, SECTION_ROLES, SECTION_ROLE_ORDER } from '@/app/types/board';
@@ -28,6 +29,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
     const [sections, setSections] = useState<SectionDto[]>([]);
     const [breeders, setBreeders] = useState<BoardCandidateDto[]>([]);
+    const { beginRequest, isLatestRequest, invalidateRequests } = useLatestRequest();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDictionaryLoading, setIsDictionaryLoading] = useState(false);
@@ -71,7 +73,7 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
     useEffect(() => {
         if (!isOpen) return;
 
-        const controller = new AbortController();
+        const requestId = beginRequest();
 
         const fetchDictionaries = async () => {
             setIsDictionaryLoading(true);
@@ -80,24 +82,25 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
             setError(null);
 
             try {
-                const [sectionsData, candidatesData] = await Promise.all([sectionService.getSections(controller.signal),
-                    boardService.getBoardCandidates(controller.signal)
+                const [sectionsData, candidatesData] = await Promise.all([
+                    sectionService.getSections(),
+                    boardService.getBoardCandidates()
                 ]);
 
-                if (controller.signal.aborted) {
+                if (!isLatestRequest(requestId)) {
                     return;
                 }
 
                 setSections(sectionsData);
                 setBreeders(candidatesData);
             } catch (error) {
-                if (controller.signal.aborted) {
+                if (!isLatestRequest(requestId)) {
                     return;
                 }
 
                 setError(getErrorMessage(error, 'Wystąpił problem z połączeniem.'));
             } finally {
-                if (!controller.signal.aborted) {
+                if (isLatestRequest(requestId)) {
                     setIsDictionaryLoading(false);
                 }
             }
@@ -105,10 +108,9 @@ export default function BoardMemberModal({ isOpen, onClose, onSaved, memberToEdi
 
         void fetchDictionaries();
 
-        return () => {
-            controller.abort();
-        };
-    }, [isOpen]);
+        // Po zamknięciu okna odpowiedź na trwające zapytanie zostanie pominięta.
+        return invalidateRequests;
+    }, [isOpen, beginRequest, isLatestRequest, invalidateRequests]);
 
     useEffect(() => {
         if (memberToEdit) {

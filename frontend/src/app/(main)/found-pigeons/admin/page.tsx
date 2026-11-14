@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import AuthGuard from '@/app/components/AuthGuard';
 import { useAuth } from '@/app/components/AuthProvider';
@@ -10,6 +10,7 @@ import ErrorState from '@/app/components/ErrorState';
 import LoadingState from '@/app/components/LoadingState';
 import Pagination from '@/app/components/Pagination';
 import useConfirmDialog from '@/app/hooks/useConfirmDialog';
+import useLatestRequest from '@/app/hooks/useLatestRequest';
 import { foundPigeonService } from '@/app/services/foundPigeonService';
 import { ALLOWED_STATUS_TRANSITIONS, FoundPigeonDto, FoundPigeonStatus, STATUS_BADGE_CLASSES, formatReportLanguage, formatReportStatus, formatStatusAction } from '@/app/types/foundPigeon';
 import { getErrorMessage } from '@/app/utils/apiClient';
@@ -45,7 +46,7 @@ export default function FoundPigeonsAdminPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
-    const requestControllerRef = useRef<AbortController | null>(null);
+    const { beginRequest, isLatestRequest } = useLatestRequest();
 
     const [selected, setSelected] = useState<FoundPigeonDto | null>(null);
     const [noteDraft, setNoteDraft] = useState('');
@@ -60,18 +61,15 @@ export default function FoundPigeonsAdminPage() {
 
     const fetchReports = useCallback(
         async (targetPage: number, status: FoundPigeonStatus | null, ringNumber: string) => {
-            requestControllerRef.current?.abort();
-
-            const controller = new AbortController();
-            requestControllerRef.current = controller;
+            const requestId = beginRequest();
 
             setIsLoading(true);
             setLoadError('');
 
             try {
-                const result = await foundPigeonService.getReports(status, ringNumber, targetPage, PAGE_SIZE, controller.signal);
+                const result = await foundPigeonService.getReports(status, ringNumber, targetPage, PAGE_SIZE);
 
-                if (controller.signal.aborted) {
+                if (!isLatestRequest(requestId)) {
                     return;
                 }
 
@@ -80,21 +78,17 @@ export default function FoundPigeonsAdminPage() {
                 setTotalElements(result.totalElements);
                 setPage(result.number);
             } catch (error) {
-                if (controller.signal.aborted) {
+                if (!isLatestRequest(requestId)) {
                     return;
                 }
 
                 setLoadError(getErrorMessage(error, 'Nie udało się pobrać zgłoszeń.'));
             } finally {
-                if (requestControllerRef.current === controller) {
-                    requestControllerRef.current = null;
-
-                    if (!controller.signal.aborted) {
-                        setIsLoading(false);
-                    }
+                if (isLatestRequest(requestId)) {
+                    setIsLoading(false);
                 }
             }
-        }, []
+        }, [beginRequest, isLatestRequest]
     );
 
     useEffect(() => {
@@ -103,10 +97,6 @@ export default function FoundPigeonsAdminPage() {
         }
 
         void fetchReports(0, null, '');
-
-        return () => {
-            requestControllerRef.current?.abort();
-        };
     }, [fetchReports, user?.role]);
 
     const applyFilters = (status: FoundPigeonStatus | null, ringNumber: string) => {

@@ -282,6 +282,19 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="registered-row-2"]').should('be.visible');
         cy.get('[data-cy="no-pending-accounts"]').should('be.visible');
 
+        // ==========================================
+        // Wyszukiwanie po imieniu i nazwisku razem
+        // ==========================================
+
+        searchInput().clear().type('Jan Nowak');
+        cy.get('[data-cy="pending-row-1"]').should('be.visible');
+        cy.get('[data-cy="no-registered-accounts"]').should('be.visible');
+
+        searchInput().clear().type('kowalska  anna');
+        cy.get('[data-cy="registered-row-2"]').should('be.visible');
+        cy.get('[data-cy="registered-row-3"]').should('not.exist');
+        cy.get('[data-cy="no-pending-accounts"]').should('be.visible');
+
         // ==========================
         // Czyszczenie wyszukiwarki
         // ==========================
@@ -401,6 +414,25 @@ describe('Panel Administratora - Testy E2E', () => {
         });
     });
 
+    it('Should keep the confirmation dialog busy until the account action finishes', () => {
+        cy.intercept('PUT', '**/api/admin/accounts/1/approve', {
+            statusCode: 204,
+            delay: 500
+        }).as('approveAccountSlowly');
+
+        cy.get('[data-cy="approve-btn-1"]').click();
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.visible').click();
+
+        cy.get('[data-cy="confirm-dialog-btn"]').should('be.disabled').and('have.text', 'Proszę czekać...');
+        cy.contains('button', 'Anuluj').should('be.disabled');
+
+        cy.wait('@approveAccountSlowly');
+
+        cy.contains('h2', 'Potwierdzenie akcji').should('not.exist');
+        cy.get('@approveAccountSlowly.all').should('have.length', 1);
+        cy.get('[data-cy="registered-row-1"]').should('be.visible');
+    });
+
     it('Should correctly reject the pending account and remove it from the system', () => {
         cy.intercept('DELETE', '**/api/admin/accounts/1', {
             statusCode: 204
@@ -481,6 +513,21 @@ describe('Panel Administratora - Testy E2E', () => {
         cy.get('[data-cy="registered-row-2"]').within(() => {
             cy.get('[data-cy="badge-moderator"]').should('be.visible').and('contain.text', 'MODERATOR');
         });
+    });
+
+    it('Should close the role change modal without a request when the role is unchanged', () => {
+        cy.intercept('PUT', '**/api/admin/accounts/2/role', cy.spy().as('changeRoleRequest'));
+
+        cy.get('[data-cy="kebab-menu-btn-2"]').click();
+        cy.get('[data-cy="change-role-option"]').click();
+
+        cy.get('[data-cy="role-change-modal"]').should('be.visible').within(() => {
+            cy.get('[data-cy="role-select"]').find('option:selected').should('have.value', 'BREEDER');
+            cy.get('[data-cy="save-role-btn"]').click();
+        });
+
+        cy.get('[data-cy="role-change-modal"]').should('not.exist');
+        cy.get('@changeRoleRequest').should('not.have.been.called');
     });
 
     it('Should correctly block the user and then unblock them', () => {
