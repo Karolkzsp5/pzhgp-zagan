@@ -14,13 +14,7 @@ describe('Breeder Login Process', () => {
             }
         });
 
-        cy.window().then((win) => {
-            return new Cypress.Promise<void>((resolve) => {
-                win.requestAnimationFrame(() => {
-                    win.requestAnimationFrame(() => resolve());
-                });
-            });
-        });
+        cy.waitForHydration();
     });
 
     it('Should display a login form with the relevant fields', () => {
