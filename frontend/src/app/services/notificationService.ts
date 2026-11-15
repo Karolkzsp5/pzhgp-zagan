@@ -1,35 +1,23 @@
 import { PageResponse } from '@/app/types/common';
 import { NotificationDto } from '@/app/types/notification';
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
+import { requestJson, requestVoid } from '@/app/utils/apiClient';
 
 const NOTIFICATIONS_PAGE_SIZE = 50;
 
 export const notificationService = {
     /** Powiadomienia zalogowanego użytkownika od najnowszego. */
-    getNotifications: async (page = 0): Promise<PageResponse<NotificationDto>> => {
-        const response = await fetchWithAuth(`${API_URL}/api/notifications?page=${page}&size=${NOTIFICATIONS_PAGE_SIZE}`);
-        await ensureOk(response, 'Nie udało się pobrać powiadomień.');
-        return response.json();
-    },
+    getNotifications: (page = 0): Promise<PageResponse<NotificationDto>> =>
+        requestJson(`/api/notifications?page=${page}&size=${NOTIFICATIONS_PAGE_SIZE}`, 'Nie udało się pobrać powiadomień.'),
 
-    getUnreadCount: async (): Promise<number> => {
-        const response = await fetchWithAuth(`${API_URL}/api/notifications/unread-count`);
-        await ensureOk(response, 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.');
-        return response.json();
-    },
+    getUnreadCount: (): Promise<number> =>
+        requestJson('/api/notifications/unread-count', 'Nie udało się pobrać liczby nieprzeczytanych powiadomień.'),
 
-    markAsRead: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/notifications/${id}/read`, { method: 'PUT' });
-        await ensureOk(response, 'Nie udało się oznaczyć powiadomienia jako przeczytane.');
-    },
+    markAsRead: (id: number): Promise<void> =>
+        requestVoid(`/api/notifications/${id}/read`, 'Nie udało się oznaczyć powiadomienia jako przeczytane.', { method: 'PUT' }),
 
-    markAllAsRead: async (): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/notifications/read-all`, { method: 'PUT' });
-        await ensureOk(response, 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.');
-    },
+    markAllAsRead: (): Promise<void> =>
+        requestVoid('/api/notifications/read-all', 'Nie udało się oznaczyć wszystkich powiadomień jako przeczytane.', { method: 'PUT' }),
 
-    deleteNotification: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/notifications/${id}`, { method: 'DELETE' });
-        await ensureOk(response, 'Nie udało się usunąć powiadomienia.');
-    }
+    deleteNotification: (id: number): Promise<void> =>
+        requestVoid(`/api/notifications/${id}`, 'Nie udało się usunąć powiadomienia.', { method: 'DELETE' })
 };

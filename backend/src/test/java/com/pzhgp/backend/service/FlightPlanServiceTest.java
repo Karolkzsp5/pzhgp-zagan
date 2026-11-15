@@ -246,19 +246,17 @@ class FlightPlanServiceTest {
     @Test
     @DisplayName("Should notify active users except the creator after creating a flight plan")
     void notifiesActiveUsersAfterPlanCreation() {
-        Breeder recipient = breeder(3L, "breeder@test.pl", Role.BREEDER);
         when(breederRepository.findByEmail(administrator.getEmail())).thenReturn(Optional.of(administrator));
         when(flightPlanRepository.saveAndFlush(any(FlightPlan.class))).thenAnswer(invocation -> {
             FlightPlan saved = invocation.getArgument(0);
             saved.setId(50L);
             return saved;
         });
-        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(administrator, recipient));
 
         flightPlanService.createPlan(new FlightPlanCreateRequest(2026), administrator.getEmail());
 
-        verify(notificationService).createBulkNotifications(
-                List.of(recipient),
+        verify(notificationService).notifyActiveBreeders(
+                administrator,
                 "Dodano nowy plan lotów na rok 2026.",
                 "/flight-plans/2026",
                 NotificationType.NEW_FLIGHT_PLAN

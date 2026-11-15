@@ -1,9 +1,11 @@
 package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.NotificationDto;
+import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.Notification;
 import com.pzhgp.backend.entity.NotificationType;
+import com.pzhgp.backend.entity.Section;
 import com.pzhgp.backend.exception.ForbiddenOperationException;
 import com.pzhgp.backend.repository.BreederRepository;
 import com.pzhgp.backend.repository.NotificationRepository;
@@ -113,6 +115,42 @@ class NotificationServiceTest {
     @DisplayName("Should not call saveAll when recipient list is null")
     void shouldNotSaveBulkWhenListIsNull() {
         assertDoesNotThrow(() -> notificationService.createBulkNotifications(null, "Masowa wiadomość", "/", NotificationType.NEW_ANNOUNCEMENT));
+
+        verify(notificationRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("Should notify all active breeders except the author")
+    void shouldNotifyActiveBreedersExceptAuthor() {
+        Breeder thirdBreeder = breeder(3L, null);
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(testBreeder, anotherBreeder, thirdBreeder));
+
+        notificationService.notifyActiveBreeders(testBreeder, "Nowy plan lotów", "/flight-plans/2026", NotificationType.NEW_FLIGHT_PLAN);
+
+        assertEquals(List.of(anotherBreeder, thirdBreeder), savedRecipients());
+    }
+
+    @Test
+    @DisplayName("Should notify only active members of the given section except the author")
+    void shouldNotifyActiveSectionMembersExceptAuthor() {
+        Section zagan = section(1L);
+        Section chotkow = section(2L);
+        Breeder author = breeder(10L, chotkow);
+        Breeder chotkowMember = breeder(11L, chotkow);
+        Breeder zaganMember = breeder(12L, zagan);
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(author, chotkowMember, zaganMember));
+
+        notificationService.notifyActiveSectionMembers(author, chotkow, "Wyniki sekcji", "/flight-plans/2026", NotificationType.NEW_FLIGHT_RESULT);
+
+        assertEquals(List.of(chotkowMember), savedRecipients());
+    }
+
+    @Test
+    @DisplayName("Should not save notifications when the author is the only active breeder")
+    void shouldNotSaveNotificationsWithoutOtherActiveBreeders() {
+        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(testBreeder));
+
+        notificationService.notifyActiveBreeders(testBreeder, "Nowe ogłoszenie", "/", NotificationType.NEW_ANNOUNCEMENT);
 
         verify(notificationRepository, never()).saveAll(any());
     }
@@ -293,5 +331,25 @@ class NotificationServiceTest {
 
         assertEquals("Nie znaleziono użytkownika.", ex.getMessage());
         verify(notificationRepository, never()).markAllAsReadByRecipientId(anyLong());
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Breeder> savedRecipients() {
+        ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
+        verify(notificationRepository).saveAll(captor.capture());
+        return captor.getValue().stream().map(Notification::getRecipient).toList();
+    }
+
+    private static Breeder breeder(Long id, Section section) {
+        Breeder breeder = new Breeder();
+        breeder.setId(id);
+        breeder.setSection(section);
+        return breeder;
+    }
+
+    private static Section section(Long id) {
+        Section section = new Section();
+        section.setId(id);
+        return section;
     }
 }

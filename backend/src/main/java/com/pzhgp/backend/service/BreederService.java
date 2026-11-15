@@ -89,7 +89,7 @@ public class BreederService {
             throw new ForbiddenOperationException("Twoje konto zostało zablokowane.");
         }
 
-        return jwtService.generateToken(breeder);
+        return jwtService.generateToken(breeder, request.rememberMe());
     }
 
     private String getDummyPasswordHash() {

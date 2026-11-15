@@ -344,7 +344,7 @@ class FlightPlanIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         FlightPlanEntry updated = flightPlanEntryRepository.findById(entry.getId()).orElseThrow();
 

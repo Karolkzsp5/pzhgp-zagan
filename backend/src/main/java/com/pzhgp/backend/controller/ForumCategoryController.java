@@ -40,7 +40,7 @@ public class ForumCategoryController {
             Authentication authentication
     ) {
         categoryService.updateCategory(id, request, authentication.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

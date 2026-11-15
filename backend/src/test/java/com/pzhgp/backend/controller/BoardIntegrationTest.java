@@ -377,7 +377,7 @@ class BoardIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         BoardMember updated = boardMemberRepository.findById(existingMember.getId()).orElseThrow();
         assertEquals(BoardRole.SKARBNIK, updated.getRole());

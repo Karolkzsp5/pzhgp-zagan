@@ -1,37 +1,20 @@
 import { AnnouncementDto, AnnouncementRequest } from '@/app/types/announcement';
 import { PageResponse } from '@/app/types/common';
-import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
+import { requestJson, requestVoid } from '@/app/utils/apiClient';
 
 const ANNOUNCEMENTS_PAGE_SIZE = 10;
 
 export const announcementService = {
     /** Ogłoszenia od przypiętych i najnowszych (endpoint publiczny). */
-    getAnnouncements: async (page = 0): Promise<PageResponse<AnnouncementDto>> => {
-        const response = await fetchApi(`${API_URL}/api/announcements?page=${page}&size=${ANNOUNCEMENTS_PAGE_SIZE}`);
-        await ensureOk(response, 'Nie udało się pobrać ogłoszeń.');
-        return response.json();
-    },
+    getAnnouncements: (page = 0): Promise<PageResponse<AnnouncementDto>> =>
+        requestJson(`/api/announcements?page=${page}&size=${ANNOUNCEMENTS_PAGE_SIZE}`, 'Nie udało się pobrać ogłoszeń.', { isPublic: true }),
 
-    createAnnouncement: async (data: AnnouncementRequest): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/announcements`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        await ensureOk(response, 'Wystąpił błąd podczas zapisywania ogłoszenia.');
-    },
+    createAnnouncement: (data: AnnouncementRequest): Promise<void> =>
+        requestVoid('/api/announcements', 'Wystąpił błąd podczas zapisywania ogłoszenia.', { method: 'POST', body: data }),
 
-    updateAnnouncement: async (id: number, data: AnnouncementRequest): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/announcements/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        await ensureOk(response, 'Wystąpił błąd podczas zapisywania ogłoszenia.');
-    },
+    updateAnnouncement: (id: number, data: AnnouncementRequest): Promise<void> =>
+        requestVoid(`/api/announcements/${id}`, 'Wystąpił błąd podczas zapisywania ogłoszenia.', { method: 'PUT', body: data }),
 
-    deleteAnnouncement: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/announcements/${id}`, { method: 'DELETE' });
-        await ensureOk(response, 'Nie udało się usunąć ogłoszenia.');
-    }
+    deleteAnnouncement: (id: number): Promise<void> =>
+        requestVoid(`/api/announcements/${id}`, 'Nie udało się usunąć ogłoszenia.', { method: 'DELETE' })
 };

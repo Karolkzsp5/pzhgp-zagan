@@ -48,7 +48,7 @@ public class AnnouncementController {
             Authentication authentication
     ) {
         announcementService.updateAnnouncement(id, requestDto, authentication.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

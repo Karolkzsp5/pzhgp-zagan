@@ -54,7 +54,7 @@ public class FlightPlanController {
             Authentication authentication
     ) {
         flightPlanService.updateEntry(entryId, request, authentication.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/entries/{entryId}")

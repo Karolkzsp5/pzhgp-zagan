@@ -236,10 +236,6 @@ class ForumThreadServiceTest {
         when(breederRepository.findByEmail("author@test.com")).thenReturn(Optional.of(author));
         when(threadRepository.save(any(ForumThread.class))).thenReturn(thread);
 
-        Breeder otherActiveBreeder = new Breeder();
-        otherActiveBreeder.setId(5L);
-        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(author, otherActiveBreeder));
-
         threadService.createThread(request, "author@test.com");
 
         ArgumentCaptor<ForumThread> threadCaptor = ArgumentCaptor.forClass(ForumThread.class);
@@ -251,11 +247,11 @@ class ForumThreadServiceTest {
         verify(postRepository, times(1)).save(postCaptor.capture());
         assertEquals("Treść pierwszego posta", postCaptor.getValue().getBody());
 
-        verify(notificationService, times(1)).createBulkNotifications(
-                argThat(list -> list.size() == 1 && list.getFirst().getId().equals(5L)),
-                eq("Użytkownik Jan Kowalski dodał nowy wątek na forum."),
-                eq("/forum/thread/100"),
-                eq(NotificationType.NEW_THREAD)
+        verify(notificationService, times(1)).notifyActiveBreeders(
+                author,
+                "Użytkownik Jan Kowalski dodał nowy wątek na forum.",
+                "/forum/thread/100",
+                NotificationType.NEW_THREAD
         );
     }
 

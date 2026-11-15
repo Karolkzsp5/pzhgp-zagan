@@ -87,15 +87,9 @@ public class FlightPlanService {
             throw ex;
         }
 
-        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
-                .filter(breeder -> !breeder.getId().equals(creator.getId()))
-                .toList();
-
-        if (!recipients.isEmpty()) {
-            String message = "Dodano nowy plan lotów na rok " + request.year() + ".";
-            String link = "/flight-plans/" + request.year();
-            notificationService.createBulkNotifications(recipients, message, link, NotificationType.NEW_FLIGHT_PLAN);
-        }
+        String message = "Dodano nowy plan lotów na rok " + request.year() + ".";
+        String link = "/flight-plans/" + request.year();
+        notificationService.notifyActiveBreeders(creator, message, link, NotificationType.NEW_FLIGHT_PLAN);
 
         return planId;
     }

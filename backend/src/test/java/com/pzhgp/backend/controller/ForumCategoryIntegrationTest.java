@@ -251,7 +251,7 @@ class ForumCategoryIntegrationTest {
                         .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         assertEquals("Zmieniona Nazwa Mod", categoryRepository.findById(modCategory.getId()).get().getName());
     }
@@ -265,7 +265,7 @@ class ForumCategoryIntegrationTest {
                         .with(cookieAuth(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         assertEquals("Zmieniona przez Admina", categoryRepository.findById(modCategory.getId()).get().getName());
     }

@@ -1,6 +1,7 @@
 package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.entity.Breeder;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
@@ -47,6 +49,28 @@ class JwtServiceTest {
 
         assertEquals("breeder@test.pl", tokenData.email());
         assertEquals(2, tokenData.sessionVersion());
+    }
+
+    @Test
+    @DisplayName("Should issue a 30-day token with remember me and a 24-hour token without it")
+    void shouldSetTokenLifetimeByRememberMe() {
+        JwtService jwtService = new JwtService(TEST_SECRET);
+        Breeder breeder = new Breeder();
+        breeder.setEmail("breeder@test.pl");
+
+        assertEquals(Duration.ofHours(24), lifetimeOf(jwtService.generateToken(breeder)));
+        assertEquals(Duration.ofHours(24), lifetimeOf(jwtService.generateToken(breeder, false)));
+        assertEquals(Duration.ofDays(30), lifetimeOf(jwtService.generateToken(breeder, true)));
+        assertEquals(Duration.ofDays(30), jwtService.getTokenLifetime(true));
+    }
+
+    private Duration lifetimeOf(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8)))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return Duration.between(claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant());
     }
 
     @Test

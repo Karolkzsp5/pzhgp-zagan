@@ -1,121 +1,64 @@
 import { PageResponse } from '@/app/types/common';
 import { ForumCategoryDto, ForumPostDto, ForumThreadDto, ThreadStatusChange } from '@/app/types/forum';
-import { API_URL, ensureOk, fetchWithAuth } from '@/app/utils/apiClient';
+import { requestJson, requestVoid } from '@/app/utils/apiClient';
 
 export const forumService = {
-    getCategories: async (): Promise<ForumCategoryDto[]> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories`);
-        await ensureOk(response, 'Nie udało się pobrać kategorii.');
-        return response.json();
-    },
+    getCategories: (): Promise<ForumCategoryDto[]> =>
+        requestJson('/api/forum/categories', 'Nie udało się pobrać kategorii.'),
 
-    getCategoryById: async (categoryId: number): Promise<ForumCategoryDto> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${categoryId}`);
-        await ensureOk(response, 'Nie udało się pobrać kategorii.');
-        return response.json();
-    },
+    getCategoryById: (categoryId: number): Promise<ForumCategoryDto> =>
+        requestJson(`/api/forum/categories/${categoryId}`, 'Nie udało się pobrać kategorii.'),
 
-    createCategory: async (name: string, description: string, sortOrder: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories`, {
+    createCategory: (name: string, description: string, sortOrder: number): Promise<void> =>
+        requestVoid('/api/forum/categories', 'Nie udało się utworzyć kategorii.', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, sortOrder })
-        });
-        await ensureOk(response, 'Nie udało się utworzyć kategorii.');
-    },
+            body: { name, description, sortOrder }
+        }),
 
-    updateCategory: async (id: number, name: string, description: string, sortOrder: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${id}`, {
+    updateCategory: (id: number, name: string, description: string, sortOrder: number): Promise<void> =>
+        requestVoid(`/api/forum/categories/${id}`, 'Nie udało się zaktualizować kategorii.', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, sortOrder })
-        });
-        await ensureOk(response, 'Nie udało się zaktualizować kategorii.');
-    },
+            body: { name, description, sortOrder }
+        }),
 
-    deleteCategory: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${id}`, {
-            method: 'DELETE'
-        });
-        await ensureOk(response, 'Nie udało się usunąć kategorii. Upewnij się, że nie ma w niej wątków.');
-    },
+    deleteCategory: (id: number): Promise<void> =>
+        requestVoid(`/api/forum/categories/${id}`, 'Nie udało się usunąć kategorii. Upewnij się, że nie ma w niej wątków.', { method: 'DELETE' }),
 
-    getThreadsByCategory: async (categoryId: number, page = 0): Promise<PageResponse<ForumThreadDto>> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/categories/${categoryId}/threads?page=${page}&size=15`);
-        await ensureOk(response, 'Nie udało się pobrać wątków.');
-        return response.json();
-    },
+    getThreadsByCategory: (categoryId: number, page = 0): Promise<PageResponse<ForumThreadDto>> =>
+        requestJson(`/api/forum/categories/${categoryId}/threads?page=${page}&size=15`, 'Nie udało się pobrać wątków.'),
 
-    createThread: async (categoryId: number, title: string, initialPostContent: string): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads`, {
+    createThread: (categoryId: number, title: string, initialPostContent: string): Promise<void> =>
+        requestVoid('/api/forum/threads', 'Wystąpił błąd podczas tworzenia wątku.', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ categoryId, title, initialPostContent })
-        });
-        await ensureOk(response, 'Wystąpił błąd podczas tworzenia wątku.');
-    },
+            body: { categoryId, title, initialPostContent }
+        }),
 
-    getThreadById: async (threadId: number, countView = true): Promise<ForumThreadDto> => {
+    getThreadById: (threadId: number, countView = true): Promise<ForumThreadDto> => {
         const query = countView ? '' : '?countView=false';
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}${query}`);
-        await ensureOk(response, 'Nie udało się pobrać wątku.');
-        return response.json();
+        return requestJson(`/api/forum/threads/${threadId}${query}`, 'Nie udało się pobrać wątku.');
     },
 
-    updateThreadTitle: async (threadId: number, title: string): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/title`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title })
-        });
-        await ensureOk(response, 'Nie udało się zaktualizować tytułu wątku.');
-    },
+    updateThreadTitle: (threadId: number, title: string): Promise<void> =>
+        requestVoid(`/api/forum/threads/${threadId}/title`, 'Nie udało się zaktualizować tytułu wątku.', { method: 'PATCH', body: { title } }),
 
-    deleteThread: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}`, {
-            method: 'DELETE'
-        });
-        await ensureOk(response, 'Nie udało się usunąć wątku.');
-    },
+    deleteThread: (id: number): Promise<void> =>
+        requestVoid(`/api/forum/threads/${id}`, 'Nie udało się usunąć wątku.', { method: 'DELETE' }),
 
     /** Ustawia blokadę albo przypięcie wątku na podaną wartość (ponowne wysłanie niczego nie przełącza). */
-    updateThreadStatus: async (id: number, status: ThreadStatusChange): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${id}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(status)
-        });
-        await ensureOk(response, 'isLocked' in status ? 'Nie udało się zamknąć ani otworzyć wątku.' : 'Nie udało się przypiąć ani odpiąć wątku.');
+    updateThreadStatus: (id: number, status: ThreadStatusChange): Promise<void> => {
+        const fallback = 'isLocked' in status ? 'Nie udało się zamknąć ani otworzyć wątku.' : 'Nie udało się przypiąć ani odpiąć wątku.';
+        return requestVoid(`/api/forum/threads/${id}/status`, fallback, { method: 'PATCH', body: status });
     },
 
-    getPostsByThread: async (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/posts?page=${page}&size=20`);
-        await ensureOk(response, 'Nie udało się pobrać postów.');
-        return response.json();
-    },
+    getPostsByThread: (threadId: number, page = 0): Promise<PageResponse<ForumPostDto>> =>
+        requestJson(`/api/forum/threads/${threadId}/posts?page=${page}&size=20`, 'Nie udało się pobrać postów.'),
 
-    createPost: async (threadId: number, body: string): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/threads/${threadId}/posts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body })
-        });
-        await ensureOk(response, 'Nie udało się dodać odpowiedzi.');
-    },
+    createPost: (threadId: number, body: string): Promise<void> =>
+        requestVoid(`/api/forum/threads/${threadId}/posts`, 'Nie udało się dodać odpowiedzi.', { method: 'POST', body: { body } }),
 
-    updatePost: async (postId: number, body: string): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/posts/${postId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body })
-        });
-        await ensureOk(response, 'Nie udało się zaktualizować wpisu.');
-    },
+    updatePost: (postId: number, body: string): Promise<void> =>
+        requestVoid(`/api/forum/posts/${postId}`, 'Nie udało się zaktualizować wpisu.', { method: 'PUT', body: { body } }),
 
-    deletePost: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/forum/posts/${id}`, {
-            method: 'DELETE'
-        });
-        await ensureOk(response, 'Nie można usunąć wpisu.');
-    }
+    deletePost: (id: number): Promise<void> =>
+        requestVoid(`/api/forum/posts/${id}`, 'Nie można usunąć wpisu.', { method: 'DELETE' })
 };

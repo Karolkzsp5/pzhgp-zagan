@@ -25,7 +25,14 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private static final Duration TOKEN_LIFETIME = Duration.ofHours(24);
+    /** Ważność tokenu bez „Zapamiętaj mnie”. Ciasteczko takiej sesji znika też po zamknięciu przeglądarki. */
+    private static final Duration SESSION_TOKEN_LIFETIME = Duration.ofHours(24);
+
+    /**
+     * Ważność tokenu z „Zapamiętaj mnie”. Wcześniej można go unieważnić zmianą hasła
+     * albo opcją „Wyloguj ze wszystkich urządzeń”, które zwiększają wersję sesji konta.
+     */
+    private static final Duration REMEMBER_ME_TOKEN_LIFETIME = Duration.ofDays(30);
     private static final String SESSION_VERSION_CLAIM = "sessionVersion";
 
     /** Dane odczytane z poprawnego tokenu. */
@@ -39,18 +46,23 @@ public class JwtService {
         this.parser = Jwts.parser().verifyWith(signingKey).build();
     }
 
-    public Duration getTokenLifetime() {
-        return TOKEN_LIFETIME;
+    public Duration getTokenLifetime(boolean rememberMe) {
+        return rememberMe ? REMEMBER_ME_TOKEN_LIFETIME : SESSION_TOKEN_LIFETIME;
     }
 
+    /** Token zwykłej sesji, bez „Zapamiętaj mnie”. */
     public String generateToken(Breeder breeder) {
+        return generateToken(breeder, false);
+    }
+
+    public String generateToken(Breeder breeder, boolean rememberMe) {
         Instant now = Instant.now();
 
         return Jwts.builder()
                 .subject(breeder.getEmail())
                 .claim(SESSION_VERSION_CLAIM, breeder.getSessionVersion())
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(TOKEN_LIFETIME)))
+                .expiration(Date.from(now.plus(getTokenLifetime(rememberMe))))
                 .signWith(signingKey)
                 .compact();
     }

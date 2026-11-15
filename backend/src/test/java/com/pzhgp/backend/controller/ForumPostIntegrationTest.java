@@ -269,7 +269,7 @@ class ForumPostIntegrationTest {
                         .with(cookieAuth(postAuthorToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         ForumPost updated = postRepository.findById(breederPost.getId()).get();
         assertEquals("Treść po modyfikacji", updated.getBody());

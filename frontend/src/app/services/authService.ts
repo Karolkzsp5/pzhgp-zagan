@@ -1,5 +1,5 @@
 import { ForgotPasswordRequest, LoginRequest, RegistrationRequest, ResetPasswordRequest } from '@/app/types/auth';
-import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
+import { API_URL, ensureOk, fetchApi, requestVoid } from '@/app/utils/apiClient';
 import { CurrentUser } from '@/app/utils/authSession';
 
 export const authService = {
@@ -12,46 +12,20 @@ export const authService = {
     },
 
     /** Backend odpowiada 204 i ustawia JWT w ciasteczku HttpOnly; token nie trafia do JavaScriptu. */
-    login: async (request: LoginRequest): Promise<void> => {
-        const response = await fetchApi(`${API_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        });
-        await ensureOk(response, 'Nie udało się zalogować.');
-    },
+    login: (request: LoginRequest): Promise<void> =>
+        requestVoid('/api/auth/login', 'Nie udało się zalogować.', { method: 'POST', body: request, isPublic: true }),
 
-    register: async (request: RegistrationRequest): Promise<void> => {
-        const response = await fetchApi(`${API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        });
-        await ensureOk(response, 'Nie udało się zarejestrować konta.');
-    },
+    register: (request: RegistrationRequest): Promise<void> =>
+        requestVoid('/api/auth/register', 'Nie udało się zarejestrować konta.', { method: 'POST', body: request, isPublic: true }),
 
     /** Prosi o wysłanie linku do zmiany hasła. Backend odpowiada tak samo, gdy konto z podanym adresem nie istnieje. */
-    requestPasswordReset: async (request: ForgotPasswordRequest): Promise<void> => {
-        const response = await fetchApi(`${API_URL}/api/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        });
-        await ensureOk(response, 'Nie udało się wysłać prośby o zmianę hasła.');
-    },
+    requestPasswordReset: (request: ForgotPasswordRequest): Promise<void> =>
+        requestVoid('/api/auth/forgot-password', 'Nie udało się wysłać prośby o zmianę hasła.', { method: 'POST', body: request, isPublic: true }),
 
     /** Ustawia nowe hasło na podstawie jednorazowego tokenu z linku w wiadomości e-mail. */
-    resetPassword: async (request: ResetPasswordRequest): Promise<void> => {
-        const response = await fetchApi(`${API_URL}/api/auth/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        });
-        await ensureOk(response, 'Nie udało się zmienić hasła.');
-    },
+    resetPassword: (request: ResetPasswordRequest): Promise<void> =>
+        requestVoid('/api/auth/reset-password', 'Nie udało się zmienić hasła.', { method: 'POST', body: request, isPublic: true }),
 
-    logout: async (): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/auth/logout`, { method: 'POST' });
-        await ensureOk(response, 'Nie udało się wylogować.');
-    }
+    logout: (): Promise<void> =>
+        requestVoid('/api/auth/logout', 'Nie udało się wylogować.', { method: 'POST' })
 };

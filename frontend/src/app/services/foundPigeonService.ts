@@ -1,62 +1,32 @@
 import { PageResponse } from '@/app/types/common';
 import { FoundPigeonDto, FoundPigeonRequest, FoundPigeonStatus } from '@/app/types/foundPigeon';
-import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
+import { requestCreatedId, requestJson, requestVoid } from '@/app/utils/apiClient';
 
 export const foundPigeonService = {
     /**
      * Wysyła publiczne zgłoszenie odnalezienia gołębia.
      *
-     * Jedyna operacja modułu działająca bez logowania, dlatego korzysta z funkcji
-     * fetchApi zamiast fetchWithAuth — nie ma tokenu do dołączenia ani sesji do odświeżenia.
+     * Jedyna operacja modułu działająca bez logowania, dlatego jest wysyłana jako zapytanie
+     * publiczne — nie ma sesji, która mogłaby wygasnąć.
      */
-    submitReport: async (request: FoundPigeonRequest): Promise<number> => {
-        const response = await fetchApi(`${API_URL}/api/found-pigeons`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        });
-
-        await ensureOk(response, 'Nie udało się wysłać zgłoszenia.');
-
-        const body = await response.json();
-        return body.id as number;
-    },
+    submitReport: (request: FoundPigeonRequest): Promise<number> =>
+        requestCreatedId('/api/found-pigeons', 'Nie udało się wysłać zgłoszenia.', { method: 'POST', body: request, isPublic: true }),
 
     /** Lista zgłoszeń dla panelu administratora. */
-    getReports: async (status: FoundPigeonStatus | null, ringNumber: string, page = 0, size = 10): Promise<PageResponse<FoundPigeonDto>> => {
+    getReports: (status: FoundPigeonStatus | null, ringNumber: string, page = 0, size = 10): Promise<PageResponse<FoundPigeonDto>> => {
         const params = new URLSearchParams({ page: String(page), size: String(size) });
         if (status) params.set('status', status);
         if (ringNumber.trim()) params.set('ringNumber', ringNumber.trim());
 
-        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons?${params}`);
-        await ensureOk(response, 'Nie udało się pobrać zgłoszeń.');
-        return response.json();
+        return requestJson(`/api/admin/found-pigeons?${params}`, 'Nie udało się pobrać zgłoszeń.');
     },
 
-    updateStatus: async (id: number, status: FoundPigeonStatus): Promise<FoundPigeonDto> => {
-        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons/${id}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-        });
+    updateStatus: (id: number, status: FoundPigeonStatus): Promise<FoundPigeonDto> =>
+        requestJson(`/api/admin/found-pigeons/${id}/status`, 'Nie udało się zmienić statusu zgłoszenia.', { method: 'PATCH', body: { status } }),
 
-        await ensureOk(response, 'Nie udało się zmienić statusu zgłoszenia.');
-        return response.json();
-    },
+    updateNote: (id: number, adminNote: string): Promise<FoundPigeonDto> =>
+        requestJson(`/api/admin/found-pigeons/${id}/note`, 'Nie udało się zapisać notatki.', { method: 'PATCH', body: { adminNote } }),
 
-    updateNote: async (id: number, adminNote: string): Promise<FoundPigeonDto> => {
-        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons/${id}/note`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminNote })
-        });
-
-        await ensureOk(response, 'Nie udało się zapisać notatki.');
-        return response.json();
-    },
-
-    deleteReport: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/admin/found-pigeons/${id}`, { method: 'DELETE' });
-        await ensureOk(response, 'Nie udało się usunąć zgłoszenia.');
-    }
+    deleteReport: (id: number): Promise<void> =>
+        requestVoid(`/api/admin/found-pigeons/${id}`, 'Nie udało się usunąć zgłoszenia.', { method: 'DELETE' })
 };

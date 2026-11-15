@@ -1,41 +1,21 @@
 import { BoardCandidateDto, BoardMemberDto, BoardMemberRequest } from '@/app/types/board';
-import { API_URL, ensureOk, fetchApi, fetchWithAuth } from '@/app/utils/apiClient';
+import { requestJson, requestVoid } from '@/app/utils/apiClient';
 
 export const boardService = {
     /** Skład zarządu (endpoint publiczny). */
-    getAllBoardMembers: async (): Promise<BoardMemberDto[]> => {
-        const response = await fetchApi(`${API_URL}/api/board`);
-        await ensureOk(response, 'Nie udało się pobrać danych zarządu.');
-        return response.json();
-    },
+    getAllBoardMembers: (): Promise<BoardMemberDto[]> =>
+        requestJson('/api/board', 'Nie udało się pobrać danych zarządu.', { isPublic: true }),
 
     /** Aktywni hodowcy do wyboru w formularzu zarządu (tylko dla administratora). */
-    getBoardCandidates: async (): Promise<BoardCandidateDto[]> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board/candidates`);
-        await ensureOk(response, 'Nie udało się pobrać listy hodowców.');
-        return response.json();
-    },
+    getBoardCandidates: (): Promise<BoardCandidateDto[]> =>
+        requestJson('/api/board/candidates', 'Nie udało się pobrać listy hodowców.'),
 
-    createBoardMember: async (data: BoardMemberRequest): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        await ensureOk(response, 'Nie udało się dodać członka zarządu.');
-    },
+    createBoardMember: (data: BoardMemberRequest): Promise<void> =>
+        requestVoid('/api/board', 'Nie udało się dodać członka zarządu.', { method: 'POST', body: data }),
 
-    updateBoardMember: async (id: number, data: BoardMemberRequest): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        await ensureOk(response, 'Nie udało się zaktualizować członka zarządu.');
-    },
+    updateBoardMember: (id: number, data: BoardMemberRequest): Promise<void> =>
+        requestVoid(`/api/board/${id}`, 'Nie udało się zaktualizować członka zarządu.', { method: 'PUT', body: data }),
 
-    deleteBoardMember: async (id: number): Promise<void> => {
-        const response = await fetchWithAuth(`${API_URL}/api/board/${id}`, { method: 'DELETE' });
-        await ensureOk(response, 'Nie udało się usunąć członka zarządu.');
-    }
+    deleteBoardMember: (id: number): Promise<void> =>
+        requestVoid(`/api/board/${id}`, 'Nie udało się usunąć członka zarządu.', { method: 'DELETE' })
 };
