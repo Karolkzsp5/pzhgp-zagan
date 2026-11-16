@@ -20,9 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class ForumThreadService {
@@ -74,11 +71,7 @@ public class ForumThreadService {
         String notificationMessage = "Użytkownik " + author.getFullName() + " dodał nowy wątek na forum.";
         String notificationLink = "/forum/thread/" + thread.getId();
 
-        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream().filter(breeder -> !breeder.getId().equals(author.getId())).collect(Collectors.toList());
-
-        if (!recipients.isEmpty()) {
-            notificationService.createBulkNotifications(recipients, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
-        }
+        notificationService.notifyActiveBreeders(author, notificationMessage, notificationLink, NotificationType.NEW_THREAD);
     }
 
     @Transactional

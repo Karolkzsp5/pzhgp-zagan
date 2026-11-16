@@ -222,7 +222,7 @@ class NotificationIntegrationTest {
                 .andExpect(content().string("1"));
 
         mockMvc.perform(put("/api/notifications/" + notificationId + "/read").with(cookieAuth(testBreederToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/notifications/unread-count").with(cookieAuth(testBreederToken)))
                 .andExpect(status().isOk())
@@ -324,7 +324,7 @@ class NotificationIntegrationTest {
         anotherBreederNotification.setRead(false);
         anotherBreederNotification = notificationRepository.save(anotherBreederNotification);
 
-        mockMvc.perform(put("/api/notifications/read-all").with(cookieAuth(testBreederToken))).andExpect(status().isOk());
+        mockMvc.perform(put("/api/notifications/read-all").with(cookieAuth(testBreederToken))).andExpect(status().isNoContent());
 
         assertTrue(notificationRepository.findById(unreadNotification.getId()).orElseThrow().isRead());
         assertTrue(notificationRepository.findById(extraUnread.getId()).orElseThrow().isRead());

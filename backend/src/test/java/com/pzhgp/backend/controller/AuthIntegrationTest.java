@@ -774,7 +774,8 @@ class AuthIntegrationTest {
         org.junit.jupiter.api.Assertions.assertTrue(setCookie.contains("HttpOnly"));
         org.junit.jupiter.api.Assertions.assertTrue(setCookie.contains("SameSite=Lax"));
         if (rememberMe) {
-            org.junit.jupiter.api.Assertions.assertTrue(setCookie.contains("Max-Age=86400"));
+            // „Zapamiętaj mnie” utrzymuje sesję przez 30 dni.
+            org.junit.jupiter.api.Assertions.assertTrue(setCookie.contains("Max-Age=2592000"));
         } else {
             org.junit.jupiter.api.Assertions.assertFalse(setCookie.contains("Max-Age="));
         }

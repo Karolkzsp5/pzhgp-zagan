@@ -2,7 +2,6 @@ package com.pzhgp.backend.service;
 
 import com.pzhgp.backend.dto.FlightResultFileDto;
 import com.pzhgp.backend.dto.FlightResultUploadRequest;
-import com.pzhgp.backend.entity.AccountStatus;
 import com.pzhgp.backend.entity.Breeder;
 import com.pzhgp.backend.entity.FlightPlanEntry;
 import com.pzhgp.backend.entity.FlightResult;
@@ -24,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -74,20 +72,15 @@ public class FlightResultService {
 
         Long resultId = flightResultRepository.save(result).getId();
 
-        List<Breeder> recipients = breederRepository.findByStatus(AccountStatus.ACTIVE).stream()
-                .filter(breeder -> !breeder.getId().equals(uploader.getId()))
-                .filter(breeder -> request.scope() == FlightResultScope.BRANCH || breeder.getSection().getId().equals(section.getId()))
-                .toList();
+        String flightDescription = "lotu z " + entry.getLocation()
+                + " (" + entry.getScheduledDate().format(FLIGHT_DATE_FORMAT) + ").";
+        String link = "/flight-plans/" + entry.getFlightPlan().getYear();
 
-        if (!recipients.isEmpty()) {
-            String flightDescription = "lotu z " + entry.getLocation()
-                    + " (" + entry.getScheduledDate().format(FLIGHT_DATE_FORMAT) + ").";
-            String message = request.scope() == FlightResultScope.BRANCH
-                    ? "Dodano wyniki oddziałowe " + flightDescription
-                    : "Dodano wyniki sekcji " + section.getName() + " dla " + flightDescription;
-            String link = "/flight-plans/" + entry.getFlightPlan().getYear();
-
-            notificationService.createBulkNotifications(recipients, message, link, NotificationType.NEW_FLIGHT_RESULT);
+        if (request.scope() == FlightResultScope.BRANCH) {
+            notificationService.notifyActiveBreeders(uploader, "Dodano wyniki oddziałowe " + flightDescription, link, NotificationType.NEW_FLIGHT_RESULT);
+        } else {
+            notificationService.notifyActiveSectionMembers(uploader, section,
+                    "Dodano wyniki sekcji " + section.getName() + " dla " + flightDescription, link, NotificationType.NEW_FLIGHT_RESULT);
         }
 
         return resultId;

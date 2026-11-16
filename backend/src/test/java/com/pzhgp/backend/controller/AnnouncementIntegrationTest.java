@@ -323,7 +323,7 @@ class AnnouncementIntegrationTest {
                         .with(cookieAuth(modToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         Announcement updatedInDb = announcementRepository.findById(savedId).orElseThrow();
         assertEquals("Nowy tytuł", updatedInDb.getTitle());

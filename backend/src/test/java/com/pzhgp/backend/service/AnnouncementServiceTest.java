@@ -179,11 +179,6 @@ class AnnouncementServiceTest {
         AnnouncementRequest request = new AnnouncementRequest("Ważny lot", "Szczegóły", true);
         when(breederRepository.findByEmail(admin1.getEmail())).thenReturn(Optional.of(admin1));
 
-        Breeder anotherActiveBreeder = new Breeder();
-        anotherActiveBreeder.setId(5L);
-
-        when(breederRepository.findByStatus(AccountStatus.ACTIVE)).thenReturn(List.of(admin1, standardBreeder, anotherActiveBreeder));
-
         announcementService.createAnnouncement(request, admin1.getEmail());
 
         ArgumentCaptor<Announcement> captor = ArgumentCaptor.forClass(Announcement.class);
@@ -195,11 +190,11 @@ class AnnouncementServiceTest {
         assertTrue(savedAnnouncement.isPinned());
         assertEquals(admin1, savedAnnouncement.getAuthor());
 
-        verify(notificationService, times(1)).createBulkNotifications(
-                argThat(list -> list.size() == 2 && !list.contains(admin1) && list.contains(standardBreeder) && list.contains(anotherActiveBreeder)),
-                eq("Użytkownik Jan Kowalski dodał ogłoszenie na stronie głównej."),
-                eq("/"),
-                eq(NotificationType.NEW_ANNOUNCEMENT)
+        verify(notificationService, times(1)).notifyActiveBreeders(
+                admin1,
+                "Użytkownik Jan Kowalski dodał ogłoszenie na stronie głównej.",
+                "/",
+                NotificationType.NEW_ANNOUNCEMENT
         );
     }
 

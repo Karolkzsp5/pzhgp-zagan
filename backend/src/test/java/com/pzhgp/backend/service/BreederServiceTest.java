@@ -156,7 +156,7 @@ class BreederServiceTest {
 
         when(breederRepository.findByEmailIgnoreCase(loginRequest.email())).thenReturn(Optional.of(activeBreeder));
         when(passwordEncoder.matches(loginRequest.password(), activeBreeder.getPasswordHash())).thenReturn(true);
-        when(jwtService.generateToken(activeBreeder)).thenReturn("mocked-jwt-token");
+        when(jwtService.generateToken(activeBreeder, false)).thenReturn("mocked-jwt-token");
 
         String token = breederService.login(loginRequest);
         assertEquals("mocked-jwt-token", token);

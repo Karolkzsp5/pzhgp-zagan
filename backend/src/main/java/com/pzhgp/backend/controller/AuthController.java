@@ -67,7 +67,7 @@ public class AuthController {
         }
 
         String token = breederService.login(request);
-        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(), request.rememberMe());
+        authCookieService.setAuthenticationCookie(httpResponse, token, jwtService.getTokenLifetime(request.rememberMe()), request.rememberMe());
         return ResponseEntity.noContent().build();
     }
 

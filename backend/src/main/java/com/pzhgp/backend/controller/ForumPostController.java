@@ -45,7 +45,7 @@ public class ForumPostController {
             Authentication authentication
     ) {
         postService.updatePost(postId, request, authentication.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/posts/{postId}")

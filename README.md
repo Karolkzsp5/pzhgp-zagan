@@ -89,6 +89,7 @@ Oddział obejmuje cztery sekcje: **Żagań, Wymiarki, Chotków i Kożuchów**.
   - ochrona CSRF;
   - hasła szyfrowane algorytmem BCrypt.
 - **Sesje:**
+  - sesja trwa do zamknięcia przeglądarki (najdłużej 24 godziny), a z opcją „Zapamiętaj mnie” 30 dni;
   - rola, status i wersja sesji konta są sprawdzane w bazie przy każdym żądaniu;
   - zablokowanie konta, zmiana hasła i wylogowanie ze wszystkich urządzeń działają od razu.
 - **Ochrona przed nadużyciami:**

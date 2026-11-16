@@ -107,3 +107,52 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}): Pro
 
     return response;
 };
+
+interface ApiRequestOptions {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    /** Obiekt wysyłany jako JSON albo gotowy FormData (plik z metadanymi). */
+    body?: unknown;
+    /** Endpoint publiczny: odpowiedź 401 nie przenosi na stronę logowania. */
+    isPublic?: boolean;
+    cache?: RequestCache;
+}
+
+/** Wysyła zapytanie do API i zgłasza ApiError z komunikatem zastępczym, gdy odpowiedź nie jest poprawna. */
+const sendRequest = async (path: string, fallback: string, { method = 'GET', body, isPublic = false, cache }: ApiRequestOptions): Promise<Response> => {
+    const init: RequestInit = { method };
+
+    if (cache) init.cache = cache;
+    if (body instanceof FormData) {
+        init.body = body;
+    } else if (body !== undefined) {
+        init.headers = { 'Content-Type': 'application/json' };
+        init.body = JSON.stringify(body);
+    }
+
+    const response = await (isPublic ? fetchApi : fetchWithAuth)(`${API_URL}${path}`, init);
+    await ensureOk(response, fallback);
+    return response;
+};
+
+/** Zapytanie, którego odpowiedź zawiera dane JSON. */
+export const requestJson = async <T>(path: string, fallback: string, options: ApiRequestOptions = {}): Promise<T> => {
+    const response = await sendRequest(path, fallback, options);
+    return response.json() as Promise<T>;
+};
+
+/** Zapytanie tworzące zasób; zwraca identyfikator nowego rekordu z odpowiedzi { id }. */
+export const requestCreatedId = async (path: string, fallback: string, options: ApiRequestOptions = {}): Promise<number> => {
+    const body = await requestJson<{ id: number }>(path, fallback, options);
+    return body.id;
+};
+
+/** Zapytanie, którego odpowiedź zawiera zwykły tekst, np. plik z wynikami lotu. */
+export const requestText = async (path: string, fallback: string, options: ApiRequestOptions = {}): Promise<string> => {
+    const response = await sendRequest(path, fallback, options);
+    return response.text();
+};
+
+/** Zapytanie bez treści w odpowiedzi (np. 204 No Content). */
+export const requestVoid = async (path: string, fallback: string, options: ApiRequestOptions = {}): Promise<void> => {
+    await sendRequest(path, fallback, options);
+};
