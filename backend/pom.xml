@@ -5,14 +5,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
+		<version>4.1.2</version>
 		<relativePath/>
 	</parent>
 	<groupId>com.pzhgp</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<properties>
-		<java.version>26</java.version>
+		<java.version>25</java.version>
 		<jacocoArgLine/>
 	</properties>
 	<dependencies>
@@ -80,7 +80,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.23.2</version>
+			<version>1.24.1</version>
 		</dependency>
         <dependency>
             <groupId>com.h2database</groupId>
@@ -146,7 +146,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.15</version>
+				<version>0.8.16</version>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>

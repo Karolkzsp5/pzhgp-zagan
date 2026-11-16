@@ -115,7 +115,7 @@ Oddział obejmuje cztery sekcje: **Żagań, Wymiarki, Chotków i Kożuchów**.
 
 | Warstwa | Technologie |
 |---|---|
-| Backend | Java 26, Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Mail, Actuator), Hibernate, JJWT, jsoup |
+| Backend | Java 25 (LTS), Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Mail, Actuator), Hibernate, JJWT, jsoup |
 | Baza danych | PostgreSQL |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, TipTap, Leaflet, DOMPurify |
 | Testy | JUnit 5, Mockito, Spring MockMvc, H2, JaCoCo, Cypress 15 |
@@ -150,8 +150,8 @@ pzhgp-zagan/
 
 ### Wymagania
 
-- **JDK 26**
-- **Node.js 20.9** lub nowszy (z npm)
+- **JDK 25** (LTS)
+- **Node.js 26** (LTS, z npm)
 - **PostgreSQL** (testowane na wersji 16)
 - opcjonalnie lokalny serwer pocztowy do testów, np. [Mailpit](https://mailpit.axllent.org/)
 
