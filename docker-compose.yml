@@ -1,6 +1,7 @@
 # Cała aplikacja w kontenerach: baza PostgreSQL, backend, frontend i Mailpit (podgląd wysłanych e-maili).
 # Uruchomienie z głównego katalogu projektu: docker compose up --build
 # Wcześniej skopiuj .env.example do .env i uzupełnij hasło bazy oraz klucz JWT.
+# Aplikacja działa pod adresem http://APP_HOST:3000 (APP_HOST z pliku .env, domyślnie localhost).
 
 name: pzhgp-zagan
 
@@ -46,8 +47,9 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
-      FRONTEND_URL: http://localhost:3000
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      # Adres frontendu w linkach z e-maili i jedyny adres, z którego przeglądarka może wysyłać zapytania (CORS)
+      FRONTEND_URL: http://${APP_HOST:-localhost}:3000
+      CORS_ALLOWED_ORIGINS: http://${APP_HOST:-localhost}:3000
       TZ: Europe/Warsaw
     ports:
       - "8080:8080"
@@ -56,8 +58,9 @@ services:
     build:
       context: ./frontend
       args:
-        # Adres backendu widziany z przeglądarki (wbudowywany w aplikację przy budowaniu obrazu)
-        NEXT_PUBLIC_API_URL: http://localhost:8080
+        # Adres backendu widziany z przeglądarki, wbudowywany w aplikację przy budowaniu obrazu.
+        # Po zmianie APP_HOST trzeba przebudować obraz: docker compose up --build
+        NEXT_PUBLIC_API_URL: http://${APP_HOST:-localhost}:8080
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
     depends_on:
       - backend
