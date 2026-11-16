@@ -29,7 +29,13 @@ backend/target/
 *.secret.properties
 
 # =========================
-# 4. IDE
+# 4. DOCKER
+# =========================
+# Kopia bazy do wczytania przy pierwszym starcie kontenera (zawiera dane)
+docker/db-import/*.sql
+
+# =========================
+# 5. IDE
 # =========================
 .idea/
 *.iml
@@ -37,7 +43,7 @@ backend/target/
 out/
 
 # =========================
-# 5. OS
+# 6. OS
 # =========================
 Thumbs.db
 ehthumbs.db
