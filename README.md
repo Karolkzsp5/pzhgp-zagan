@@ -118,7 +118,7 @@ Oddział obejmuje cztery sekcje: **Żagań, Wymiarki, Chotków i Kożuchów**.
 | Backend | Java 25 (LTS), Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Mail, Actuator), Hibernate, JJWT, jsoup |
 | Baza danych | PostgreSQL |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, TipTap, Leaflet, DOMPurify |
-| Testy | JUnit 5, Mockito, Spring MockMvc, H2, JaCoCo, Cypress 15 |
+| Testy | JUnit 5, Mockito, Spring MockMvc, PostgreSQL (osobna baza testowa), JaCoCo, Cypress 15 |
 
 ## Struktura projektu
 
@@ -157,13 +157,14 @@ pzhgp-zagan/
 
 ### 1. Baza danych
 
-Utwórz pustą bazę, np.:
+Utwórz pustą bazę aplikacji i osobną bazę do testów backendu, np.:
 
 ```sql
 CREATE DATABASE pzhgp_zagan;
+CREATE DATABASE pzhgp_zagan_test;
 ```
 
-Tabele tworzą się automatycznie przy pierwszym uruchomieniu backendu, razem z czterema sekcjami oddziału.
+Tabele tworzą się automatycznie przy pierwszym uruchomieniu backendu, razem z czterema sekcjami oddziału. Baza testowa nie wymaga żadnych przygotowań (szczegóły w sekcji [Testy](#testy)).
 
 ### 2. Backend
 
@@ -218,6 +219,8 @@ Kolejne konta akceptuje już administrator w panelu aplikacji.
 | Zmienna | Opis | Wartość domyślna |
 |---|---|---|
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Połączenie z bazą PostgreSQL | – |
+| `TEST_DB_URL` | Baza do testów backendu; nazwa musi kończyć się na `_test` | `jdbc:postgresql://localhost:5432/pzhgp_zagan_test` |
+| `TEST_DB_USERNAME`, `TEST_DB_PASSWORD` | Dane logowania do bazy testowej | `DB_USERNAME`, `DB_PASSWORD` |
 | `JWT_SECRET` | Klucz podpisujący tokeny logowania (min. 32 znaki) | – |
 | `CORS_ALLOWED_ORIGINS` | Adresy frontendu, z których przeglądarka może wysyłać zapytania | `http://localhost:3000` |
 | `AUTH_COOKIE_SECURE` | Flaga `Secure` ciasteczka logowania; `true` na serwerze z HTTPS | `false` |
@@ -245,7 +248,9 @@ cd backend
 ./mvnw verify     # testy i raport pokrycia: target/site/jacoco/index.html
 ```
 
-- **Baza:** testy korzystają z bazy H2 w pamięci, więc nie wymagają PostgreSQL.
+- **Baza:** testy integracyjne działają na osobnej, pustej bazie PostgreSQL `pzhgp_zagan_test` (adres można zmienić zmienną `TEST_DB_URL`).
+  - Hibernate tworzy w niej tabele przy starcie testów i usuwa je na końcu, a każdy test wycofuje swoje zmiany. Baza aplikacji i jej dane zostają nietknięte.
+  - Testy nie uruchomią się na bazie, której nazwa nie kończy się na `_test`. To zabezpieczenie przed skasowaniem prawdziwych danych przez pomyłkę w adresie.
 - **Usługi zewnętrzne:** Cloudflare i serwer pocztowy są w testach zastąpione atrapami.
 
 ### Frontend
