@@ -110,8 +110,5 @@ export default function FlightResultPreviewModal({ flight, result, onClose }: Fl
 
 /** Ujednolica końce wierszy, pomija znaki końca strony z wydruków i puste wiersze na końcu pliku. */
 function normalizeContent(content: string): string {
-    return content
-        .replace(/\r\n?/g, '\n')
-        .replace(/\f/g, '')
-        .replace(/\n+$/, '');
+    return content.replace(/\r\n?/g, '\n').replace(/\f/g, '').replace(/\n+$/, '');
 }
