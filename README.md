@@ -1,204 +1,117 @@
 # PZHGP Żagań – aplikacja webowa oddziału
 
-Aplikacja webowa dla **Polskiego Związku Hodowców Gołębi Pocztowych, Oddział Żagań**, przygotowana w ramach pracy dyplomowej. Łączy w jednym miejscu sprawy, które w oddziale załatwia się zwykle telefonicznie, na papierze albo w kilku różnych serwisach: ogłoszenia zarządu, plany i wyniki lotów, analizę tras gołębi z plików GPX, forum hodowców, zgłoszenia znalezionych gołębi i obsługę kont członków.
+Aplikacja webowa dla **Polskiego Związku Hodowców Gołębi Pocztowych, Oddział Żagań**, przygotowana w ramach pracy dyplomowej. Łączy w jednym miejscu sprawy, które w oddziale załatwia się zwykle telefonicznie, na papierze albo w kilku różnych serwisach:
+- ogłoszenia zarządu;
+- plany i wyniki lotów;
+- analizę tras gołębi z plików GPX;
+- forum hodowców;
+- zgłoszenia znalezionych gołębi;
+- obsługę kont członków.
 
 Oddział obejmuje cztery sekcje: **Żagań, Wymiarki, Chotków i Kożuchów**.
 
-## Spis treści
+## Dokumentacja
 
-- [Funkcje](#funkcje)
-- [Role i uprawnienia](#role-i-uprawnienia)
-- [Bezpieczeństwo](#bezpieczeństwo)
-- [Integracje z zewnętrznymi usługami](#integracje-z-zewnętrznymi-usługami)
-- [Technologie](#technologie)
-- [Struktura projektu](#struktura-projektu)
-- [Uruchomienie lokalne](#uruchomienie-lokalne)
-- [Zmienne środowiskowe](#zmienne-środowiskowe)
-- [Testy](#testy)
-- [Wdrożenie produkcyjne](#wdrożenie-produkcyjne)
-- [Licencja](#licencja)
+Pełna dokumentacja jest w katalogu [`docs/`](docs/README.md):
+
+| Dokument | Zawartość |
+|---|---|
+| [Architektura](docs/architektura.md) | warstwy systemu, technologie, struktura kodu, przepływ żądania |
+| [Funkcje i reguły biznesowe](docs/funkcje.md) | moduły aplikacji, role, statusy, powiadomienia, analiza lotów GPX |
+| [Baza danych](docs/baza-danych.md) | model danych, tabele i relacje, migracje Flyway, kopia zapasowa |
+| [API REST](docs/api.md) | konwencje, kody odpowiedzi, lista wszystkich endpointów |
+| [Bezpieczeństwo](docs/bezpieczenstwo.md) | JWT w ciasteczku, CSRF, CORS, uprawnienia, limity prób, ochrona danych |
+| [Integracja z Cloudflare Turnstile](docs/integracja-turnstile.md) | komunikacja z zewnętrznym API krok po kroku |
+| [Testy](docs/testy.md) | testy jednostkowe, integracyjne i end-to-end |
+| [Uruchomienie i wdrożenie](docs/uruchomienie.md) | Docker, uruchomienie lokalne, zmienne środowiskowe, wdrożenie na serwer |
+| [Instrukcja użytkownika](docs/instrukcja-uzytkownika.md) | obsługa aplikacji przez gościa, hodowcę, moderatora i administratora |
 
 ## Funkcje
 
-### Strona główna i ogłoszenia
-- Ogłoszenia zarządu ze stronicowaniem, dostępne bez logowania.
-- Edytor tekstu sformatowanego (pogrubienia, listy, nagłówki, linki, wyróżnienia, wyrównanie).
-- Przypinanie ważnych ogłoszeń na górze listy.
+- **Ogłoszenia zarządu** na stronie głównej, z edytorem tekstu sformatowanego i przypinaniem.
+- **Konta użytkowników:**
+  - rejestracja z CAPTCHA i akceptacją przez administratora;
+  - logowanie z opcją „Zapamiętaj mnie”;
+  - odzyskiwanie hasła e-mailem;
+  - ustawienia konta, w tym wylogowanie ze wszystkich urządzeń i pobranie swoich danych (RODO).
+- **Panel administratora:** akceptowanie, blokowanie i zmiana ról kont, wyszukiwanie hodowców.
+- **Plany i wyniki lotów** z podziałem na gołębie dorosłe i młode; wyniki oddziałowe i sekcyjne z podglądem w przeglądarce.
+- **Mapy lotów:** analiza tras z plików GPX:
+  - dystans, czas oraz prędkości w m/min;
+  - wysokość;
+  - mapa z odtwarzaniem lotu i wykres przebiegu.
+- **Forum** z kategoriami, wątkami, odpowiedziami i moderacją.
+- **Znalezione gołębie:** publiczny formularz w trzech językach (PL, EN, DE) i panel zgłoszeń dla administratora.
+- **Zarząd** oddziału i sekcji z danymi kontaktowymi oraz mapa **pogody** z serwisu Windy.
+- **Powiadomienia** w aplikacji o nowych treściach i zmianach na koncie.
 
-### Konta użytkowników
-- **Rejestracja** z weryfikacją CAPTCHA. Nowe konto czeka na akceptację administratora, który potwierdza tożsamość hodowcy.
-- **Logowanie** z opcją „Zapamiętaj mnie” i powrotem na stronę, z której użytkownik został przekierowany.
-- **Odzyskiwanie hasła**: link wysyłany e-mailem, ważny 30 minut i jednorazowy.
-- **Ustawienia konta**:
-  - podgląd danych z rejestracji, roli, daty założenia konta, stażu i funkcji w zarządzie;
-  - samodzielna zmiana telefonu i adresu;
-  - zmiana hasła z potwierdzeniem obecnego hasła i powiadomieniem e-mail;
-  - wylogowanie ze wszystkich urządzeń;
-  - pobranie kopii swoich danych w pliku JSON (prawo dostępu do danych z RODO).
-
-### Panel administratora
-- Akceptowanie i odrzucanie nowych kont.
-- Blokowanie i odblokowywanie kont oraz zmiana ról użytkowników.
-- Wyszukiwanie i sortowanie hodowców (alfabetycznie z uwzględnieniem polskich znaków, według daty).
-
-### Powiadomienia
-- Dzwonek w pasku nawigacji z licznikiem nieprzeczytanych powiadomień.
-- Powiadomienia m.in. o akceptacji konta, zmianie roli, nowym ogłoszeniu, wątku, odpowiedzi na forum, planie lotów, wynikach i zgłoszeniu znalezionego gołębia.
-
-### Plany i wyniki lotów
-- Plany lotów na kolejne sezony, z podziałem na gołębie dorosłe i młode: data, miejscowość wypuszczenia, dystans, kategoria i rodzaj listy.
-- Wyniki lotów w plikach `.txt`, osobno dla całego oddziału i dla każdej sekcji.
-- Plany i wyniki dodaje administrator; przeglądać je mogą zalogowani hodowcy.
-
-### Mapy lotów
-- Wgrywanie tras z plików **GPX** zapisanych przez elektroniczne obrączki (np. SkyLeader).
-- Analiza lotu:
-  - dystans po linii prostej i po trasie;
-  - czas lotu oraz prędkość średnia i maksymalna (w m/min);
-  - wysokość i przewyższenia.
-- Trasa na mapie z punktem startu i końca oraz wykres profilu lotu.
-- Loty są prywatne: oglądać i usuwać je może tylko hodowca, który je wgrał, oraz administrator.
-
-### Forum
-- Kategorie, wątki i odpowiedzi z edytorem tekstu sformatowanego.
-- Przypinanie i zamykanie wątków przez moderatorów, edycja własnych wpisów, licznik wyświetleń.
-
-### Znalezione gołębie
-- Publiczny formularz dla osób, które znalazły gołębia z obrączką oddziału, w trzech językach: **polskim, angielskim i niemieckim**.
-- Zabezpieczony CAPTCHA i limitem zgłoszeń.
-- Dane kontaktowe znalazcy widzi wyłącznie administrator w panelu zgłoszeń, gdzie prowadzi zgłoszenie przez kolejne statusy i dodaje notatki.
-
-### Zarząd i pogoda
-- **Zarząd:** skład zarządu oddziału i zarządów sekcji z danymi kontaktowymi. Skład ustala administrator.
-- **Pogoda:** mapa pogodowa z serwisu Windy (windy.com), pomocna przy planowaniu lotów.
-
-## Role i uprawnienia
-
-| Funkcja | Gość | Hodowca | Moderator | Administrator |
-|---|:---:|:---:|:---:|:---:|
-| Ogłoszenia, zarząd, pogoda, zgłoszenie znalezionego gołębia | ✓ | ✓ | ✓ | ✓ |
-| Plany i wyniki lotów, mapy lotów, forum, ustawienia konta | | ✓ | ✓ | ✓ |
-| Dodawanie ogłoszeń, tworzenie i edycja kategorii forum, przypinanie i zamykanie wątków | | | ✓ | ✓ |
-| Usuwanie treści na forum | | własne | własne i hodowców | wszystkie |
-| Konta użytkowników, zarząd, plany i wyniki lotów, zgłoszenia znalezionych gołębi, usuwanie kategorii forum | | | | ✓ |
-
-## Bezpieczeństwo
-
-- **Uwierzytelnianie:**
-  - token JWT w ciasteczku `HttpOnly`;
-  - ochrona CSRF;
-  - hasła szyfrowane algorytmem BCrypt.
-- **Sesje:**
-  - sesja trwa do zamknięcia przeglądarki (najdłużej 24 godziny), a z opcją „Zapamiętaj mnie” 30 dni;
-  - rola, status i wersja sesji konta są sprawdzane w bazie przy każdym żądaniu;
-  - zablokowanie konta, zmiana hasła i wylogowanie ze wszystkich urządzeń działają od razu.
-- **Ochrona przed nadużyciami:**
-  - limity prób logowania, rejestracji, odzyskiwania hasła i zgłoszeń;
-  - CAPTCHA w formularzach dostępnych bez logowania;
-  - stały czas odpowiedzi logowania, który nie zdradza, czy konto istnieje.
-- **Odzyskiwanie hasła:**
-  - w bazie zapisywany jest tylko skrót SHA-256 tokenu;
-  - odpowiedź jest taka sama dla istniejących i nieistniejących adresów e-mail.
-- **Treści użytkowników:** HTML z edytora jest oczyszczany na serwerze (jsoup) i ponownie w przeglądarce (DOMPurify).
-- **Dane osobowe:** adresy e-mail i dane kontaktowe znalazców nie trafiają do logów aplikacji.
-
-## Integracje z zewnętrznymi usługami
-
-| Usługa | Zastosowanie |
-|---|---|
-| **Cloudflare Turnstile** | CAPTCHA w rejestracji, zgłoszeniu znalezionego gołębia i odzyskiwaniu hasła. Przeglądarka pobiera token z widżetu, a backend weryfikuje go w API `siteverify` Cloudflare (REST, `RestClient`). |
-| **Serwer SMTP** | Wysyłka e-maili z linkiem do zmiany hasła i z potwierdzeniem zmiany hasła (Spring Mail). |
-| **OpenStreetMap** | Podkład mapy tras lotów (Leaflet). |
-| **Windy** | Mapa pogodowa osadzona na stronie „Pogoda”. |
+Opis wszystkich funkcji jest w rozdziale [Funkcje i reguły biznesowe](docs/funkcje.md), a role i uprawnienia w jego części [Role i uprawnienia](docs/funkcje.md#role-i-uprawnienia).
 
 ## Technologie
 
 | Warstwa | Technologie |
 |---|---|
-| Backend | Java 25 (LTS), Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Mail, Actuator), Hibernate, Flyway, JJWT, jsoup |
+| Backend | Java 25, Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Mail, Actuator), Hibernate 7, Flyway, JJWT, jsoup |
 | Baza danych | PostgreSQL |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, TipTap, Leaflet, DOMPurify |
-| Testy | JUnit 5, Mockito, Spring MockMvc, PostgreSQL (osobna baza testowa), JaCoCo, Cypress 15 |
+| Testy | JUnit 6, Mockito, Spring MockMvc, JaCoCo, Cypress 15 |
+| Uruchomienie | Docker Compose (PostgreSQL, backend, frontend, Mailpit) |
+| Usługi zewnętrzne | Cloudflare Turnstile (CAPTCHA), serwer SMTP, OpenStreetMap, Windy |
 
-## Struktura projektu
+## Szybki start
 
-```
-pzhgp-zagan/
-├── backend/                     # API REST (Spring Boot)
-│   ├── src/main/java/com/pzhgp/backend/
-│   │   ├── config/              # bezpieczeństwo, JWT, CORS, konfiguracja
-│   │   ├── controller/          # endpointy REST
-│   │   ├── dto/                 # obiekty żądań i odpowiedzi
-│   │   ├── entity/              # encje JPA
-│   │   ├── exception/           # wyjątki i ich obsługa
-│   │   ├── repository/          # repozytoria Spring Data
-│   │   ├── service/             # logika biznesowa
-│   │   └── utils/               # funkcje pomocnicze
-│   ├── src/main/resources/db/migration/  # migracje bazy (Flyway)
-│   └── src/test/                # testy jednostkowe i integracyjne
-└── frontend/                    # interfejs użytkownika (Next.js)
-    ├── cypress/                 # testy end-to-end
-    └── src/app/
-        ├── (auth)/              # logowanie, rejestracja, odzyskiwanie hasła
-        ├── (main)/              # pozostałe podstrony z paskiem nawigacji i stopką
-        ├── components/          # komponenty wielokrotnego użytku
-        ├── services/            # komunikacja z API
-        ├── types/               # typy danych
-        └── utils/               # funkcje pomocnicze
-```
+### Docker (najprostszy sposób)
 
-## Uruchomienie lokalne
-
-### Wymagania
-
-- **JDK 25** (LTS)
-- **Node.js 26** (LTS, z npm)
-- **PostgreSQL** (testowane na wersji 16)
-- opcjonalnie lokalny serwer pocztowy do testów, np. [Mailpit](https://mailpit.axllent.org/)
-
-### 1. Baza danych
-
-Utwórz pustą bazę aplikacji i osobną bazę do testów backendu, np.:
-
-```sql
-CREATE DATABASE pzhgp_zagan;
-CREATE DATABASE pzhgp_zagan_test;
-```
-
-Tabele tworzą migracje Flyway przy pierwszym uruchomieniu backendu, razem z czterema sekcjami oddziału. Baza utworzona przed wprowadzeniem Flyway (przez Hibernate) zostaje oznaczona jako wersja 1 i dostaje tylko późniejsze migracje, więc jej dane zostają. Baza testowa nie wymaga żadnych przygotowań (szczegóły w sekcji [Testy](#testy)).
-
-### 2. Backend
+Wymagany jest Docker Desktop albo Docker Engine z Compose.
 
 ```bash
-cd backend
-cp .env.example .env
+cp .env.example .env          # uzupełnij DB_PASSWORD i JWT_SECRET (min. 32 znaki)
+docker compose up --build
 ```
 
-Uzupełnij w pliku `.env` co najmniej dane bazy (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`) i `JWT_SECRET`, czyli losowy ciąg o długości min. 32 znaków. Pozostałe wartości mają ustawienia odpowiednie do pracy lokalnej. Opis wszystkich zmiennych jest w sekcji [Zmienne środowiskowe](#zmienne-środowiskowe).
+| Adres | Usługa |
+|---|---|
+| `http://localhost:3000` | aplikacja |
+| `http://localhost:8080` | API (backend) |
+| `http://localhost:8025` | Mailpit: podgląd e-maili wysłanych przez aplikację |
 
-Uruchomienie (lub z poziomu IntelliJ IDEA):
+Flyway tworzy przy pierwszym starcie pustą bazę z czterema sekcjami oddziału.
 
-```bash
-./mvnw spring-boot:run        # Linux, macOS
-mvnw.cmd spring-boot:run      # Windows
-```
+### Lokalnie (praca nad kodem)
 
-Backend działa pod adresem `http://localhost:8080`.
+Wymagane są JDK 25, Node.js 26 LTS i PostgreSQL 16 lub nowszy.
 
-### 3. Frontend
+1. **Bazy danych:**
 
-```bash
-cd frontend
-cp .env.local.example .env.local
-npm install
-npm run dev
-```
+   ```sql
+   CREATE DATABASE pzhgp_zagan;
+   CREATE DATABASE pzhgp_zagan_test;   -- dla testów backendu
+   ```
 
-Aplikacja działa pod adresem `http://localhost:3000`.
+2. **Backend:**
 
-### 4. Pierwsze konto administratora
+   ```bash
+   cd backend
+   cp .env.example .env               # uzupełnij DB_URL, DB_USERNAME, DB_PASSWORD i JWT_SECRET
+   ./mvnw spring-boot:run             # Windows: mvnw.cmd spring-boot:run
+   ```
 
-Aplikacja nie tworzy konta administratora automatycznie. Zarejestruj się przez formularz, a następnie nadaj sobie uprawnienia w bazie:
+3. **Frontend** (w drugim terminalu, z głównego katalogu):
+
+   ```bash
+   cd frontend
+   cp .env.local.example .env.local
+   npm ci
+   npm run dev
+   ```
+
+Pliki `.env.example` zawierają oficjalne klucze testowe Cloudflare Turnstile, więc CAPTCHA działa bez konta w Cloudflare.
+
+Szczegóły, opis zmiennych środowiskowych i rozwiązywanie problemów są w rozdziale [Uruchomienie i wdrożenie](docs/uruchomienie.md).
+
+### Pierwsze konto administratora
+
+Aplikacja nie tworzy administratora automatycznie. Zarejestruj się przez formularz, a potem nadaj sobie uprawnienia w bazie:
 
 ```sql
 UPDATE breeders
@@ -206,79 +119,28 @@ SET role = 'ADMINISTRATOR', status = 'ACTIVE'
 WHERE email = 'twoj.adres@example.com';
 ```
 
-Kolejne konta akceptuje już administrator w panelu aplikacji.
-
-### 5. CAPTCHA i e-maile podczas pracy lokalnej
-
-- **CAPTCHA:** pliki `.env.example` i `.env.local.example` zawierają oficjalne klucze testowe Cloudflare Turnstile, które zawsze przechodzą weryfikację. Konto w Cloudflare nie jest więc potrzebne.
-- **E-maile:** domyślne ustawienia pasują do Mailpit (`localhost:1025`). Wysłane wiadomości widać wtedy pod adresem `http://localhost:8025`. Aby wysyłać prawdziwe e-maile, ustaw dane serwera SMTP swojej skrzynki (`MAIL_*`).
-
-## Zmienne środowiskowe
-
-### Backend (`backend/.env`)
-
-| Zmienna | Opis | Wartość domyślna |
-|---|---|---|
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Połączenie z bazą PostgreSQL | – |
-| `TEST_DB_URL` | Baza do testów backendu; nazwa musi kończyć się na `_test` | `jdbc:postgresql://localhost:5432/pzhgp_zagan_test` |
-| `TEST_DB_USERNAME`, `TEST_DB_PASSWORD` | Dane logowania do bazy testowej | `DB_USERNAME`, `DB_PASSWORD` |
-| `JWT_SECRET` | Klucz podpisujący tokeny logowania (min. 32 znaki) | – |
-| `CORS_ALLOWED_ORIGINS` | Adresy frontendu, z których przeglądarka może wysyłać zapytania | `http://localhost:3000` |
-| `AUTH_COOKIE_SECURE` | Flaga `Secure` ciasteczka logowania; `true` na serwerze z HTTPS | `false` |
-| `FORWARD_HEADERS_STRATEGY` | `native`, gdy backend działa za reverse proxy (np. nginx) | `none` |
-| `TURNSTILE_SECRET_KEY` | Klucz tajny Cloudflare Turnstile | klucz testowy w `.env.example` |
-| `MAIL_HOST`, `MAIL_PORT` | Serwer SMTP | `localhost`, `1025` |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | Dane logowania do serwera SMTP | puste |
-| `MAIL_FROM` | Adres nadawcy wiadomości | `no-reply@pzhgp-zagan.local` |
-| `FRONTEND_URL` | Adres frontendu wstawiany do linków w e-mailach | `http://localhost:3000` |
-
-### Frontend (`frontend/.env.local`)
-
-| Zmienna | Opis |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | Adres backendu, np. `http://localhost:8080` |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Klucz witryny Cloudflare Turnstile (klucz testowy w `.env.local.example`) |
+W Dockerze to samo polecenie wykonuje się przez `docker compose exec` (rozdział [Pierwsze konto administratora](docs/uruchomienie.md#pierwsze-konto-administratora)). Kolejne konta akceptuje już administrator w panelu aplikacji.
 
 ## Testy
 
-### Backend
-
 ```bash
-cd backend
-./mvnw test       # ponad 600 testów jednostkowych i integracyjnych
-./mvnw verify     # testy i raport pokrycia: target/site/jacoco/index.html
+(cd backend && ./mvnw verify)                                           # testy JUnit i raport pokrycia JaCoCo
+(cd frontend && npm run lint && npm run typecheck && npm run cypress:run) # Cypress przy działającym npm run dev
 ```
 
-- **Baza:** testy integracyjne działają na osobnej, pustej bazie PostgreSQL `pzhgp_zagan_test` (adres można zmienić zmienną `TEST_DB_URL`).
-  - Przed testami Flyway czyści ją i tworzy tabele od zera tymi samymi migracjami co aplikacja, a każdy test wycofuje swoje zmiany. Baza aplikacji i jej dane zostają nietknięte.
-  - Testy nie uruchomią się na bazie, której nazwa nie kończy się na `_test`. To zabezpieczenie przed skasowaniem prawdziwych danych przez pomyłkę w adresie.
-- **Usługi zewnętrzne:** Cloudflare i serwer pocztowy są w testach zastąpione atrapami.
+Projekt ma ponad 600 testów backendu (jednostkowych i integracyjnych na osobnej bazie `pzhgp_zagan_test`) oraz ponad 280 testów end-to-end w Cypress. Szczegóły są w rozdziale [Testy](docs/testy.md).
 
-### Frontend
+## Struktura repozytorium
 
-```bash
-cd frontend
-npm run lint             # ESLint
-npm run typecheck        # kontrola typów TypeScript
-npm run cypress:open     # testy end-to-end w oknie Cypress
-npm run cypress:run      # testy end-to-end w trybie bez okna
 ```
-
-- **Uruchomienie:** testy Cypress wymagają działającego frontendu (`npm run dev`).
-- **Zapytania do API:** są w testach podstawiane, więc backend nie musi działać.
-
-## Wdrożenie produkcyjne
-
-Przy uruchamianiu aplikacji na serwerze zwróć uwagę na kilka ustawień:
-
-- **HTTPS:** aplikacja powinna działać przez HTTPS, z `AUTH_COOKIE_SECURE=true`.
-- **Jeden adres dla frontendu i backendu:** frontend odczytuje token CSRF z ciasteczka ustawianego przez backend, a przeglądarka udostępnia je tylko stronom z tego samego hosta. Oba serwery muszą więc działać pod jednym adresem, np. nginx przekazuje zapytania `/api/` do backendu, a pozostałe do frontendu. `NEXT_PUBLIC_API_URL` to wtedy publiczny adres aplikacji (np. `https://zagan.example.pl`). Przy backendzie pod osobną domeną (np. `api.zagan.example.pl`) zapisywanie danych nie zadziała.
-- **Adresy:** `CORS_ALLOWED_ORIGINS` i `FRONTEND_URL` muszą wskazywać publiczny adres frontendu.
-- **Reverse proxy:** za proxy ustaw `FORWARD_HEADERS_STRATEGY=native`, żeby limity zapytań widziały adres klienta.
-- **CAPTCHA:** zamiast kluczy testowych użyj kluczy własnego widżetu Turnstile i dodaj domenę aplikacji w panelu Cloudflare.
-- **Poczta:** ustaw dane prawdziwego serwera SMTP.
-- **Zmienne frontendu:** `NEXT_PUBLIC_*` są wbudowywane w aplikację podczas `npm run build`, więc trzeba je ustawić przed budowaniem.
-- **Monitoring:** `GET /actuator/health` zwraca stan aplikacji i może służyć do monitoringu.
+pzhgp-zagan/
+├── backend/              # API REST (Spring Boot), migracje Flyway, testy JUnit
+├── frontend/             # interfejs użytkownika (Next.js), testy Cypress
+├── docker/db-import/     # opcjonalna kopia bazy wczytywana przy pierwszym starcie w Dockerze
+├── docs/                 # dokumentacja techniczna i instrukcja użytkownika
+├── docker-compose.yml
+└── .env.example          # ustawienia dla Docker Compose
+```
 
 ## Licencja
 
